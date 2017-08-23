@@ -1,0 +1,703 @@
+<protocol name="QuoteHistory" majorVer="1" minorVer="0">
+    <members>
+        <enum name="LogoutReason" size="4">
+            <members>
+                <member name="ClientLogout" value="0"/>
+                <member name="InvalidCreds" value="1"/>
+                <member name="BlockedLogin" value="2"/>
+                <member name="SlowConnection" value="3"/>
+                <member name="InvalidSessionId" value="4"/>
+                <member name="InternalServerError" value="5"/>
+                <member name="TimeoutLogin" value="6"/>
+                <member name="DeletedLogin" value="7"/>
+                <member name="ServerLogout" value="8"/>
+            </members>
+        </enum>
+        <enum name="PriceType" size="4">
+            <members>
+                <member name="Bid" value="0"/>
+                <member name="Ask" value="1"/>
+            </members>
+        </enum>
+        <group name="Bar" size="48">
+            <fields>
+                <field name="Time" offset="0" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Open" offset="8" type="double" optional="N" repeatable="N"/>
+                <field name="High" offset="16" type="double" optional="N" repeatable="N"/>
+                <field name="Low" offset="24" type="double" optional="N" repeatable="N"/>
+                <field name="Close" offset="32" type="double" optional="N" repeatable="N"/>
+                <field name="Volume" offset="40" type="double" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <group name="TickId" size="9">
+            <fields>
+                <field name="Time" offset="0" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Index" offset="8" type="uint8" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <group name="Level2Value" size="16">
+            <fields>
+                <field name="Price" offset="0" type="double" optional="N" repeatable="N"/>
+                <field name="Volume" offset="8" type="double" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <group name="Level2Collection" size="16">
+            <fields>
+                <field name="Bids" offset="0" type="Level2Value" optional="N" repeatable="Y"/>
+                <field name="Asks" offset="8" type="Level2Value" optional="N" repeatable="Y"/>
+            </fields>
+        </group>
+        <group name="Tick" size="25">
+            <fields>
+                <field name="Id" offset="0" type="TickId" optional="N" repeatable="N"/>
+                <field name="Level2" offset="9" type="Level2Collection" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <message name="LoginRequest" id="0" size="40">
+            <fields>
+                <field name="Username" offset="8" type="ustring" optional="N" repeatable="N"/>
+                <field name="Password" offset="16" type="ustring" optional="N" repeatable="N"/>
+                <field name="DeviceID" offset="24" type="ustring" optional="N" repeatable="N"/>
+                <field name="AppSessionID" offset="32" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="LoginReport" id="1" size="16">
+            <fields>
+                <field name="Message" offset="8" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="LoginReject" id="2" size="16">
+            <fields>
+                <field name="Message" offset="8" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="LogoutRequest" id="3" size="16">
+            <fields>
+                <field name="Message" offset="8" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="LogoutReport" id="4" size="20">
+            <fields>
+                <field name="Reason" offset="8" type="LogoutReason" optional="N" repeatable="N"/>
+                <field name="Message" offset="12" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="Request" id="5" size="16">
+            <subMessages>
+                <subMessage name="SymbolsRequest"/>
+                <subMessage name="PeriodicitiesRequest"/>
+                <subMessage name="QueryBarsRequest"/>
+                <subMessage name="QueryTicksRequest"/>
+                <subMessage name="QueryBarsFileRequest"/>
+                <subMessage name="QueryTicksFileRequest"/>
+            </subMessages>
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="Response" id="6" size="16">
+            <subMessages>
+                <subMessage name="SymbolsReport"/>
+                <subMessage name="PeriodicitiesReport"/>
+                <subMessage name="QueryBarsReport"/>
+                <subMessage name="QueryTicksReport"/>
+                <subMessage name="QueryBarsFileReport"/>
+                <subMessage name="QueryTicksFileReport"/>
+                <subMessage name="QueryReject"/>
+            </subMessages>
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="SymbolsRequest" id="7" superMessage="Request" size="16">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="SymbolsReport" id="8" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Symbols" offset="16" type="ustring" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="PeriodicitiesRequest" id="9" superMessage="Request" size="16">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="PeriodicitiesReport" id="10" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Periodicities" offset="16" type="ustring" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="QueryBarsRequest" id="11" superMessage="Request" size="48">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Timestamp" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Count" offset="24" type="int32" optional="N" repeatable="N"/>
+                <field name="Symbol" offset="28" type="ustring" optional="N" repeatable="N"/>
+                <field name="Periodicity" offset="36" type="ustring" optional="N" repeatable="N"/>
+                <field name="PriceType" offset="44" type="PriceType" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="QueryBarsReport" id="12" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Bars" offset="16" type="Bar" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="QueryTicksRequest" id="13" superMessage="Request" size="37">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Timestamp" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Count" offset="24" type="int32" optional="N" repeatable="N"/>
+                <field name="Symbol" offset="28" type="ustring" optional="N" repeatable="N"/>
+                <field name="Level2" offset="36" type="bool" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="QueryTicksReport" id="14" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Ticks" offset="16" type="Tick" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <group name="FileDescription" size="16">
+            <fields>
+                <field name="FileId" offset="0" type="string" optional="N" repeatable="N"/>
+                <field name="Chunks" offset="8" type="int32" optional="N" repeatable="N"/>
+                <field name="Size" offset="12" type="int32" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <message name="QueryBarsFileRequest" id="15" superMessage="Request" size="44">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Timestamp" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Symbol" offset="24" type="ustring" optional="N" repeatable="N"/>
+                <field name="Periodicity" offset="32" type="ustring" optional="N" repeatable="N"/>
+                <field name="PriceType" offset="40" type="PriceType" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="QueryBarsFileReport" id="16" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Files" offset="16" type="FileDescription" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="QueryTicksFileRequest" id="17" superMessage="Request" size="33">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Timestamp" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Symbol" offset="24" type="ustring" optional="N" repeatable="N"/>
+                <field name="Level2" offset="32" type="bool" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="QueryTicksFileReport" id="18" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Files" offset="16" type="FileDescription" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="FileRequest" id="19" size="20">
+            <fields>
+                <field name="FileId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Chunk" offset="16" type="int32" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="FileReport" id="20" size="25">
+            <fields>
+                <field name="FileId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Content" offset="16" type="bytes" optional="N" repeatable="N"/>
+                <field name="EndOfFile" offset="24" type="bool" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="FileRelease" id="21" size="16">
+            <fields>
+                <field name="FileId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="QueryReject" id="22" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Message" offset="16" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <processor name="Client" head="193_9">
+            <subProcessors>
+                <subProcessor name="RequestClient"/>
+            </subProcessors>
+            <states>
+                <state label="193_9">
+                    <operations>
+                        <send name="LoginRequest" next="195_13">
+                            <messages>
+                                <message name="LoginRequest"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="195_13">
+                    <operations>
+                        <recv name="LoginReport" next="204_9">
+                            <messages>
+                                <message name="LoginReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="LoginReject">
+                            <messages>
+                                <message name="LoginReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="LoginRequest"/>
+                    </contexts>
+                </state>
+                <state label="204_9">
+                    <operations>
+                        <send next="204_9">
+                            <messages>
+                                <message name="Request"/>
+                                <message name="FileRequest"/>
+                                <message name="FileRelease"/>
+                            </messages>
+                        </send>
+                        <recv next="204_9">
+                            <messages>
+                                <message name="Response"/>
+                                <message name="FileReport"/>
+                            </messages>
+                        </recv>
+                        <send name="LogoutRequest" next="214_13">
+                            <messages>
+                                <message name="LogoutRequest"/>
+                            </messages>
+                        </send>
+                        <recv name="LogoutReport">
+                            <messages>
+                                <message name="LogoutReport"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="214_13">
+                    <operations>
+                        <recv next="214_13">
+                            <messages>
+                                <message name="Response"/>
+                                <message name="FileReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="LogoutReport">
+                            <messages>
+                                <message name="LogoutReport"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="LogoutRequest"/>
+                    </contexts>
+                </state>
+            </states>
+        </processor>
+        <processor name="RequestClient" type="string" superProcessor="Client" head="238_9">
+            <fields>
+                <field name="Request.RequestId"/>
+                <field name="Response.RequestId"/>
+                <field name="FileRequest.FileId"/>
+                <field name="FileReport.FileId"/>
+                <field name="FileRelease.FileId"/>
+            </fields>
+            <states>
+                <state label="238_9">
+                    <operations>
+                        <send name="SymbolsRequest" next="240_13">
+                            <messages>
+                                <message name="SymbolsRequest"/>
+                            </messages>
+                        </send>
+                        <send name="PeriodicitiesRequest" next="249_13">
+                            <messages>
+                                <message name="PeriodicitiesRequest"/>
+                            </messages>
+                        </send>
+                        <send name="BarsRequest" next="258_13">
+                            <messages>
+                                <message name="QueryBarsRequest"/>
+                            </messages>
+                        </send>
+                        <send name="TicksRequest" next="267_13">
+                            <messages>
+                                <message name="QueryTicksRequest"/>
+                            </messages>
+                        </send>
+                        <send name="BarsFileRequest" next="276_13">
+                            <messages>
+                                <message name="QueryBarsFileRequest"/>
+                            </messages>
+                        </send>
+                        <send name="TicksFileRequest" next="285_13">
+                            <messages>
+                                <message name="QueryTicksFileRequest"/>
+                            </messages>
+                        </send>
+                        <send name="FileRequest" next="294_13">
+                            <messages>
+                                <message name="FileRequest"/>
+                            </messages>
+                        </send>
+                        <send name="FileRelease">
+                            <messages>
+                                <message name="FileRelease"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="240_13">
+                    <operations>
+                        <recv name="SymbolsReport">
+                            <messages>
+                                <message name="SymbolsReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="SymbolsReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="SymbolsRequest"/>
+                    </contexts>
+                </state>
+                <state label="249_13">
+                    <operations>
+                        <recv name="PeriodicitiesReport">
+                            <messages>
+                                <message name="PeriodicitiesReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="PeriodicitiesReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="PeriodicitiesRequest"/>
+                    </contexts>
+                </state>
+                <state label="258_13">
+                    <operations>
+                        <recv name="BarsReport">
+                            <messages>
+                                <message name="QueryBarsReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="BarsReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="BarsRequest"/>
+                    </contexts>
+                </state>
+                <state label="267_13">
+                    <operations>
+                        <recv name="TicksReport">
+                            <messages>
+                                <message name="QueryTicksReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="TicksReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="TicksRequest"/>
+                    </contexts>
+                </state>
+                <state label="276_13">
+                    <operations>
+                        <recv name="BarsFileReport">
+                            <messages>
+                                <message name="QueryBarsFileReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="BarsFileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="BarsFileRequest"/>
+                    </contexts>
+                </state>
+                <state label="285_13">
+                    <operations>
+                        <recv name="TicksFileReport">
+                            <messages>
+                                <message name="QueryTicksFileReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="TicksFileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="TicksFileRequest"/>
+                    </contexts>
+                </state>
+                <state label="294_13">
+                    <operations>
+                        <recv name="FileReport">
+                            <messages>
+                                <message name="FileReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="FileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="FileRequest"/>
+                    </contexts>
+                </state>
+            </states>
+        </processor>
+        <processor name="Server" head="306_9">
+            <subProcessors>
+                <subProcessor name="RequestServer"/>
+            </subProcessors>
+            <states>
+                <state label="306_9">
+                    <operations>
+                        <recv name="LoginRequest" next="308_13">
+                            <messages>
+                                <message name="LoginRequest"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="308_13">
+                    <operations>
+                        <send next="317_9">
+                            <messages>
+                                <message name="LoginReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="LoginReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="317_9">
+                    <operations>
+                        <recv next="317_9">
+                            <messages>
+                                <message name="Request"/>
+                                <message name="FileRequest"/>
+                                <message name="FileRelease"/>
+                            </messages>
+                        </recv>
+                        <send next="317_9">
+                            <messages>
+                                <message name="Response"/>
+                                <message name="FileReport"/>
+                            </messages>
+                        </send>
+                        <recv name="LogoutRequest" next="327_13">
+                            <messages>
+                                <message name="LogoutRequest"/>
+                            </messages>
+                        </recv>
+                        <send>
+                            <messages>
+                                <message name="LogoutReport"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="327_13">
+                    <operations>
+                        <send next="327_13">
+                            <messages>
+                                <message name="Response"/>
+                                <message name="FileReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="LogoutReport"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+            </states>
+        </processor>
+        <processor name="RequestServer" type="string" superProcessor="Server" head="351_9">
+            <fields>
+                <field name="Request.RequestId"/>
+                <field name="Response.RequestId"/>
+                <field name="FileRequest.FileId"/>
+                <field name="FileReport.FileId"/>
+                <field name="FileRelease.FileId"/>
+            </fields>
+            <states>
+                <state label="351_9">
+                    <operations>
+                        <recv name="SymbolsRequest" next="353_13">
+                            <messages>
+                                <message name="SymbolsRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="PeriodicitiesRequest" next="362_13">
+                            <messages>
+                                <message name="PeriodicitiesRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="BarsRequest" next="371_13">
+                            <messages>
+                                <message name="QueryBarsRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="TicksRequest" next="380_13">
+                            <messages>
+                                <message name="QueryTicksRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="BarsFileRequest" next="389_13">
+                            <messages>
+                                <message name="QueryBarsFileRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="TicksFileRequest" next="398_13">
+                            <messages>
+                                <message name="QueryTicksFileRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="FileRequest" next="407_13">
+                            <messages>
+                                <message name="FileRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="FileRelease">
+                            <messages>
+                                <message name="FileRelease"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="353_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="SymbolsReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="362_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="PeriodicitiesReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="371_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="QueryBarsReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="380_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="QueryTicksReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="389_13">
+                    <operations>
+                        <send name="BarsFileReport">
+                            <messages>
+                                <message name="QueryBarsFileReport"/>
+                            </messages>
+                        </send>
+                        <send name="BarsFileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="398_13">
+                    <operations>
+                        <send name="TicksFileReport">
+                            <messages>
+                                <message name="QueryTicksFileReport"/>
+                            </messages>
+                        </send>
+                        <send name="TicksFileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="407_13">
+                    <operations>
+                        <send name="FileReport">
+                            <messages>
+                                <message name="FileReport"/>
+                            </messages>
+                        </send>
+                        <send name="FileReject">
+                            <messages>
+                                <message name="QueryReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+            </states>
+        </processor>
+    </members>
+</protocol>
