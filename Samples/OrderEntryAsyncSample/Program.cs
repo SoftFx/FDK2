@@ -172,11 +172,14 @@ namespace OrderEntryAsyncSample
                             if (qty == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             NewOrderMarket
                             (
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
-                                double.Parse(qty)
+                                double.Parse(qty),
+                                comment
                             );
                         }
                         else if (command == "new_order_limit" || command == "nol")
@@ -201,12 +204,15 @@ namespace OrderEntryAsyncSample
                             if (price == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             NewOrderLimit
                             (
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
-                                double.Parse(price)
+                                double.Parse(price),
+                                comment
                             );
                         }
                         else if (command == "new_order_stop" || command == "nos")
@@ -231,12 +237,15 @@ namespace OrderEntryAsyncSample
                             if (stopPrice == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             NewOrderStop
                             (
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
-                                double.Parse(stopPrice)
+                                double.Parse(stopPrice),
+                                comment
                             );
                         }
                         else if (command == "new_order_stop_limit" || command == "nosl")
@@ -266,13 +275,16 @@ namespace OrderEntryAsyncSample
                             if (stopPrice == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             NewOrderStopLimit
                             (
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
                                 double.Parse(price),
-                                double.Parse(stopPrice)
+                                double.Parse(stopPrice),
+                                comment
                             );
                         }
                         else if (command == "replace_order_limit" || command == "rol")
@@ -302,13 +314,16 @@ namespace OrderEntryAsyncSample
                             if (price == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             ReplaceOrderLimit
                             (
                                 orderId,
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
-                                double.Parse(price)
+                                double.Parse(price),
+                                comment
                             );
                         }
                         else if (command == "replace_order_limit" || command == "rol")
@@ -338,13 +353,16 @@ namespace OrderEntryAsyncSample
                             if (price == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             ReplaceOrderLimit
                             (
                                 orderId,
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
-                                double.Parse(price)
+                                double.Parse(price),
+                                comment
                             );
                         }
                         else if (command == "replace_order_stop" || command == "ros")
@@ -374,13 +392,16 @@ namespace OrderEntryAsyncSample
                             if (stopPrice == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             ReplaceOrderStop
                             (
                                 orderId,
                                 symbolId,
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
-                                double.Parse(stopPrice)
+                                double.Parse(stopPrice),
+                                comment
                             );
                         }
                         else if (command == "replace_order_stop_limit" || command == "rosl")
@@ -415,6 +436,8 @@ namespace OrderEntryAsyncSample
                             if (stopPrice == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string comment = GetNextWord(line, ref pos);
+
                             ReplaceOrderStopLimit
                             (
                                 orderId,
@@ -422,7 +445,8 @@ namespace OrderEntryAsyncSample
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
                                 double.Parse(price),
-                                double.Parse(stopPrice)
+                                double.Parse(stopPrice),
+                                comment
                             );
                         }
                         else if (command == "cancel_order" || command == "co")
@@ -553,13 +577,13 @@ namespace OrderEntryAsyncSample
             Console.WriteLine("session_info (i) - request trading session information");
             Console.WriteLine("orders (o) - request list of orders");
             Console.WriteLine("positions (p) - request list of positions");
-            Console.WriteLine("new_order_market (nom) <symbol_id> <side> <qty> - send new market order");
-            Console.WriteLine("new_order_limit (nol) <symbol_id> <side> <qty> <price> - send new limit order");
-            Console.WriteLine("new_order_stop (nos) <symbol_id> <side> <qty> <stop_price> - send new stop order");
-            Console.WriteLine("new_order_stop_limit (nosl) <symbol_id> <side> <qty> <price> <stop_price> - send new stop limit order");
-            Console.WriteLine("replace_order_limit (rol) <client_order_id> <symbol_id> <side> <qty> <price> - send limit order replace");
-            Console.WriteLine("replace_order_stop (ros) <client_order_id> <symbol_id> <side> <qty> <stop_price> - send stop order replace");
-            Console.WriteLine("replace_order_stop_limit (rosl) <client_order_id> <symbol_id> <side> <qty> <price> <stop_price> - send stop limit order replace");
+            Console.WriteLine("new_order_market (nom) <symbol_id> <side> <qty> [<comment>] - send new market order");
+            Console.WriteLine("new_order_limit (nol) <symbol_id> <side> <qty> <price> [<comment>] - send new limit order");
+            Console.WriteLine("new_order_stop (nos) <symbol_id> <side> <qty> <stop_price> [<comment>] - send new stop order");
+            Console.WriteLine("new_order_stop_limit (nosl) <symbol_id> <side> <qty> <price> <stop_price> [<comment>] - send new stop limit order");
+            Console.WriteLine("replace_order_limit (rol) <client_order_id> <symbol_id> <side> <qty> <price> [<comment>] - send limit order replace");
+            Console.WriteLine("replace_order_stop (ros) <client_order_id> <symbol_id> <side> <qty> <stop_price> [<comment>] - send stop order replace");
+            Console.WriteLine("replace_order_stop_limit (rosl) <client_order_id> <symbol_id> <side> <qty> <price> <stop_price> [<comment>] - send stop limit order replace");
             Console.WriteLine("cancel_order (co) <client_order_id> - send order cancel");
             Console.WriteLine("close_position (cp) <order_id> <qty> - send position close");
             Console.WriteLine("exit (e) - exit");
@@ -662,14 +686,14 @@ namespace OrderEntryAsyncSample
 
                     if (executionReport.OrderType == OrderType.Stop)
                     {
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice);
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                     }
                     else if (executionReport.OrderType == OrderType.StopLimit)
                     {
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice);
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                     }
                     else
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice);
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                 }
             }
             catch (Exception exception)
@@ -729,24 +753,24 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void NewOrderMarket(string symbolId, OrderSide side, double qty)
+        void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, null, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
         }
 
-        void NewOrderLimit(string symbolId, OrderSide side, double qty, double price)
+        void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, null, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
-        void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice)
+        void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, null, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
         }
 
-        void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice)
+        void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, null, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
         }
 
         void OnNewOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -773,19 +797,19 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price)
+        void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, null, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
-        void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice)
+        void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, null, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
-        void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice)
+        void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, null, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void OnReplaceOrderResult(Client client, object data, ExecutionReport executionReport)
