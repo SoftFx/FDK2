@@ -4,7 +4,7 @@ namespace DataTradeExamples
     using System;
     using System.Threading;
     using TickTrader.FDK.Extended;
-    using TickTrader.FDK.Objects;
+    using TickTrader.FDK.Common;
 
     class GetTradeTransactionReportsExample : Example
     {

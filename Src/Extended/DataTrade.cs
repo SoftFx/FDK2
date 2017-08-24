@@ -2,7 +2,7 @@
 {
     using System;
     using System.Threading;
-    using Objects;
+    using Common;
     using OrderEntry;
 
     /// <summary>
@@ -671,7 +671,7 @@
         {
             try
             {
-                NotificationEventArgs<BalanceOperation> args = new NotificationEventArgs<Objects.BalanceOperation>();
+                NotificationEventArgs<BalanceOperation> args = new NotificationEventArgs<Common.BalanceOperation>();
                 args.Type = NotificationType.Balance;
                 args.Severity = NotificationSeverity.Information;
                 args.Data = balanceOperation;

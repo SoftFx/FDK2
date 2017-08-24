@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
 VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Objects", "Objects\Objects.csproj", "{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "Common\Common.csproj", "{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeed", "QuoteFeed\QuoteFeed.csproj", "{4C7583DA-30D2-4767-9198-04902691C677}"
 EndProject

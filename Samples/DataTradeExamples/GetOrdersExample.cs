@@ -2,7 +2,7 @@
 {
     using System;
     using TickTrader.FDK.Extended;
-    using TickTrader.FDK.Objects;
+    using TickTrader.FDK.Common;
 
     class GetOrdersExample : Example
     {

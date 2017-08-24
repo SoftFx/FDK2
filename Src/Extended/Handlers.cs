@@ -1,7 +1,7 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
-    using Objects;
+    using Common;
 
     /// <summary>
     /// The class contains common part of all SoftFX event arguments.

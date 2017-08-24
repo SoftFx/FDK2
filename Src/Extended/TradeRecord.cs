@@ -1,7 +1,7 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
-    using TickTrader.FDK.Objects;
+    using TickTrader.FDK.Common;
 
     /// <summary>
     /// Represents market, position or pending order.

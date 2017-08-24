@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using Objects;
+    using Common;
 
     /// <summary>
     /// The class contains methods, which are executed in client side.

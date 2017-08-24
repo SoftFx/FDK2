@@ -2,7 +2,7 @@
 {
     using System;
     using System.Threading;
-    using Objects;
+    using Common;
     using QuoteFeed;
 
     /// <summary>

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using SoftFX.Net.OrderEntry;
-using TickTrader.FDK.Objects;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.OrderEntry
 {
@@ -184,32 +184,32 @@ namespace TickTrader.FDK.OrderEntry
 
         #region Order Entry
                 
-        public delegate void TradeServerInfoResultDelegate(Client client, object data, TickTrader.FDK.Objects.TradeServerInfo info);
+        public delegate void TradeServerInfoResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeServerInfo info);
         public delegate void TradeServerInfoErrorDelegate(Client client, object data, string message);
-        public delegate void AccountInfoResultDelegate(Client client, object data, TickTrader.FDK.Objects.AccountInfo info);
+        public delegate void AccountInfoResultDelegate(Client client, object data, TickTrader.FDK.Common.AccountInfo info);
         public delegate void AccountInfoErrorDelegate(Client client, object data, string message);
-        public delegate void SessionInfoResultDelegate(Client client, object data, TickTrader.FDK.Objects.SessionInfo info);
+        public delegate void SessionInfoResultDelegate(Client client, object data, TickTrader.FDK.Common.SessionInfo info);
         public delegate void SessionInfoErrorDelegate(Client client, object data, string message);
-        public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport[] reports);
+        public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport[] reports);
         public delegate void OrdersErrorDelegate(Client client, object data, string message);
-        public delegate void PositionsResultDelegate(Client client, object data, TickTrader.FDK.Objects.Position[] positions);
+        public delegate void PositionsResultDelegate(Client client, object data, TickTrader.FDK.Common.Position[] positions);
         public delegate void PositionsErrorDelegate(Client client, object data, string message);
-        public delegate void NewOrderResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport report);
+        public delegate void NewOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void NewOrderErrorDelegate(Client client, object data, string message);
-        public delegate void ReplaceOrderResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport report);
+        public delegate void ReplaceOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ReplaceOrderErrorDelegate(Client client, object data, string message);
-        public delegate void CancelOrderResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport report);
+        public delegate void CancelOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void CancelOrderErrorDelegate(Client client, object data, string message);
-        public delegate void ClosePositionResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport report);
+        public delegate void ClosePositionResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionErrorDelegate(Client client, object data, string message);
-        public delegate void ClosePositionByResultDelegate(Client client, object data, TickTrader.FDK.Objects.ExecutionReport report);
+        public delegate void ClosePositionByResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionByErrorDelegate(Client client, object data, string message);
-        public delegate void ExecutionReportDelegate(Client client, TickTrader.FDK.Objects.ExecutionReport executionReport);
-        public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Objects.Position[] positions);
-        public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Objects.AccountInfo accountInfo);
+        public delegate void ExecutionReportDelegate(Client client, TickTrader.FDK.Common.ExecutionReport executionReport);
+        public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position[] positions);
+        public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Common.AccountInfo accountInfo);
         public delegate void SessionInfoUpdateDelegate(Client client, SessionInfo sessionInfo);
         public delegate void BalanceInfoUpdateDelegate(Client client, BalanceOperation balanceOperation);
-        public delegate void NotificationDelegate(Client client, TickTrader.FDK.Objects.Notification notification);
+        public delegate void NotificationDelegate(Client client, TickTrader.FDK.Common.Notification notification);
                 
         public event TradeServerInfoResultDelegate TradeServerInfoResultEvent;
         public event TradeServerInfoErrorDelegate TradeServerInfoErrorEvent;
@@ -238,12 +238,12 @@ namespace TickTrader.FDK.OrderEntry
         public event BalanceInfoUpdateDelegate BalanceInfoUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
-        public TickTrader.FDK.Objects.TradeServerInfo GetTradeServerInfo(int timeout)
+        public TickTrader.FDK.Common.TradeServerInfo GetTradeServerInfo(int timeout)
         {
             return ConvertToSync(GetTradeServerInfoAsync(null), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.TradeServerInfo> GetTradeServerInfoAsync(object data)
+        public Task<TickTrader.FDK.Common.TradeServerInfo> GetTradeServerInfoAsync(object data)
         {
             // Create a new async context
             var context = new TradeServerInfoAsyncContext();
@@ -262,12 +262,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.AccountInfo GetAccountInfo(int timeout)
+        public TickTrader.FDK.Common.AccountInfo GetAccountInfo(int timeout)
         {
             return ConvertToSync(GetAccountInfoAsync(null), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.AccountInfo> GetAccountInfoAsync(object data)
+        public Task<TickTrader.FDK.Common.AccountInfo> GetAccountInfoAsync(object data)
         {
             // Create a new async context
             var context = new AccountInfoAsyncContext();
@@ -286,12 +286,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.SessionInfo GetSessionInfo(int timeout)
+        public TickTrader.FDK.Common.SessionInfo GetSessionInfo(int timeout)
         {
             return ConvertToSync(GetSessionInfoAsync(null), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.SessionInfo> GetSessionInfoAsync(object data)
+        public Task<TickTrader.FDK.Common.SessionInfo> GetSessionInfoAsync(object data)
         {
             // Create a new async context
             var context = new SessionInfoAsyncContext();
@@ -308,12 +308,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] GetOrders(int timeout)
+        public TickTrader.FDK.Common.ExecutionReport[] GetOrders(int timeout)
         {
             return ConvertToSync(GetOrdersAsync(null), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> GetOrdersAsync(object data)
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> GetOrdersAsync(object data)
         {
             // Create a new async context
             var context = new OrdersAsyncContext();
@@ -331,12 +331,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.Position[] GetPositions(int timeout)
+        public TickTrader.FDK.Common.Position[] GetPositions(int timeout)
         {
             return ConvertToSync(GetPositionsAsync(null), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.Position[]> GetPositionsAsync(object data)
+        public Task<TickTrader.FDK.Common.Position[]> GetPositionsAsync(object data)
         {
             // Create a new async context
             var context = new PositionsAsyncContext();
@@ -354,17 +354,17 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] NewOrder
+        public TickTrader.FDK.Common.ExecutionReport[] NewOrder
         (
             string clientOrderId,
             string symbol,
-            TickTrader.FDK.Objects.OrderType type,
-            TickTrader.FDK.Objects.OrderSide side,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
             double qty,
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Objects.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -399,18 +399,18 @@ namespace TickTrader.FDK.OrderEntry
             );
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> NewOrderAsync
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> NewOrderAsync
         (
             object data,
             string clientOrderId,
             string symbol, 
-            TickTrader.FDK.Objects.OrderType type, 
-            TickTrader.FDK.Objects.OrderSide side,            
+            TickTrader.FDK.Common.OrderType type, 
+            TickTrader.FDK.Common.OrderSide side,            
             double qty, 
             double? maxVisibleQty, 
             double? price, 
             double? stopPrice,
-            TickTrader.FDK.Objects.OrderTimeInForce? time,      
+            TickTrader.FDK.Common.OrderTimeInForce? time,      
             DateTime? expireTime, 
             double? stopLoss, 
             double? takeProfit, 
@@ -456,19 +456,19 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] ReplaceOrder
+        public TickTrader.FDK.Common.ExecutionReport[] ReplaceOrder
         (
             string clientOrderId,
             string origClientOrderId,
             string orderId,
             string symbol,
-            TickTrader.FDK.Objects.OrderType type,
-            TickTrader.FDK.Objects.OrderSide side,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
             double qty,
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Objects.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -505,20 +505,20 @@ namespace TickTrader.FDK.OrderEntry
             );
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> ReplaceOrderAsync
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ReplaceOrderAsync
         (
             object data,
             string clientOrderId,
             string origClientOrderId,
             string orderId,
             string symbol, 
-            TickTrader.FDK.Objects.OrderType type, 
-            TickTrader.FDK.Objects.OrderSide side,            
+            TickTrader.FDK.Common.OrderType type, 
+            TickTrader.FDK.Common.OrderSide side,            
             double qty, 
             double? maxVisibleQty, 
             double? price, 
             double? stopPrice,       
-            TickTrader.FDK.Objects.OrderTimeInForce? time,      
+            TickTrader.FDK.Common.OrderTimeInForce? time,      
             DateTime? expireTime, 
             double? stopLoss, 
             double? takeProfit, 
@@ -573,12 +573,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] CancelOrder(string clientOrderId, string origClientOrderId, string orderId, int timeout)
+        public TickTrader.FDK.Common.ExecutionReport[] CancelOrder(string clientOrderId, string origClientOrderId, string orderId, int timeout)
         {
             return ConvertToSync(CancelOrderAsync(null, clientOrderId, origClientOrderId, orderId), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> CancelOrderAsync(object data, string clientOrderId, string origClientOrderId, string orderId)
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> CancelOrderAsync(object data, string clientOrderId, string origClientOrderId, string orderId)
         {
             // Create a new async context
             var context = new CancelOrderAsyncContext();
@@ -603,12 +603,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] ClosePosition(string clientOrderId, string orderId, double? qty, int timeout)
+        public TickTrader.FDK.Common.ExecutionReport[] ClosePosition(string clientOrderId, string orderId, double? qty, int timeout)
         {
             return ConvertToSync(ClosePositionAsync(null, clientOrderId, orderId, qty), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> ClosePositionAsync(object data, string clientOrderId, string orderId, double? qty)
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionAsync(object data, string clientOrderId, string orderId, double? qty)
         {
             // Create a new async context
             var context = new ClosePositionAsyncContext();
@@ -628,12 +628,12 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        public TickTrader.FDK.Objects.ExecutionReport[] ClosePositionBy(string clientOrderId, string orderId, string byOrderId, int timeout)
+        public TickTrader.FDK.Common.ExecutionReport[] ClosePositionBy(string clientOrderId, string orderId, string byOrderId, int timeout)
         {
             return ConvertToSync(ClosePositionByAsync(null, clientOrderId, orderId, byOrderId), timeout);
         }
 
-        public Task<TickTrader.FDK.Objects.ExecutionReport[]> ClosePositionByAsync(object data, string clientOrderId, string orderId, string byOrderId)
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionByAsync(object data, string clientOrderId, string orderId, string byOrderId)
         {
             // Create a new async context
             var context = new ClosePositionByAsyncContext();
@@ -653,26 +653,26 @@ namespace TickTrader.FDK.OrderEntry
             return context.Tcs.Task;
         }
 
-        SoftFX.Net.OrderEntry.OrderType Convert(TickTrader.FDK.Objects.OrderType type)
+        SoftFX.Net.OrderEntry.OrderType Convert(TickTrader.FDK.Common.OrderType type)
         {
             switch (type)
             {
-                case TickTrader.FDK.Objects.OrderType.Market:
+                case TickTrader.FDK.Common.OrderType.Market:
                     return SoftFX.Net.OrderEntry.OrderType.Market;
 
-                case TickTrader.FDK.Objects.OrderType.MarketWithSlippage:
+                case TickTrader.FDK.Common.OrderType.MarketWithSlippage:
                     return SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage;
 
-                case TickTrader.FDK.Objects.OrderType.Limit:
+                case TickTrader.FDK.Common.OrderType.Limit:
                     return SoftFX.Net.OrderEntry.OrderType.Limit;
 
-                case TickTrader.FDK.Objects.OrderType.Stop:
+                case TickTrader.FDK.Common.OrderType.Stop:
                     return SoftFX.Net.OrderEntry.OrderType.Stop;
 
-                case TickTrader.FDK.Objects.OrderType.Position:
+                case TickTrader.FDK.Common.OrderType.Position:
                     return SoftFX.Net.OrderEntry.OrderType.Position;
 
-                case TickTrader.FDK.Objects.OrderType.StopLimit:
+                case TickTrader.FDK.Common.OrderType.StopLimit:
                     return SoftFX.Net.OrderEntry.OrderType.StopLimit;
 
                 default:
@@ -680,14 +680,14 @@ namespace TickTrader.FDK.OrderEntry
             }
         }
 
-        SoftFX.Net.OrderEntry.OrderSide Convert(TickTrader.FDK.Objects.OrderSide side)
+        SoftFX.Net.OrderEntry.OrderSide Convert(TickTrader.FDK.Common.OrderSide side)
         {
             switch (side)
             {
-                case TickTrader.FDK.Objects.OrderSide.Buy:
+                case TickTrader.FDK.Common.OrderSide.Buy:
                     return SoftFX.Net.OrderEntry.OrderSide.Buy;
 
-                case TickTrader.FDK.Objects.OrderSide.Sell:
+                case TickTrader.FDK.Common.OrderSide.Sell:
                     return SoftFX.Net.OrderEntry.OrderSide.Sell;
 
                 default:
@@ -695,17 +695,17 @@ namespace TickTrader.FDK.OrderEntry
             }
         }
 
-        SoftFX.Net.OrderEntry.OrderTimeInForce Convert(TickTrader.FDK.Objects.OrderTimeInForce time)
+        SoftFX.Net.OrderEntry.OrderTimeInForce Convert(TickTrader.FDK.Common.OrderTimeInForce time)
         {
             switch (time)
             {
-                case TickTrader.FDK.Objects.OrderTimeInForce.GoodTillCancel:
+                case TickTrader.FDK.Common.OrderTimeInForce.GoodTillCancel:
                     return SoftFX.Net.OrderEntry.OrderTimeInForce.GoodTillCancel;
 
-                case TickTrader.FDK.Objects.OrderTimeInForce.ImmediateOrCancel:
+                case TickTrader.FDK.Common.OrderTimeInForce.ImmediateOrCancel:
                     return SoftFX.Net.OrderEntry.OrderTimeInForce.ImmediateOrCancel;
 
-                case TickTrader.FDK.Objects.OrderTimeInForce.GoodTillDate:
+                case TickTrader.FDK.Common.OrderTimeInForce.GoodTillDate:
                     return SoftFX.Net.OrderEntry.OrderTimeInForce.GoodTillDate;
 
                 default:
@@ -755,7 +755,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.AccountInfo> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.AccountInfo>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.AccountInfo> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.AccountInfo>();
         }
 
         private class SessionInfoAsyncContext : TradingSessionStatusRequestClientContext, IAsyncContext
@@ -764,7 +764,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.SessionInfo> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.SessionInfo>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.SessionInfo> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.SessionInfo>();
         }
 
         private class OrdersAsyncContext : OrderMassStatusRequestClientContext, IAsyncContext
@@ -773,7 +773,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
         }
 
         private class PositionsAsyncContext : PositionListRequestClientContext, IAsyncContext
@@ -782,7 +782,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.Position[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.Position[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.Position[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.Position[]>();
         }
 
         private class NewOrderAsyncContext : NewOrderSingleClientContext, IAsyncContext
@@ -791,9 +791,9 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
 
-            public List<TickTrader.FDK.Objects.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Objects.ExecutionReport>();
+            public List<TickTrader.FDK.Common.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Common.ExecutionReport>();
         }
 
         private class ReplaceOrderAsyncContext : OrderCancelReplaceRequestClientContext, IAsyncContext
@@ -802,9 +802,9 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
 
-            public List<TickTrader.FDK.Objects.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Objects.ExecutionReport>();
+            public List<TickTrader.FDK.Common.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Common.ExecutionReport>();
         }
 
         private class CancelOrderAsyncContext : OrderCancelRequestClientContext, IAsyncContext
@@ -813,9 +813,9 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
 
-            public List<TickTrader.FDK.Objects.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Objects.ExecutionReport>();
+            public List<TickTrader.FDK.Common.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Common.ExecutionReport>();
         }
 
         private class ClosePositionAsyncContext : ClosePositionRequestClientContext, IAsyncContext
@@ -824,9 +824,9 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
 
-            public List<TickTrader.FDK.Objects.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Objects.ExecutionReport>();
+            public List<TickTrader.FDK.Common.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Common.ExecutionReport>();
         }
 
         private class ClosePositionByAsyncContext : ClosePositionByRequestClientContext, IAsyncContext
@@ -835,9 +835,9 @@ namespace TickTrader.FDK.OrderEntry
 
             public void SetException(Exception ex) { Tcs.SetException(ex); }
 
-            public readonly TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Objects.ExecutionReport[]>();
+            public readonly TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> Tcs = new TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]>();
 
-            public List<TickTrader.FDK.Objects.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Objects.ExecutionReport>();
+            public List<TickTrader.FDK.Common.ExecutionReport> ExecutionReportList = new List<TickTrader.FDK.Common.ExecutionReport>();
         }
 
         #endregion
@@ -1179,7 +1179,7 @@ namespace TickTrader.FDK.OrderEntry
                     // on logout we don't throw
 
                     var result = new LogoutInfo();
-                    result.Reason = TickTrader.FDK.Objects.LogoutReason.Unknown;
+                    result.Reason = TickTrader.FDK.Common.LogoutReason.Unknown;
 
                     if (client_.LogoutResultEvent != null)
                     {
@@ -1202,7 +1202,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.TradeServerInfo resultTradeServerInfo = new TickTrader.FDK.Objects.TradeServerInfo();
+                    TickTrader.FDK.Common.TradeServerInfo resultTradeServerInfo = new TickTrader.FDK.Common.TradeServerInfo();
                     resultTradeServerInfo.CompanyName = message.CompanyName;
                     resultTradeServerInfo.CompanyFullName = message.CompanyFullName;
                     resultTradeServerInfo.CompanyDescription = message.CompanyDescription;
@@ -1290,7 +1290,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.AccountInfo resultAccountInfo = new TickTrader.FDK.Objects.AccountInfo();
+                    TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
                     SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
                     resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
@@ -1406,7 +1406,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.SessionInfo resultStatusInfo = new TickTrader.FDK.Objects.SessionInfo();
+                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                     SoftFX.Net.OrderEntry.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
                     resultStatusInfo.Status = Convert(reportStatusInfo.Status);
@@ -1513,7 +1513,7 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     SoftFX.Net.OrderEntry.OrderMassStatusEntryArray reportEntries = message.Entries;
                     int count = reportEntries.Length;
-                    TickTrader.FDK.Objects.ExecutionReport[] resultExecutionReports = new TickTrader.FDK.Objects.ExecutionReport[count];
+                    TickTrader.FDK.Common.ExecutionReport[] resultExecutionReports = new TickTrader.FDK.Common.ExecutionReport[count];
 
                     for (int index = 0; index < count; ++index)
                     {
@@ -1521,7 +1521,7 @@ namespace TickTrader.FDK.OrderEntry
                         SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = reportEntry.Attributes;
                         SoftFX.Net.OrderEntry.OrderState reportEntryState = reportEntry.State;
 
-                        TickTrader.FDK.Objects.ExecutionReport resultExecutionReport = new TickTrader.FDK.Objects.ExecutionReport();
+                        TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
                         resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
                         resultExecutionReport.OrigClientOrderId = reportEntry.OrigClOrdId;
                         resultExecutionReport.OrderId = reportEntry.OrderId.ToString();
@@ -1641,13 +1641,13 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     SoftFX.Net.OrderEntry.PositionArray reportPositions = message.Positions;
                     int count = reportPositions.Length;
-                    TickTrader.FDK.Objects.Position[] resultPositions = new TickTrader.FDK.Objects.Position[count];
+                    TickTrader.FDK.Common.Position[] resultPositions = new TickTrader.FDK.Common.Position[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         SoftFX.Net.OrderEntry.Position reportPosition = reportPositions[index];
 
-                        TickTrader.FDK.Objects.Position resultPosition = new TickTrader.FDK.Objects.Position();
+                        TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
                         resultPosition.Symbol = reportPosition.SymbolId;
                         resultPosition.SettlementPrice = reportPosition.SettltPrice;
                         resultPosition.BuyAmount = reportPosition.LongQty;
@@ -1736,7 +1736,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.NewOrderResultEvent != null)
                     {
@@ -1774,7 +1774,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.NewOrderResultEvent != null)
                     {
@@ -1813,7 +1813,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.NewOrderResultEvent != null)
                     {
@@ -1851,7 +1851,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.NewOrderResultEvent != null)
                     {
@@ -2007,7 +2007,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ReplaceOrderResultEvent != null)
                     {
@@ -2044,7 +2044,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ReplaceOrderResultEvent != null)
                     {
@@ -2161,7 +2161,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.CancelOrderResultEvent != null)
                     {
@@ -2199,7 +2199,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.CancelOrderResultEvent != null)
                     {
@@ -2316,7 +2316,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionResultEvent != null)
                     {
@@ -2354,7 +2354,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionResultEvent != null)
                     {
@@ -2392,7 +2392,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionResultEvent != null)
                     {
@@ -2431,7 +2431,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionResultEvent != null)
                     {
@@ -2626,7 +2626,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByResultEvent != null)
                     {
@@ -2664,7 +2664,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByResultEvent != null)
                     {
@@ -2702,7 +2702,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByResultEvent != null)
                     {
@@ -2741,7 +2741,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByResultEvent != null)
                     {
@@ -2779,7 +2779,7 @@ namespace TickTrader.FDK.OrderEntry
 
                 try
                 {
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByResultEvent != null)
                     {
@@ -2972,7 +2972,7 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {       
-                    TickTrader.FDK.Objects.ExecutionReport result = Convert(message);
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                                  
                     if (client_.ExecutionReportEvent != null)
                     {
@@ -2996,13 +2996,13 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     SoftFX.Net.OrderEntry.PositionArray reportPositions = message.Positions;
                     int count = reportPositions.Length;
-                    TickTrader.FDK.Objects.Position[] resultPositions = new TickTrader.FDK.Objects.Position[count];
+                    TickTrader.FDK.Common.Position[] resultPositions = new TickTrader.FDK.Common.Position[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         SoftFX.Net.OrderEntry.Position reportPosition = reportPositions[index];
 
-                        TickTrader.FDK.Objects.Position resultPosition = new TickTrader.FDK.Objects.Position();
+                        TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
                         resultPosition.Symbol = reportPosition.SymbolId;
                         resultPosition.SettlementPrice = reportPosition.SettltPrice;
                         resultPosition.BuyAmount = reportPosition.LongQty;
@@ -3036,7 +3036,7 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    TickTrader.FDK.Objects.AccountInfo resultAccountInfo = new TickTrader.FDK.Objects.AccountInfo();
+                    TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
                     SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
                     resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
@@ -3097,7 +3097,7 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    TickTrader.FDK.Objects.SessionInfo resultStatusInfo = new TickTrader.FDK.Objects.SessionInfo();
+                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                     SoftFX.Net.OrderEntry.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
                     resultStatusInfo.Status = Convert(reportStatusInfo.Status);
@@ -3147,7 +3147,7 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    TickTrader.FDK.Objects.BalanceOperation result = new TickTrader.FDK.Objects.BalanceOperation();
+                    TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
                     SoftFX.Net.OrderEntry.BalanceInfo updateBalanceInfo = update.BalanceInfo;
                     result.Balance = updateBalanceInfo.Balance.Value;
@@ -3174,7 +3174,7 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    TickTrader.FDK.Objects.Notification result = new TickTrader.FDK.Objects.Notification();
+                    TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
                     result.Id = message.Id;
                     result.Type = Convert(message.Type);
                     result.Severity = Convert(message.Severity);
@@ -3220,9 +3220,9 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            TickTrader.FDK.Objects.ExecutionReport Convert(SoftFX.Net.OrderEntry.ExecutionReport report)
+            TickTrader.FDK.Common.ExecutionReport Convert(SoftFX.Net.OrderEntry.ExecutionReport report)
             {
-                TickTrader.FDK.Objects.ExecutionReport result = new TickTrader.FDK.Objects.ExecutionReport();
+                TickTrader.FDK.Common.ExecutionReport result = new TickTrader.FDK.Common.ExecutionReport();
 
                 SoftFX.Net.OrderEntry.OrderAttributes reportAttributes = report.Attributes;
                 SoftFX.Net.OrderEntry.OrderState reportState = report.State;
@@ -3273,12 +3273,12 @@ namespace TickTrader.FDK.OrderEntry
 
                 SoftFX.Net.OrderEntry.ExecutionAssetArray reportAssets = report.Assets;
                 int count = reportAssets.Length;
-                TickTrader.FDK.Objects.AssetInfo[] resultAssets = new TickTrader.FDK.Objects.AssetInfo[count];
+                TickTrader.FDK.Common.AssetInfo[] resultAssets = new TickTrader.FDK.Common.AssetInfo[count];
 
                 for (int index = 0; index < count; ++ index)
                 {
                     SoftFX.Net.OrderEntry.ExecutionAsset reportAsset = reportAssets[index];
-                    TickTrader.FDK.Objects.AssetInfo resultAsset = new AssetInfo();
+                    TickTrader.FDK.Common.AssetInfo resultAsset = new AssetInfo();
 
                     resultAsset.Currency = reportAsset.CurrId;
                     resultAsset.Balance = reportAsset.Balance;
@@ -3294,330 +3294,330 @@ namespace TickTrader.FDK.OrderEntry
                 return result;
             }
 
-            TickTrader.FDK.Objects.LogoutReason Convert(SoftFX.Net.OrderEntry.LogoutReason reason)
+            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.OrderEntry.LogoutReason reason)
             {
                 switch (reason)
                 {
                     case SoftFX.Net.OrderEntry.LogoutReason.ClientLogout:
-                        return TickTrader.FDK.Objects.LogoutReason.ClientInitiated;
+                        return TickTrader.FDK.Common.LogoutReason.ClientInitiated;
 
                     case SoftFX.Net.OrderEntry.LogoutReason.ServerLogout:
-                        return TickTrader.FDK.Objects.LogoutReason.ServerLogout;
+                        return TickTrader.FDK.Common.LogoutReason.ServerLogout;
 
                     case SoftFX.Net.OrderEntry.LogoutReason.SlowConnection:
-                        return TickTrader.FDK.Objects.LogoutReason.SlowConnection;
+                        return TickTrader.FDK.Common.LogoutReason.SlowConnection;
 
                     case SoftFX.Net.OrderEntry.LogoutReason.DeletedLogin:
-                        return TickTrader.FDK.Objects.LogoutReason.LoginDeleted;
+                        return TickTrader.FDK.Common.LogoutReason.LoginDeleted;
 
                     case SoftFX.Net.OrderEntry.LogoutReason.InternalServerError:
-                        return TickTrader.FDK.Objects.LogoutReason.ServerError;
+                        return TickTrader.FDK.Common.LogoutReason.ServerError;
 
                     case SoftFX.Net.OrderEntry.LogoutReason.BlockedLogin:
-                        return TickTrader.FDK.Objects.LogoutReason.BlockedAccount;
+                        return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
                     default:
                         throw new Exception("Invalid logout reason : " + reason);
                 }
             }
 
-            TickTrader.FDK.Objects.AccountType Convert(SoftFX.Net.OrderEntry.AccountType type)
+            TickTrader.FDK.Common.AccountType Convert(SoftFX.Net.OrderEntry.AccountType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.AccountType.Gross:
-                        return TickTrader.FDK.Objects.AccountType.Gross;
+                        return TickTrader.FDK.Common.AccountType.Gross;
 
                     case SoftFX.Net.OrderEntry.AccountType.Net:
-                        return TickTrader.FDK.Objects.AccountType.Net;
+                        return TickTrader.FDK.Common.AccountType.Net;
 
                     case SoftFX.Net.OrderEntry.AccountType.Cash:
-                        return TickTrader.FDK.Objects.AccountType.Cash;
+                        return TickTrader.FDK.Common.AccountType.Cash;
 
                     default:
                         throw new Exception("Invalid account type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.SessionStatus Convert(SoftFX.Net.OrderEntry.TradingSessionStatus status)
+            TickTrader.FDK.Common.SessionStatus Convert(SoftFX.Net.OrderEntry.TradingSessionStatus status)
             {
                 switch (status)
                 {
                     case SoftFX.Net.OrderEntry.TradingSessionStatus.Close:
-                        return TickTrader.FDK.Objects.SessionStatus.Closed;
+                        return TickTrader.FDK.Common.SessionStatus.Closed;
 
                     case SoftFX.Net.OrderEntry.TradingSessionStatus.Open:
-                        return TickTrader.FDK.Objects.SessionStatus.Open;
+                        return TickTrader.FDK.Common.SessionStatus.Open;
 
                     default:
                         throw new Exception("Invalid trading session status : " + status);
                 }
             }
 
-            TickTrader.FDK.Objects.OrderStatus Convert(SoftFX.Net.OrderEntry.OrderStatus status)
+            TickTrader.FDK.Common.OrderStatus Convert(SoftFX.Net.OrderEntry.OrderStatus status)
             {
                 switch (status)
                 {
                     case SoftFX.Net.OrderEntry.OrderStatus.New:
-                        return TickTrader.FDK.Objects.OrderStatus.New;
+                        return TickTrader.FDK.Common.OrderStatus.New;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.PartiallyFilled:
-                        return TickTrader.FDK.Objects.OrderStatus.PartiallyFilled;
+                        return TickTrader.FDK.Common.OrderStatus.PartiallyFilled;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Filled:
-                        return TickTrader.FDK.Objects.OrderStatus.Filled;
+                        return TickTrader.FDK.Common.OrderStatus.Filled;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Cancelled:
-                        return TickTrader.FDK.Objects.OrderStatus.Canceled;
+                        return TickTrader.FDK.Common.OrderStatus.Canceled;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.PendingCancel:
-                        return TickTrader.FDK.Objects.OrderStatus.PendingCancel;
+                        return TickTrader.FDK.Common.OrderStatus.PendingCancel;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Rejected:
-                        return TickTrader.FDK.Objects.OrderStatus.Rejected;
+                        return TickTrader.FDK.Common.OrderStatus.Rejected;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Calculated:
-                        return TickTrader.FDK.Objects.OrderStatus.Calculated;
+                        return TickTrader.FDK.Common.OrderStatus.Calculated;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Expired:
-                        return TickTrader.FDK.Objects.OrderStatus.Expired;
+                        return TickTrader.FDK.Common.OrderStatus.Expired;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.PendingReplace:
-                        return TickTrader.FDK.Objects.OrderStatus.PendingReplace;
+                        return TickTrader.FDK.Common.OrderStatus.PendingReplace;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.PendingClose:
-                        return TickTrader.FDK.Objects.OrderStatus.PendingClose;
+                        return TickTrader.FDK.Common.OrderStatus.PendingClose;
 
                     case SoftFX.Net.OrderEntry.OrderStatus.Activated:
-                        return TickTrader.FDK.Objects.OrderStatus.Activated;
+                        return TickTrader.FDK.Common.OrderStatus.Activated;
 
                     default:
                         throw new Exception("Invalid order status : " + status);
                 }
             }
 
-            TickTrader.FDK.Objects.OrderType Convert(SoftFX.Net.OrderEntry.OrderType type)
+            TickTrader.FDK.Common.OrderType Convert(SoftFX.Net.OrderEntry.OrderType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.OrderType.Market:
-                        return TickTrader.FDK.Objects.OrderType.Market;
+                        return TickTrader.FDK.Common.OrderType.Market;
 
                     case SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Objects.OrderType.MarketWithSlippage;
+                        return TickTrader.FDK.Common.OrderType.MarketWithSlippage;
 
                     case SoftFX.Net.OrderEntry.OrderType.Limit:
-                        return TickTrader.FDK.Objects.OrderType.Limit;
+                        return TickTrader.FDK.Common.OrderType.Limit;
 
                     case SoftFX.Net.OrderEntry.OrderType.Stop:
-                        return TickTrader.FDK.Objects.OrderType.Stop;
+                        return TickTrader.FDK.Common.OrderType.Stop;
 
                     case SoftFX.Net.OrderEntry.OrderType.Position:
-                        return TickTrader.FDK.Objects.OrderType.Position;
+                        return TickTrader.FDK.Common.OrderType.Position;
 
                     case SoftFX.Net.OrderEntry.OrderType.StopLimit:
-                        return TickTrader.FDK.Objects.OrderType.StopLimit;
+                        return TickTrader.FDK.Common.OrderType.StopLimit;
 
                     default:
                         throw new Exception("Invalid order type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.OrderSide Convert(SoftFX.Net.OrderEntry.OrderSide side)
+            TickTrader.FDK.Common.OrderSide Convert(SoftFX.Net.OrderEntry.OrderSide side)
             {
                 switch (side)
                 {
                     case SoftFX.Net.OrderEntry.OrderSide.Buy:
-                        return TickTrader.FDK.Objects.OrderSide.Buy;
+                        return TickTrader.FDK.Common.OrderSide.Buy;
 
                     case SoftFX.Net.OrderEntry.OrderSide.Sell:
-                        return TickTrader.FDK.Objects.OrderSide.Sell;
+                        return TickTrader.FDK.Common.OrderSide.Sell;
 
                     default:
                         throw new Exception("Invalid order side : " + side);
                 }
             }
 
-            TickTrader.FDK.Objects.OrderTimeInForce Convert(SoftFX.Net.OrderEntry.OrderTimeInForce timeInForce)
+            TickTrader.FDK.Common.OrderTimeInForce Convert(SoftFX.Net.OrderEntry.OrderTimeInForce timeInForce)
             {
                 switch (timeInForce)
                 {
                     case SoftFX.Net.OrderEntry.OrderTimeInForce.GoodTillCancel:
-                        return TickTrader.FDK.Objects.OrderTimeInForce.GoodTillCancel;
+                        return TickTrader.FDK.Common.OrderTimeInForce.GoodTillCancel;
 
                     case SoftFX.Net.OrderEntry.OrderTimeInForce.ImmediateOrCancel:
-                        return TickTrader.FDK.Objects.OrderTimeInForce.ImmediateOrCancel;
+                        return TickTrader.FDK.Common.OrderTimeInForce.ImmediateOrCancel;
 
                     case SoftFX.Net.OrderEntry.OrderTimeInForce.GoodTillDate:
-                        return TickTrader.FDK.Objects.OrderTimeInForce.GoodTillDate;
+                        return TickTrader.FDK.Common.OrderTimeInForce.GoodTillDate;
 
                     default:
                         throw new Exception("Invalid order time in force : " + timeInForce);
                 }
             }
 
-            TickTrader.FDK.Objects.ExecutionType Convert(SoftFX.Net.OrderEntry.ExecType type)
+            TickTrader.FDK.Common.ExecutionType Convert(SoftFX.Net.OrderEntry.ExecType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.ExecType.New:
-                        return TickTrader.FDK.Objects.ExecutionType.New;
+                        return TickTrader.FDK.Common.ExecutionType.New;
 
                     case SoftFX.Net.OrderEntry.ExecType.Trade:
-                        return TickTrader.FDK.Objects.ExecutionType.Trade;
+                        return TickTrader.FDK.Common.ExecutionType.Trade;
 
                     case SoftFX.Net.OrderEntry.ExecType.Cancelled:
-                        return TickTrader.FDK.Objects.ExecutionType.Canceled;
+                        return TickTrader.FDK.Common.ExecutionType.Canceled;
 
                     case SoftFX.Net.OrderEntry.ExecType.PendingCancel:
-                        return TickTrader.FDK.Objects.ExecutionType.PendingCancel;
+                        return TickTrader.FDK.Common.ExecutionType.PendingCancel;
 
                     case SoftFX.Net.OrderEntry.ExecType.Rejected:
-                        return TickTrader.FDK.Objects.ExecutionType.Rejected;
+                        return TickTrader.FDK.Common.ExecutionType.Rejected;
 
                     case SoftFX.Net.OrderEntry.ExecType.Calculated:
-                        return TickTrader.FDK.Objects.ExecutionType.Calculated;
+                        return TickTrader.FDK.Common.ExecutionType.Calculated;
 
                     case SoftFX.Net.OrderEntry.ExecType.Expired:
-                        return TickTrader.FDK.Objects.ExecutionType.Expired;
+                        return TickTrader.FDK.Common.ExecutionType.Expired;
 
                     case SoftFX.Net.OrderEntry.ExecType.Replaced:
-                        return TickTrader.FDK.Objects.ExecutionType.Replace;
+                        return TickTrader.FDK.Common.ExecutionType.Replace;
 
                     case SoftFX.Net.OrderEntry.ExecType.PendingReplace:
-                        return TickTrader.FDK.Objects.ExecutionType.PendingReplace;
+                        return TickTrader.FDK.Common.ExecutionType.PendingReplace;
 
                     case SoftFX.Net.OrderEntry.ExecType.PendingClose:
-                        return TickTrader.FDK.Objects.ExecutionType.PendingClose;
+                        return TickTrader.FDK.Common.ExecutionType.PendingClose;
 
                     default:
                         throw new Exception("Invalid exec type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.RejectReason Convert(SoftFX.Net.OrderEntry.OrderRejectReason reason)
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.OrderRejectReason reason)
             {
                 switch (reason)
                 {
                     case SoftFX.Net.OrderEntry.OrderRejectReason.Dealer:
-                        return TickTrader.FDK.Objects.RejectReason.DealerReject;
+                        return TickTrader.FDK.Common.RejectReason.DealerReject;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.DealerTimeout:
-                        return TickTrader.FDK.Objects.RejectReason.DealerReject;
+                        return TickTrader.FDK.Common.RejectReason.DealerReject;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.UnknownSymbol:
-                        return TickTrader.FDK.Objects.RejectReason.UnknownSymbol;
+                        return TickTrader.FDK.Common.RejectReason.UnknownSymbol;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.LimitsExceeded:
-                        return TickTrader.FDK.Objects.RejectReason.OrderExceedsLImit;
+                        return TickTrader.FDK.Common.RejectReason.OrderExceedsLImit;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.OffQuotes:
-                        return TickTrader.FDK.Objects.RejectReason.OffQuotes;
+                        return TickTrader.FDK.Common.RejectReason.OffQuotes;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.UnknownOrder:
-                        return TickTrader.FDK.Objects.RejectReason.UnknownOrder;
+                        return TickTrader.FDK.Common.RejectReason.UnknownOrder;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.DuplicateOrder:
-                        return TickTrader.FDK.Objects.RejectReason.DuplicateClientOrderId;
+                        return TickTrader.FDK.Common.RejectReason.DuplicateClientOrderId;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.IncorrectCharacteristics:
-                        return TickTrader.FDK.Objects.RejectReason.InvalidTradeRecordParameters;
+                        return TickTrader.FDK.Common.RejectReason.InvalidTradeRecordParameters;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.IncorrectQty:
-                        return TickTrader.FDK.Objects.RejectReason.IncorrectQuantity;
+                        return TickTrader.FDK.Common.RejectReason.IncorrectQuantity;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.TooLate:
-                        return TickTrader.FDK.Objects.RejectReason.Other;
+                        return TickTrader.FDK.Common.RejectReason.Other;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.InternalServerError:
-                        return TickTrader.FDK.Objects.RejectReason.Other;
+                        return TickTrader.FDK.Common.RejectReason.Other;
 
                     case SoftFX.Net.OrderEntry.OrderRejectReason.Other:
-                        return TickTrader.FDK.Objects.RejectReason.Other;
+                        return TickTrader.FDK.Common.RejectReason.Other;
 
                     default:
                         throw new Exception("Invalid order reject reason : " + reason);
                 }
             }
 
-            TickTrader.FDK.Objects.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.OrderEntry.OrderType type, SoftFX.Net.OrderEntry.OrderTimeInForce? timeInForce)
+            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.OrderEntry.OrderType type, SoftFX.Net.OrderEntry.OrderTimeInForce? timeInForce)
             {
                 if (timeInForce == SoftFX.Net.OrderEntry.OrderTimeInForce.ImmediateOrCancel)
-                    return TickTrader.FDK.Objects.TradeRecordType.IoC;
+                    return TickTrader.FDK.Common.TradeRecordType.IoC;
 
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.OrderType.Market:
-                        return TickTrader.FDK.Objects.TradeRecordType.Market;
+                        return TickTrader.FDK.Common.TradeRecordType.Market;
 
                     case SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Objects.TradeRecordType.MarketWithSlippage;
+                        return TickTrader.FDK.Common.TradeRecordType.MarketWithSlippage;
 
                     case SoftFX.Net.OrderEntry.OrderType.Limit:
-                        return TickTrader.FDK.Objects.TradeRecordType.Limit;
+                        return TickTrader.FDK.Common.TradeRecordType.Limit;
 
                     case SoftFX.Net.OrderEntry.OrderType.Stop:
-                        return TickTrader.FDK.Objects.TradeRecordType.Stop;
+                        return TickTrader.FDK.Common.TradeRecordType.Stop;
 
                     case SoftFX.Net.OrderEntry.OrderType.Position:
-                        return TickTrader.FDK.Objects.TradeRecordType.Position;
+                        return TickTrader.FDK.Common.TradeRecordType.Position;
 
                     case SoftFX.Net.OrderEntry.OrderType.StopLimit:
-                        return TickTrader.FDK.Objects.TradeRecordType.StopLimit;
+                        return TickTrader.FDK.Common.TradeRecordType.StopLimit;
 
                     default:
                         throw new Exception("Invalid order type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.TradeRecordSide ConvertToTradeRecordSide(SoftFX.Net.OrderEntry.OrderSide side)
+            TickTrader.FDK.Common.TradeRecordSide ConvertToTradeRecordSide(SoftFX.Net.OrderEntry.OrderSide side)
             {
                 switch (side)
                 {
                     case SoftFX.Net.OrderEntry.OrderSide.Buy:
-                        return TickTrader.FDK.Objects.TradeRecordSide.Buy;
+                        return TickTrader.FDK.Common.TradeRecordSide.Buy;
 
                     case SoftFX.Net.OrderEntry.OrderSide.Sell:
-                        return TickTrader.FDK.Objects.TradeRecordSide.Sell;
+                        return TickTrader.FDK.Common.TradeRecordSide.Sell;
 
                     default:
                         throw new Exception("Invalid order side : " + side);
                 }
             }
 
-            TickTrader.FDK.Objects.NotificationType Convert(SoftFX.Net.OrderEntry.NotificationType type)
+            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.OrderEntry.NotificationType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.NotificationType.MarginCall:
-                        return TickTrader.FDK.Objects.NotificationType.MarginCall;
+                        return TickTrader.FDK.Common.NotificationType.MarginCall;
 
                     case SoftFX.Net.OrderEntry.NotificationType.MarginCallRevocation:
-                        return TickTrader.FDK.Objects.NotificationType.MarginCallRevocation;
+                        return TickTrader.FDK.Common.NotificationType.MarginCallRevocation;
 
                     case SoftFX.Net.OrderEntry.NotificationType.StopOut:
-                        return TickTrader.FDK.Objects.NotificationType.StopOut;
+                        return TickTrader.FDK.Common.NotificationType.StopOut;
 
                     case SoftFX.Net.OrderEntry.NotificationType.ConfigUpdate:
-                        return TickTrader.FDK.Objects.NotificationType.ConfigUpdated;
+                        return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
                     default:
                         throw new Exception("Invalid notification type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.NotificationSeverity Convert(SoftFX.Net.OrderEntry.NotificationSeverity severity)
+            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.OrderEntry.NotificationSeverity severity)
             {
                 switch (severity)
                 {
                     case SoftFX.Net.OrderEntry.NotificationSeverity.Info:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Information;
+                        return TickTrader.FDK.Common.NotificationSeverity.Information;
 
                     case SoftFX.Net.OrderEntry.NotificationSeverity.Warning:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Warning;
+                        return TickTrader.FDK.Common.NotificationSeverity.Warning;
 
                     case SoftFX.Net.OrderEntry.NotificationSeverity.Error:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Error;
+                        return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
                         throw new Exception("Invalid notification severity : " + severity);

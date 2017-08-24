@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using System.Threading.Tasks;
 using SoftFX.Net.QuoteFeed;
-using TickTrader.FDK.Objects;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.QuoteFeed
 {
@@ -202,7 +202,7 @@ namespace TickTrader.FDK.QuoteFeed
         public delegate void QuotesBeginDelegate(Client client, Quote[] quotes);
         public delegate void QuotesEndDelegate(Client client, string[] symbolIds);
         public delegate void QuoteUpdateDelegate(Client client, Quote quote);        
-        public delegate void NotificationDelegate(Client client, Objects.Notification notification);
+        public delegate void NotificationDelegate(Client client, Common.Notification notification);
 
         public event CurrencyListResultDelegate CurrencyListResultEvent;
         public event CurrencyListErrorDelegate CurrencyListErrorEvent;
@@ -811,7 +811,7 @@ namespace TickTrader.FDK.QuoteFeed
                     // on logout we don't throw
 
                     var result = new LogoutInfo();
-                    result.Reason = TickTrader.FDK.Objects.LogoutReason.Unknown;
+                    result.Reason = TickTrader.FDK.Common.LogoutReason.Unknown;
 
                     if (client_.LogoutResultEvent != null)
                     {
@@ -836,12 +836,12 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     CurrencyArray reportCurrencies = message.Currencies;
                     int count = reportCurrencies.Length;
-                    TickTrader.FDK.Objects.CurrencyInfo[] resultCurrencies = new TickTrader.FDK.Objects.CurrencyInfo[count];
+                    TickTrader.FDK.Common.CurrencyInfo[] resultCurrencies = new TickTrader.FDK.Common.CurrencyInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         Currency reportCurrency = reportCurrencies[index];
-                        TickTrader.FDK.Objects.CurrencyInfo resultCurrency = new TickTrader.FDK.Objects.CurrencyInfo();
+                        TickTrader.FDK.Common.CurrencyInfo resultCurrency = new TickTrader.FDK.Common.CurrencyInfo();
 
                         resultCurrency.Name = reportCurrency.Id;
                         resultCurrency.Description = reportCurrency.Description;
@@ -928,12 +928,12 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     SymbolArray reportSymbols = message.Symbols;
                     int count = reportSymbols.Length;
-                    TickTrader.FDK.Objects.SymbolInfo[] resultSymbols = new TickTrader.FDK.Objects.SymbolInfo[count];
+                    TickTrader.FDK.Common.SymbolInfo[] resultSymbols = new TickTrader.FDK.Common.SymbolInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         Symbol reportSymbol = reportSymbols[index];
-                        TickTrader.FDK.Objects.SymbolInfo resultSymbol = new TickTrader.FDK.Objects.SymbolInfo();
+                        TickTrader.FDK.Common.SymbolInfo resultSymbol = new TickTrader.FDK.Common.SymbolInfo();
 
                         resultSymbol.Name = reportSymbol.Id;
                         resultSymbol.Currency = reportSymbol.CurrencyId;
@@ -1048,7 +1048,7 @@ namespace TickTrader.FDK.QuoteFeed
 
                 try
                 {
-                    TickTrader.FDK.Objects.SessionInfo resultStatusInfo = new TickTrader.FDK.Objects.SessionInfo();
+                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                     SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
                     resultStatusInfo.Status = Convert(reportStatusInfo.Status);
@@ -1059,12 +1059,12 @@ namespace TickTrader.FDK.QuoteFeed
 
                     TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                     int count = reportGroups.Length;
-                    TickTrader.FDK.Objects.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Objects.StatusGroupInfo[count];
+                    TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         TradingSessionStatusGroup reportGroup = reportGroups[index];
-                        TickTrader.FDK.Objects.StatusGroupInfo resultGroup = new TickTrader.FDK.Objects.StatusGroupInfo();
+                        TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
 
                         resultGroup.StatusGroupId = reportGroup.Id;
                         resultGroup.Status = Convert(reportGroup.Status);
@@ -1159,21 +1159,21 @@ namespace TickTrader.FDK.QuoteFeed
                     {
                         MarketDataSnapshotArray reportSnapshots = message.Snapshots;
                         int count = reportSnapshots.Length;
-                        TickTrader.FDK.Objects.Quote[] resultQuotes = new TickTrader.FDK.Objects.Quote[count];
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
 
                         for (int index = 0; index < count; ++index)
                         {
                             MarketDataSnapshot reportSnapshot = reportSnapshots[index];
 
-                            TickTrader.FDK.Objects.Quote resultQuote = new TickTrader.FDK.Objects.Quote();
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
                             resultQuote.Symbol = reportSnapshot.SymbolId;
                             resultQuote.Id = reportSnapshot.Id;
                             resultQuote.CreatingTime = reportSnapshot.OrigTime;
 
                             MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
                             int count2 = reportSnapshotEntries.Length;
-                            TickTrader.FDK.Objects.QuoteEntry[] bidEntries = new TickTrader.FDK.Objects.QuoteEntry[reportSnapshot.BidCount];
-                            TickTrader.FDK.Objects.QuoteEntry[] askEntries = new TickTrader.FDK.Objects.QuoteEntry[reportSnapshot.AskCount];
+                            TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[reportSnapshot.BidCount];
+                            TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[reportSnapshot.AskCount];
                             
                             int bidIndex = bidEntries.Length - 1;
                             int askIndex = 0;
@@ -1181,7 +1181,7 @@ namespace TickTrader.FDK.QuoteFeed
                             for (int index2 = 0; index2 < count2; ++ index2)
                             {
                                 MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-                                TickTrader.FDK.Objects.QuoteEntry quoteEntry = new TickTrader.FDK.Objects.QuoteEntry();
+                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
 
                                 quoteEntry.Volume = reportSnapshotEntry.Size;
                                 quoteEntry.Price = reportSnapshotEntry.Price;
@@ -1298,13 +1298,13 @@ namespace TickTrader.FDK.QuoteFeed
                     {
                         MarketDataSnapshotArray reportSnapshots = message.Snapshots;
                         int count = reportSnapshots.Length;
-                        TickTrader.FDK.Objects.Quote[] resultQuotes = new TickTrader.FDK.Objects.Quote[count];
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
 
                         for (int index = 0; index < count; ++ index)
                         {
                             MarketDataSnapshot reportSnapshot = reportSnapshots[index];
 
-                            TickTrader.FDK.Objects.Quote resultQuote = new TickTrader.FDK.Objects.Quote();
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
                             resultQuote.Symbol = reportSnapshot.SymbolId;
                             resultQuote.Id = reportSnapshot.Id;
                             resultQuote.CreatingTime = reportSnapshot.OrigTime;
@@ -1313,8 +1313,8 @@ namespace TickTrader.FDK.QuoteFeed
                             int count2 = reportSnapshotEntries.Length;
                             int bidCount = reportSnapshot.BidCount;
                             int askCount = reportSnapshot.AskCount;
-                            TickTrader.FDK.Objects.QuoteEntry[] bidEntries = new TickTrader.FDK.Objects.QuoteEntry[bidCount];
-                            TickTrader.FDK.Objects.QuoteEntry[] askEntries = new TickTrader.FDK.Objects.QuoteEntry[askCount];
+                            TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[bidCount];
+                            TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[askCount];
 
                             int bidIndex = bidEntries.Length - 1;
                             int askIndex = 0;
@@ -1322,7 +1322,7 @@ namespace TickTrader.FDK.QuoteFeed
                             for (int index2 = 0; index2 < count2; ++ index2)
                             {
                                 MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-                                TickTrader.FDK.Objects.QuoteEntry quoteEntry = new TickTrader.FDK.Objects.QuoteEntry();
+                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
 
                                 quoteEntry.Volume = reportSnapshotEntry.Size;
                                 quoteEntry.Price = reportSnapshotEntry.Price;
@@ -1439,7 +1439,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
                 try
                 {
-                    TickTrader.FDK.Objects.SessionInfo resultStatusInfo = new TickTrader.FDK.Objects.SessionInfo();
+                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                     SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
                     resultStatusInfo.Status = Convert(reportStatusInfo.Status);
@@ -1450,12 +1450,12 @@ namespace TickTrader.FDK.QuoteFeed
 
                     TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                     int count = reportGroups.Length;
-                    TickTrader.FDK.Objects.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Objects.StatusGroupInfo[count];
+                    TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
                         TradingSessionStatusGroup reportGroup = reportGroups[index];
-                        TickTrader.FDK.Objects.StatusGroupInfo resultGroup = new TickTrader.FDK.Objects.StatusGroupInfo();
+                        TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
 
                         resultGroup.StatusGroupId = reportGroup.Id;
                         resultGroup.Status = Convert(reportGroup.Status);
@@ -1492,15 +1492,15 @@ namespace TickTrader.FDK.QuoteFeed
                     MarketDataSnapshot snapshot = message.Snapshot;
 
                     // TODO: optimize
-                    TickTrader.FDK.Objects.Quote quote = new TickTrader.FDK.Objects.Quote();
+                    TickTrader.FDK.Common.Quote quote = new TickTrader.FDK.Common.Quote();
                     quote.Symbol = snapshot.SymbolId;
                     quote.Id = snapshot.Id;
                     quote.CreatingTime = snapshot.OrigTime;
 
                     MarketDataEntryArray snapshotEntries = snapshot.Entries;
                     int count = snapshotEntries.Length;
-                    TickTrader.FDK.Objects.QuoteEntry[] bidEntries = new TickTrader.FDK.Objects.QuoteEntry[snapshot.BidCount];
-                    TickTrader.FDK.Objects.QuoteEntry[] askEntries = new TickTrader.FDK.Objects.QuoteEntry[snapshot.AskCount];
+                    TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[snapshot.BidCount];
+                    TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[snapshot.AskCount];
                             
                     int bidIndex = bidEntries.Length - 1;
                     int askIndex = 0;
@@ -1509,7 +1509,7 @@ namespace TickTrader.FDK.QuoteFeed
                     {
                         MarketDataEntry snapshotEntry = snapshotEntries[index];
                         // TODO: optimize
-                        TickTrader.FDK.Objects.QuoteEntry quoteEntry = new TickTrader.FDK.Objects.QuoteEntry();
+                        TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
 
                         quoteEntry.Volume = snapshotEntry.Size;
                         quoteEntry.Price = snapshotEntry.Price;
@@ -1545,7 +1545,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
                 try
                 {
-                    TickTrader.FDK.Objects.Notification result = new TickTrader.FDK.Objects.Notification();
+                    TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
                     result.Id = message.Id;
                     result.Type = Convert(message.Type);
                     result.Severity = Convert(message.Severity);
@@ -1567,168 +1567,168 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Objects.LogoutReason Convert(SoftFX.Net.QuoteFeed.LogoutReason reason)
+            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.QuoteFeed.LogoutReason reason)
             {
                 switch (reason)
                 {
                     case SoftFX.Net.QuoteFeed.LogoutReason.ClientLogout:
-                        return TickTrader.FDK.Objects.LogoutReason.ClientInitiated;
+                        return TickTrader.FDK.Common.LogoutReason.ClientInitiated;
 
                     case SoftFX.Net.QuoteFeed.LogoutReason.ServerLogout:
-                        return TickTrader.FDK.Objects.LogoutReason.ServerLogout;
+                        return TickTrader.FDK.Common.LogoutReason.ServerLogout;
 
                     case SoftFX.Net.QuoteFeed.LogoutReason.SlowConnection:
-                        return TickTrader.FDK.Objects.LogoutReason.SlowConnection;
+                        return TickTrader.FDK.Common.LogoutReason.SlowConnection;
 
                     case SoftFX.Net.QuoteFeed.LogoutReason.DeletedLogin:
-                        return TickTrader.FDK.Objects.LogoutReason.LoginDeleted;
+                        return TickTrader.FDK.Common.LogoutReason.LoginDeleted;
 
                     case SoftFX.Net.QuoteFeed.LogoutReason.InternalServerError:
-                        return TickTrader.FDK.Objects.LogoutReason.ServerError;
+                        return TickTrader.FDK.Common.LogoutReason.ServerError;
 
                     case SoftFX.Net.QuoteFeed.LogoutReason.BlockedLogin:
-                        return TickTrader.FDK.Objects.LogoutReason.BlockedAccount;
+                        return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
                     default:
                         throw new Exception("Invalid logout reason : " + reason);
                 }
             }
 
-            TickTrader.FDK.Objects.MarginCalcMode Convert(SoftFX.Net.QuoteFeed.CalcMode mode)
+            TickTrader.FDK.Common.MarginCalcMode Convert(SoftFX.Net.QuoteFeed.CalcMode mode)
             {
                 switch (mode)
                 {
                     case SoftFX.Net.QuoteFeed.CalcMode.Forex:
-                        return TickTrader.FDK.Objects.MarginCalcMode.Forex;
+                        return TickTrader.FDK.Common.MarginCalcMode.Forex;
 
                     case SoftFX.Net.QuoteFeed.CalcMode.Cfd:
-                        return TickTrader.FDK.Objects.MarginCalcMode.Cfd;
+                        return TickTrader.FDK.Common.MarginCalcMode.Cfd;
 
                     case SoftFX.Net.QuoteFeed.CalcMode.Futures:
-                        return TickTrader.FDK.Objects.MarginCalcMode.Futures;
+                        return TickTrader.FDK.Common.MarginCalcMode.Futures;
 
                     case SoftFX.Net.QuoteFeed.CalcMode.CfdIndex:
-                        return TickTrader.FDK.Objects.MarginCalcMode.CfdIndex;
+                        return TickTrader.FDK.Common.MarginCalcMode.CfdIndex;
 
                     case SoftFX.Net.QuoteFeed.CalcMode.CfdLeverage:
-                        return TickTrader.FDK.Objects.MarginCalcMode.CfdLeverage;
+                        return TickTrader.FDK.Common.MarginCalcMode.CfdLeverage;
 
                     default:
                         throw new Exception("Invalid calculation mode : " + mode);
                 }
             }
 
-            TickTrader.FDK.Objects.ProfitCalcMode Convert(SoftFX.Net.QuoteFeed.SettlCalcMode mode)
+            TickTrader.FDK.Common.ProfitCalcMode Convert(SoftFX.Net.QuoteFeed.SettlCalcMode mode)
             {
                 switch (mode)
                 {
                     case SoftFX.Net.QuoteFeed.SettlCalcMode.Forex:
-                        return TickTrader.FDK.Objects.ProfitCalcMode.Forex;
+                        return TickTrader.FDK.Common.ProfitCalcMode.Forex;
 
                     case SoftFX.Net.QuoteFeed.SettlCalcMode.Cfd:
-                        return TickTrader.FDK.Objects.ProfitCalcMode.Cfd;
+                        return TickTrader.FDK.Common.ProfitCalcMode.Cfd;
 
                     case SoftFX.Net.QuoteFeed.SettlCalcMode.Futures:
-                        return TickTrader.FDK.Objects.ProfitCalcMode.Futures;
+                        return TickTrader.FDK.Common.ProfitCalcMode.Futures;
 
                     case SoftFX.Net.QuoteFeed.SettlCalcMode.CfdIndex:
-                        return TickTrader.FDK.Objects.ProfitCalcMode.CfdIndex;
+                        return TickTrader.FDK.Common.ProfitCalcMode.CfdIndex;
 
                     case SoftFX.Net.QuoteFeed.SettlCalcMode.CfdLeverage:
-                        return TickTrader.FDK.Objects.ProfitCalcMode.CfdLeverage;
+                        return TickTrader.FDK.Common.ProfitCalcMode.CfdLeverage;
 
                     default:
                         throw new Exception("Invalid calculation mode : " + mode);
                 }
             }
 
-            TickTrader.FDK.Objects.CommissionType Convert(SoftFX.Net.QuoteFeed.CommissionType type)
+            TickTrader.FDK.Common.CommissionType Convert(SoftFX.Net.QuoteFeed.CommissionType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.QuoteFeed.CommissionType.Money:
-                        return TickTrader.FDK.Objects.CommissionType.Absolute;
+                        return TickTrader.FDK.Common.CommissionType.Absolute;
 
                     case SoftFX.Net.QuoteFeed.CommissionType.Points:
-                        return TickTrader.FDK.Objects.CommissionType.PerUnit;
+                        return TickTrader.FDK.Common.CommissionType.PerUnit;
 
                     case SoftFX.Net.QuoteFeed.CommissionType.Percentage:
-                        return TickTrader.FDK.Objects.CommissionType.Percent;
+                        return TickTrader.FDK.Common.CommissionType.Percent;
 
                     default:
                         throw new Exception("Invalid commission type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.CommissionChargeType Convert(SoftFX.Net.QuoteFeed.CommissionChargeType type)
+            TickTrader.FDK.Common.CommissionChargeType Convert(SoftFX.Net.QuoteFeed.CommissionChargeType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.QuoteFeed.CommissionChargeType.PerLot:
-                        return TickTrader.FDK.Objects.CommissionChargeType.PerLot;
+                        return TickTrader.FDK.Common.CommissionChargeType.PerLot;
 
                     case SoftFX.Net.QuoteFeed.CommissionChargeType.PerDeal:
-                        return TickTrader.FDK.Objects.CommissionChargeType.PerTrade;
+                        return TickTrader.FDK.Common.CommissionChargeType.PerTrade;
 
                     default:
                         throw new Exception("Invalid commission charge type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.CommissionChargeMethod Convert(SoftFX.Net.QuoteFeed.CommissionChargeMethod method)
+            TickTrader.FDK.Common.CommissionChargeMethod Convert(SoftFX.Net.QuoteFeed.CommissionChargeMethod method)
             {
                 switch (method)
                 {
                     case SoftFX.Net.QuoteFeed.CommissionChargeMethod.OneWay:
-                        return TickTrader.FDK.Objects.CommissionChargeMethod.OneWay;
+                        return TickTrader.FDK.Common.CommissionChargeMethod.OneWay;
 
                     case SoftFX.Net.QuoteFeed.CommissionChargeMethod.RoundTurn:
-                        return TickTrader.FDK.Objects.CommissionChargeMethod.RoundTurn;
+                        return TickTrader.FDK.Common.CommissionChargeMethod.RoundTurn;
 
                     default:
                         throw new Exception("Invalid commission charge method : " + method);
                 }
             }
 
-            TickTrader.FDK.Objects.SessionStatus Convert(SoftFX.Net.QuoteFeed.TradingSessionStatus status)
+            TickTrader.FDK.Common.SessionStatus Convert(SoftFX.Net.QuoteFeed.TradingSessionStatus status)
             {
                 switch (status)
                 {
                     case SoftFX.Net.QuoteFeed.TradingSessionStatus.Open:
-                        return TickTrader.FDK.Objects.SessionStatus.Open;
+                        return TickTrader.FDK.Common.SessionStatus.Open;
 
                     case SoftFX.Net.QuoteFeed.TradingSessionStatus.Close:
-                        return TickTrader.FDK.Objects.SessionStatus.Closed;
+                        return TickTrader.FDK.Common.SessionStatus.Closed;
 
                     default:
                         throw new Exception("Invalid trading session status : " + status);
                 }
             }
 
-            TickTrader.FDK.Objects.NotificationType Convert(SoftFX.Net.QuoteFeed.NotificationType type)
+            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.QuoteFeed.NotificationType type)
             {
                 switch (type)
                 {
                     case SoftFX.Net.QuoteFeed.NotificationType.ConfigUpdate:
-                        return TickTrader.FDK.Objects.NotificationType.ConfigUpdated;
+                        return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
                     default:
                         throw new Exception("Invalid notification type : " + type);
                 }
             }
 
-            TickTrader.FDK.Objects.NotificationSeverity Convert(SoftFX.Net.QuoteFeed.NotificationSeverity severity)
+            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.QuoteFeed.NotificationSeverity severity)
             {
                 switch (severity)
                 {
                     case SoftFX.Net.QuoteFeed.NotificationSeverity.Info:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Information;
+                        return TickTrader.FDK.Common.NotificationSeverity.Information;
 
                     case SoftFX.Net.QuoteFeed.NotificationSeverity.Warning:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Warning;
+                        return TickTrader.FDK.Common.NotificationSeverity.Warning;
 
                     case SoftFX.Net.QuoteFeed.NotificationSeverity.Error:
-                        return TickTrader.FDK.Objects.NotificationSeverity.Error;
+                        return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
                         throw new Exception("Invalid notification severity : " + severity);

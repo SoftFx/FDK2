@@ -5,7 +5,7 @@
     using System.Reflection;
     using System.Threading;
     using TickTrader.FDK.Extended;
-    using TickTrader.FDK.Objects;
+    using TickTrader.FDK.Common;
 
     abstract class Example : IDisposable
     {

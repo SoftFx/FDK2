@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using NDesk.Options;
-using TickTrader.FDK.Objects;
+using TickTrader.FDK.Common;
 using TickTrader.FDK.QuoteFeed;
 
 namespace QuoteFeedSample
