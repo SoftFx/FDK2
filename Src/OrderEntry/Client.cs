@@ -1300,6 +1300,7 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
                     resultAccountInfo.Balance = reportAccountInfo.Balance;
+                    resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
                     resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
@@ -3046,6 +3047,7 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
                     resultAccountInfo.Balance = reportAccountInfo.Balance;
+                    resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
                     resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
