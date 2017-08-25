@@ -5,13 +5,23 @@
 
     class Program
     {
-        static void Main()
+        static void Main(string[] args)
         {
             try
             {
-                string address = "tp.dev.soft-fx.eu";
-                string username = "5";
-                string password = "123qwe!";
+                if (args.Length == 0)
+                {
+                    Console.WriteLine("Usage: DataTradeExamples <address> <login> <password>");
+
+                    return;
+                }
+
+                if (args.Length < 3)
+                    throw new Exception("Invalid command line");
+
+                string address = args[0];
+                string username = args[1];
+                string password = args[2];
 
                 while (true)
                 {

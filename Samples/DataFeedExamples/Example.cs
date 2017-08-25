@@ -178,7 +178,7 @@
 
 #region Members
 
-        readonly ConnectionStringBuilder builder;
+        ConnectionStringBuilder builder;
 
 #endregion
     }

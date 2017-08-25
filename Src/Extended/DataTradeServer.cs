@@ -28,15 +28,7 @@
         /// <returns></returns>
         public TradeServerInfo GetTradeServerInfoEx(int timeoutInMilliseconds)
         {
-            TradeServerInfo tradeServerInfo = dataTrade_.client_.GetTradeServerInfo(timeoutInMilliseconds);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeServerInfo_ == null)
-                    dataTrade_.cache_.tradeServerInfo_ = tradeServerInfo;
-            }
-
-            return tradeServerInfo;
+            return dataTrade_.client_.GetTradeServerInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -55,15 +47,7 @@
         /// <returns>Can not be null.</returns>
         public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
         {
-            SessionInfo sessionInfo = dataTrade_.client_.GetSessionInfo(timeoutInMilliseconds);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.sessionInfo_ == null)
-                    dataTrade_.cache_.sessionInfo_ = sessionInfo;
-            }
-
-            return sessionInfo;
+            return dataTrade_.client_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -82,15 +66,7 @@
         /// <returns>Can not be null.</returns>
         public AccountInfo GetAccountInfoEx(int timeoutInMilliseconds)
         {
-            AccountInfo accountInfo = dataTrade_.client_.GetAccountInfo(timeoutInMilliseconds);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.accountInfo_ == null)
-                    dataTrade_.cache_.accountInfo_ = accountInfo;
-            }
-
-            return accountInfo;
+            return dataTrade_.client_.GetAccountInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -114,18 +90,7 @@
             TradeRecord[] tradeRecords = new TradeRecord[executionReports.Length];
 
             for (int index = 0; index < executionReports.Length; ++index)
-                tradeRecords[index] = GetTradeRecord(executionReports[index]);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeRecords_ == null)
-                {
-                    dataTrade_.cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(tradeRecords.Length);
-
-                    foreach (TradeRecord tradeRecord in tradeRecords)
-                        dataTrade_.cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
-                }
-            }
+                tradeRecords[index] = dataTrade_.GetTradeRecord(executionReports[index]);
 
             return tradeRecords;
         }
@@ -147,20 +112,7 @@
         /// <returns>can not be null</returns>
         public Position[] GetPositionsEx(int timeoutInMilliseconds)
         {
-            Position[] positions = dataTrade_.client_.GetPositions(timeoutInMilliseconds);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.positions_ == null)
-                {
-                    dataTrade_.cache_.positions_ = new Dictionary<string, Position>(positions.Length);
-
-                    foreach (Position position in positions)
-                        dataTrade_.cache_.positions_.Add(position.Symbol, position);
-                }
-            }
-
-            return positions;
+            return dataTrade_.client_.GetPositions(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -302,26 +254,7 @@
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
 
-            TradeRecord tradeRecord = GetTradeRecord(lastExecutionReport);
-
-            if (lastExecutionReport.ExecutionType == ExecutionType.Trade && lastExecutionReport.OrderStatus == OrderStatus.Filled)
-            {
-                lock (dataTrade_.cache_.mutex_)
-                {
-                    if (dataTrade_.cache_.tradeRecords_ != null)
-                        dataTrade_.cache_.tradeRecords_.Remove(lastExecutionReport.OrderId);
-                }
-            }
-            else
-            {
-                lock (dataTrade_.cache_.mutex_)
-                {
-                    if (dataTrade_.cache_.tradeRecords_ != null)
-                        dataTrade_.cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                }
-            }
-
-            return tradeRecord;
+            return dataTrade_.GetTradeRecord(lastExecutionReport);
         }
 
         /// <summary>
@@ -469,15 +402,7 @@
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
 
-            TradeRecord tradeRecord = GetTradeRecord(lastExecutionReport);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeRecords_ != null)
-                    dataTrade_.cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-            }
-
-            return tradeRecord;
+            return dataTrade_.GetTradeRecord(lastExecutionReport);
         }
 
         /// <summary>
@@ -539,15 +464,7 @@
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         void DeletePendingOrderEx(string operationId, string orderId, string clientId, TradeRecordSide side, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.client_.CancelOrder(operationId, clientId, orderId, timeoutInMilliseconds);
-
-            ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeRecords_ != null)
-                    dataTrade_.cache_.tradeRecords_.Remove(lastExecutionReport.OrderId);
-            }
+            dataTrade_.client_.CancelOrder(operationId, clientId, orderId, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -604,12 +521,6 @@
             ExecutionReport[] executionReports = dataTrade_.client_.ClosePosition(operationId, orderId, null, timeoutInMilliseconds);
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeRecords_ != null)
-                    dataTrade_.cache_.tradeRecords_.Remove(lastExecutionReport.OrderId);
-            }
 
             return GetClosePositionResult(lastExecutionReport);
         }
@@ -671,29 +582,6 @@
         {
             ExecutionReport[] executionReports = dataTrade_.client_.ClosePosition(operationId, orderId, volume, timeoutInMilliseconds);                       
 
-            ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
-
-            if (lastExecutionReport.ExecutionType == ExecutionType.Trade && lastExecutionReport.OrderStatus == OrderStatus.Filled)
-            {
-                lock (dataTrade_.cache_.mutex_)
-                {
-                    if (dataTrade_.cache_.tradeRecords_ != null)
-                        dataTrade_.cache_.tradeRecords_.Remove(lastExecutionReport.OrderId);
-                }
-            }
-            else
-            {
-                lock (dataTrade_.cache_.mutex_)
-                {
-                    if (dataTrade_.cache_.tradeRecords_ != null)
-                    {
-                        TradeRecord tradeRecord = GetTradeRecord(lastExecutionReport);
-
-                        dataTrade_.cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
-                }
-            }
-
             ExecutionReport tradeExecutionReport = executionReports[1];
 
             return GetClosePositionResult(tradeExecutionReport);
@@ -735,29 +623,7 @@
         /// <returns>True, if the operation has been succeeded; otherwise false.</returns>
         public bool CloseByPositionsEx(string operationId, string firstOrderId, string secondOrderId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.client_.ClosePositionBy(operationId, firstOrderId, secondOrderId, timeoutInMilliseconds);
-
-            lock (dataTrade_.cache_.mutex_)
-            {
-                if (dataTrade_.cache_.tradeRecords_ != null)
-                {
-                    for (int index = 0; index < executionReports.Length; ++index)
-                    {
-                        ExecutionReport executionReport = executionReports[index];
-
-                        if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled)
-                        {
-                            dataTrade_.cache_.tradeRecords_.Remove(executionReport.OrderId);
-                        }
-                        else
-                        {
-                            TradeRecord tradeRecord = GetTradeRecord(executionReport);
-
-                            dataTrade_.cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                        }
-                    }
-                }
-            }
+            dataTrade_.client_.ClosePositionBy(operationId, firstOrderId, secondOrderId, timeoutInMilliseconds);
 
             return true;
         }
@@ -881,54 +747,6 @@
             throw new Exception("Not impled");
         }
 
-        internal TradeRecord GetTradeRecord(ExecutionReport executionReport)
-        {
-            TradeRecord tradeRecord = new TradeRecord(dataTrade_);
-            tradeRecord.OrderId = executionReport.OrderId;
-            tradeRecord.ClientOrderId = executionReport.ClientOrderId;
-            tradeRecord.Symbol = executionReport.Symbol;
-            tradeRecord.InitialVolume = executionReport.InitialVolume.GetValueOrDefault();
-            tradeRecord.Volume = executionReport.LeavesVolume;
-            tradeRecord.MaxVisibleVolume = executionReport.MaxVisibleVolume;
-            tradeRecord.Price = executionReport.Price;
-            tradeRecord.StopPrice = executionReport.StopPrice;
-            tradeRecord.TakeProfit = executionReport.TakeProfit;
-            tradeRecord.StopLoss = executionReport.StopLoss;
-            tradeRecord.Commission = executionReport.Commission;
-            tradeRecord.AgentCommission = executionReport.AgentCommission;
-            tradeRecord.Swap = executionReport.Swap;
-
-            if (executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel)
-            {
-                tradeRecord.Type = TradeRecordType.IoC;
-                tradeRecord.ImmediateOrCancel = true;
-            }
-            else
-            {
-                tradeRecord.Type = GetTradeRecordType(executionReport.OrderType);
-                tradeRecord.ImmediateOrCancel = false;
-            }
-
-            tradeRecord.Side = GetTradeRecordSide(executionReport.OrderSide);
-            tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;
-            tradeRecord.IsReducedCloseCommission = executionReport.ReducedCloseCommission;
-
-            if (executionReport.OrderType == OrderType.MarketWithSlippage)
-            {
-                tradeRecord.MarketWithSlippage = true;
-            }
-            else
-                tradeRecord.MarketWithSlippage = false;
-
-            tradeRecord.Expiration = executionReport.Expiration;
-            tradeRecord.Created = executionReport.Created;
-            tradeRecord.Modified = executionReport.Modified;
-            tradeRecord.Comment = executionReport.Comment;
-            tradeRecord.Tag = executionReport.Tag;
-            tradeRecord.Magic = executionReport.Magic;
-
-            return tradeRecord;
-        }
 
         ClosePositionResult GetClosePositionResult(ExecutionReport executionReport)
         {
@@ -1006,49 +824,6 @@
 
                 default:
                     throw new Exception("Invalid trade record side : " + tradeRecordSide);
-            }
-        }
-
-        TradeRecordType GetTradeRecordType(OrderType orderType)
-        {
-            switch (orderType)
-            {
-                case OrderType.Market:
-                    return TradeRecordType.Market;
-
-                case OrderType.MarketWithSlippage:
-                    return TradeRecordType.MarketWithSlippage;
-
-                case OrderType.Position:
-                    return TradeRecordType.Position;
-
-                case OrderType.Limit:
-                    return TradeRecordType.Limit;
-
-                case OrderType.Stop:
-                    return TradeRecordType.Stop;
-
-                case OrderType.StopLimit:
-                    return TradeRecordType.StopLimit;
-
-                default:
-                    throw new Exception("Invalid order type : " + orderType);
-            }
-
-        }
-
-        TradeRecordSide GetTradeRecordSide(OrderSide orderSide)
-        {
-            switch (orderSide)
-            {
-                case OrderSide.Buy:
-                    return TradeRecordSide.Buy;
-
-                case OrderSide.Sell:
-                    return TradeRecordSide.Sell;
-
-                default:
-                    throw new Exception("Invalid order side : " + orderSide);
             }
         }
 

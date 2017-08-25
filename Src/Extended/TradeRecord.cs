@@ -18,112 +18,112 @@
         /// <summary>
         /// Gets related data trade instance.
         /// </summary>
-        public DataTrade DataTrade { get; internal set; }
+        public DataTrade DataTrade { get; set; }
 
         /// <summary>
         /// Gets unique identifier of the order. Can not be null.
         /// </summary>
-        public string OrderId { get; internal set; }
+        public string OrderId { get; set; }
 
         /// <summary>
         /// Gets unique client identifier of the order. Can not be null.
         /// </summary>
-        public string ClientOrderId { get; internal set; }
+        public string ClientOrderId { get; set; }
 
         /// <summary>
         /// Gets currency pair of the order. Can not be null.
         /// </summary>
-        public string Symbol { get; internal set; }
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Initially requested order size.
         /// </summary>
-        public double InitialVolume { get; internal set; }
+        public double InitialVolume { get; set; }
 
         /// <summary>
         /// Gets volume of the order.
         /// </summary>
-        public double Volume { get; internal set; }
+        public double Volume { get; set; }
 
         /// <summary>
         /// Gets max visible volume of the order.
         /// </summary>
-        public double? MaxVisibleVolume { get; internal set; }
+        public double? MaxVisibleVolume { get; set; }
 
         /// <summary>
         /// Gets price of the order.
         /// </summary>
-        public double? Price { get; internal set; }
+        public double? Price { get; set; }
 
         /// <summary>
         /// Gets stop price of the order.
         /// </summary>
-        public double? StopPrice { get; internal set; }
+        public double? StopPrice { get; set; }
 
         /// <summary>
         /// Gets take profit of the order.
         /// </summary>
-        public double? TakeProfit { get; internal set; }
+        public double? TakeProfit { get; set; }
 
         /// <summary>
         /// Gets stop loss of the order.
         /// </summary>
-        public double? StopLoss { get; internal set; }
+        public double? StopLoss { get; set; }
 
         /// <summary>
         /// Gets commission of the trade record.
         /// </summary>
-        public double Commission { get; internal set; }
+        public double Commission { get; set; }
 
         /// <summary>
         /// Gets agents' commission of the trade record.
         /// </summary>
-        public double AgentCommission { get; internal set;}
+        public double AgentCommission { get; set;}
 
         /// <summary>
         ///
         /// </summary>
-        public double Swap { get; internal set; }
+        public double Swap { get; set; }
 
         /// <summary>
         /// It's used by FinancialCalculator.
         /// </summary>
-        public double? Profit { get; internal set; }
+        public double? Profit { get; set; }
 
         /// <summary>
         /// It's used by FinancialCalculator.
         /// </summary>
-        public double? Margin { get; internal set; }
+        public double? Margin { get; set; }
 
         /// <summary>
         /// Gets type of the order.
         /// </summary>
-        public TradeRecordType Type { get; internal set; }
+        public TradeRecordType Type { get; set; }
 
         /// <summary>
         /// Gets side of the order.
         /// </summary>
-        public TradeRecordSide Side { get; internal set; }
+        public TradeRecordSide Side { get; set; }
 
         /// <summary>
         /// Gets ReducedOpenCommission flag.
         /// </summary>
-        public bool IsReducedOpenCommission { get; internal set; }
+        public bool IsReducedOpenCommission { get; set; }
 
         /// <summary>
         /// Gets ReducedCloseCommission flag.
         /// </summary>
-        public bool IsReducedCloseCommission { get; internal set; }
+        public bool IsReducedCloseCommission { get; set; }
 
         /// <summary>
         /// Gets ImmediateOrCancel flag.
         /// </summary>
-        public bool ImmediateOrCancel { get; internal set; }
+        public bool ImmediateOrCancel { get; set; }
 
         /// <summary>
         /// Gets MarketWithSlippage flag.
         /// </summary>
-        public bool MarketWithSlippage { get; internal set; }
+        public bool MarketWithSlippage { get; set; }
 
         /// <summary>
         /// Gets IsHidden trade.
@@ -146,32 +146,32 @@
         /// <summary>
         /// Gets expiration time of the trade record (if specified by user).
         /// </summary>
-        public DateTime? Expiration { get; internal set; }
+        public DateTime? Expiration { get; set; }
 
         /// <summary>
         /// Gets the trade record created time.
         /// </summary>
-        public DateTime? Created { get; internal set; }
+        public DateTime? Created { get; set; }
 
         /// <summary>
         /// Gets the trade record modified time.
         /// </summary>
-        public DateTime? Modified { get; internal set; }
+        public DateTime? Modified { get; set; }
 
         /// <summary>
         /// Gets comment of the order. Can not be null.
         /// </summary>
-        public string Comment { get; internal set; }
+        public string Comment { get; set; }
 
         /// <summary>
         /// Gets tag of the order. Can not be null.
         /// </summary>
-        public string Tag { get; internal set; }
+        public string Tag { get; set; }
 
         /// <summary>
         /// Gets magic number of the order.
         /// </summary>
-        public int? Magic { get; internal set; }
+        public int? Magic { get; set; }
 
         #endregion
 

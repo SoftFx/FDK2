@@ -1,0 +1,115 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D52DA7C0-3DD2-4E26-BBCE-F9A2DC09AA9D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TickTrader.FDK.Calculator</RootNamespace>
+    <AssemblyName>TickTrader.FDK.Calculator</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\..\Bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\Bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.XML" />
+    <Reference Include="System.Xml.Serialization" />
+    <Reference Include="TickTrader.BusinessLogic">
+      <HintPath>..\..\Lib\TickTrader.BusinessLogic.dll</HintPath>
+    </Reference>
+    <Reference Include="TickTrader.BusinessObjects">
+      <HintPath>..\..\Lib\TickTrader.BusinessObjects.dll</HintPath>
+    </Reference>
+    <Reference Include="TickTrader.Common">
+      <HintPath>..\..\Lib\TickTrader.Common.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AccountEntry.cs" />
+    <Compile Include="AccountEntryStatus.cs" />
+    <Compile Include="Adapter\CalculatorAsset.cs" />
+    <Compile Include="Adapter\CalculatorConvert.cs" />
+    <Compile Include="Adapter\CalculatorOrder.cs" />
+    <Compile Include="Adapter\CashAccountInfo.cs" />
+    <Compile Include="Adapter\MarginAccountInfo.cs" />
+    <Compile Include="Adapter\SymbolRate.cs" />
+    <Compile Include="Asset.cs" />
+    <Compile Include="CashAssets.cs" />
+    <Compile Include="CurrencyEntries.cs" />
+    <Compile Include="ExceptionEventArgs.cs" />
+    <Compile Include="FinancialCalculator.cs" />
+    <Compile Include="FinancialEntries.cs" />
+    <Compile Include="FinancialEntry.cs" />
+    <Compile Include="MarginMode.cs" />
+    <Compile Include="PriceEntries.cs" />
+    <Compile Include="PriceEntry.cs" />
+    <Compile Include="Processor.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ResolvePriceHandler.cs" />
+    <Compile Include="Rounding\AccountRoundingService.cs" />
+    <Compile Include="Rounding\CurrencyPrecisionProvider.cs" />
+    <Compile Include="Rounding\DefaultPrecision.cs" />
+    <Compile Include="Rounding\FinancialRounding.cs" />
+    <Compile Include="Rounding\IAccountRoundingService.cs" />
+    <Compile Include="Rounding\IPrecisionProvider.cs" />
+    <Compile Include="Rounding\IRounding.cs" />
+    <Compile Include="Rounding\IRoundingService.cs" />
+    <Compile Include="Serialization\AccountData.cs" />
+    <Compile Include="Serialization\CalculatorData.cs" />
+    <Compile Include="Serialization\PriceData.cs" />
+    <Compile Include="Serialization\SymbolData.cs" />
+    <Compile Include="Serialization\TradeData.cs" />
+    <Compile Include="StateCalculator.cs" />
+    <Compile Include="StateInfo.cs" />
+    <Compile Include="StateInfoEventArgs.cs" />
+    <Compile Include="SymbolEntries.cs" />
+    <Compile Include="SymbolEntry.cs" />
+    <Compile Include="TradeEntry.cs" />
+    <Compile Include="TradeEntryStatus.cs" />
+    <Compile Include="TradeType.cs" />
+    <Compile Include="UpdateHandler.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Common\Common.csproj">
+      <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Extended\Extended.csproj">
+      <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
+      <Name>Extended</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

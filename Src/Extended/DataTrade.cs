@@ -1,6 +1,7 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
+    using System.Collections.Generic;
     using System.Threading;
     using Common;
     using OrderEntry;
@@ -103,6 +104,21 @@
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.TradeServerInfoResultEvent += new Client.TradeServerInfoResultDelegate(this.OnTradeServerInfoResult);
+            client_.TradeServerInfoErrorEvent += new Client.TradeServerInfoErrorDelegate(this.OnTradeServerInfoError);
+            client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
+            client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            client_.AccountInfoResultEvent += new Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
+            client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
+            client_.PositionsResultEvent += new Client.PositionsResultDelegate(this.OnPositionsResult);
+            client_.PositionsErrorEvent += new Client.PositionsErrorDelegate(this.OnPositionsError);
+            client_.OrdersResultEvent += new Client.OrdersResultDelegate(this.OnOrdersResult);
+            client_.OrdersErrorEvent += new Client.OrdersErrorDelegate(this.OnOrdersError);
+            client_.NewOrderResultEvent += new Client.NewOrderResultDelegate(this.OnNewOrderResult);
+            client_.ReplaceOrderResultEvent += new Client.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
+            client_.CancelOrderResultEvent += new Client.CancelOrderResultDelegate(this.OnCancelOrderResult);
+            client_.ClosePositionResultEvent += new Client.ClosePositionResultDelegate(this.OnClosePositionResult);
+            client_.ClosePositionByResultEvent += new Client.ClosePositionByResultDelegate(this.OnClosePositionByResult);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.AccountInfoUpdateEvent += new Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
             client_.ExecutionReportEvent += new Client.ExecutionReportDelegate(this.OnExecutionReport);
@@ -248,7 +264,7 @@
         /// <summary>
         /// Occurs when local cache initialized.
         /// </summary>
-        [Obsolete("No longer used")]
+        [Obsolete("Please use Logon event")]
         public event CacheHandler CacheInitialized;
 
         #endregion
@@ -501,19 +517,17 @@
         void OnLoginResult(Client client, object data)
         {
             try
-            {                
-                LogonEventArgs args = new LogonEventArgs();
-                args.ProtocolVersion = "";
-                eventQueue_.PushEvent(args);
+            {
+                initFlags_ = InitFlags.None;
 
-                CacheEventArgs cacheArgs = new CacheEventArgs();
-                eventQueue_.PushEvent(cacheArgs);
-
-                loginException_ = null;
-                loginEvent_.Set();
+                client_.GetTradeServerInfoAsync(this);
+                client_.GetSessionInfoAsync(this);
+                client_.GetAccountInfoAsync(this);
+                client_.GetOrdersAsync(this);
             }
             catch
             {
+                client_.DisconnectAsync("Client disconnect");
             }
         }
 
@@ -530,6 +544,235 @@
 
                 loginException_ = new LogoutException(text);
                 loginEvent_.Set();
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTradeServerInfoResult(Client client, object data, TradeServerInfo tradeServerInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.TradeServerInfo;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeServerInfo_ == null)
+                            cache_.tradeServerInfo_ = tradeServerInfo;
+                    }
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTradeServerInfoError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.SessionInfo;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.sessionInfo_ == null)
+                            cache_.sessionInfo_ = sessionInfo;
+                    }
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnAccountInfoResult(Client client, object data, AccountInfo accountInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.AccountInfo;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.accountInfo_ == null)
+                            cache_.accountInfo_ = accountInfo;
+                    }
+
+                    if (accountInfo.Type == AccountType.Net)
+                    {                        
+                        client_.GetPositionsAsync(this);
+                    }
+                    else
+                    {
+                        initFlags_ |= InitFlags.Positions;
+
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.positions_ == null)
+                                cache_.positions_ = new Dictionary<string, Position>();
+                        }
+
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnAccountInfoError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnPositionsResult(Client client, object data, Position[] positions)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.Positions;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.positions_ == null)
+                        {
+                            cache_.positions_ = new Dictionary<string, Position>(positions.Length);
+
+                            foreach (Position position in positions)
+                                cache_.positions_.Add(position.Symbol, position);
+                        }
+                    }                    
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnPositionsError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOrdersResult(Client client, object data, ExecutionReport[] executionReports)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.TradeRecords;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ == null)
+                        {
+                            cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
+
+                            foreach (ExecutionReport executionReport in executionReports)
+                            {
+                                TradeRecord tradeRecord = GetTradeRecord(executionReport);
+
+                                cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
+                            }
+                        }
+                    }
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOrdersError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
             }
             catch
             {
@@ -562,6 +805,135 @@
                 args.Reason = logoutInfo.Reason;
                 args.Text = logoutInfo.Message;
                 eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnNewOrderResult(Client client, object data, ExecutionReport report)
+        {
+            try
+            {
+                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                {
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_.Remove(report.OrderId);
+                    }
+                }
+                else
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(report);
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReplaceOrderResult(Client client, object data, ExecutionReport report)
+        {
+            try
+            {
+                TradeRecord tradeRecord = GetTradeRecord(report);
+
+                lock (cache_.mutex_)
+                {
+                    if (cache_.tradeRecords_ != null)
+                        cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCancelOrderResult(Client client, object data, ExecutionReport report)
+        {
+            try
+            {
+                if (report.ExecutionType == ExecutionType.Canceled)
+                {
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_.Remove(report.OrderId);
+                    }
+                }
+                else
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(report);
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnClosePositionResult(Client client, object data, ExecutionReport report)
+        {
+            try
+            {
+                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                {
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_.Remove(report.OrderId);
+                    }
+                }
+                else
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(report);
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnClosePositionByResult(Client client, object data, ExecutionReport report)
+        {
+            try
+            {
+                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                {
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_.Remove(report.OrderId);
+                    }
+                }
+                else
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(report);
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.tradeRecords_ != null)
+                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                    }
+                }
             }
             catch
             {
@@ -618,7 +990,7 @@
                 }
                 else
                 {
-                    TradeRecord tradeRecord = server_.GetTradeRecord(executionReport);
+                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
 
                     lock (cache_.mutex_)
                     {
@@ -695,6 +1067,29 @@
             catch
             {
             }
+        }
+
+        void PushLoginEvents()
+        {
+            LogonEventArgs args = new LogonEventArgs();
+            args.ProtocolVersion = "";
+            eventQueue_.PushEvent(args);
+
+            AccountInfo accountInfo;
+
+            lock (cache_)
+            {
+                accountInfo = cache_.accountInfo_;
+            }
+
+            // For backward comapatibility
+            AccountInfoEventArgs accountInfoArgs = new AccountInfoEventArgs();
+            accountInfoArgs.Information = accountInfo;
+            eventQueue_.PushEvent(accountInfoArgs);
+
+            // For backward comapatibility
+            CacheEventArgs cacheArgs = new CacheEventArgs();
+            eventQueue_.PushEvent(cacheArgs);
         }
 
         void EventThread()
@@ -904,6 +1299,109 @@
             }
         }
 
+        internal TradeRecord GetTradeRecord(ExecutionReport executionReport)
+        {
+            TradeRecord tradeRecord = new TradeRecord(this);
+            tradeRecord.OrderId = executionReport.OrderId;
+            tradeRecord.ClientOrderId = executionReport.ClientOrderId;
+            tradeRecord.Symbol = executionReport.Symbol;
+            tradeRecord.InitialVolume = executionReport.InitialVolume.GetValueOrDefault();
+            tradeRecord.Volume = executionReport.LeavesVolume;
+            tradeRecord.MaxVisibleVolume = executionReport.MaxVisibleVolume;
+            tradeRecord.Price = executionReport.Price;
+            tradeRecord.StopPrice = executionReport.StopPrice;
+            tradeRecord.TakeProfit = executionReport.TakeProfit;
+            tradeRecord.StopLoss = executionReport.StopLoss;
+            tradeRecord.Commission = executionReport.Commission;
+            tradeRecord.AgentCommission = executionReport.AgentCommission;
+            tradeRecord.Swap = executionReport.Swap;
+
+            if (executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel)
+            {
+                tradeRecord.Type = TradeRecordType.IoC;
+                tradeRecord.ImmediateOrCancel = true;
+            }
+            else
+            {
+                tradeRecord.Type = GetTradeRecordType(executionReport.OrderType);
+                tradeRecord.ImmediateOrCancel = false;
+            }
+
+            tradeRecord.Side = GetTradeRecordSide(executionReport.OrderSide);
+            tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;
+            tradeRecord.IsReducedCloseCommission = executionReport.ReducedCloseCommission;
+
+            if (executionReport.OrderType == OrderType.MarketWithSlippage)
+            {
+                tradeRecord.MarketWithSlippage = true;
+            }
+            else
+                tradeRecord.MarketWithSlippage = false;
+
+            tradeRecord.Expiration = executionReport.Expiration;
+            tradeRecord.Created = executionReport.Created;
+            tradeRecord.Modified = executionReport.Modified;
+            tradeRecord.Comment = executionReport.Comment;
+            tradeRecord.Tag = executionReport.Tag;
+            tradeRecord.Magic = executionReport.Magic;
+
+            return tradeRecord;
+        }
+
+        TradeRecordType GetTradeRecordType(OrderType orderType)
+        {
+            switch (orderType)
+            {
+                case OrderType.Market:
+                    return TradeRecordType.Market;
+
+                case OrderType.MarketWithSlippage:
+                    return TradeRecordType.MarketWithSlippage;
+
+                case OrderType.Position:
+                    return TradeRecordType.Position;
+
+                case OrderType.Limit:
+                    return TradeRecordType.Limit;
+
+                case OrderType.Stop:
+                    return TradeRecordType.Stop;
+
+                case OrderType.StopLimit:
+                    return TradeRecordType.StopLimit;
+
+                default:
+                    throw new Exception("Invalid order type : " + orderType);
+            }
+        }
+
+
+        TradeRecordSide GetTradeRecordSide(OrderSide orderSide)
+        {
+            switch (orderSide)
+            {
+                case OrderSide.Buy:
+                    return TradeRecordSide.Buy;
+
+                case OrderSide.Sell:
+                    return TradeRecordSide.Sell;
+
+                default:
+                    throw new Exception("Invalid order side : " + orderSide);
+            }
+        }
+
+        enum InitFlags
+        {
+            None = 0x00,
+            TradeServerInfo = 0x01,
+            SessionInfo = 0x02,
+            AccountInfo = 0x04,
+            TradeRecords = 0x08,
+            Positions = 0x10,
+            All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions
+        }
+
         string name_;
         string address_;
         string login_;
@@ -922,6 +1420,7 @@
         
         ManualResetEvent loginEvent_;
         Exception loginException_;
+        InitFlags initFlags_;
         bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers

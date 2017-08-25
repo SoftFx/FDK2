@@ -103,6 +103,12 @@
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
+            client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            client_.CurrencyListResultEvent += new Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
+            client_.CurrencyListErrorEvent += new Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
+            client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
+            client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.QuotesBeginEvent += new Client.QuotesBeginDelegate(this.OnQuotesBegin);
             client_.QuotesEndEvent += new Client.QuotesEndDelegate(this.OnQuotesEnd);
@@ -253,22 +259,22 @@
         public event NotifyHandler Notify;
 
         /// <summary>
-        /// Occurs when local cache initialized.
-        /// </summary>
-        [Obsolete("No longer used")]
-        public event CacheHandler CacheInitialized;
-
-        /// <summary>
         /// Occurs when currencies information is initialized.
         /// </summary>
-        [Obsolete("No longer used")]
+        [Obsolete("Please use Logon event")]
         public event CurrencyInfoHandler CurrencyInfo;
 
         /// <summary>
         /// Occurs when symbols information is initialized.
         /// </summary>
-        [Obsolete("No longer used")]
+        [Obsolete("Please use Logon event")]
         public event SymbolInfoHandler SymbolInfo;
+
+        /// <summary>
+        /// Occurs when local cache initialized.
+        /// </summary>
+        [Obsolete("Please use Logon event")]
+        public event CacheHandler CacheInitialized;
 
         #endregion
 
@@ -521,19 +527,16 @@
         void OnLoginResult(Client client, object data)
         {
             try
-            {                
-                LogonEventArgs args = new LogonEventArgs();
-                args.ProtocolVersion = "";
-                eventQueue_.PushEvent(args);
+            {
+                initFlags_ = InitFlags.None;
 
-                CacheEventArgs cacheArgs = new CacheEventArgs();
-                eventQueue_.PushEvent(cacheArgs);
-
-                loginException_ = null;
-                loginEvent_.Set();
+                client_.GetSessionInfoAsync(this);
+                client_.GetCurrencyListAsync(this);
+                client_.GetSymbolListAsync(this);
             }
             catch
             {
+                client_.DisconnectAsync("Client disconnect");
             }
         }
 
@@ -550,6 +553,126 @@
 
                 loginException_ = new LogoutException(text);
                 loginEvent_.Set();
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.SessionInfo;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.sessionInfo_ == null)
+                            cache_.sessionInfo_ = sessionInfo;
+                    }
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCurrencyListResult(Client client, object data, CurrencyInfo[] currencies)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.Currencies;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.currencies_ == null)
+                            cache_.currencies_ = currencies;
+                    }                    
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCurrencyListError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSymbolListResult(Client client, object data, SymbolInfo[] symbols)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    initFlags_ |= InitFlags.Symbols;
+
+                    lock (cache_.mutex_)
+                    {
+                        if (cache_.symbols_ == null)
+                            cache_.symbols_ = symbols;
+                    }
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSymbolListError(Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                    client_.DisconnectAsync("Client disconnect");
             }
             catch
             {
@@ -675,6 +798,36 @@
             }
         }
 
+        void PushLoginEvents()
+        {
+            LogonEventArgs args = new LogonEventArgs();
+            args.ProtocolVersion = "";
+            eventQueue_.PushEvent(args);
+
+            CurrencyInfo[] currencies;
+            SymbolInfo[] symbols;
+
+            lock (cache_)
+            {
+                currencies = cache_.currencies_;
+                symbols = cache_.symbols_;
+            }
+
+            // For backward comapatibility
+            CurrencyInfoEventArgs currencyArgs = new CurrencyInfoEventArgs();
+            currencyArgs.Information = currencies;
+            eventQueue_.PushEvent(currencyArgs);
+
+            // For backward comapatibility
+            SymbolInfoEventArgs symbolArgs = new SymbolInfoEventArgs();
+            symbolArgs.Information = symbols;
+            eventQueue_.PushEvent(symbolArgs);
+
+            // For backward comapatibility
+            CacheEventArgs cacheArgs = new CacheEventArgs();
+            eventQueue_.PushEvent(cacheArgs);
+        }
+
         void EventThread()
         {
             try
@@ -764,6 +917,42 @@
                     try
                     {
                         TwoFactorAuth(this, twoFactorAuthEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
+            CurrencyInfoEventArgs currencyEventArgs = eventArgs as CurrencyInfoEventArgs;
+
+            if (currencyEventArgs != null)
+            {
+                if (CurrencyInfo != null)
+                {
+                    try
+                    {
+                        CurrencyInfo(this, currencyEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
+            SymbolInfoEventArgs symbolEventArgs = eventArgs as SymbolInfoEventArgs;
+
+            if (symbolEventArgs != null)
+            {
+                if (SymbolInfo != null)
+                {
+                    try
+                    {
+                        SymbolInfo(this, symbolEventArgs);
                     }
                     catch
                     {
@@ -864,6 +1053,15 @@
             }
         }
 
+        enum InitFlags
+        {
+            None = 0x00,
+            SessionInfo = 0x01,
+            Currencies = 0x02,
+            Symbols = 0x04,
+            All = SessionInfo | Currencies | Symbols
+        }
+
         string name_;
         string address_;
         string login_;
@@ -882,6 +1080,7 @@
         
         ManualResetEvent loginEvent_;
         Exception loginException_;
+        InitFlags initFlags_;
         bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers

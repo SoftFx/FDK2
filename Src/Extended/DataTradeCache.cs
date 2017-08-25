@@ -30,12 +30,9 @@
             get
             {
                 lock (mutex_)
-                {
-                    if (tradeServerInfo_ != null)
-                        return tradeServerInfo_;                       
+                {                    
+                    return tradeServerInfo_;                       
                 }
-
-                return dataTrade_.server_.GetTradeServerInfo();
             }
         }
 
@@ -48,11 +45,8 @@
             {
                 lock (mutex_)
                 {
-                    if (sessionInfo_ != null)
-                        return sessionInfo_;
+                    return sessionInfo_;
                 }
-
-                return dataTrade_.server_.GetSessionInfo();
             }
         }
 
@@ -65,11 +59,8 @@
             {
                 lock (mutex_)
                 {
-                    if (accountInfo_ != null)
-                        return accountInfo_;
+                    return accountInfo_;
                 }
-
-                return dataTrade_.server_.GetAccountInfo();
             }
         }
         
@@ -92,9 +83,9 @@
 
                         return tradeRecords;
                     }
-                }
 
-                return dataTrade_.server_.GetTradeRecords();
+                    return null;
+                }
             }
         }
 
@@ -112,15 +103,14 @@
                         Position[] positions = new Position[positions_.Count];
 
                         int index = 0;
-
                         foreach (KeyValuePair<string, Position> item in positions_)
                             positions[index ++] = item.Value;
 
                         return positions;
                     }
-                }
 
-                return dataTrade_.server_.GetPositions();
+                    return null;
+                }
             }
         }
 

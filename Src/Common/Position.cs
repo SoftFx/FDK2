@@ -50,6 +50,11 @@
         public double? Profit { get; set; }
 
         /// <summary>
+        /// It's used by FinancialCalculator.
+        /// </summary>
+        public double? Margin { get; set; }
+
+        /// <summary>
         /// Gets average price of buy position.
         /// </summary>
         public double? BuyPrice { get; set; }

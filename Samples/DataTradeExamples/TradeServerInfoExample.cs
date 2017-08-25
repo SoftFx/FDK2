@@ -13,7 +13,8 @@
 
         protected override void RunExample()
         {
-            TradeServerInfo tradeServerInfo = Trade.Server.GetTradeServerInfo();
+            TradeServerInfo tradeServerInfo = Trade.Cache.TradeServerInfo;
+
             Console.WriteLine(tradeServerInfo);
         }
     }

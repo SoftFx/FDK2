@@ -46,15 +46,7 @@
         /// <returns>can not be null.</returns>
         public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
         {
-            SessionInfo sessionInfo = dataFeed_.client_.GetSessionInfo(timeoutInMilliseconds);
-
-            lock (dataFeed_.cache_.mutex_)
-            {
-                if (dataFeed_.cache_.sessionInfo_ == null)
-                    dataFeed_.cache_.sessionInfo_ = sessionInfo;
-            }
-
-            return sessionInfo;
+            return dataFeed_.client_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -84,15 +76,7 @@
         /// <returns></returns>
         public CurrencyInfo[] GetCurrenciesEx(int timeoutInMilliseconds)
         {
-            CurrencyInfo[] currencies = dataFeed_.client_.GetCurrencyList(timeoutInMilliseconds);
-
-            lock (dataFeed_.cache_.mutex_)
-            {
-                if (dataFeed_.cache_.currencies_ == null)
-                    dataFeed_.cache_.currencies_ = currencies;
-            }
-
-            return currencies;
+            return dataFeed_.client_.GetCurrencyList(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -111,15 +95,7 @@
         /// <returns>can not be null</returns>
         public SymbolInfo[] GetSymbolsEx(int timeoutInMilliseconds)
         {
-            SymbolInfo[] symbols = dataFeed_.client_.GetSymbolList(timeoutInMilliseconds);
-
-            lock (dataFeed_.cache_.mutex_)
-            {
-                if (dataFeed_.cache_.symbols_ == null)
-                    dataFeed_.cache_.symbols_ = symbols;
-            }
-
-            return symbols;
+            return dataFeed_.client_.GetSymbolList(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -205,18 +181,7 @@
             foreach (string symbol in symbols)
                 symbolList.Add(symbol);
 
-            Quote[] quotes = dataFeed_.client_.GetQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
-
-            lock (dataFeed_.cache_.mutex_)
-            {
-                for (int index = 0; index < quotes.Length; ++index)
-                {
-                    Quote quote = quotes[index];
-                    dataFeed_.cache_.quotes_[quote.Symbol] = quote;
-                }
-            }
-
-            return quotes;
+            return dataFeed_.client_.GetQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
         }
 
         // TODO:

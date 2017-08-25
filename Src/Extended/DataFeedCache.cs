@@ -28,11 +28,8 @@
             {
                 lock (mutex_)
                 {
-                    if (sessionInfo_ != null)
-                        return sessionInfo_;
+                    return sessionInfo_;
                 }
-
-                return dataFeed_.server_.GetSessionInfo();
             }
         }
 
@@ -45,11 +42,8 @@
             {
                 lock (mutex_)
                 {
-                    if (currencies_ != null)
-                        return currencies_;
+                    return currencies_;
                 }
-
-                return dataFeed_.server_.GetCurrencies();
             }
         }
 
@@ -62,11 +56,8 @@
             {
                 lock (mutex_)
                 {
-                    if (symbols_ != null)
-                        return symbols_;
+                    return symbols_;
                 }
-
-                return dataFeed_.server_.GetSymbols();
             }
         }
 
@@ -115,44 +106,23 @@
 
                 if (quote1 != null)
                 {
-                    if (! quote1.HasBid)
+                    if (quote1.HasBid)
                     {
-                        price = 0;
-                        volume = 0;
-                        creationTime = new DateTime();
+                        QuoteEntry bestBid1 = quote1.Bids[0];
+                        price = bestBid1.Price;
+                        volume = bestBid1.Volume;
+                        creationTime = quote1.CreatingTime;
 
-                        return false;
+                        return true;
                     }
-
-                    QuoteEntry bestBid1 = quote1.Bids[0];
-                    price = bestBid1.Price;
-                    volume = bestBid1.Volume;
-                    creationTime = quote1.CreatingTime;
-
-                    return true;
                 }
             }
 
-            string[] symbols = new string[] { symbol };
-            Quote[] quotes = dataFeed_.server_.GetQuotes(symbols, 1);
+            price = 0;
+            volume = 0;
+            creationTime = new DateTime();
 
-            Quote quote2 = quotes[0];
-
-            if (! quote2.HasBid)
-            {
-                price = 0;
-                volume = 0;
-                creationTime = new DateTime();
-
-                return false;
-            }
-
-            QuoteEntry bestBid2 = quote2.Bids[0];
-            price = bestBid2.Price;
-            volume = bestBid2.Volume;
-            creationTime = quote2.CreatingTime;
-
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -201,44 +171,23 @@
 
                 if (quote1 != null)
                 {
-                    if (! quote1.HasAsk)
+                    if (quote1.HasAsk)
                     {
-                        price = 0;
-                        volume = 0;
-                        creationTime = new DateTime();
+                        QuoteEntry bestAsk1 = quote1.Asks[0];
+                        price = bestAsk1.Price;
+                        volume = bestAsk1.Volume;
+                        creationTime = quote1.CreatingTime;
 
-                        return false;
+                        return true;
                     }
-
-                    QuoteEntry bestAsk1 = quote1.Asks[0];
-                    price = bestAsk1.Price;
-                    volume = bestAsk1.Volume;
-                    creationTime = quote1.CreatingTime;
-
-                    return true;
                 }
             }
 
-            string[] symbols = new string[] { symbol };
-            Quote[] quotes = dataFeed_.server_.GetQuotes(symbols, 1);
+            price = 0;
+            volume = 0;
+            creationTime = new DateTime();
 
-            Quote quote2 = quotes[0];
-
-            if (! quote2.HasAsk)
-            {
-                price = 0;
-                volume = 0;
-                creationTime = new DateTime();
-
-                return false;
-            }
-
-            QuoteEntry bestAsk2 = quote2.Asks[0];
-            price = bestAsk2.Price;
-            volume = bestAsk2.Volume;
-            creationTime = quote2.CreatingTime;
-
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -278,12 +227,9 @@
                 }
             }
 
-            string[] symbols = new string[] { symbol };
-            Quote[] quotes = dataFeed_.server_.GetQuotes(symbols, 1);
+            quote = null;
 
-            quote = quotes[0];
-
-            return true;
+            return false;
         }
 
         DataFeed dataFeed_;

@@ -96,7 +96,7 @@
 
         void OnLogon(object sender, LogonEventArgs e)
         {
-            Console.WriteLine("OnLogon(): {0}", e);            
+            Console.WriteLine("OnLogon(): {0}", e);
         }
 
         void OnLogout(object sender, LogoutEventArgs e)
@@ -155,7 +155,6 @@
         #region Members
 
         ConnectionStringBuilder builder;
-        AutoResetEvent syncEvent = new AutoResetEvent(false);
 
         #endregion
     }
