@@ -86,9 +86,10 @@
             this.Feed.Logon += this.OnLogon;
             this.Feed.Logout += this.OnLogout;
             this.Feed.TwoFactorAuth += this.OnTwoFactorAuth;
+            this.Feed.Subscribed += this.OnSubscribed;
+            this.Feed.Unsubscribed += this.OnUnsubscribed;
             this.Feed.SessionInfo += this.OnSessionInfo;
-//            this.Feed.SymbolInfo += this.OnSymbolInfo;
-//            this.Feed.CurrencyInfo += this.OnCurrencyInfo;
+            this.Feed.Tick += this.OnTick;            
             this.Feed.Notify += this.OnNotify;
 
             this.Feed.Start();
@@ -110,17 +111,17 @@
 
 #region Event Handlers
 
-        void OnLogon(object sender, LogonEventArgs e)
+        protected virtual void OnLogon(object sender, LogonEventArgs e)
         {
             Console.WriteLine("OnLogon(): {0}", e);
         }
 
-        void OnLogout(object sender, LogoutEventArgs e)
+        protected virtual void OnLogout(object sender, LogoutEventArgs e)
         {
             Console.WriteLine("OnLogout(): {0}", e);
         }
 
-        void OnTwoFactorAuth(object sender, TwoFactorAuthEventArgs e)
+        protected virtual void OnTwoFactorAuth(object sender, TwoFactorAuthEventArgs e)
         {
             if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerRequest)
             {
@@ -136,20 +137,27 @@
                 Console.WriteLine("Invalid two factor server response: {0} - {1}", e.TwoFactorAuth.Reason, e.TwoFactorAuth.Text);
         }
 
-        void OnSessionInfo(object sender, SessionInfoEventArgs e)
+        protected virtual void OnSubscribed(object sender, SubscribedEventArgs e)
+        {
+            Console.WriteLine("OnSubscribed(): {0}", e);
+        }
+
+        protected virtual void OnUnsubscribed(object sender, UnsubscribedEventArgs e)
+        {
+            Console.WriteLine("OnUnsubscribed(): {0}", e.Symbol);
+        }
+
+        protected virtual void OnSessionInfo(object sender, SessionInfoEventArgs e)
         {
             Console.WriteLine("OnSessionInfo(): {0}", e);
         }
-/*
-        void OnSymbolInfo(object sender, SymbolInfoEventArgs e)
+
+        protected virtual void OnTick(object sender, TickEventArgs e)
         {
+            Console.WriteLine("OnTick(): {0}", e);
         }
 
-        void OnCurrencyInfo(object sender, CurrencyInfoEventArgs e)
-        {
-        }
-*/
-        void OnNotify(object sender, NotificationEventArgs e)
+        protected virtual void OnNotify(object sender, NotificationEventArgs e)
         {
             Console.WriteLine("OnNotify(): {0}", e);
         }

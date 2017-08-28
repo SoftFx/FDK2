@@ -113,6 +113,14 @@
 
                 this.feed.Start();
                 this.trade.Start();
+
+                if (! this.feed.WaitForLogon())
+                    throw new TimeoutException("Timeout of data feed logon waiting has been reached");
+
+                if (! this.trade.WaitForLogon())
+                    throw new TimeoutException("Timeout of data trade logon waiting has been reached");
+
+                this.Snapshot.Start();
             }
         }
 
@@ -132,6 +140,7 @@
                 this.thread = null;
             }
 
+            this.Snapshot.Stop();
             this.trade.Stop();
             this.feed.Stop();
         }

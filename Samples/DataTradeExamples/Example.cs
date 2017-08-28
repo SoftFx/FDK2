@@ -86,6 +86,8 @@
             }
             finally
             {
+                // TODO: Some unexpected order rejects if we logout immediately
+                Thread.Sleep(200);
                 this.Trade.Stop();
             }
         }
@@ -94,42 +96,42 @@
 
         #region Event Handlers
 
-        void OnLogon(object sender, LogonEventArgs e)
+        protected virtual void OnLogon(object sender, LogonEventArgs e)
         {
             Console.WriteLine("OnLogon(): {0}", e);
         }
 
-        void OnLogout(object sender, LogoutEventArgs e)
+        protected virtual void OnLogout(object sender, LogoutEventArgs e)
         {
             Console.WriteLine("OnLogout(): {0}", e);
         }
 
-        void OnAccountInfo(object sender, AccountInfoEventArgs e)
+        protected virtual void OnAccountInfo(object sender, AccountInfoEventArgs e)
         {
             Console.WriteLine("OnAccountInfo(): {0}", e);
         }
 
-        void OnSessionInfo(object sender, SessionInfoEventArgs e)
+        protected virtual void OnSessionInfo(object sender, SessionInfoEventArgs e)
         {
             Console.WriteLine("OnSessionInfo(): {0}", e);
         }
 
-        void OnExecutionReport(object sender, ExecutionReportEventArgs e)
+        protected virtual void OnExecutionReport(object sender, ExecutionReportEventArgs e)
         {
             Console.WriteLine("OnExecutionReport(): {0}", e);
         }
 
-        void OnPositionReport(object sender, PositionReportEventArgs e)
+        protected virtual void OnPositionReport(object sender, PositionReportEventArgs e)
         {
             Console.WriteLine("OnPositionReport(): {0}", e);
         }
 
-        void OnBalanceOperaiton(object sender, NotificationEventArgs<BalanceOperation> e)
+        protected virtual void OnBalanceOperaiton(object sender, NotificationEventArgs<BalanceOperation> e)
         {
             Console.WriteLine("OnBalanceOperaiton(): {0}", e);
         }
 
-        void OnNofity(object sender, NotificationEventArgs e)
+        protected virtual void OnNofity(object sender, NotificationEventArgs e)
         {
             Console.WriteLine("OnNotify(): {0}", e);
         }

@@ -31,9 +31,7 @@
             feed.Logon += this.OnFeedLogon;
             feed.Logout += this.OnFeedLogout;
             feed.SymbolInfo += this.OnFeedSymbolInfo;
-            feed.SessionInfo += this.OnFeedSessionInfo;
-
-            calculator.StateInfoChanged += this.OnFinancialInfoChanged;
+            feed.SessionInfo += this.OnFeedSessionInfo;            
         }
 
         /// <summary>
@@ -284,6 +282,11 @@
             this.calculator.Calculate();
             var info = calculator.GetState();
             this.Update(info);
+        }
+
+        internal void Start()
+        {
+            calculator.StateInfoChanged += this.OnFinancialInfoChanged;
         }
 
         internal void Stop()

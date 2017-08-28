@@ -12,7 +12,6 @@
         protected override void RunExample()
         {
             var info = Trade.Cache.AccountInfo;
-
             Console.WriteLine(info);
         }
     }

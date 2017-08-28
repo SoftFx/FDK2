@@ -1,11 +1,11 @@
-﻿namespace TradeFeedExamples
+﻿namespace StandardExamples
 {
     using System;
     using System.IO;
     using System.Reflection;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Standard;
     using TickTrader.FDK.Extended;
-    using TickTrader.FDK.Calculator;
 
     abstract class Example : IDisposable
     {
@@ -27,10 +27,6 @@
                 OperationTimeout = 30000
             };
 
-            this.Trade = new DataTrade(dataTradeBuilder.ToString());
-            this.Trade.Logon += this.OnDataTradeLogon;
-            this.Trade.Logout += this.OnDataTradeLogout;
-
             ConnectionStringBuilder dataFeedBuilder = new ConnectionStringBuilder
             {
                 Port = 5030,
@@ -41,10 +37,10 @@
                 DecodeLogMessages = true,
                 OperationTimeout = 30000
             };
-            
-            this.Feed = new DataFeed(dataFeedBuilder.ToString());
-            this.Feed.Logon += this.OnDataFeedLogon;
-            this.Feed.Logout += this.OnDataFeedLogout;            
+
+            this.Manager = new Manager(dataTradeBuilder.ToString(), dataFeedBuilder.ToString(), "Quotes");
+            this.Manager.Updated += this.OnUpdated;
+            this.Manager.Error += this.OnError;
         }
 
         static void EnsureDirectoriesCreated()
@@ -74,9 +70,7 @@
             }
         }
 
-        protected DataTrade Trade { get; private set; }
-
-        protected DataFeed Feed { get; private set; }               
+        protected Manager Manager { get; private set; }
 
         #endregion
 
@@ -84,51 +78,32 @@
 
         public void Run()
         {
-            this.Trade.Start();
+            this.Manager.Start();
 
             try
             {
-                this.Feed.Start();
-
-                try
-                {
-                    if (! this.Trade.WaitForLogon())
-                        throw new TimeoutException("Timeout of data trade logon waiting has been reached");
-
-                    if (! this.Feed.WaitForLogon())
-                        throw new TimeoutException("Timeout of data feed logon waiting has been reached");
-
-                    this.RunExample();
-                }
-                finally
-                {
-                    this.Feed.Stop();
-                }
+                this.RunExample();
             }
             finally
             {
-                this.Trade.Stop();
+                this.Manager.Stop();
             }
         }
 
-        protected virtual void OnDataTradeLogon(object sender, LogonEventArgs e)
+
+        protected virtual void OnUpdated(object sender, EventArgs args)
         {
-            Console.WriteLine("OnDataTradeLogon(): {0}", e);
         }
 
-        protected virtual void OnDataTradeLogout(object sender, LogoutEventArgs e)
+        protected virtual void OnError(object sender, TickTrader.FDK.Standard.ErrorEventArgs args)
         {
-            Console.WriteLine("OnDataTradeLogout(): {0}", e);
-        }
-
-        protected virtual void OnDataFeedLogon(object sender, LogonEventArgs e)
-        {
-            Console.WriteLine("OnDataFeedLogon(): {0}", e);
-        }
-
-        protected virtual void OnDataFeedLogout(object sender, LogoutEventArgs e)
-        {
-            Console.WriteLine("OnDataFeedLogout(): {0}", e);
+            try
+            {
+                Console.WriteLine("Error : " + args.Exception.Message);
+            }
+            catch
+            {
+            }
         }
 
         #endregion
@@ -143,11 +118,8 @@
 
         public void Dispose()
         {
-            if (this.Trade != null)
-                this.Trade.Dispose();
-
-            if (this.Feed != null)
-                this.Feed.Dispose();
+            if (this.Manager != null)
+                this.Manager.Dispose();
         }
 
         #endregion
