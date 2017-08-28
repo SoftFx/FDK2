@@ -8,7 +8,7 @@
     /// </summary>
     public class TradeRecord
     {
-        internal TradeRecord(DataTrade dataTrade)
+        public TradeRecord(DataTrade dataTrade)
         {
             this.DataTrade = dataTrade;
         }
