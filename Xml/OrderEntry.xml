@@ -962,7 +962,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="NewOrderSingleReject2">
+                        <recv name="NewOrderSingleReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -986,7 +986,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="NewOrderSingleReject3">
+                        <recv name="NewOrderSingleReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1010,7 +1010,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="NewOrderSingleReject1">
+                        <recv name="NewOrderSingleReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1034,7 +1034,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelReplaceReject2">
+                        <recv name="OrderCancelReplaceReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1058,7 +1058,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelReplaceReject1">
+                        <recv name="OrderCancelReplaceReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1082,7 +1082,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelReject2">
+                        <recv name="OrderCancelReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1106,7 +1106,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelReject1">
+                        <recv name="OrderCancelReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1130,7 +1130,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionReject2">
+                        <recv name="ClosePositionReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1208,7 +1208,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionReject3">
+                        <recv name="ClosePositionReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1220,7 +1220,7 @@
                 </state>
                 <state label="679_21">
                     <operations>
-                        <recv name="ClosePositionReject4">
+                        <recv name="ClosePositionReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1244,7 +1244,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ExecutionReportTrade3" next="701_17">
+                        <recv name="ExecutionReportTrade1" next="701_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1256,7 +1256,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByReject1">
+                        <recv name="ClosePositionByReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1280,7 +1280,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByReject2">
+                        <recv name="ClosePositionByReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1304,7 +1304,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByReject3">
+                        <recv name="ClosePositionByReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
@@ -1316,7 +1316,7 @@
                 </state>
                 <state label="701_17">
                     <operations>
-                        <recv name="ExecutionReportTrade4">
+                        <recv name="ExecutionReportTrade2">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1328,7 +1328,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByReject4">
+                        <recv name="ClosePositionByReject">
                             <messages>
                                 <message name="OrderReject"/>
                             </messages>
