@@ -7,7 +7,7 @@
     /// </summary>
     public class Bar
     {
-        internal Bar()
+        public Bar()
         {
         }
 
@@ -35,37 +35,46 @@
         /// <summary>
         /// Start date and time of the bar.
         /// </summary>
-        public DateTime From { get; internal set; }
+        public DateTime From { get; set; }
 
         /// <summary>
         /// End date and time of the bar.
         /// </summary>
-        public DateTime To { get; internal set; }
+        public DateTime To { get; set; }
 
         /// <summary>
         /// Gets bar open price.
         /// </summary>
-        public double Open { get; internal set; }
+        public double Open { get; set; }
 
         /// <summary>
         /// Gets bar close price.
         /// </summary>
-        public double Close { get; internal set; }
+        public double Close { get; set; }
 
         /// <summary>
         /// Gets bar highest price.
         /// </summary>
-        public double High { get; internal set; }
+        public double High { get; set; }
 
         /// <summary>
         /// Gets bar lowest price.
         /// </summary>
-        public double Low { get; internal set; }
+        public double Low { get; set; }
 
         /// <summary>
         /// Gets volume of the bar period.
         /// </summary>
-        public double Volume { get; internal set; }
+        public double Volume { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        public Bar Clone()
+        {
+            return new Bar(From, To, Open, Close, Low, High, Volume);
+        }
 
         /// <summary>
         /// Returns formatted string for the class instance.

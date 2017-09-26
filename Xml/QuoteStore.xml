@@ -1,0 +1,531 @@
+<protocol name="QuoteStore" majorVer="1" minorVer="0">
+    <members>
+        <message name="LoginRequest" id="0" size="48">
+            <fields>
+                <field name="Username" offset="8" type="ustring" optional="N" repeatable="N"/>
+                <field name="Password" offset="16" type="ustring" optional="N" repeatable="N"/>
+                <field name="DeviceId" offset="24" type="string" optional="N" repeatable="N"/>
+                <field name="AppId" offset="32" type="string" optional="N" repeatable="N"/>
+                <field name="AppSessionId" offset="40" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="LoginReport" id="1" size="8"/>
+        <enum name="LoginRejectReason" size="4">
+            <members>
+                <member name="IncorrectCredentials" value="0"/>
+                <member name="AccountIsBlocked" value="1"/>
+                <member name="AccountIsBlockedByAccessList" value="2"/>
+                <member name="InvalidSessionId" value="3"/>
+                <member name="InvalidSpec" value="4"/>
+                <member name="NotEnoughRights" value="5"/>
+                <member name="TimeoutLogin" value="6"/>
+                <member name="WebApiDisabled" value="7"/>
+                <member name="InternalServerError" value="8"/>
+                <member name="Throttling" value="9"/>
+            </members>
+        </enum>
+        <message name="LoginReject" id="2" size="20">
+            <fields>
+                <field name="Reason" offset="8" type="LoginRejectReason" optional="N" repeatable="N"/>
+                <field name="Text" offset="12" type="ustring" optional="Y" repeatable="N"/>
+            </fields>
+        </message>
+        <enum name="LogoutReason" size="4">
+            <members>
+                <member name="ClientLogout" value="0"/>
+                <member name="ServerLogout" value="1"/>
+                <member name="SlowConnection" value="2"/>
+                <member name="DeletedLogin" value="3"/>
+                <member name="InternalServerError" value="4"/>
+                <member name="BlockedLogin" value="5"/>
+            </members>
+        </enum>
+        <message name="Logout" id="3" size="20">
+            <fields>
+                <field name="Reason" offset="8" type="LogoutReason" optional="N" repeatable="N"/>
+                <field name="Text" offset="12" type="ustring" optional="Y" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="Request" id="4" size="16">
+            <subMessages>
+                <subMessage name="SymbolListRequest"/>
+                <subMessage name="PeriodicityListRequest"/>
+                <subMessage name="DownloadRequest"/>
+                <subMessage name="DownloadCancel"/>
+            </subMessages>
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="Response" id="5" size="16">
+            <subMessages>
+                <subMessage name="SymbolListReport"/>
+                <subMessage name="PeriodicityListReport"/>
+                <subMessage name="DownloadBeginReport"/>
+                <subMessage name="DownloadDataReport"/>
+                <subMessage name="DownloadEndReport"/>
+                <subMessage name="Reject"/>
+            </subMessages>
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="SymbolListRequest" id="6" superMessage="Request" size="16">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="SymbolListReport" id="7" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="SymbolIds" offset="16" type="string" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="PeriodicityListRequest" id="8" superMessage="Request" size="24">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="SymbolId" offset="16" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="PeriodicityListReport" id="9" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Periodicities" offset="16" type="string" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="DownloadRequest" id="10" superMessage="Request" size="32">
+            <subMessages>
+                <subMessage name="BarDownloadRequest"/>
+                <subMessage name="TickDownloadRequest"/>
+            </subMessages>
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="From" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="To" offset="24" type="timestamp" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <set name="PriceType" size="4">
+            <members>
+                <member name="Bid" value="0"/>
+                <member name="Ask" value="1"/>
+            </members>
+        </set>
+        <message name="BarDownloadRequest" id="11" superMessage="DownloadRequest" size="52">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="From" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="To" offset="24" type="timestamp" optional="N" repeatable="N"/>
+                <field name="SymbolId" offset="32" type="string" optional="N" repeatable="N"/>
+                <field name="PriceType" offset="40" type="PriceType" optional="N" repeatable="N"/>
+                <field name="Periodicity" offset="44" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <enum name="TickDepth" size="4">
+            <members>
+                <member name="Top" value="0"/>
+                <member name="Level2" value="1"/>
+            </members>
+        </enum>
+        <message name="TickDownloadRequest" id="12" superMessage="DownloadRequest" size="44">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="From" offset="16" type="timestamp" optional="N" repeatable="N"/>
+                <field name="To" offset="24" type="timestamp" optional="N" repeatable="N"/>
+                <field name="SymbolId" offset="32" type="string" optional="N" repeatable="N"/>
+                <field name="Depth" offset="40" type="TickDepth" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="DownloadCancel" id="13" superMessage="Request" size="16">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <group name="FileInfo" size="16">
+            <fields>
+                <field name="Id" offset="0" type="string" optional="N" repeatable="N"/>
+                <field name="Size" offset="8" type="uint64" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <message name="DownloadBeginReport" id="14" superMessage="Response" size="24">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Files" offset="16" type="FileInfo" optional="N" repeatable="Y"/>
+            </fields>
+        </message>
+        <message name="DownloadDataReport" id="15" superMessage="Response" size="33">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Id" offset="16" type="string" optional="N" repeatable="N"/>
+                <field name="Chunk" offset="24" type="bytes" optional="N" repeatable="N"/>
+                <field name="Last" offset="32" type="bool" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="DownloadEndReport" id="16" superMessage="Response" size="16">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <enum name="RejectReason" size="4">
+            <members>
+                <member name="DownloadCancelled" value="0"/>
+                <member name="InternalServerError" value="1"/>
+                <member name="Other" value="2"/>
+            </members>
+        </enum>
+        <message name="Reject" id="17" superMessage="Response" size="28">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Reason" offset="16" type="RejectReason" optional="N" repeatable="N"/>
+                <field name="Text" offset="20" type="ustring" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <processor name="Client" head="145_9">
+            <subProcessors>
+                <subProcessor name="ClientRequest"/>
+            </subProcessors>
+            <states>
+                <state label="145_9">
+                    <operations>
+                        <send name="LoginRequest" next="147_13">
+                            <messages>
+                                <message name="LoginRequest"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="147_13">
+                    <operations>
+                        <recv name="LoginReport" next="156_9">
+                            <messages>
+                                <message name="LoginReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="LoginReject">
+                            <messages>
+                                <message name="LoginReject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="LoginRequest"/>
+                    </contexts>
+                </state>
+                <state label="156_9">
+                    <operations>
+                        <send next="156_9">
+                            <messages>
+                                <message name="Request"/>
+                            </messages>
+                        </send>
+                        <recv next="156_9">
+                            <messages>
+                                <message name="Response"/>
+                            </messages>
+                        </recv>
+                        <send name="Logout" next="166_13">
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </send>
+                        <recv name="Logout">
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="166_13">
+                    <operations>
+                        <recv next="166_13">
+                            <messages>
+                                <message name="Response"/>
+                            </messages>
+                        </recv>
+                        <recv name="Logout">
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="Logout"/>
+                    </contexts>
+                </state>
+            </states>
+        </processor>
+        <processor name="ClientRequest" type="string" superProcessor="Client" head="187_9">
+            <fields>
+                <field name="Request.Id"/>
+                <field name="Response.RequestId"/>
+            </fields>
+            <states>
+                <state label="187_9">
+                    <operations>
+                        <send name="SymbolListRequest" next="189_13">
+                            <messages>
+                                <message name="SymbolListRequest"/>
+                            </messages>
+                        </send>
+                        <send name="PeriodicityListRequest" next="196_13">
+                            <messages>
+                                <message name="PeriodicityListRequest"/>
+                            </messages>
+                        </send>
+                        <send name="DownloadRequest" next="203_13">
+                            <messages>
+                                <message name="DownloadRequest"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="189_13">
+                    <operations>
+                        <recv name="SymbolListReport">
+                            <messages>
+                                <message name="SymbolListReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="SymbolListReject">
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="SymbolListRequest"/>
+                    </contexts>
+                </state>
+                <state label="196_13">
+                    <operations>
+                        <recv name="PeriodicityListReport">
+                            <messages>
+                                <message name="PeriodicityListReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="PeriodicityListReject">
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="PeriodicityListRequest"/>
+                    </contexts>
+                </state>
+                <state label="203_13">
+                    <operations>
+                        <recv name="DownloadBeginReport" next="205_17">
+                            <messages>
+                                <message name="DownloadBeginReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="DownloadReject">
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="DownloadRequest"/>
+                    </contexts>
+                </state>
+                <state label="205_17">
+                    <operations>
+                        <recv name="DownloadDataReport" next="205_17">
+                            <messages>
+                                <message name="DownloadDataReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="DownloadEndReport">
+                            <messages>
+                                <message name="DownloadEndReport"/>
+                            </messages>
+                        </recv>
+                        <recv name="DownloadReject">
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </recv>
+                        <send name="DownloadCancel" next="205_17">
+                            <messages>
+                                <message name="DownloadCancel"/>
+                            </messages>
+                        </send>
+                    </operations>
+                    <contexts>
+                        <context name="DownloadRequest"/>
+                    </contexts>
+                </state>
+            </states>
+        </processor>
+        <processor name="Server" head="226_9">
+            <subProcessors>
+                <subProcessor name="ServerRequest"/>
+            </subProcessors>
+            <states>
+                <state label="226_9">
+                    <operations>
+                        <recv name="LoginRequest" next="228_13">
+                            <messages>
+                                <message name="LoginRequest"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="228_13">
+                    <operations>
+                        <send next="237_9">
+                            <messages>
+                                <message name="LoginReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="LoginReject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="237_9">
+                    <operations>
+                        <recv next="237_9">
+                            <messages>
+                                <message name="Request"/>
+                            </messages>
+                        </recv>
+                        <send next="237_9">
+                            <messages>
+                                <message name="Response"/>
+                            </messages>
+                        </send>
+                        <recv name="Logout" next="247_13">
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </recv>
+                        <send>
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="247_13">
+                    <operations>
+                        <send next="247_13">
+                            <messages>
+                                <message name="Response"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Logout"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+            </states>
+        </processor>
+        <processor name="ServerRequest" type="string" superProcessor="Server" head="268_9">
+            <fields>
+                <field name="Request.Id"/>
+                <field name="Response.RequestId"/>
+            </fields>
+            <states>
+                <state label="268_9">
+                    <operations>
+                        <recv name="SymbolListRequest" next="270_13">
+                            <messages>
+                                <message name="SymbolListRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="PeriodicityListRequest" next="277_13">
+                            <messages>
+                                <message name="PeriodicityListRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="DownloadRequest" next="284_13">
+                            <messages>
+                                <message name="DownloadRequest"/>
+                            </messages>
+                        </recv>
+                        <recv>
+                            <messages>
+                                <message name="DownloadCancel"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+                <state label="270_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="SymbolListReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="277_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="PeriodicityListReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="284_13">
+                    <operations>
+                        <send name="DownloadBeginReport" next="286_17">
+                            <messages>
+                                <message name="DownloadBeginReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="286_17">
+                    <operations>
+                        <send next="286_17">
+                            <messages>
+                                <message name="DownloadDataReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="DownloadEndReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </send>
+                        <recv name="DownloadCancel" next="286_17">
+                            <messages>
+                                <message name="DownloadCancel"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                    <contexts>
+                        <context name="DownloadBeginReport"/>
+                    </contexts>
+                </state>
+            </states>
+        </processor>
+    </members>
+</protocol>

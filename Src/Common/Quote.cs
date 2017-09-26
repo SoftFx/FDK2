@@ -103,6 +103,25 @@
         public string Id { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public Quote Clone()
+        {
+            Quote quote = new Quote();
+            quote.Id = Id;
+            quote.Symbol = Symbol;
+            quote.CreatingTime = CreatingTime;
+
+            quote.Asks = new QuoteEntry[Asks.Length];
+            Asks.CopyTo(quote.Asks, 0);
+
+            quote.Bids = new QuoteEntry[Asks.Length];
+            Bids.CopyTo(quote.Bids, 0);
+
+            return quote;
+        }
+
+        /// <summary>
         /// Compares to quotes for equality.
         /// </summary>
         /// <param name="first">the first quote to compare.</param>
