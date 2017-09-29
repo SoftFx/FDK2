@@ -232,27 +232,13 @@
                     if (!info.Quotes.TryGetValue(element.Key, out quote))
                         continue;
 
-                    this.Quotes[element.Key] = new Quote
-                    {
-                        Symbol = element.Key,
-                        CreatingTime = quote.CreatingTime,
-                        Bids = new[] 
-                        {
-                            new QuoteEntry
-                            {
-                                Price = element.Value.Bid,
-                                Volume = 0
-                            }
-                        },
-                        Asks = new[] 
-                        {
-                            new QuoteEntry
-                            {
-                                Price = element.Value.Ask,
-                                Volume = 0
-                            }
-                        }
-                    };
+                    Quote newQuote = new Quote();
+                    newQuote.Symbol = element.Key;
+                    newQuote.CreatingTime = quote.CreatingTime;
+                    newQuote.Bids.Add(new QuoteEntry { Price = element.Value.Bid, Volume = 0 });
+                    newQuote.Asks.Add(new QuoteEntry { Price = element.Value.Ask, Volume = 0 });
+
+                    this.Quotes[element.Key] = newQuote;
                 }
             }
 

@@ -1172,30 +1172,27 @@ namespace TickTrader.FDK.QuoteFeed
 
                             MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
                             int count2 = reportSnapshotEntries.Length;
-                            TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[reportSnapshot.BidCount];
-                            TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[reportSnapshot.AskCount];
-                            
-                            int bidIndex = bidEntries.Length - 1;
-                            int askIndex = 0;
+
+                            resultQuote.Bids.Clear();
+                            resultQuote.Asks.Clear();
 
                             for (int index2 = 0; index2 < count2; ++ index2)
                             {
                                 MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
 
+                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
                                 quoteEntry.Volume = reportSnapshotEntry.Size;
                                 quoteEntry.Price = reportSnapshotEntry.Price;
 
                                 if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
                                 {
-                                    bidEntries[bidIndex --] = quoteEntry;
+                                    resultQuote.Bids.Add(quoteEntry);
                                 }
                                 else
-                                    askEntries[askIndex ++] = quoteEntry;
+                                    resultQuote.Asks.Add(quoteEntry);
                             }
 
-                            resultQuote.Bids = bidEntries;
-                            resultQuote.Asks = askEntries;
+                            resultQuote.Bids.Reverse();
 
                             resultQuotes[index] = resultQuote;
                         }
@@ -1311,13 +1308,9 @@ namespace TickTrader.FDK.QuoteFeed
 
                             MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
                             int count2 = reportSnapshotEntries.Length;
-                            int bidCount = reportSnapshot.BidCount;
-                            int askCount = reportSnapshot.AskCount;
-                            TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[bidCount];
-                            TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[askCount];
 
-                            int bidIndex = bidEntries.Length - 1;
-                            int askIndex = 0;
+                            resultQuote.Bids.Clear();
+                            resultQuote.Asks.Clear();
 
                             for (int index2 = 0; index2 < count2; ++ index2)
                             {
@@ -1329,14 +1322,13 @@ namespace TickTrader.FDK.QuoteFeed
 
                                 if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
                                 {
-                                    bidEntries[bidIndex --] = quoteEntry;
+                                    resultQuote.Bids.Add(quoteEntry);
                                 }
                                 else
-                                    askEntries[askIndex ++] = quoteEntry;
+                                    resultQuote.Asks.Add(quoteEntry);
                             }
 
-                            resultQuote.Bids = bidEntries;
-                            resultQuote.Asks = askEntries;
+                            resultQuote.Bids.Reverse();
 
                             resultQuotes[index] = resultQuote;
                         }
@@ -1499,31 +1491,27 @@ namespace TickTrader.FDK.QuoteFeed
 
                     MarketDataEntryArray snapshotEntries = snapshot.Entries;
                     int count = snapshotEntries.Length;
-                    TickTrader.FDK.Common.QuoteEntry[] bidEntries = new TickTrader.FDK.Common.QuoteEntry[snapshot.BidCount];
-                    TickTrader.FDK.Common.QuoteEntry[] askEntries = new TickTrader.FDK.Common.QuoteEntry[snapshot.AskCount];
-                            
-                    int bidIndex = bidEntries.Length - 1;
-                    int askIndex = 0;
+
+                    quote.Bids.Clear();
+                    quote.Asks.Clear();
 
                     for (int index = 0; index < count; ++ index)
                     {
                         MarketDataEntry snapshotEntry = snapshotEntries[index];
-                        // TODO: optimize
-                        TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
 
+                        TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
                         quoteEntry.Volume = snapshotEntry.Size;
                         quoteEntry.Price = snapshotEntry.Price;
 
                         if (snapshotEntry.Type == MarketDataEntryType.Bid)
                         {
-                            bidEntries[bidIndex --] = quoteEntry;
+                            quote.Bids.Add(quoteEntry);
                         }
                         else
-                            askEntries[askIndex ++] = quoteEntry;
+                            quote.Asks.Add(quoteEntry);
                     }
 
-                    quote.Bids = bidEntries;
-                    quote.Asks = askEntries;
+                    quote.Bids.Reverse();
 
                     if (client_.QuoteUpdateEvent != null)
                     {

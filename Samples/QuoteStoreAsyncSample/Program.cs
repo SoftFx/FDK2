@@ -268,7 +268,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(null, login_, password_, "", "");
+                client_.LoginAsync(this, login_, password_, "", "");
             }
             catch (Exception exception)
             {
@@ -316,7 +316,7 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                client_.LogoutAsync(null, "Client logout");
+                client_.LogoutAsync(this, "Client logout");
             }
             catch
             {
@@ -349,7 +349,7 @@ namespace QuoteStoreAsyncSample
 
         void GetSymbolList()
         {
-            client_.GetSymbolListAsync(null);
+            client_.GetSymbolListAsync(this);
         }
 
         void OnSymbolListResult(Client client, object data, string[] symbols)
@@ -384,7 +384,7 @@ namespace QuoteStoreAsyncSample
 
         void GetPeriodicityList(string symbol)
         {
-            client_.GetPeriodicityListAsync(null, symbol);
+            client_.GetPeriodicityListAsync(this, symbol);
         }
 
         void OnPeriodicityListResult(Client quoteFeedClient, object data, string[] periodicities)
@@ -419,7 +419,7 @@ namespace QuoteStoreAsyncSample
 
         void DownloadBars(string symbol, PriceType priceType, string periodicity, DateTime from, DateTime to)
         {
-            client_.DownloadBarsAsync(null, Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to);
+            client_.DownloadBarsAsync(this, Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to);
         }
 
         void OnBarDownloadBeginResult(Client client, object data, string downloadId)
@@ -487,7 +487,7 @@ namespace QuoteStoreAsyncSample
 
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            client_.DownloadQuotesAsync(null, Guid.NewGuid().ToString(), symbol, depth, from, to);
+            client_.DownloadQuotesAsync(this, Guid.NewGuid().ToString(), symbol, depth, from, to);
         }
 
         void OnQuoteDownloadBeginResult(Client client, object data, string downloadId)
@@ -620,4 +620,5 @@ namespace QuoteStoreAsyncSample
     }
 }
 
+// b EURUSD Ask M1 "2016.06.01 08:00:00" "2016.06.01 08:20:00"
 // q EURUSD Top "2016.06.01 08:00:00" "2016.06.01 08:01:00"

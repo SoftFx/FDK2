@@ -1,6 +1,7 @@
 ﻿namespace TickTrader.FDK.Common
 {
     using System;
+    using System.Collections.Generic;
 
     /// <summary>
     /// Tick class contains bid/ask quotes for a symbol.
@@ -12,6 +13,8 @@
         /// </summary>
         public Quote()
         {
+            Bids = new List<QuoteEntry>(100);
+            Asks = new List<QuoteEntry>(100);
         }
 
         /// <summary>
@@ -21,7 +24,7 @@
         {
             get
             {
-                return this.Bids.Length > 0;
+                return this.Bids.Count > 0;
             }
         }
 
@@ -32,7 +35,7 @@
         {
             get
             {
-                return this.Asks.Length > 0;
+                return this.Asks.Count > 0;
             }
         }
 
@@ -90,12 +93,12 @@
         /// <summary>
         /// Gets bid quotes; returned array can not be null.
         /// </summary>
-        public QuoteEntry[] Bids { get; set; }
+        public List<QuoteEntry> Bids { get; set; }
 
         /// <summary>
         /// Gets ask quotes; returned array can not be null.
         /// </summary>
-        public QuoteEntry[] Asks { get; set; }
+        public List<QuoteEntry> Asks { get; set; }
 
         /// <summary>
         /// The identifier is used by quotes storage.
@@ -111,12 +114,8 @@
             quote.Id = Id;
             quote.Symbol = Symbol;
             quote.CreatingTime = CreatingTime;
-
-            quote.Asks = new QuoteEntry[Asks.Length];
-            Asks.CopyTo(quote.Asks, 0);
-
-            quote.Bids = new QuoteEntry[Asks.Length];
-            Bids.CopyTo(quote.Bids, 0);
+            quote.Asks = new List<QuoteEntry>(Asks);
+            quote.Bids = new List<QuoteEntry>(Bids);
 
             return quote;
         }

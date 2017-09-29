@@ -11,8 +11,6 @@ namespace TickTrader.FDK.QuoteStore.Serialization
         {
             quoteDepth_ = quoteDepth;
             streamParser_ = new StreamParser(stream);
-            bidList_ = new List<QuoteEntry>(100);
-            askList_ = new List<QuoteEntry>(100);
         }
 
         public bool IsEnd
@@ -64,13 +62,16 @@ namespace TickTrader.FDK.QuoteStore.Serialization
                 streamParser_.ValidateVerbatimChar('\t');
                 streamParser_.ReadDouble(out ask_vol);
 
-                quote.Bids = new QuoteEntry[] { new QuoteEntry { Price = bid_price, Volume = bid_vol } };
-                quote.Asks = new QuoteEntry[] { new QuoteEntry { Price = ask_price, Volume = ask_vol } };
+                quote.Bids.Clear();
+                quote.Bids.Add(new QuoteEntry { Price = bid_price, Volume = bid_vol });
+
+                quote.Asks.Clear();
+                quote.Asks.Add(new QuoteEntry { Price = ask_price, Volume = ask_vol });
             }
             else
             {
-                bidList_.Clear();
-                askList_.Clear();
+                quote.Bids.Clear();
+                quote.Asks.Clear();
 
                 PriceType recType = PriceType.Bid;
                 QuoteEntry l2R = new QuoteEntry();
@@ -101,21 +102,17 @@ namespace TickTrader.FDK.QuoteStore.Serialization
 
                             if (recType == PriceType.Bid)
                             {
-                                bidList_.Add(l2R);                                
+                                quote.Bids.Add(l2R);                                
                             }
                             else
-                                askList_.Add(l2R);                                
+                                quote.Asks.Add(l2R);
                         }
                     }
                     else
                         break;
                 }
 
-                bidList_.Reverse();
-
-                // TODO: ?
-                quote.Bids = bidList_.ToArray();
-                quote.Asks = askList_.ToArray();
+                quote.Bids.Reverse();
             }
 
             streamParser_.ValidateVerbatimChar('\r');
@@ -124,7 +121,5 @@ namespace TickTrader.FDK.QuoteStore.Serialization
 
         QuoteDepth quoteDepth_;
         StreamParser streamParser_;
-        List<QuoteEntry> bidList_;
-        List<QuoteEntry> askList_;
     }
 }

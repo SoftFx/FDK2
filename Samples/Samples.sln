@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StandardExamples", "Standar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreAsyncSample", "QuoteStoreAsyncSample\QuoteStoreAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F434566B}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreSample", "QuoteStoreSample\QuoteStoreSample.csproj", "{B33E4ADA-5980-43EA-80C4-15834434566B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -63,6 +65,10 @@ Global
 		{B33E4ADA-5980-43EA-80C4-1587F434566B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B33E4ADA-5980-43EA-80C4-1587F434566B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B33E4ADA-5980-43EA-80C4-1587F434566B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B33E4ADA-5980-43EA-80C4-15834434566B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B33E4ADA-5980-43EA-80C4-15834434566B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B33E4ADA-5980-43EA-80C4-15834434566B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B33E4ADA-5980-43EA-80C4-15834434566B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
