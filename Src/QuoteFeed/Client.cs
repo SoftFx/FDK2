@@ -473,7 +473,7 @@ namespace TickTrader.FDK.QuoteFeed
 
         interface IAsyncContext
         {
-            void SetDisconnecteError(Exception exception);
+            void SetDisconnectError(Exception exception);
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
@@ -482,7 +482,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -497,7 +497,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -512,7 +512,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -527,7 +527,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -542,7 +542,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -557,7 +557,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -574,7 +574,7 @@ namespace TickTrader.FDK.QuoteFeed
 
             public string[] SymbolIds;
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -589,7 +589,7 @@ namespace TickTrader.FDK.QuoteFeed
             {
             }
 
-            public void SetDisconnecteError(Exception exception)
+            public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
                     taskCompletionSource_.SetException(exception);
@@ -676,7 +676,7 @@ namespace TickTrader.FDK.QuoteFeed
                     Exception exception = new Exception(message);
 
                     foreach (ClientContext context in contexts)
-                        ((IAsyncContext)context).SetDisconnecteError(exception);                                        
+                        ((IAsyncContext)context).SetDisconnectError(exception);                                        
                 }
                 catch
                 {
