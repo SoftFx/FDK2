@@ -438,7 +438,7 @@ namespace TickTrader.FDK.QuoteFeed
             var context = new GetQuotesAsyncContext();
             context.Data = data;
 
-            if (data != null)
+            if (data == null)
             {
                 context.taskCompletionSource_ = new TaskCompletionSource<Quote[]>();
                 result = context.taskCompletionSource_.Task;
@@ -1616,7 +1616,7 @@ namespace TickTrader.FDK.QuoteFeed
                             context.taskCompletionSource_.SetException(exception);
                     }
                 }
-                else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
+                else
                 {
                     // GetQuotes
 
