@@ -419,7 +419,7 @@ namespace TickTrader.FDK.QuoteFeed
                 requestSymbolIds[index] = symbolIds[index];
 
             // Send request to the server
-            session_.SendMarketDataRequest(context, request);
+           session_.SendMarketDataRequest(context, request);
 
             // Return result task
             return result;

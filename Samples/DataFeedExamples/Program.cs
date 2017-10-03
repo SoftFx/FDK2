@@ -28,6 +28,8 @@
                     {
                         Console.WriteLine("1 - SymbolInfoExample");
                         Console.WriteLine("2 - TicksExample");
+                        Console.WriteLine("3 - BarsHistoryExample");
+                        Console.WriteLine("4 - TicksHistoryExample");
                         Console.WriteLine("0 - Exit");
                         Console.Write("Please select : ");
 
@@ -42,6 +44,14 @@
                         else if (command == "2")
                         {
                             example = new TicksExample(address, username, password);
+                        }
+                        else if (command == "3")
+                        {
+                            example = new BarsHistoryExample(address, username, password);
+                        }
+                        else if (command == "4")
+                        {
+                            example = new TicksHistoryExample(address, username, password);
                         }
                         else if (command == "0")
                         {

@@ -24,7 +24,7 @@
         {
             if (reason == TwoFactorReason.ClientResponse)
             {
-                dataFeed_.client_.SendOneTimePassword(otp);
+                dataFeed_.quoteFeedClient_.SendOneTimePassword(otp);
             }
             else
                 throw new Exception("Invalid two factor reason : " + reason);
@@ -46,7 +46,7 @@
         /// <returns>can not be null.</returns>
         public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
         {
-            return dataFeed_.client_.GetSessionInfo(timeoutInMilliseconds);
+            return dataFeed_.quoteFeedClient_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -76,7 +76,7 @@
         /// <returns></returns>
         public CurrencyInfo[] GetCurrenciesEx(int timeoutInMilliseconds)
         {
-            return dataFeed_.client_.GetCurrencyList(timeoutInMilliseconds);
+            return dataFeed_.quoteFeedClient_.GetCurrencyList(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -95,7 +95,7 @@
         /// <returns>can not be null</returns>
         public SymbolInfo[] GetSymbolsEx(int timeoutInMilliseconds)
         {
-            return dataFeed_.client_.GetSymbolList(timeoutInMilliseconds);
+            return dataFeed_.quoteFeedClient_.GetSymbolList(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -135,7 +135,7 @@
             foreach (string symbol in symbols)
                 symbolList.Add(symbol);
 
-            dataFeed_.client_.SubscribeQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
+            dataFeed_.quoteFeedClient_.SubscribeQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -158,7 +158,7 @@
             foreach (string symbol in symbols)
                 symbolList.Add(symbol);
 
-            dataFeed_.client_.UnsbscribeQuotes(symbolList.ToArray(), timeoutInMilliseconds);
+            dataFeed_.quoteFeedClient_.UnsbscribeQuotes(symbolList.ToArray(), timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -181,11 +181,9 @@
             foreach (string symbol in symbols)
                 symbolList.Add(symbol);
 
-            return dataFeed_.client_.GetQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
+            return dataFeed_.quoteFeedClient_.GetQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
         }
 
-        // TODO:
-#if TODO
         /// <summary>
         /// The method gets history bars from the server.
         /// </summary>
@@ -197,9 +195,39 @@
         /// <returns></returns>
         public Bars GetBarsHistory(string symbol, PriceType priceType, BarPeriod period, DateTime startTime, DateTime endTime)
         {
-            return new Bars(dataFeed_, symbol, priceType, period, startTime, endTime);
+            return GetBarsHistoryEx(symbol, priceType, period, startTime, endTime, dataFeed_.synchOperationTimeout_);
         }
-#endif
+
+        /// <summary>
+        /// The method gets history bars from the server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="priceType">A required price type: Bid or Ask.</param>
+        /// <param name="startTime">A start time of bars enumeration.</param>
+        /// <param name="endTime">A end time of bars enumeration.</param>
+        /// <param name="period">Bar period instance; can not be null.</param>
+        /// <returns></returns>
+        public Bars GetBarsHistoryEx(string symbol, PriceType priceType, BarPeriod period, DateTime startTime, DateTime endTime, int timeoutInMilliseconds)
+        {
+            return new Bars(dataFeed_, symbol, priceType, period, startTime, endTime, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method gets history quotes from the server.
+        /// </summary>
+        public QuotesSingleSequence GetQuotesHistory(string symbol, DateTime startTime, DateTime endTime, int depth)
+        {
+            return GetQuotesHistoryEx(symbol, startTime, endTime, depth, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method gets history quotes from the server.
+        /// </summary>
+        public QuotesSingleSequence GetQuotesHistoryEx(string symbol, DateTime startTime, DateTime endTime, int depth, int timeoutInMilliseconds)
+        {
+            return new QuotesSingleSequence(dataFeed_, symbol, startTime, endTime, depth, timeoutInMilliseconds);
+        }
+/*
         /// <summary>
         /// The method gets history bars from the server.
         /// </summary>
@@ -330,7 +358,7 @@
         {
             throw new Exception("Not impled");
         }
-
+*/
         DataFeed dataFeed_;
     }
 }

@@ -38,11 +38,13 @@
     <StartupObject>DataFeedExamples.Program</StartupObject>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BarsHistoryExample.cs" />
     <Compile Include="Example.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SymbolInfoExample.cs" />
     <Compile Include="TicksExample.cs" />
+    <Compile Include="TicksHistoryExample.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System" />

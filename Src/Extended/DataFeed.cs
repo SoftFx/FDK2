@@ -4,6 +4,7 @@
     using System.Threading;
     using Common;
     using QuoteFeed;
+    using QuoteStore;
 
     /// <summary>
     /// This class connects to trading platform and receives quotes and other notifications.
@@ -60,9 +61,13 @@
             if (! connectionStringParser.TryGetStringValue("Address", out address_))
                 throw new Exception("Address is not specified");
 
-            int port;
-            if (! connectionStringParser.TryGetIntValue("Port", out port))
-                port = 5030;
+            int quoteFeedPort;
+            if (! connectionStringParser.TryGetIntValue("QuoteFeedPort", out quoteFeedPort))
+                quoteFeedPort = 5030;
+
+            int quoteStorePort;
+            if (! connectionStringParser.TryGetIntValue("QuoteStorePort", out quoteStorePort))
+                quoteStorePort = 5050;
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
@@ -93,26 +98,35 @@
 
             synchronizer_ = new object();
 
-            client_ = new Client(name_, port, true, logDirectory, decodeLogMessages);
-            client_.ConnectEvent += new Client.ConnectDelegate(this.OnConnect);
-            client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.OneTimePasswordRequestEvent += new Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
-            client_.OneTimePasswordRejectEvent += new Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
-            client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
-            client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
-            client_.CurrencyListResultEvent += new Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
-            client_.CurrencyListErrorEvent += new Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
-            client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
-            client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
-            client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            client_.QuotesBeginEvent += new Client.QuotesBeginDelegate(this.OnQuotesBegin);
-            client_.QuotesEndEvent += new Client.QuotesEndDelegate(this.OnQuotesEnd);
-            client_.QuoteUpdateEvent += new Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
+            quoteFeedClient_ = new QuoteFeed.Client(name_ + "_QuoteFeed", quoteFeedPort, true, logDirectory, decodeLogMessages);
+            quoteFeedClient_.ConnectEvent += new QuoteFeed.Client.ConnectDelegate(this.OnConnect);
+            quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.Client.ConnectErrorDelegate(this.OnConnectError);
+            quoteFeedClient_.DisconnectEvent += new QuoteFeed.Client.DisconnectDelegate(this.OnDisconnect);
+            quoteFeedClient_.OneTimePasswordRequestEvent += new QuoteFeed.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
+            quoteFeedClient_.OneTimePasswordRejectEvent += new QuoteFeed.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            quoteFeedClient_.LoginResultEvent += new QuoteFeed.Client.LoginResultDelegate(this.OnLoginResult);
+            quoteFeedClient_.LoginErrorEvent += new QuoteFeed.Client.LoginErrorDelegate(this.OnLoginError);
+            quoteFeedClient_.LogoutResultEvent += new QuoteFeed.Client.LogoutResultDelegate(this.OnLogoutResult);
+            quoteFeedClient_.LogoutEvent += new QuoteFeed.Client.LogoutDelegate(this.OnLogout);
+            quoteFeedClient_.SessionInfoResultEvent += new QuoteFeed.Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
+            quoteFeedClient_.SessionInfoErrorEvent += new QuoteFeed.Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            quoteFeedClient_.CurrencyListResultEvent += new QuoteFeed.Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
+            quoteFeedClient_.CurrencyListErrorEvent += new QuoteFeed.Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
+            quoteFeedClient_.SymbolListResultEvent += new QuoteFeed.Client.SymbolListResultDelegate(this.OnSymbolListResult);
+            quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.Client.SymbolListErrorDelegate(this.OnSymbolListError);
+            quoteFeedClient_.SessionInfoUpdateEvent += new QuoteFeed.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
+            quoteFeedClient_.QuotesBeginEvent += new QuoteFeed.Client.QuotesBeginDelegate(this.OnQuotesBegin);
+            quoteFeedClient_.QuotesEndEvent += new QuoteFeed.Client.QuotesEndDelegate(this.OnQuotesEnd);
+            quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
+
+            quoteStoreClient_ = new QuoteStore.Client(name_ + "_QuoteStore", quoteStorePort, true, logDirectory, decodeLogMessages);
+            quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
+            quoteStoreClient_.ConnectErrorEvent += new QuoteStore.Client.ConnectErrorDelegate(this.OnConnectError);
+            quoteStoreClient_.DisconnectEvent += new QuoteStore.Client.DisconnectDelegate(this.OnDisconnect);
+            quoteStoreClient_.LoginResultEvent += new QuoteStore.Client.LoginResultDelegate(this.OnLoginResult);
+            quoteStoreClient_.LoginErrorEvent += new QuoteStore.Client.LoginErrorDelegate(this.OnLoginError);
+            quoteStoreClient_.LogoutResultEvent += new QuoteStore.Client.LogoutResultDelegate(this.OnLogoutResult);
+            quoteStoreClient_.LogoutEvent += new QuoteStore.Client.LogoutDelegate(this.OnLogout);
 
             loginEvent_ = new ManualResetEvent(false);
 
@@ -285,6 +299,8 @@
         /// </summary>
         public void Start()
         {
+            // TODO: join in case of exception
+
             lock (synchronizer_)
             {
                 if (started_)
@@ -292,6 +308,7 @@
                 
                 loginEvent_.Reset();
                 loginException_ = null;
+                initFlags_ = InitFlags.None;
                 logout_ = false;
 
                 eventQueue_.Open();
@@ -302,9 +319,20 @@
 
                 try
                 {
-                    client_.ConnectAsync(address_);
+                    quoteFeedClient_.ConnectAsync(address_);
 
-                    started_ = true;
+                    try
+                    {
+                        quoteStoreClient_.ConnectAsync(address_);
+                        
+                        started_ = true;
+                    }
+                    catch
+                    {
+                        quoteFeedClient_.DisconnectAsync("");
+
+                        throw;
+                    }
                 }
                 catch
                 {
@@ -339,21 +367,31 @@
             lock (synchronizer_)
             {
                 if (started_)
-                {
+                {                    
                     started_ = false;
 
                     try
                     {
-                        client_.LogoutAsync(null, "Client logout");
+                        quoteStoreClient_.LogoutAsync(null, "Client logout");
                     }
                     catch
                     {                        
-                        client_.DisconnectAsync("Client disconnect");
+                        quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    }
+
+                    try
+                    {
+                        quoteFeedClient_.LogoutAsync(null, "Client logout");
+                    }
+                    catch
+                    {                        
+                        quoteFeedClient_.DisconnectAsync("Client disconnect");
                     }
                 }
             }
 
-            client_.Join();
+            quoteStoreClient_.Join();
+            quoteFeedClient_.Join();
 
             Thread eventThread = null;
 
@@ -430,7 +468,8 @@
 
             eventQueue_.Dispose();
             loginEvent_.Dispose();
-            client_.Dispose();
+            quoteStoreClient_.Dispose();
+            quoteFeedClient_.Dispose();
 
             GC.SuppressFinalize(this);
         }
@@ -439,52 +478,39 @@
 
         #region Private
 
-        void OnConnect(Client quoteFeed)
+        void OnConnect(QuoteFeed.Client client)
         {
             try
             {
-                client_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+                quoteFeedClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                quoteStoreClient_.DisconnectAsync("Client disconnect");
+                quoteFeedClient_.DisconnectAsync("Client disconnect");                
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(QuoteFeed.Client client, string text)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = LogoutReason.NetworkError;
-                args.Text = text;
-                eventQueue_.PushEvent(args);                    
-
-                loginException_ = new LogoutException(text);
-                loginEvent_.Set();                
-            }
-            catch
-            {
-            }
-        }
-
-        void OnDisconnect(Client client, string text)
-        {
-            try
-            {
-                if (! logout_)
+                lock (synchronizer_)
                 {
-                    logout_ = true;
+                    quoteStoreClient_.DisconnectAsync("Client disconnect");
 
-                    LogoutEventArgs args = new LogoutEventArgs();
-                    args.Reason = LogoutReason.NetworkError;
-                    args.Text = text;
-                    eventQueue_.PushEvent(args);
+                    if (! logout_)
+                    {
+                        logout_ = true;
 
-                    loginException_ = new LogoutException(text);
-                    loginEvent_.Set();                    
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
                 }
             }
             catch
@@ -492,7 +518,34 @@
             }
         }
 
-        void OnOneTimePasswordRequest(Client client, string text)
+        void OnDisconnect(QuoteFeed.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
+
+                    if (! logout_)
+                    {                       
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOneTimePasswordRequest(QuoteFeed.Client client, string text)
         {
             try
             {
@@ -508,7 +561,7 @@
             }
         }
 
-        void OnOneTimePasswordReject(Client client, string text)
+        void OnOneTimePasswordReject(QuoteFeed.Client client, string text)
         {
             try
             {
@@ -524,60 +577,39 @@
             }
         }
 
-        void OnLoginResult(Client client, object data)
+        void OnLoginResult(QuoteFeed.Client client, object data)
         {
             try
             {
-                initFlags_ = InitFlags.None;
-
-                client_.GetSessionInfoAsync(this);
-                client_.GetCurrencyListAsync(this);
-                client_.GetSymbolListAsync(this);
+                quoteFeedClient_.GetSessionInfoAsync(this);
+                quoteFeedClient_.GetCurrencyListAsync(this);
+                quoteFeedClient_.GetSymbolListAsync(this);
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                quoteStoreClient_.DisconnectAsync("Client disconnect");
+                quoteFeedClient_.DisconnectAsync("Client disconnect");                
             }
         }
 
-        void OnLoginError(Client client, object data, string text)
+        void OnLoginError(QuoteFeed.Client client, object data, string text)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = LogoutReason.InvalidCredentials;
-                args.Text = text;
-                eventQueue_.PushEvent(args);
-
-                loginException_ = new LogoutException(text);
-                loginEvent_.Set();
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
-        {
-            try
-            {
-                if (data == this)
+                lock (synchronizer_)
                 {
-                    initFlags_ |= InitFlags.SessionInfo;
+                    quoteStoreClient_.DisconnectAsync("Client disconnect");
 
-                    lock (cache_.mutex_)
+                    if (! logout_)
                     {
-                        if (cache_.sessionInfo_ == null)
-                            cache_.sessionInfo_ = sessionInfo;
-                    }
+                        logout_ = true;
 
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.InvalidCredentials;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
 
-                        loginException_ = null;
+                        loginException_ = new LogoutException(text);
                         loginEvent_.Set();
                     }
                 }
@@ -587,38 +619,30 @@
             }
         }
 
-        void OnSessionInfoError(Client client, object data, string message)
-        {
-            try
-            {
-                if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
-            }
-            catch
-            {
-            }
-        }
-
-        void OnCurrencyListResult(Client client, object data, CurrencyInfo[] currencies)
+        void OnSessionInfoResult(QuoteFeed.Client client, object data, SessionInfo sessionInfo)
         {
             try
             {
                 if (data == this)
                 {
-                    initFlags_ |= InitFlags.Currencies;
-
-                    lock (cache_.mutex_)
+                    lock (synchronizer_)
                     {
-                        if (cache_.currencies_ == null)
-                            cache_.currencies_ = currencies;
-                    }                    
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.sessionInfo_ == null)
+                                cache_.sessionInfo_ = sessionInfo;
+                        }
 
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
+                        initFlags_ |= InitFlags.SessionInfo;
 
-                        loginException_ = null;
-                        loginEvent_.Set();
+                        if (initFlags_ == InitFlags.All)
+                        {                     
+                            logout_ = false;                                   
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();                            
+                        }
                     }
                 }
             }
@@ -627,38 +651,45 @@
             }
         }
 
-        void OnCurrencyListError(Client client, object data, string message)
+        void OnSessionInfoError(QuoteFeed.Client client, object data, string message)
         {
             try
             {
                 if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
+                {
+                    quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                }
             }
             catch
             {
             }
         }
 
-        void OnSymbolListResult(Client client, object data, SymbolInfo[] symbols)
+        void OnCurrencyListResult(QuoteFeed.Client client, object data, CurrencyInfo[] currencies)
         {
             try
             {
                 if (data == this)
                 {
-                    initFlags_ |= InitFlags.Symbols;
-
-                    lock (cache_.mutex_)
+                    lock (synchronizer_)
                     {
-                        if (cache_.symbols_ == null)
-                            cache_.symbols_ = symbols;
-                    }
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.currencies_ == null)
+                                cache_.currencies_ = currencies;
+                        }
 
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
+                        initFlags_ |= InitFlags.Currencies;
 
-                        loginException_ = null;
-                        loginEvent_.Set();
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
                     }
                 }
             }
@@ -667,51 +698,113 @@
             }
         }
 
-        void OnSymbolListError(Client client, object data, string message)
+        void OnCurrencyListError(QuoteFeed.Client client, object data, string message)
         {
             try
             {
                 if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
+                {
+                    quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                }
             }
             catch
             {
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo logoutInfo)
+        void OnSymbolListResult(QuoteFeed.Client client, object data, SymbolInfo[] symbols)
         {
             try
             {
-                logout_ = true;
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.symbols_ == null)
+                                cache_.symbols_ = symbols;
+                        }
 
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = logoutInfo.Reason;
-                args.Text = logoutInfo.Message;
-                eventQueue_.PushEvent(args);
+                        initFlags_ |= InitFlags.Symbols;
+
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
+                    }
+                }
             }
             catch
             {
             }
         }
 
-        void OnLogout(Client client, LogoutInfo logoutInfo)
+        void OnSymbolListError(QuoteFeed.Client client, object data, string message)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = logoutInfo.Reason;
-                args.Text = logoutInfo.Message;
-                eventQueue_.PushEvent(args);
+                if (data == this)
+                {
+                    quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                }
             }
             catch
             {
             }
         }
 
-        void OnSessionInfoUpdate(Client client, SessionInfo info)
+        void OnLogoutResult(QuoteFeed.Client client, object data, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogout(QuoteFeed.Client client, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoUpdate(QuoteFeed.Client client, SessionInfo info)
         {
             try
             {
@@ -724,7 +817,7 @@
             }
         }
 
-        void OnQuotesBegin(Client client, Quote[] quotes)
+        void OnQuotesBegin(QuoteFeed.Client client, Quote[] quotes)
         {
             try
             {
@@ -749,7 +842,7 @@
             }
         }
 
-        void OnQuotesEnd(Client client, string[] symbolIds)
+        void OnQuotesEnd(QuoteFeed.Client client, string[] symbolIds)
         {
             try
             {
@@ -765,7 +858,7 @@
             }
         }
 
-        void OnQuoteUpdate(Client client, Quote quote)
+        void OnQuoteUpdate(QuoteFeed.Client client, Quote quote)
         {
             try
             {
@@ -783,7 +876,7 @@
             }
         }
 
-        void OnNotification(Client client, Notification notification)
+        void OnNotification(QuoteFeed.Client client, Notification notification)
         {
             try
             {
@@ -792,6 +885,169 @@
                 args.Severity = notification.Severity;
                 args.Text = notification.Message;
                 eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnConnect(QuoteStore.Client client)
+        {
+            try
+            {
+                quoteStoreClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+            }
+            catch
+            {
+                quoteStoreClient_.DisconnectAsync("Client disconnect");
+                quoteFeedClient_.DisconnectAsync("Client disconnect");
+            }
+        }
+
+        void OnConnectError(QuoteStore.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    quoteFeedClient_.DisconnectAsync("Client disconnect");
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(QuoteStore.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~InitFlags.StoreLogin;
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLoginResult(QuoteStore.Client client, object data)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ |= InitFlags.StoreLogin;
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        logout_ = false;
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+                quoteStoreClient_.DisconnectAsync("Client disconnect");
+                quoteFeedClient_.DisconnectAsync("Client disconnect");
+            }
+        }
+
+        void OnLoginError(QuoteStore.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    quoteFeedClient_.DisconnectAsync("Client disconnect");
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.InvalidCredentials;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogoutResult(QuoteStore.Client client, object data, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogout(QuoteStore.Client client, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
             }
             catch
             {
@@ -1055,11 +1311,12 @@
 
         enum InitFlags
         {
-            None = 0x00,
+            None = 0x00,            
             SessionInfo = 0x01,
             Currencies = 0x02,
-            Symbols = 0x04,
-            All = SessionInfo | Currencies | Symbols
+            Symbols = 0x4,
+            StoreLogin = 0x08,
+            All = SessionInfo | Currencies | Symbols | StoreLogin
         }
 
         string name_;
@@ -1073,7 +1330,8 @@
         internal DataFeedServer server_;
         internal DataFeedCache cache_;
         internal Network network_;
-        internal Client client_;
+        internal QuoteFeed.Client quoteFeedClient_;
+        internal QuoteStore.Client quoteStoreClient_;
 
         object synchronizer_;        
         bool started_;

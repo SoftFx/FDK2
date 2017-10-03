@@ -15,6 +15,7 @@ namespace TickTrader.FDK.QuoteStore
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
+            quote_ = new Quote();
             event_ = new AutoResetEvent(false);
         }
 
@@ -53,7 +54,7 @@ namespace TickTrader.FDK.QuoteStore
 
                 if (taskCompletionSource_ != null)
                 {
-                    Exception exception = new Exception(string.Format("Enumerator completed : {0}", downloadId_));
+                    Exception exception = new Exception(string.Format("Enumerator closed : {0}", downloadId_));
 
                     taskCompletionSource_.SetException(exception);
                     taskCompletionSource_ = null;
@@ -79,7 +80,8 @@ namespace TickTrader.FDK.QuoteStore
 
         internal object mutex_;
         internal bool completed_;
-        internal TaskCompletionSource<Quote> taskCompletionSource_;        
+        internal TaskCompletionSource<Quote> taskCompletionSource_;
+        internal Quote quote_;
         internal AutoResetEvent event_;
     }
 }
