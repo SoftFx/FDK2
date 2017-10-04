@@ -975,7 +975,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.taskCompletionSource_ != null)
                         {
-                            context.barEnumerator_ = new BarEnumerator(message.RequestId);
+                            context.barEnumerator_ = new BarEnumerator(client_, message.RequestId);
                             context.taskCompletionSource_.SetResult(context.barEnumerator_);
                         }
                     }
@@ -1031,7 +1031,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.taskCompletionSource_ != null)
                         {
-                            context.quoteEnumerator_ = new QuoteEnumerator(message.RequestId);
+                            context.quoteEnumerator_ = new QuoteEnumerator(client_, message.RequestId);
                             context.taskCompletionSource_.SetResult(context.quoteEnumerator_);
                         }
                     }

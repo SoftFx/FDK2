@@ -276,36 +276,54 @@
         /// </summary>
         public void Start()
         {
-            lock (synchronizer_)
+            OrderEntry.Client client = null;
+            Thread eventThread = null;
+
+            try
             {
-                if (started_)
-                    throw new Exception(string.Format("Data trade is already started : {0}", name_));                               
-                
-                loginEvent_.Reset();
-                loginException_ = null;
-                logout_ = false;
-
-                eventQueue_.Open();
-
-                eventThread_ = new Thread(this.EventThread);
-                eventThread_.Name = name_ + " Event Thread";
-                eventThread_.Start();
-
-                try
+                lock (synchronizer_)
                 {
-                    client_.ConnectAsync(address_);
+                    if (started_)
+                        throw new Exception(string.Format("Data trade is already started : {0}", name_));
 
-                    started_ = true;
+                    loginEvent_.Reset();
+                    loginException_ = null;
+                    logout_ = false;
+
+                    eventQueue_.Open();
+
+                    eventThread_ = new Thread(this.EventThread);
+                    eventThread_.Name = name_ + " Event Thread";
+                    eventThread_.Start();
+
+                    try
+                    {
+                        client_.ConnectAsync(address_);
+
+                        started_ = true;
+                    }
+                    catch
+                    {
+                        eventThread = eventThread_;
+                        eventThread_ = null;
+
+                        eventQueue_.Close();
+
+                        throw;
+                    }
                 }
-                catch
-                {
-                    eventQueue_.Close();
+            }
+            catch
+            {
+                // have to wait here since we don't have Join()
 
-                    eventThread_.Join();
-                    eventThread_ = null;
+                if (eventThread != null)
+                    eventThread.Join();
 
-                    throw;
-                }
+                if (client != null)
+                    client.Join();
+
+                throw;
             }
         }
 

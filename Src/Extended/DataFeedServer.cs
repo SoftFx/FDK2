@@ -99,15 +99,6 @@
         }
 
         /// <summary>
-        /// Returns version of server quotes history.
-        /// </summary>
-        /// <returns>quote history version</returns>
-        public int GetQuotesHistoryVersion()
-        {
-            throw new Exception("Not impled");
-        }
-
-        /// <summary>
         /// The method subscribes to quotes.
         /// </summary>
         /// <param name="symbols">list of requested symbols; can not be null</param>
@@ -228,6 +219,15 @@
             return new QuotesSingleSequence(dataFeed_, symbol, startTime, endTime, depth, timeoutInMilliseconds);
         }
 /*
+        /// <summary>
+        /// Returns version of server quotes history.
+        /// </summary>
+        /// <returns>quote history version</returns>
+        public int GetQuotesHistoryVersion()
+        {
+            throw new Exception("Not impled");
+        }
+
         /// <summary>
         /// The method gets history bars from the server.
         /// </summary>

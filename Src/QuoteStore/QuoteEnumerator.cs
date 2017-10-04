@@ -8,8 +8,9 @@ namespace TickTrader.FDK.QuoteStore
 {
     public class QuoteEnumerator : IDisposable
     {
-        internal QuoteEnumerator(string downloadId)
+        internal QuoteEnumerator(Client client, string downloadId)
         {
+            client_ = client;
             downloadId_ = downloadId;
 
             mutex_ = new object();
@@ -50,14 +51,25 @@ namespace TickTrader.FDK.QuoteStore
         {
             lock (mutex_)
             {
-                completed_ = true;
-
-                if (taskCompletionSource_ != null)
+                if (!completed_)
                 {
-                    Exception exception = new Exception(string.Format("Enumerator closed : {0}", downloadId_));
+                    completed_ = true;
 
-                    taskCompletionSource_.SetException(exception);
-                    taskCompletionSource_ = null;
+                    if (taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(string.Format("Enumerator closed : {0}", downloadId_));
+
+                        taskCompletionSource_.SetException(exception);
+                        taskCompletionSource_ = null;
+                    }
+
+                    try
+                    {
+                        client_.SendDownloadCancel(downloadId_);
+                    }
+                    catch
+                    {
+                    }
                 }
 
                 if (event_ != null)
@@ -76,6 +88,7 @@ namespace TickTrader.FDK.QuoteStore
             GC.SuppressFinalize(this);
         }
 
+        Client client_;
         string downloadId_;
 
         internal object mutex_;

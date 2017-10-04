@@ -156,10 +156,10 @@
             get { return synchOperationTimeout_; }
         }
 
+/*
         /// Gets or sets queue size for quotes.
         /// Note: FDK uses a separated queue for every symbol.
         /// </summary>
-        [Obsolete("No longer used")]
         public int QuotesQueueThresholdSize
         {
             get
@@ -175,7 +175,7 @@
                 throw new Exception("Not impled");
             }
         }
-
+*/
         /// <summary>
         /// Gets object, which encapsulates server side methods.
         /// </summary>
@@ -295,54 +295,75 @@
         #region Methods
 
         /// <summary>
-        /// Starts data feed instance.
+        /// Starts data feed instance asynchronously.
         /// </summary>
         public void Start()
-        {
-            // TODO: join in case of exception
+        {            
+            QuoteFeed.Client quoteFeedClient = null;
+            QuoteStore.Client quoteStoreClient = null;
+            Thread eventThread = null;
 
-            lock (synchronizer_)
+            try
             {
-                if (started_)
-                    throw new Exception(string.Format("Data feed is already started : {0}", name_));                               
-                
-                loginEvent_.Reset();
-                loginException_ = null;
-                initFlags_ = InitFlags.None;
-                logout_ = false;
-
-                eventQueue_.Open();
-
-                eventThread_ = new Thread(this.EventThread);
-                eventThread_.Name = name_ + " Event Thread";
-                eventThread_.Start();
-
-                try
+                lock (synchronizer_)
                 {
-                    quoteFeedClient_.ConnectAsync(address_);
+                    if (started_)
+                        throw new Exception(string.Format("Data feed is already started : {0}", name_));
+
+                    loginEvent_.Reset();
+                    loginException_ = null;
+                    initFlags_ = InitFlags.None;
+                    logout_ = false;
+
+                    eventQueue_.Open();
+
+                    eventThread_ = new Thread(this.EventThread);
+                    eventThread_.Name = name_ + " Event Thread";
+                    eventThread_.Start();
 
                     try
                     {
-                        quoteStoreClient_.ConnectAsync(address_);
-                        
-                        started_ = true;
+                        quoteFeedClient_.ConnectAsync(address_);
+
+                        try
+                        {
+                            quoteStoreClient_.ConnectAsync(address_);
+
+                            started_ = true;
+                        }
+                        catch
+                        {
+                            quoteFeedClient_.DisconnectAsync("");
+                            quoteFeedClient = quoteFeedClient_;
+
+                            throw;
+                        }
                     }
                     catch
                     {
-                        quoteFeedClient_.DisconnectAsync("");
+                        eventThread = eventThread_;
+                        eventThread_ = null;
+
+                        eventQueue_.Close();
 
                         throw;
                     }
                 }
-                catch
-                {
-                    eventQueue_.Close();
+            }
+            catch
+            {
+                // have to wait here since we don't have Join()
 
-                    eventThread_.Join();
-                    eventThread_ = null;
+                if (eventThread != null)
+                    eventThread.Join();
 
-                    throw;
-                }
+                if (quoteStoreClient != null)
+                    quoteStoreClient.Join();
+
+                if (quoteFeedClient != null)
+                    quoteFeedClient.Join();
+
+                throw;
             }
         }
 
@@ -360,7 +381,7 @@
         }
 
         /// <summary>
-        /// Stops data feed instance. The method can not be called into any feed/trade event handler.
+        /// Stops data feed instance synchrnously. The method can not be called into any feed/trade event handler.
         /// </summary>
         public void Stop()
         {
