@@ -202,6 +202,7 @@ namespace TickTrader.FDK.QuoteStore
         public delegate void QuoteDownloadResultDelegate(Client client, object data, string downloadId, Quote quote);
         public delegate void QuoteDownloadResultEndDelegate(Client client, object data, string downloadId);
         public delegate void QuoteDownloadErrorDelegate(Client client, object data, string downloadId, string message);
+        public delegate void NotificationDelegate(Client client, Common.Notification notification);
 
         public event SymbolListResultDelegate SymbolListResultEvent;
         public event SymbolListErrorDelegate SymbolListErrorEvent;
@@ -215,6 +216,7 @@ namespace TickTrader.FDK.QuoteStore
         public event QuoteDownloadResultDelegate QuoteDownloadResultEvent;
         public event QuoteDownloadResultEndDelegate QuoteDownloadResultEndEvent;
         public event QuoteDownloadErrorDelegate QuoteDownloadErrorEvent;
+        public event NotificationDelegate NotificationEvent;
 
         public string[] GetSymbolList(int timeout)
         {
@@ -1510,6 +1512,32 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
+            public override void OnNotification(ClientSession session, SoftFX.Net.QuoteStore.Notification message)
+            {
+                try
+                {
+                    TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
+                    result.Id = message.Id;
+                    result.Type = Convert(message.Type);
+                    result.Severity = Convert(message.Severity);
+                    result.Message = message.Text;
+
+                    if (client_.NotificationEvent != null)
+                    {
+                        try
+                        {
+                            client_.NotificationEvent(client_, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                }
+            }
+
             void SetBarEnumeratorResult(BarDownloadAsyncContext context)
             {
                 while (true)
@@ -1682,6 +1710,37 @@ namespace TickTrader.FDK.QuoteStore
                         throw new Exception("Invalid logout reason : " + reason);
                 }
             }
+
+            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.QuoteStore.NotificationType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.QuoteStore.NotificationType.ConfigUpdate:
+                        return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
+
+                    default:
+                        throw new Exception("Invalid notification type : " + type);
+                }
+            }
+
+            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.QuoteStore.NotificationSeverity severity)
+            {
+                switch (severity)
+                {
+                    case SoftFX.Net.QuoteStore.NotificationSeverity.Info:
+                        return TickTrader.FDK.Common.NotificationSeverity.Information;
+
+                    case SoftFX.Net.QuoteStore.NotificationSeverity.Warning:
+                        return TickTrader.FDK.Common.NotificationSeverity.Warning;
+
+                    case SoftFX.Net.QuoteStore.NotificationSeverity.Error:
+                        return TickTrader.FDK.Common.NotificationSeverity.Error;
+
+                    default:
+                        throw new Exception("Invalid notification severity : " + severity);
+                }
+            }
+
             
             Client client_;
         }

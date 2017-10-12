@@ -63,7 +63,7 @@
 
             int port;
             if (! connectionStringParser.TryGetIntValue("Port", out port))
-                port = 5030;
+                port = 5040;
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");

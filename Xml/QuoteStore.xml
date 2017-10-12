@@ -179,23 +179,43 @@
                 <field name="Text" offset="20" type="ustring" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <processor name="Client" head="145_9">
+        <enum name="NotificationType" size="4">
+            <members>
+                <member name="ConfigUpdate" value="0"/>
+            </members>
+        </enum>
+        <enum name="NotificationSeverity" size="4">
+            <members>
+                <member name="Info" value="0"/>
+                <member name="Warning" value="1"/>
+                <member name="Error" value="2"/>
+            </members>
+        </enum>
+        <message name="Notification" id="18" size="32">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="Type" offset="16" type="NotificationType" optional="N" repeatable="N"/>
+                <field name="Severity" offset="20" type="NotificationSeverity" optional="N" repeatable="N"/>
+                <field name="Text" offset="24" type="string" optional="Y" repeatable="N"/>
+            </fields>
+        </message>
+        <processor name="Client" head="168_9">
             <subProcessors>
                 <subProcessor name="ClientRequest"/>
             </subProcessors>
             <states>
-                <state label="145_9">
+                <state label="168_9">
                     <operations>
-                        <send name="LoginRequest" next="147_13">
+                        <send name="LoginRequest" next="170_13">
                             <messages>
                                 <message name="LoginRequest"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="147_13">
+                <state label="170_13">
                     <operations>
-                        <recv name="LoginReport" next="156_9">
+                        <recv name="LoginReport" next="179_9">
                             <messages>
                                 <message name="LoginReport"/>
                             </messages>
@@ -210,19 +230,24 @@
                         <context name="LoginRequest"/>
                     </contexts>
                 </state>
-                <state label="156_9">
+                <state label="179_9">
                     <operations>
-                        <send next="156_9">
+                        <send next="179_9">
                             <messages>
                                 <message name="Request"/>
                             </messages>
                         </send>
-                        <recv next="156_9">
+                        <recv next="179_9">
                             <messages>
                                 <message name="Response"/>
                             </messages>
                         </recv>
-                        <send name="Logout" next="166_13">
+                        <recv name="Notification" next="179_9">
+                            <messages>
+                                <message name="Notification"/>
+                            </messages>
+                        </recv>
+                        <send name="Logout" next="193_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -234,11 +259,12 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="166_13">
+                <state label="193_13">
                     <operations>
-                        <recv next="166_13">
+                        <recv next="193_13">
                             <messages>
                                 <message name="Response"/>
+                                <message name="Notification"/>
                             </messages>
                         </recv>
                         <recv name="Logout">
@@ -253,32 +279,32 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientRequest" type="string" superProcessor="Client" head="187_9">
+        <processor name="ClientRequest" type="string" superProcessor="Client" head="214_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="187_9">
+                <state label="214_9">
                     <operations>
-                        <send name="SymbolListRequest" next="189_13">
+                        <send name="SymbolListRequest" next="216_13">
                             <messages>
                                 <message name="SymbolListRequest"/>
                             </messages>
                         </send>
-                        <send name="PeriodicityListRequest" next="196_13">
+                        <send name="PeriodicityListRequest" next="223_13">
                             <messages>
                                 <message name="PeriodicityListRequest"/>
                             </messages>
                         </send>
-                        <send name="DownloadRequest" next="203_13">
+                        <send name="DownloadRequest" next="230_13">
                             <messages>
                                 <message name="DownloadRequest"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="189_13">
+                <state label="216_13">
                     <operations>
                         <recv name="SymbolListReport">
                             <messages>
@@ -295,7 +321,7 @@
                         <context name="SymbolListRequest"/>
                     </contexts>
                 </state>
-                <state label="196_13">
+                <state label="223_13">
                     <operations>
                         <recv name="PeriodicityListReport">
                             <messages>
@@ -312,9 +338,9 @@
                         <context name="PeriodicityListRequest"/>
                     </contexts>
                 </state>
-                <state label="203_13">
+                <state label="230_13">
                     <operations>
-                        <recv name="DownloadBeginReport" next="205_17">
+                        <recv name="DownloadBeginReport" next="232_17">
                             <messages>
                                 <message name="DownloadBeginReport"/>
                             </messages>
@@ -329,9 +355,9 @@
                         <context name="DownloadRequest"/>
                     </contexts>
                 </state>
-                <state label="205_17">
+                <state label="232_17">
                     <operations>
-                        <recv name="DownloadDataReport" next="205_17">
+                        <recv name="DownloadDataReport" next="232_17">
                             <messages>
                                 <message name="DownloadDataReport"/>
                             </messages>
@@ -346,7 +372,7 @@
                                 <message name="Reject"/>
                             </messages>
                         </recv>
-                        <send name="DownloadCancel" next="205_17">
+                        <send name="DownloadCancel" next="232_17">
                             <messages>
                                 <message name="DownloadCancel"/>
                             </messages>
@@ -358,23 +384,23 @@
                 </state>
             </states>
         </processor>
-        <processor name="Server" head="226_9">
+        <processor name="Server" head="253_9">
             <subProcessors>
                 <subProcessor name="ServerRequest"/>
             </subProcessors>
             <states>
-                <state label="226_9">
+                <state label="253_9">
                     <operations>
-                        <recv name="LoginRequest" next="228_13">
+                        <recv name="LoginRequest" next="255_13">
                             <messages>
                                 <message name="LoginRequest"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="228_13">
+                <state label="255_13">
                     <operations>
-                        <send next="237_9">
+                        <send next="264_9">
                             <messages>
                                 <message name="LoginReport"/>
                             </messages>
@@ -386,19 +412,24 @@
                         </send>
                     </operations>
                 </state>
-                <state label="237_9">
+                <state label="264_9">
                     <operations>
-                        <recv next="237_9">
+                        <recv next="264_9">
                             <messages>
                                 <message name="Request"/>
                             </messages>
                         </recv>
-                        <send next="237_9">
+                        <send next="264_9">
                             <messages>
                                 <message name="Response"/>
                             </messages>
                         </send>
-                        <recv name="Logout" next="247_13">
+                        <send next="264_9">
+                            <messages>
+                                <message name="Notification"/>
+                            </messages>
+                        </send>
+                        <recv name="Logout" next="278_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -410,11 +441,12 @@
                         </send>
                     </operations>
                 </state>
-                <state label="247_13">
+                <state label="278_13">
                     <operations>
-                        <send next="247_13">
+                        <send next="278_13">
                             <messages>
                                 <message name="Response"/>
+                                <message name="Notification"/>
                             </messages>
                         </send>
                         <send>
@@ -426,25 +458,25 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerRequest" type="string" superProcessor="Server" head="268_9">
+        <processor name="ServerRequest" type="string" superProcessor="Server" head="299_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="268_9">
+                <state label="299_9">
                     <operations>
-                        <recv name="SymbolListRequest" next="270_13">
+                        <recv name="SymbolListRequest" next="301_13">
                             <messages>
                                 <message name="SymbolListRequest"/>
                             </messages>
                         </recv>
-                        <recv name="PeriodicityListRequest" next="277_13">
+                        <recv name="PeriodicityListRequest" next="308_13">
                             <messages>
                                 <message name="PeriodicityListRequest"/>
                             </messages>
                         </recv>
-                        <recv name="DownloadRequest" next="284_13">
+                        <recv name="DownloadRequest" next="315_13">
                             <messages>
                                 <message name="DownloadRequest"/>
                             </messages>
@@ -456,7 +488,7 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="270_13">
+                <state label="301_13">
                     <operations>
                         <send>
                             <messages>
@@ -470,7 +502,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="277_13">
+                <state label="308_13">
                     <operations>
                         <send>
                             <messages>
@@ -484,9 +516,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="284_13">
+                <state label="315_13">
                     <operations>
-                        <send name="DownloadBeginReport" next="286_17">
+                        <send name="DownloadBeginReport" next="317_17">
                             <messages>
                                 <message name="DownloadBeginReport"/>
                             </messages>
@@ -498,9 +530,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="286_17">
+                <state label="317_17">
                     <operations>
-                        <send next="286_17">
+                        <send next="317_17">
                             <messages>
                                 <message name="DownloadDataReport"/>
                             </messages>
@@ -515,7 +547,7 @@
                                 <message name="Reject"/>
                             </messages>
                         </send>
-                        <recv name="DownloadCancel" next="286_17">
+                        <recv name="DownloadCancel" next="317_17">
                             <messages>
                                 <message name="DownloadCancel"/>
                             </messages>
