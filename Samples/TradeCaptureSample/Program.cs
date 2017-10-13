@@ -65,9 +65,9 @@ namespace TradeCaptureSample
         {
             client_ = new Client("TradeCaptureSample", port, false, "Logs", false);
 
-            client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);                        
+            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
+            client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
 
             address_ = address;
             login_ = login;
@@ -288,6 +288,30 @@ namespace TradeCaptureSample
             }
         }
 
+        public void OnLogout(Client client, LogoutInfo info)
+        {
+            try
+            {
+                Console.WriteLine("Logout : {0}", info.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnDisconnect(Client client, string text)
+        {
+            try
+            {
+                Console.WriteLine("Disconnected : {0}", text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
         public void OnTradeUpdate(Client client, TradeTransactionReport tradeTransactionReport)
         {
             try
@@ -321,30 +345,6 @@ namespace TradeCaptureSample
                         tradeTransactionReport.TradeTransactionReason
                     );
                 }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        public void OnLogout(Client client, LogoutInfo info)
-        {
-            try
-            {
-                Console.WriteLine("Logout : {0}", info.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnDisconnect(Client client, string text)
-        {
-            try
-            {
-                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

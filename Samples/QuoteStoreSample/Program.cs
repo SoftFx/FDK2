@@ -349,11 +349,11 @@ namespace QuoteStoreSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, string text)
+        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {
@@ -361,11 +361,11 @@ namespace QuoteStoreSample
             }
         }
 
-        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
+        void OnDisconnect(Client quoteFeedClient, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

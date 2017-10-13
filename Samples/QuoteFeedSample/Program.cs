@@ -312,11 +312,11 @@ namespace QuoteFeedSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        public void OnLogout(Client client, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {
@@ -324,11 +324,11 @@ namespace QuoteFeedSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
+        void OnDisconnect(Client client, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

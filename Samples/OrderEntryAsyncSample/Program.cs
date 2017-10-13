@@ -68,8 +68,6 @@ namespace OrderEntryAsyncSample
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.AccountInfoResultEvent += new Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
             client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
             client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
@@ -86,6 +84,9 @@ namespace OrderEntryAsyncSample
             client_.CancelOrderErrorEvent += new Client.CancelOrderErrorDelegate(this.OnCancelOrderError);
             client_.ClosePositionResultEvent += new Client.ClosePositionResultDelegate(this.OnClosePositionResult);
             client_.ClosePositionErrorEvent += new Client.ClosePositionErrorDelegate(this.OnClosePositionError);
+
+            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.ExecutionReportEvent += new Client.ExecutionReportDelegate(this.OnExecutionReport);
             client_.PositionUpdateEvent += new Client.PositionUpdateDelegate(this.OnPositionUpdate);
             client_.AccountInfoUpdateEvent += new Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
@@ -899,11 +900,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnDisconnect(Client orderEntryClient, string text)
+        void OnLogout(Client orderEntryClient, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {
@@ -911,11 +912,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnLogout(Client orderEntryClient, LogoutInfo info)
+        void OnDisconnect(Client orderEntryClient, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

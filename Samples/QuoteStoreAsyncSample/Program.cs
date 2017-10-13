@@ -68,8 +68,6 @@ namespace QuoteStoreAsyncSample
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
             client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
             client_.PeriodicityListResultEvent += new Client.PeriodicityListResultDelegate(this.OnPeriodicityListResult);
@@ -82,6 +80,9 @@ namespace QuoteStoreAsyncSample
             client_.QuoteDownloadResultEvent += new Client.QuoteDownloadResultDelegate(this.OnQuoteDownloadResult);
             client_.QuoteDownloadResultEndEvent += new Client.QuoteDownloadResultEndDelegate(this.OnQuoteDownloadEndResult);
             client_.QuoteDownloadErrorEvent += new Client.QuoteDownloadErrorDelegate(this.OnQuoteDownloadError);
+
+            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
 
             address_ = address;
             login_ = login;
@@ -586,11 +587,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, string text)
+        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {
@@ -598,11 +599,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
+        void OnDisconnect(Client quoteFeedClient, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {
