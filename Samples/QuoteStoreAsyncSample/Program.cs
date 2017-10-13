@@ -35,15 +35,15 @@ namespace QuoteStoreAsyncSample
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TTQuoteStoreAsyncSample: ");
+                    Console.Write("QuoteStoreAsyncSample: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TTQuoteStoreAsyncSample --help' for more information.");
+                    Console.WriteLine("Try `QuoteStoreAsyncSample --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TTQuoteStoreAsyncSample usage:");
+                    Console.WriteLine("QuoteStoreAsyncSample usage:");
                     options.WriteOptionDescriptions(Console.Out);
                     return;
                 }

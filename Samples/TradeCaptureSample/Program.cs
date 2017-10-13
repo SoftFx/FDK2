@@ -65,9 +65,9 @@ namespace TradeCaptureSample
         {
             client_ = new Client("TradeCaptureSample", port, false, "Logs", false);
 
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
+            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);                        
 
             address_ = address;
             login_ = login;
@@ -215,30 +215,6 @@ namespace TradeCaptureSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
-        {
-            try
-            {
-                Console.WriteLine("Logout : {0}", info.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnDisconnect(Client client, string text)
-        {
-            try
-            {
-                Console.WriteLine("Disconnected : {0}", text);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
@@ -256,46 +232,6 @@ namespace TradeCaptureSample
         void UnsubscribeTrades()
         {
             client_.UnsubscribeTrades(-1);
-        }
-
-        public void OnTradeUpdate(Client client, TradeTransactionReport tradeTransactionReport)
-        {
-            try
-            {
-                if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
-                    tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
-                {
-                    Console.Error.WriteLine
-                    (
-                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
-                        tradeTransactionReport.Id,
-                        tradeTransactionReport.TransactionTime,
-                        tradeTransactionReport.TradeTransactionReportType,
-                        tradeTransactionReport.TradeTransactionReason,
-                        tradeTransactionReport.ClientId,
-                        tradeTransactionReport.OrderType,
-                        tradeTransactionReport.Symbol,
-                        tradeTransactionReport.OrderSide,
-                        tradeTransactionReport.OrderLastFillAmount,
-                        tradeTransactionReport.OrderFillPrice
-                    );
-                }
-                else
-                {
-                    Console.Error.WriteLine
-                    (
-                        "Trade update : {0}, {1}, {2}, {3}", 
-                        tradeTransactionReport.Id,
-                        tradeTransactionReport.TransactionTime,
-                        tradeTransactionReport.TradeTransactionReportType,
-                        tradeTransactionReport.TradeTransactionReason
-                    );
-                }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
         }
 
         void DownloadTrades(TimeDirection timeDirection, DateTime from, DateTime to)
@@ -349,6 +285,70 @@ namespace TradeCaptureSample
             finally
             {
                 tradeTransactionReportEnumerator.Dispose();
+            }
+        }
+
+        public void OnTradeUpdate(Client client, TradeTransactionReport tradeTransactionReport)
+        {
+            try
+            {
+                if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
+                    tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
+                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason,
+                        tradeTransactionReport.ClientId,
+                        tradeTransactionReport.OrderType,
+                        tradeTransactionReport.Symbol,
+                        tradeTransactionReport.OrderSide,
+                        tradeTransactionReport.OrderLastFillAmount,
+                        tradeTransactionReport.OrderFillPrice
+                    );
+                }
+                else
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}", 
+                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason
+                    );
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnLogout(Client client, LogoutInfo info)
+        {
+            try
+            {
+                Console.WriteLine("Logout : {0}", info.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnDisconnect(Client client, string text)
+        {
+            try
+            {
+                Console.WriteLine("Disconnected : {0}", text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
             }
         }
 

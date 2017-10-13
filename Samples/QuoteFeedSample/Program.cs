@@ -37,15 +37,15 @@ namespace QuoteFeedSample
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TTQuoteFeedSample: ");
+                    Console.Write("QuoteFeedSample: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TTQuoteFeedSample --help' for more information.");
+                    Console.WriteLine("Try `QuoteFeedSample --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TTQuoteFeedSample usage:");
+                    Console.WriteLine("QuoteFeedSample usage:");
                     options.WriteOptionDescriptions(Console.Out);
                     return;
                 }

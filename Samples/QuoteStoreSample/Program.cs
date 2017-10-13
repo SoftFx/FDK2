@@ -37,15 +37,15 @@ namespace QuoteStoreSample
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TTQuoteStoreSample: ");
+                    Console.Write("QuoteStoreSample: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TTQuoteStoreSample --help' for more information.");
+                    Console.WriteLine("Try `QuoteStoreSample --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TTQuoteStoreSample usage:");
+                    Console.WriteLine("QuoteStoreSample usage:");
                     options.WriteOptionDescriptions(Console.Out);
                     return;
                 }

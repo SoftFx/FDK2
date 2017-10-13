@@ -35,15 +35,15 @@ namespace QuoteFeedAsyncSample
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TTQuoteFeedAsyncSample: ");
+                    Console.Write("QuoteFeedAsyncSample: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TTQuoteFeedAsyncSample --help' for more information.");
+                    Console.WriteLine("Try `QuoteFeedAsyncSample --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TTQuoteFeedAsyncSample usage:");
+                    Console.WriteLine("QuoteFeedAsyncSample usage:");
                     options.WriteOptionDescriptions(Console.Out);
                     return;
                 }
