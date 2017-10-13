@@ -469,7 +469,7 @@ namespace TickTrader.FDK.QuoteFeed
 
         #endregion
 
-        #region Async contexts
+        #region Implementation
 
         interface IAsyncContext
         {
@@ -597,10 +597,6 @@ namespace TickTrader.FDK.QuoteFeed
 
             public TaskCompletionSource<Quote[]> taskCompletionSource_;
         }
-
-        #endregion
-
-        #region Session listener
 
         class ClientSessionListener : SoftFX.Net.QuoteFeed.ClientSessionListener
         {
@@ -1983,10 +1979,6 @@ namespace TickTrader.FDK.QuoteFeed
             Client client_;
             Quote quote_;
         }
-
-        #endregion
-
-        #region Async helpers        
 
         static void ConvertToSync(Task task, int timeout)
         {

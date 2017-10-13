@@ -4,43 +4,37 @@ using System.Threading;
 using System.Threading.Tasks;
 using TickTrader.FDK.Common;
 
-namespace TickTrader.FDK.QuoteStore
+namespace TickTrader.FDK.TradeCapture
 {
-    public class BarEnumerator : IDisposable
+    public class TradeTransactionReportEnumerator : IDisposable
     {
-        internal BarEnumerator(Client client, string downloadId)
+        internal TradeTransactionReportEnumerator(Client client)
         {
             client_ = client;
-            downloadId_ = downloadId;
 
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
-            bar_ = new Bar();
+            tradeTransactionReport_ = new TradeTransactionReport();
             event_ = new AutoResetEvent(false);
         }
 
-        public string DownloadId
-        {
-            get { return downloadId_;  }
-        }
-
-        public Bar Next(int timeout)
+        public TradeTransactionReport Next(int timeout)
         {
             return Client.ConvertToSync(NextAsync(), timeout);
         }
 
-        public Task<Bar> NextAsync()
+        public Task<TradeTransactionReport> NextAsync()
         {
             lock (mutex_)
             {
                 if (completed_)
-                    throw new Exception(string.Format("Enumerator completed : {0}", downloadId_));
+                    throw new Exception("Enumerator completed");
 
                 if (taskCompletionSource_ != null)
                     throw new Exception("Invalid enumerator call");
 
-                taskCompletionSource_ = new TaskCompletionSource<Bar>();
+                taskCompletionSource_ = new TaskCompletionSource<TradeTransactionReport>();
                 event_.Set();
 
                 return taskCompletionSource_.Task;
@@ -57,18 +51,10 @@ namespace TickTrader.FDK.QuoteStore
 
                     if (taskCompletionSource_ != null)
                     {
-                        Exception exception = new Exception(string.Format("Enumerator closed : {0}", downloadId_));
+                        Exception exception = new Exception("Enumerator closed");
 
                         taskCompletionSource_.SetException(exception);
                         taskCompletionSource_ = null;
-                    }
-
-                    try
-                    {
-                        client_.SendDownloadCancel(downloadId_);
-                    }
-                    catch
-                    {
                     }
                 }
 
@@ -89,12 +75,11 @@ namespace TickTrader.FDK.QuoteStore
         }
 
         Client client_;
-        string downloadId_;
 
         internal object mutex_;
         internal bool completed_;
-        internal TaskCompletionSource<Bar> taskCompletionSource_;
-        internal Bar bar_;
+        internal TaskCompletionSource<TradeTransactionReport> taskCompletionSource_;
+        internal TradeTransactionReport tradeTransactionReport_;
         internal AutoResetEvent event_;
     }
 }

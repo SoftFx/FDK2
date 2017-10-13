@@ -497,16 +497,16 @@ namespace TickTrader.FDK.QuoteStore
                         taskCompletionSource_.SetException(exception);
                 }
             }
-
-            public TaskCompletionSource<BarEnumerator> taskCompletionSource_;
+                        
             public TickTrader.FDK.Common.PriceType priceType_;
             public string periodicity_;
             public DateTime from_;
-            public DateTime to_;
+            public DateTime to_;            
             public byte[] fileData_;
             public int fileSize_;
+            public TaskCompletionSource<BarEnumerator> taskCompletionSource_;
             public BarEnumerator barEnumerator_;
-            public Bar bar_;
+            public Bar bar_;            
         }
 
         class TickDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
@@ -536,15 +536,15 @@ namespace TickTrader.FDK.QuoteStore
                         taskCompletionSource_.SetException(exception);
                 }
             }
-
-            public TaskCompletionSource<QuoteEnumerator> taskCompletionSource_;
+                        
             public QuoteDepth quoteDepth_;
             public DateTime from_;
             public DateTime to_;
             public byte[] fileData_;
             public int fileSize_;
+            public TaskCompletionSource<QuoteEnumerator> taskCompletionSource_;
             public QuoteEnumerator quoteEnumerator_;
-            public Quote quote_;
+            public Quote quote_;            
         }       
 
         #endregion
@@ -1742,7 +1742,7 @@ namespace TickTrader.FDK.QuoteStore
             }
 
             
-            Client client_;
+            Client client_;            
         }
 
         #endregion
