@@ -124,8 +124,8 @@
             <members>
                 <member name="ClientRequest" value="0"/>
                 <member name="OrderActivated" value="1"/>
-                <member name="StopLossActivated" value="2"/>
-                <member name="TakeProfitActivated" value="3"/>
+                <member name="TakeProfitActivated" value="2"/>
+                <member name="StopLossActivated" value="3"/>
                 <member name="OrderExpired" value="4"/>
                 <member name="Dealer" value="5"/>
                 <member name="StopOut" value="6"/>
