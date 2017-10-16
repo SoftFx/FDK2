@@ -58,10 +58,9 @@
     <Compile Include="QuotesSingleSequence.cs" />
     <Compile Include="QuotesSingleSequenceEnumerator.cs" />
     <Compile Include="RejectReason.cs" />
-    <Compile Include="StreamIterator.cs" />
-    <Compile Include="TimeDirection.cs" />
     <Compile Include="TradeCommand.cs" />
     <Compile Include="TradeRecord.cs" />
+    <Compile Include="TradeTransactionReportsEnumerator.cs" />
     <Compile Include="TwoFactorAuth.cs" />
     <Compile Include="TwoFactorReason.cs" />
   </ItemGroup>
@@ -81,6 +80,10 @@
     <ProjectReference Include="..\QuoteStore\QuoteStore.csproj">
       <Project>{4c7583da-30d2-4767-9198-042378237634}</Project>
       <Name>QuoteStore</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\TradeCapture\TradeCapture.csproj">
+      <Project>{48816e75-17a7-4833-82da-50345656f4ee}</Project>
+      <Name>TradeCapture</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

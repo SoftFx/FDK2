@@ -312,7 +312,7 @@ namespace QuoteStoreSample
             }
             finally
             {
-                barEnumerator.Dispose();
+                barEnumerator.Close();
             }
         }
 
@@ -345,7 +345,7 @@ namespace QuoteStoreSample
             }
             finally
             {
-                quoteEnumerator.Dispose();
+                quoteEnumerator.Close();
             }
         }
 

@@ -1,4 +1,4 @@
-﻿namespace TickTrader.FDK.Extended
+﻿namespace TickTrader.FDK.Common
 {
     /// <summary>
     /// The enumeration describes possible time directions.

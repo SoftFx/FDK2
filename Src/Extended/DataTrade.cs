@@ -5,6 +5,8 @@
     using System.Threading;
     using Common;
     using OrderEntry;
+    using TradeCapture;
+
 
     /// <summary>
     /// This class connects to trading platform and provides trading functionality.
@@ -61,9 +63,13 @@
             if (! connectionStringParser.TryGetStringValue("Address", out address_))
                 throw new Exception("Address is not specified");
 
-            int port;
-            if (! connectionStringParser.TryGetIntValue("Port", out port))
-                port = 5040;
+            int orderEntryPort;
+            if (! connectionStringParser.TryGetIntValue("OrderEntryPort", out orderEntryPort))
+                orderEntryPort = 5040;
+
+            int tradeCapturePort;
+            if (! connectionStringParser.TryGetIntValue("TradeCapturePort", out tradeCapturePort))
+                tradeCapturePort = 5060;
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
@@ -94,37 +100,49 @@
             
             synchronizer_ = new object();
 
-            client_ = new Client(name_, port, true, logDirectory, decodeLogMessages);
-            client_.ConnectEvent += new Client.ConnectDelegate(this.OnConnect);
-            client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.OneTimePasswordRequestEvent += new Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
-            client_.OneTimePasswordRejectEvent += new Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
-            client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.TradeServerInfoResultEvent += new Client.TradeServerInfoResultDelegate(this.OnTradeServerInfoResult);
-            client_.TradeServerInfoErrorEvent += new Client.TradeServerInfoErrorDelegate(this.OnTradeServerInfoError);
-            client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
-            client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
-            client_.AccountInfoResultEvent += new Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
-            client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
-            client_.PositionsResultEvent += new Client.PositionsResultDelegate(this.OnPositionsResult);
-            client_.PositionsErrorEvent += new Client.PositionsErrorDelegate(this.OnPositionsError);
-            client_.OrdersResultEvent += new Client.OrdersResultDelegate(this.OnOrdersResult);
-            client_.OrdersErrorEvent += new Client.OrdersErrorDelegate(this.OnOrdersError);
-            client_.NewOrderResultEvent += new Client.NewOrderResultDelegate(this.OnNewOrderResult);
-            client_.ReplaceOrderResultEvent += new Client.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
-            client_.CancelOrderResultEvent += new Client.CancelOrderResultDelegate(this.OnCancelOrderResult);
-            client_.ClosePositionResultEvent += new Client.ClosePositionResultDelegate(this.OnClosePositionResult);
-            client_.ClosePositionByResultEvent += new Client.ClosePositionByResultDelegate(this.OnClosePositionByResult);
-            client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            client_.AccountInfoUpdateEvent += new Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
-            client_.ExecutionReportEvent += new Client.ExecutionReportDelegate(this.OnExecutionReport);
-            client_.PositionUpdateEvent += new Client.PositionUpdateDelegate(this.OnPositionUpdate);
-            client_.BalanceInfoUpdateEvent += new Client.BalanceInfoUpdateDelegate(this.OnBalanceInfoUpdate);
-            client_.NotificationEvent += new Client.NotificationDelegate(this.OnNotification);
+            orderEntryClient_ = new OrderEntry.Client(name_ + "_OrderEntry", orderEntryPort, true, logDirectory, decodeLogMessages);
+            orderEntryClient_.ConnectEvent += new OrderEntry.Client.ConnectDelegate(this.OnConnect);
+            orderEntryClient_.ConnectErrorEvent += new OrderEntry.Client.ConnectErrorDelegate(this.OnConnectError);
+            orderEntryClient_.DisconnectEvent += new OrderEntry.Client.DisconnectDelegate(this.OnDisconnect);
+            orderEntryClient_.OneTimePasswordRequestEvent += new OrderEntry.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
+            orderEntryClient_.OneTimePasswordRejectEvent += new OrderEntry.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            orderEntryClient_.LoginResultEvent += new OrderEntry.Client.LoginResultDelegate(this.OnLoginResult);
+            orderEntryClient_.LoginErrorEvent += new OrderEntry.Client.LoginErrorDelegate(this.OnLoginError);
+            orderEntryClient_.LogoutResultEvent += new OrderEntry.Client.LogoutResultDelegate(this.OnLogoutResult);
+            orderEntryClient_.LogoutEvent += new OrderEntry.Client.LogoutDelegate(this.OnLogout);
+            orderEntryClient_.TradeServerInfoResultEvent += new OrderEntry.Client.TradeServerInfoResultDelegate(this.OnTradeServerInfoResult);
+            orderEntryClient_.TradeServerInfoErrorEvent += new OrderEntry.Client.TradeServerInfoErrorDelegate(this.OnTradeServerInfoError);
+            orderEntryClient_.SessionInfoResultEvent += new OrderEntry.Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
+            orderEntryClient_.SessionInfoErrorEvent += new OrderEntry.Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            orderEntryClient_.AccountInfoResultEvent += new OrderEntry.Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
+            orderEntryClient_.AccountInfoErrorEvent += new OrderEntry.Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
+            orderEntryClient_.PositionsResultEvent += new OrderEntry.Client.PositionsResultDelegate(this.OnPositionsResult);
+            orderEntryClient_.PositionsErrorEvent += new OrderEntry.Client.PositionsErrorDelegate(this.OnPositionsError);
+            orderEntryClient_.OrdersResultEvent += new OrderEntry.Client.OrdersResultDelegate(this.OnOrdersResult);
+            orderEntryClient_.OrdersErrorEvent += new OrderEntry.Client.OrdersErrorDelegate(this.OnOrdersError);
+            orderEntryClient_.NewOrderResultEvent += new OrderEntry.Client.NewOrderResultDelegate(this.OnNewOrderResult);
+            orderEntryClient_.ReplaceOrderResultEvent += new OrderEntry.Client.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
+            orderEntryClient_.CancelOrderResultEvent += new OrderEntry.Client.CancelOrderResultDelegate(this.OnCancelOrderResult);
+            orderEntryClient_.ClosePositionResultEvent += new OrderEntry.Client.ClosePositionResultDelegate(this.OnClosePositionResult);
+            orderEntryClient_.ClosePositionByResultEvent += new OrderEntry.Client.ClosePositionByResultDelegate(this.OnClosePositionByResult);
+            orderEntryClient_.SessionInfoUpdateEvent += new OrderEntry.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
+            orderEntryClient_.AccountInfoUpdateEvent += new OrderEntry.Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
+            orderEntryClient_.ExecutionReportEvent += new OrderEntry.Client.ExecutionReportDelegate(this.OnExecutionReport);
+            orderEntryClient_.PositionUpdateEvent += new OrderEntry.Client.PositionUpdateDelegate(this.OnPositionUpdate);
+            orderEntryClient_.BalanceInfoUpdateEvent += new OrderEntry.Client.BalanceInfoUpdateDelegate(this.OnBalanceInfoUpdate);
+            orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
+
+            tradeCaptureClient_ = new TradeCapture.Client(name_ + "_TradeCapture", tradeCapturePort, true, logDirectory, decodeLogMessages);
+            tradeCaptureClient_.ConnectEvent += new TradeCapture.Client.ConnectDelegate(this.OnConnect);
+            tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.Client.ConnectErrorDelegate(this.OnConnectError);
+            tradeCaptureClient_.DisconnectEvent += new TradeCapture.Client.DisconnectDelegate(this.OnDisconnect);
+            tradeCaptureClient_.OneTimePasswordRequestEvent += new TradeCapture.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
+            tradeCaptureClient_.OneTimePasswordRejectEvent += new TradeCapture.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            tradeCaptureClient_.LoginResultEvent += new TradeCapture.Client.LoginResultDelegate(this.OnLoginResult);
+            tradeCaptureClient_.LoginErrorEvent += new TradeCapture.Client.LoginErrorDelegate(this.OnLoginError);
+            tradeCaptureClient_.LogoutResultEvent += new TradeCapture.Client.LogoutResultDelegate(this.OnLogoutResult);
+            tradeCaptureClient_.LogoutEvent += new TradeCapture.Client.LogoutDelegate(this.OnLogout);
+            tradeCaptureClient_.TradeUpdateEvent += new TradeCapture.Client.TradeUpdateDelegate(this.OnTradeUpdate);
 
             loginEvent_ = new ManualResetEvent(false);
 
@@ -141,18 +159,6 @@
         public string Name
         {
             get { return name_;  }
-        }
-
-        /// <summary>
-        /// <summary>
-        /// Gets or sets default synchronous operation timeout in milliseconds.
-        /// </summary>
-        [Obsolete("Please use OperationTimeout connection string parameter")]
-        public int SynchOperationTimeout
-        {
-            set { synchOperationTimeout_ = value;  }
-
-            get { return synchOperationTimeout_; }
         }
 
         /// <summary>
@@ -242,11 +248,6 @@
         public event ExecutionReportHandler ExecutionReport;
 
         /// <summary>
-        ///
-        /// </summary>
-        public event TradeTransactionReportHandler TradeTransactionReport;
-
-        /// <summary>
         /// The event is supported by Net account only.
         /// </summary>
         public event PositionReportHandler PositionReport;
@@ -257,15 +258,14 @@
         public event NotifyHandler<BalanceOperation> BalanceOperation;
 
         /// <summary>
+        /// Occurs when a trade transaction report is received.
+        /// </summary>
+        public event TradeTransactionReportHandler TradeTransactionReport;
+
+        /// <summary>
         /// Occurs when a notification is received.
         /// </summary>
         public event NotifyHandler Notify;
-
-        /// <summary>
-        /// Occurs when local cache initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event CacheHandler CacheInitialized;
 
         #endregion
 
@@ -276,7 +276,8 @@
         /// </summary>
         public void Start()
         {
-            OrderEntry.Client client = null;
+            OrderEntry.Client orderEntryClient = null;
+            TradeCapture.Client tradeCaptureClient = null;
             Thread eventThread = null;
 
             try
@@ -288,6 +289,7 @@
 
                     loginEvent_.Reset();
                     loginException_ = null;
+                    initFlags_ = InitFlags.None;
                     logout_ = false;
 
                     eventQueue_.Open();
@@ -298,9 +300,21 @@
 
                     try
                     {
-                        client_.ConnectAsync(address_);
+                        orderEntryClient_.ConnectAsync(address_);
 
-                        started_ = true;
+                        try
+                        {
+                            tradeCaptureClient_.ConnectAsync(address_);
+
+                            started_ = true;
+                        }
+                        catch
+                        {
+                            orderEntryClient_.DisconnectAsync("Client disconnect");
+                            orderEntryClient = orderEntryClient_;
+
+                            throw;
+                        }
                     }
                     catch
                     {
@@ -315,28 +329,19 @@
             }
             catch
             {
-                // have to wait here since we don't have Join()
+                // have to wait here since we don't have Join() and Stop() is synchronous
 
                 if (eventThread != null)
                     eventThread.Join();
 
-                if (client != null)
-                    client.Join();
+                if (tradeCaptureClient != null)
+                    tradeCaptureClient.Join();
+
+                if (orderEntryClient != null)
+                    orderEntryClient.Join();
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Starts data feed/trade instance and waits for logon event.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">Timeout of logon waiting.</param>
-        /// <returns>true, if logon event is occurred, otherwise false</returns>
-        [Obsolete("Please use WaitForLogonEx()")]
-        public bool Start(int timeoutInMilliseconds)
-        {
-            this.Start();
-            return this.WaitForLogon(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -352,16 +357,26 @@
 
                     try
                     {
-                        client_.LogoutAsync(null, "Client logout");
+                        tradeCaptureClient_.LogoutAsync(null, "Client logout");
                     }
                     catch
                     {                        
-                        client_.DisconnectAsync("Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    }
+
+                    try
+                    {
+                        orderEntryClient_.LogoutAsync(null, "Client logout");
+                    }
+                    catch
+                    {                        
+                        orderEntryClient_.DisconnectAsync("Client disconnect");
                     }
                 }
             }
 
-            client_.Join();
+            tradeCaptureClient_.Join();
+            orderEntryClient_.Join();
 
             Thread eventThread = null;
 
@@ -406,17 +421,6 @@
         }
 
         /// <summary>
-        /// Blocks the calling thread until logon succeeds or fails.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds"></param>
-        /// <returns></returns>
-        [Obsolete("Please use WaitForLogonEx()")]
-        public bool WaitForLogon(int timeoutInMilliseconds)
-        {
-            return WaitForLogonEx(timeoutInMilliseconds);
-        }
-
-        /// <summary>
         /// The method generates a new unique string ID.
         /// </summary>
         /// <returns>Can not be null.</returns>
@@ -438,61 +442,94 @@
 
             eventQueue_.Dispose();
             loginEvent_.Dispose();
-            client_.Dispose();
+            tradeCaptureClient_.Dispose();
+            orderEntryClient_.Dispose();
 
             GC.SuppressFinalize(this);
         }
 
         #endregion
 
+        #region Obsoletes
+
+        /// <summary>
+        /// <summary>
+        /// Gets or sets default synchronous operation timeout in milliseconds.
+        /// </summary>
+        [Obsolete("Please use OperationTimeout connection string parameter")]
+        public int SynchOperationTimeout
+        {
+            set { synchOperationTimeout_ = value;  }
+
+            get { return synchOperationTimeout_; }
+        }
+
+        /// <summary>
+        /// Occurs when local cache initialized.
+        /// </summary>
+        [Obsolete("Please use Logon event")]
+        public event CacheHandler CacheInitialized;        
+
+        /// <summary>
+        /// Starts data feed/trade instance and waits for logon event.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">Timeout of logon waiting.</param>
+        /// <returns>true, if logon event is occurred, otherwise false</returns>
+        [Obsolete("Please use WaitForLogonEx()")]
+        public bool Start(int timeoutInMilliseconds)
+        {
+            this.Start();
+            return this.WaitForLogonEx(timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// Blocks the calling thread until logon succeeds or fails.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds"></param>
+        /// <returns></returns>
+        [Obsolete("Please use WaitForLogonEx()")]
+        public bool WaitForLogon(int timeoutInMilliseconds)
+        {
+            return WaitForLogonEx(timeoutInMilliseconds);
+        }
+
+        #endregion
+
         #region Private
 
-        void OnConnect(Client client)
+        void OnConnect(OrderEntry.Client client)
         {
             try
             {
-                client_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+                orderEntryClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                orderEntryClient_.DisconnectAsync("Client disconnect");
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(OrderEntry.Client client, string text)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = LogoutReason.NetworkError;
-                args.Text = text;
-                eventQueue_.PushEvent(args);                    
-
-                loginException_ = new LogoutException(text);
-                loginEvent_.Set();                
-            }
-            catch
-            {
-            }
-        }
-
-        void OnDisconnect(Client client, string text)
-        {
-            try
-            {
-                if (! logout_)
+                lock (synchronizer_)
                 {
-                    logout_ = true;
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
 
-                    LogoutEventArgs args = new LogoutEventArgs();
-                    args.Reason = LogoutReason.NetworkError;
-                    args.Text = text;
-                    eventQueue_.PushEvent(args);
+                    if (! logout_)
+                    {
+                        logout_ = true;
 
-                    loginException_ = new LogoutException(text);
-                    loginEvent_.Set();                    
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
                 }
             }
             catch
@@ -500,7 +537,34 @@
             }
         }
 
-        void OnOneTimePasswordRequest(Client client, string text)
+        void OnDisconnect(OrderEntry.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~(InitFlags.TradeServerInfo | InitFlags.AccountInfo | InitFlags.SessionInfo | InitFlags.TradeRecords | InitFlags.Positions);
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOneTimePasswordRequest(OrderEntry.Client client, string text)
         {
             try
             {
@@ -516,7 +580,7 @@
             }
         }
 
-        void OnOneTimePasswordReject(Client client, string text)
+        void OnOneTimePasswordReject(OrderEntry.Client client, string text)
         {
             try
             {
@@ -532,61 +596,40 @@
             }
         }
 
-        void OnLoginResult(Client client, object data)
+        void OnLoginResult(OrderEntry.Client client, object data)
         {
             try
             {
-                initFlags_ = InitFlags.None;
-
-                client_.GetTradeServerInfoAsync(this);
-                client_.GetSessionInfoAsync(this);
-                client_.GetAccountInfoAsync(this);
-                client_.GetOrdersAsync(this);
+                orderEntryClient_.GetTradeServerInfoAsync(this);
+                orderEntryClient_.GetSessionInfoAsync(this);
+                orderEntryClient_.GetAccountInfoAsync(this);
+                orderEntryClient_.GetOrdersAsync(this);
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                orderEntryClient_.DisconnectAsync("Client disconnect");
             }
         }
 
-        void OnLoginError(Client client, object data, string text)
+        void OnLoginError(OrderEntry.Client client, object data, string text)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = LogoutReason.InvalidCredentials;
-                args.Text = text;
-                eventQueue_.PushEvent(args);
-
-                loginException_ = new LogoutException(text);
-                loginEvent_.Set();
-            }
-            catch
-            {
-            }
-        }
-
-        void OnTradeServerInfoResult(Client client, object data, TradeServerInfo tradeServerInfo)
-        {
-            try
-            {
-                if (data == this)
+                lock (synchronizer_)
                 {
-                    initFlags_ |= InitFlags.TradeServerInfo;
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
 
-                    lock (cache_.mutex_)
+                    if (! logout_)
                     {
-                        if (cache_.tradeServerInfo_ == null)
-                            cache_.tradeServerInfo_ = tradeServerInfo;
-                    }
+                        logout_ = true;
 
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.InvalidCredentials;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
 
-                        loginException_ = null;
+                        loginException_ = new LogoutException(text);
                         loginEvent_.Set();
                     }
                 }
@@ -596,88 +639,25 @@
             }
         }
 
-        void OnTradeServerInfoError(Client client, object data, string message)
-        {
-            try
-            {
-                if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
+        void OnTradeServerInfoResult(OrderEntry.Client client, object data, TradeServerInfo tradeServerInfo)
         {
             try
             {
                 if (data == this)
                 {
-                    initFlags_ |= InitFlags.SessionInfo;
-
-                    lock (cache_.mutex_)
+                    lock (synchronizer_)
                     {
-                        if (cache_.sessionInfo_ == null)
-                            cache_.sessionInfo_ = sessionInfo;
-                    }
-
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
-
-                        loginException_ = null;
-                        loginEvent_.Set();
-                    }
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoError(Client client, object data, string message)
-        {
-            try
-            {
-                if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
-            }
-            catch
-            {
-            }
-        }
-
-        void OnAccountInfoResult(Client client, object data, AccountInfo accountInfo)
-        {
-            try
-            {
-                if (data == this)
-                {
-                    initFlags_ |= InitFlags.AccountInfo;
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.accountInfo_ == null)
-                            cache_.accountInfo_ = accountInfo;
-                    }
-
-                    if (accountInfo.Type == AccountType.Net)
-                    {                        
-                        client_.GetPositionsAsync(this);
-                    }
-                    else
-                    {
-                        initFlags_ |= InitFlags.Positions;
-
                         lock (cache_.mutex_)
                         {
-                            if (cache_.positions_ == null)
-                                cache_.positions_ = new Dictionary<string, Position>();
+                            if (cache_.tradeServerInfo_ == null)
+                                cache_.tradeServerInfo_ = tradeServerInfo;
                         }
+
+                        initFlags_ |= InitFlags.TradeServerInfo;
 
                         if (initFlags_ == InitFlags.All)
                         {
+                            logout_ = false;
                             PushLoginEvents();
 
                             loginException_ = null;
@@ -691,43 +671,45 @@
             }
         }
 
-        void OnAccountInfoError(Client client, object data, string message)
+        void OnTradeServerInfoError(OrderEntry.Client client, object data, string message)
         {
             try
             {
                 if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
+                {
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                }
             }
             catch
             {
             }
         }
 
-        void OnPositionsResult(Client client, object data, Position[] positions)
+        void OnSessionInfoResult(OrderEntry.Client client, object data, SessionInfo sessionInfo)
         {
             try
             {
                 if (data == this)
                 {
-                    initFlags_ |= InitFlags.Positions;
-
-                    lock (cache_.mutex_)
+                    lock (synchronizer_)
                     {
-                        if (cache_.positions_ == null)
+                        lock (cache_.mutex_)
                         {
-                            cache_.positions_ = new Dictionary<string, Position>(positions.Length);
-
-                            foreach (Position position in positions)
-                                cache_.positions_.Add(position.Symbol, position);
+                            if (cache_.sessionInfo_ == null)
+                                cache_.sessionInfo_ = sessionInfo;
                         }
-                    }                    
 
-                    if (initFlags_ == InitFlags.All)
-                    {
-                        PushLoginEvents();
+                        initFlags_ |= InitFlags.SessionInfo;
 
-                        loginException_ = null;
-                        loginEvent_.Set();
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
                     }
                 }
             }
@@ -736,47 +718,112 @@
             }
         }
 
-        void OnPositionsError(Client client, object data, string message)
+        void OnSessionInfoError(OrderEntry.Client client, object data, string message)
         {
             try
             {
                 if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
+                {
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                }
             }
             catch
             {
             }
         }
 
-        void OnOrdersResult(Client client, object data, ExecutionReport[] executionReports)
+        void OnAccountInfoResult(OrderEntry.Client client, object data, AccountInfo accountInfo)
         {
             try
             {
                 if (data == this)
                 {
-                    initFlags_ |= InitFlags.TradeRecords;
-
-                    lock (cache_.mutex_)
+                    lock (synchronizer_)
                     {
-                        if (cache_.tradeRecords_ == null)
+                        lock (cache_.mutex_)
                         {
-                            cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
+                            if (cache_.accountInfo_ == null)
+                                cache_.accountInfo_ = accountInfo;
+                        }
 
-                            foreach (ExecutionReport executionReport in executionReports)
+                        initFlags_ |= InitFlags.AccountInfo;
+
+                        if (accountInfo.Type == AccountType.Net)
+                        {
+                            orderEntryClient_.GetPositionsAsync(this);
+                        }
+                        else
+                        {
+                            lock (cache_.mutex_)
                             {
-                                TradeRecord tradeRecord = GetTradeRecord(executionReport);
+                                if (cache_.positions_ == null)
+                                    cache_.positions_ = new Dictionary<string, Position>();
+                            }
 
-                                cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
+                            initFlags_ |= InitFlags.Positions;
+
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
                             }
                         }
                     }
+                }
+            }
+            catch
+            {
+            }
+        }
 
-                    if (initFlags_ == InitFlags.All)
+        void OnAccountInfoError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnPositionsResult(OrderEntry.Client client, object data, Position[] positions)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    lock (synchronizer_)
                     {
-                        PushLoginEvents();
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.positions_ == null)
+                            {
+                                cache_.positions_ = new Dictionary<string, Position>(positions.Length);
 
-                        loginException_ = null;
-                        loginEvent_.Set();
+                                foreach (Position position in positions)
+                                    cache_.positions_.Add(position.Symbol, position);
+                            }
+                        }
+
+                        initFlags_ |= InitFlags.Positions;
+
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
                     }
                 }
             }
@@ -785,51 +832,122 @@
             }
         }
 
-        void OnOrdersError(Client client, object data, string message)
+        void OnPositionsError(OrderEntry.Client client, object data, string message)
         {
             try
             {
                 if (data == this)
-                    client_.DisconnectAsync("Client disconnect");
+                {
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                }
             }
             catch
             {
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo logoutInfo)
+        void OnOrdersResult(OrderEntry.Client client, object data, ExecutionReport[] executionReports)
         {
             try
             {
-                logout_ = true;
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.tradeRecords_ == null)
+                            {
+                                cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
 
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = logoutInfo.Reason;
-                args.Text = logoutInfo.Message;
-                eventQueue_.PushEvent(args);
+                                foreach (ExecutionReport executionReport in executionReports)
+                                {
+                                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
+
+                                    cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
+                                }
+                            }
+                        }
+
+                        initFlags_ |= InitFlags.TradeRecords;
+
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
+                    }
+                }
             }
             catch
             {
             }
         }
 
-        void OnLogout(Client client, LogoutInfo logoutInfo)
+        void OnOrdersError(OrderEntry.Client client, object data, string message)
         {
             try
             {
-                logout_ = true;
-
-                LogoutEventArgs args = new LogoutEventArgs();
-                args.Reason = logoutInfo.Reason;
-                args.Text = logoutInfo.Message;
-                eventQueue_.PushEvent(args);
+                if (data == this)
+                {
+                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                }
             }
             catch
             {
             }
         }
 
-        void OnNewOrderResult(Client client, object data, ExecutionReport report)
+        void OnLogoutResult(OrderEntry.Client client, object data, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (!logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogout(OrderEntry.Client client, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnNewOrderResult(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
@@ -857,7 +975,7 @@
             }
         }
 
-        void OnReplaceOrderResult(Client client, object data, ExecutionReport report)
+        void OnReplaceOrderResult(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
@@ -874,7 +992,7 @@
             }
         }
 
-        void OnCancelOrderResult(Client client, object data, ExecutionReport report)
+        void OnCancelOrderResult(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
@@ -902,7 +1020,7 @@
             }
         }
 
-        void OnClosePositionResult(Client client, object data, ExecutionReport report)
+        void OnClosePositionResult(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
@@ -930,7 +1048,7 @@
             }
         }
 
-        void OnClosePositionByResult(Client client, object data, ExecutionReport report)
+        void OnClosePositionByResult(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
@@ -958,7 +1076,7 @@
             }
         }
 
-        void OnSessionInfoUpdate(Client client, SessionInfo info)
+        void OnSessionInfoUpdate(OrderEntry.Client client, SessionInfo info)
         {
             try
             {
@@ -976,7 +1094,7 @@
             }
         }
 
-        void OnAccountInfoUpdate(Client client, AccountInfo info)
+        void OnAccountInfoUpdate(OrderEntry.Client client, AccountInfo info)
         {
             try
             {
@@ -994,7 +1112,7 @@
             }
         }
 
-        void OnExecutionReport(Client client, ExecutionReport executionReport)
+        void OnExecutionReport(OrderEntry.Client client, ExecutionReport executionReport)
         {
             try
             {
@@ -1026,7 +1144,7 @@
             }
         }
 
-        void OnPositionUpdate(Client client, Position[] positions)
+        void OnPositionUpdate(OrderEntry.Client client, Position[] positions)
         {
             try
             {
@@ -1057,7 +1175,7 @@
             }
         }
 
-        void OnBalanceInfoUpdate(Client client, BalanceOperation balanceOperation)
+        void OnBalanceInfoUpdate(OrderEntry.Client client, BalanceOperation balanceOperation)
         {
             try
             {
@@ -1072,7 +1190,7 @@
             }
         }
 
-        void OnNotification(Client client, Notification notification)
+        void OnNotification(OrderEntry.Client client, Notification notification)
         {
             try
             {
@@ -1080,6 +1198,214 @@
                 args.Type = notification.Type;
                 args.Severity = notification.Severity;
                 args.Text = notification.Message;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnConnect(TradeCapture.Client client)
+        {
+            try
+            {
+                tradeCaptureClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+            }
+            catch
+            {
+                tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                orderEntryClient_.DisconnectAsync("Client disconnect");
+            }
+        }
+
+        void OnConnectError(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~InitFlags.TradeCaptureLogin;
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.NetworkError;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOneTimePasswordRequest(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                twoFactorAuth.Text = text;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOneTimePasswordReject(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                twoFactorAuth.Text = text;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLoginResult(TradeCapture.Client client, object data)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ |= InitFlags.TradeCaptureLogin;
+
+                    if (initFlags_ == InitFlags.All)
+                    {
+                        logout_ = false;
+                        PushLoginEvents();
+
+                        loginException_ = null;
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+                tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                orderEntryClient_.DisconnectAsync("Client disconnect");
+            }
+        }
+
+        void OnLoginError(TradeCapture.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    orderEntryClient_.DisconnectAsync("Client disconnect");
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.InvalidCredentials;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogoutResult(TradeCapture.Client client, object data, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnLogout(TradeCapture.Client client, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = logoutInfo.Reason;
+                        args.Text = logoutInfo.Message;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTradeUpdate(TradeCapture.Client client, TradeTransactionReport tradeTransactionReport)
+        {
+            try
+            {
+                TradeTransactionReportEventArgs args = new TradeTransactionReportEventArgs();
+                args.Report = tradeTransactionReport;
                 eventQueue_.PushEvent(args);
             }
             catch
@@ -1298,6 +1624,24 @@
                 return;
             }
 
+            TradeTransactionReportEventArgs tradeTransactionReportEventArgs = eventArgs as TradeTransactionReportEventArgs;
+
+            if (tradeTransactionReportEventArgs != null)
+            {
+                if (TradeTransactionReport != null)
+                {
+                    try
+                    {
+                        TradeTransactionReport(this, tradeTransactionReportEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
             NotificationEventArgs notificationEventArgs = eventArgs as NotificationEventArgs;
 
             if (notificationEventArgs != null)
@@ -1417,7 +1761,8 @@
             AccountInfo = 0x04,
             TradeRecords = 0x08,
             Positions = 0x10,
-            All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions
+            TradeCaptureLogin = 0x20,
+            All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions | TradeCaptureLogin
         }
 
         string name_;
@@ -1431,7 +1776,8 @@
         internal DataTradeServer server_;
         internal DataTradeCache cache_;
         internal Network network_;
-        internal Client client_;
+        internal OrderEntry.Client orderEntryClient_;
+        internal TradeCapture.Client tradeCaptureClient_;
 
         object synchronizer_;        
         bool started_;

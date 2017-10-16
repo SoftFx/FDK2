@@ -284,7 +284,7 @@ namespace TradeCaptureSample
             }
             finally
             {
-                tradeTransactionReportEnumerator.Dispose();
+                tradeTransactionReportEnumerator.Close();
             }
         }
 

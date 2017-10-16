@@ -63,17 +63,6 @@
         /// </summary>
         /// <param name="timeoutInMilliseconds">timeout of the operation</param>
         /// <returns></returns>
-        [Obsolete("Please use GetCurrenciesEx()")]
-        public CurrencyInfo[] GetCurrencies(int timeoutInMilliseconds)
-        {
-            return GetCurrenciesEx(timeoutInMilliseconds);
-        }
-
-        /// <summary>
-        /// The method returns list of currencies supported by server.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">timeout of the operation</param>
-        /// <returns></returns>
         public CurrencyInfo[] GetCurrenciesEx(int timeoutInMilliseconds)
         {
             return dataFeed_.quoteFeedClient_.GetCurrencyList(timeoutInMilliseconds);
@@ -359,6 +348,17 @@
             throw new Exception("Not impled");
         }
 */
+        /// <summary>
+        /// The method returns list of currencies supported by server.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">timeout of the operation</param>
+        /// <returns></returns>
+        [Obsolete("Please use GetCurrenciesEx()")]
+        public CurrencyInfo[] GetCurrencies(int timeoutInMilliseconds)
+        {
+            return GetCurrenciesEx(timeoutInMilliseconds);
+        }
+
         DataFeed dataFeed_;
     }
 }

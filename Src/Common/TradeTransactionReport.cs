@@ -385,5 +385,10 @@
         /// </summary>
         [Obsolete("Please use OrdeSide property")]
         public TradeRecordSide TradeRecordSide { get; set; }        
+
+        public override string ToString()
+        {
+            return string.Format("Id = {0}; Type = {1}; Reason = {2}; Time = {3}; ClientId = {4}; OrderType = {5}; Symbol = {6}; OrderSide = {7}; InitialVolume = {8}; Price = {9}; LeavesVolume = {10}; TradeAmount = {11}; TradePrice = {12}", Id, TradeTransactionReportType, TradeTransactionReason, TransactionTime, ClientId, OrderType, Symbol, OrderSide, Quantity, Price, LeavesQuantity, OrderLastFillAmount, OrderFillPrice);
+        }
     }
 }

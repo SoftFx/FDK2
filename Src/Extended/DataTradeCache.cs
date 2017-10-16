@@ -13,11 +13,11 @@
         {
             dataTrade_ = dataTrade;
             mutex_ = new object();
-//          tradeServerInfo_ = null;
-//          sessionInfo_ = null;
-//          accountInfo_ = null;
-//          tradeRecords_ = null;
-//          positions_ = null;
+            tradeServerInfo_ = null;
+            sessionInfo_ = null;
+            accountInfo_ = null;
+            tradeRecords_ = null;
+            positions_ = null;
         }
 
         #region Properties

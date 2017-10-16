@@ -2,14 +2,16 @@
 {
     using System;
     using System.Collections.Generic;
+    using Common;
+    using TradeCapture;
 
-    /// <summary>
-    /// Contains common part of all streams.
-    /// </summary>
-    public class StreamIterator<T> : IDisposable
+    public class TradeTransactionReportsEnumerator : IDisposable
     {
-        internal StreamIterator()
+        internal TradeTransactionReportsEnumerator(TradeTransactionReportEnumerator tradeTransactionReportEnumerator, int timeout)
         {
+            tradeTransactionReportEnumerator_ = tradeTransactionReportEnumerator;
+            timeout_ = timeout;
+            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(timeout_);
         }
 
         #region Public Methods
@@ -21,7 +23,7 @@
         {
             get
             {
-                throw new Exception("Not impled");
+                return 0;
             }
         }
 
@@ -32,7 +34,7 @@
         {
             get
             {
-                throw new Exception("Not impled");
+                return tradeTransactionReport_ == null;
             }
         }
 
@@ -41,7 +43,7 @@
         /// </summary>
         public void Next()
         {
-            throw new Exception("Not impled");
+            NextEx(timeout_);
         }
 
         /// <summary>
@@ -50,17 +52,17 @@
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
         public void NextEx(int timeoutInMilliseconds)
         {
-            throw new Exception("Not impled");
+            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(timeoutInMilliseconds);
         }
 
         /// <summary>
         /// Gets the current stream element.
         /// </summary>
-        public T Item
+        public TradeTransactionReport Item
         {
             get
             {
-                throw new Exception("Not impled");
+                return tradeTransactionReport_;
             }
         }
 
@@ -68,9 +70,9 @@
         /// Reads an associated stream to the end and returns all elements as array.
         /// </summary>
         /// <returns>Can not be null.</returns>
-        public T[] ToArray()
+        public TradeTransactionReport[] ToArray()
         {
-            var list = new List<T>();
+            var list = new List<TradeTransactionReport>();
             for (; !this.EndOfStream; this.Next())
             {
                 var item = this.Item;
@@ -85,22 +87,18 @@
         /// </summary>
         public void Dispose()
         {
-        }
+            tradeTransactionReportEnumerator_.Dispose();
 
-        /// <summary>
-        /// Release all unmanaged resources.
-        /// </summary>
-        ~StreamIterator()
-        {
-            if (!Environment.HasShutdownStarted)
-            {
-                this.Dispose();
-            }
+            GC.SuppressFinalize(this);
         }
 
         #endregion
 
         #region Members
+        
+        TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;
+        int timeout_;
+        TradeTransactionReport tradeTransactionReport_;
 
         #endregion
     }

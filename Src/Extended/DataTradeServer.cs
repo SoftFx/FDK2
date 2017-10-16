@@ -28,7 +28,7 @@
         /// <returns></returns>
         public TradeServerInfo GetTradeServerInfoEx(int timeoutInMilliseconds)
         {
-            return dataTrade_.client_.GetTradeServerInfo(timeoutInMilliseconds);
+            return dataTrade_.orderEntryClient_.GetTradeServerInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -47,7 +47,7 @@
         /// <returns>Can not be null.</returns>
         public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
         {
-            return dataTrade_.client_.GetSessionInfo(timeoutInMilliseconds);
+            return dataTrade_.orderEntryClient_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -66,7 +66,7 @@
         /// <returns>Can not be null.</returns>
         public AccountInfo GetAccountInfoEx(int timeoutInMilliseconds)
         {
-            return dataTrade_.client_.GetAccountInfo(timeoutInMilliseconds);
+            return dataTrade_.orderEntryClient_.GetAccountInfo(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -85,7 +85,7 @@
         /// <returns>can not be null</returns>
         public TradeRecord[] GetTradeRecordsEx(int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.client_.GetOrders(timeoutInMilliseconds);
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds);
 
             TradeRecord[] tradeRecords = new TradeRecord[executionReports.Length];
 
@@ -112,7 +112,7 @@
         /// <returns>can not be null</returns>
         public Position[] GetPositionsEx(int timeoutInMilliseconds)
         {
-            return dataTrade_.client_.GetPositions(timeoutInMilliseconds);
+            return dataTrade_.orderEntryClient_.GetPositions(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -232,7 +232,7 @@
 
             OrderSide orderSide = GetOrderSide(side);
 
-            ExecutionReport[] executionReports = dataTrade_.client_.NewOrder
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.NewOrder
             (
                 operationId, 
                 symbol, 
@@ -378,7 +378,7 @@
 
             OrderSide orderSide = GetOrderSide(side);
 
-            ExecutionReport[] executionReports = dataTrade_.client_.ReplaceOrder
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ReplaceOrder
             (
                 operationId,
                 clientId,
@@ -464,7 +464,7 @@
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         void DeletePendingOrderEx(string operationId, string orderId, string clientId, TradeRecordSide side, int timeoutInMilliseconds)
         {
-            dataTrade_.client_.CancelOrder(operationId, clientId, orderId, timeoutInMilliseconds);
+            dataTrade_.orderEntryClient_.CancelOrder(operationId, clientId, orderId, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -518,7 +518,7 @@
         /// <returns>Can not be null.</returns>
         public ClosePositionResult ClosePositionEx(string orderId, string operationId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.client_.ClosePosition(operationId, orderId, null, timeoutInMilliseconds);
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, null, timeoutInMilliseconds);
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
 
@@ -580,7 +580,7 @@
         /// <returns></returns>
         public ClosePositionResult ClosePositionPartiallyEx(string orderId, double volume, string operationId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.client_.ClosePosition(operationId, orderId, volume, timeoutInMilliseconds);                       
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, volume, timeoutInMilliseconds);                       
 
             ExecutionReport tradeExecutionReport = executionReports[1];
 
@@ -623,11 +623,11 @@
         /// <returns>True, if the operation has been succeeded; otherwise false.</returns>
         public bool CloseByPositionsEx(string operationId, string firstOrderId, string secondOrderId, int timeoutInMilliseconds)
         {
-            dataTrade_.client_.ClosePositionBy(operationId, firstOrderId, secondOrderId, timeoutInMilliseconds);
+            dataTrade_.orderEntryClient_.ClosePositionBy(operationId, firstOrderId, secondOrderId, timeoutInMilliseconds);
 
             return true;
         }
-
+/*
         /// <summary>
         /// The method closes all opened market orders.
         /// The method is supported by Gross account only.
@@ -660,7 +660,7 @@
         {
             throw new Exception("Not impled");
         }
-
+*/
         /// <summary>
         /// The method gets snapshot of trade transaction reports and subscribe to notifications.
         /// All reports will be received as events.
@@ -678,7 +678,7 @@
         /// The parameter is supported since 1.6 FIX version.
         /// </param>
         /// <returns>Can not be null.</returns>
-        public StreamIterator<TradeTransactionReport> GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, bool? skipCancel)
+        public TradeTransactionReportsEnumerator GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, bool? skipCancel)
         {
             return this.GetTradeTransactionReports(direction, subscribeToNotifications, from, to, 16, skipCancel);
         }
@@ -701,7 +701,7 @@
         /// </param>
         /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
         /// <returns>Can not be null.</returns>
-        public StreamIterator<TradeTransactionReport> GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel)
+        public TradeTransactionReportsEnumerator GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel)
         {
             return GetTradeTransactionReportsEx(direction, subscribeToNotifications, from, to, preferedBufferSize, skipCancel, dataTrade_.synchOperationTimeout_);
         }
@@ -725,9 +725,37 @@
         /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
         /// <returns>Can not be null.</returns>
-        public StreamIterator<TradeTransactionReport> GetTradeTransactionReportsEx(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel, int timeoutInMilliseconds)
+        public TradeTransactionReportsEnumerator GetTradeTransactionReportsEx(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel, int timeoutInMilliseconds)
         {
-            throw new Exception("Not impled");
+            bool skipCancelValue = skipCancel != null ? skipCancel.Value : false;
+
+            if (subscribeToNotifications)
+            {
+                dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancelValue, timeoutInMilliseconds);
+            }
+
+            try
+            {
+                TradeCapture.TradeTransactionReportEnumerator tradeTransactionReportEnumerator = dataTrade_.tradeCaptureClient_.DownloadTrades
+                (
+                    direction,
+                    from,
+                    to,
+                    skipCancelValue,
+                    timeoutInMilliseconds
+                );
+
+                return new TradeTransactionReportsEnumerator(tradeTransactionReportEnumerator, timeoutInMilliseconds);
+            }
+            catch
+            {
+                if (subscribeToNotifications)
+                {
+                    dataTrade_.tradeCaptureClient_.UnsubscribeTrades(timeoutInMilliseconds);
+                }
+
+                throw;
+            }
         }
 
         /// <summary>
@@ -744,9 +772,8 @@
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
         public void UnsubscribeTradeTransactionReportsEx(int timeoutInMilliseconds)
         {
-            throw new Exception("Not impled");
+            dataTrade_.tradeCaptureClient_.UnsubscribeTrades(timeoutInMilliseconds);
         }
-
 
         ClosePositionResult GetClosePositionResult(ExecutionReport executionReport)
         {

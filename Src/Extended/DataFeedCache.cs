@@ -13,9 +13,9 @@
         {
             dataFeed_ = dataFeed;
             mutex_ = new object();
-//            sessionInfo_ = null;
-//            currencies_ = null;
-//            symbols_ = null;
+            sessionInfo_ = null;
+            currencies_ = null;
+            symbols_ = null;
             quotes_ = new Dictionary<string, Quote>();
         }
 

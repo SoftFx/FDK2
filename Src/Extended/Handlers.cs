@@ -390,6 +390,15 @@
         /// Trade transaction report
         /// </summary>
         public TradeTransactionReport Report { get; set; }
+
+        /// <summary>
+        /// Returns formatted string for the class instance.
+        /// </summary>
+        /// <returns>can not be null</returns>
+        public override string ToString()
+        {
+            return Report.ToString();
+        }
     }
 
     /// <summary>

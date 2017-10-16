@@ -73,6 +73,7 @@
             this.Trade.ExecutionReport += this.OnExecutionReport;
             this.Trade.PositionReport += this.OnPositionReport;            
             this.Trade.BalanceOperation += this.OnBalanceOperaiton;
+            this.Trade.TradeTransactionReport += this.OnTradeTransactionReport;
             this.Trade.Notify += this.OnNofity;
             
             this.Trade.Start();
@@ -129,6 +130,11 @@
         protected virtual void OnBalanceOperaiton(object sender, NotificationEventArgs<BalanceOperation> e)
         {
             Console.WriteLine("OnBalanceOperaiton(): {0}", e);
+        }
+
+        protected virtual void OnTradeTransactionReport(object sender, TradeTransactionReportEventArgs e)
+        {
+            Console.WriteLine("OnTradeTransactionReport(): {0}", e);
         }
 
         protected virtual void OnNofity(object sender, NotificationEventArgs e)

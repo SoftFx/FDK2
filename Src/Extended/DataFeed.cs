@@ -145,17 +145,6 @@
             get { return name_;  }
         }
 
-        /// <summary>
-        /// Gets or sets default synchronous operation timeout in milliseconds.
-        /// </summary>
-        [Obsolete("Please use OperationTimeout connection string parameter")]
-        public int SynchOperationTimeout
-        {
-            set { synchOperationTimeout_ = value;  }
-
-            get { return synchOperationTimeout_; }
-        }
-
 /*
         /// Gets or sets queue size for quotes.
         /// Note: FDK uses a separated queue for every symbol.
@@ -272,24 +261,6 @@
         /// </summary>
         public event NotifyHandler Notify;
 
-        /// <summary>
-        /// Occurs when currencies information is initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event CurrencyInfoHandler CurrencyInfo;
-
-        /// <summary>
-        /// Occurs when symbols information is initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event SymbolInfoHandler SymbolInfo;
-
-        /// <summary>
-        /// Occurs when local cache initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event CacheHandler CacheInitialized;
-
         #endregion
 
         #region Methods
@@ -333,7 +304,7 @@
                         }
                         catch
                         {
-                            quoteFeedClient_.DisconnectAsync("");
+                            quoteFeedClient_.DisconnectAsync("Client disconnect");
                             quoteFeedClient = quoteFeedClient_;
 
                             throw;
@@ -352,7 +323,7 @@
             }
             catch
             {
-                // have to wait here since we don't have Join()
+                // have to wait here since we don't have Join() and Stop() is synchronous
 
                 if (eventThread != null)
                     eventThread.Join();
@@ -365,19 +336,6 @@
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// Starts data feed/trade instance and waits for logon event.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">Timeout of logon waiting.</param>
-        /// <returns>true, if logon event is occurred, otherwise false</returns>
-        [Obsolete("Please use WaitForLogonEx()")]
-        public bool Start(int timeoutInMilliseconds)
-        {
-            Start();
-
-            return WaitForLogon(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -457,17 +415,6 @@
         }
 
         /// <summary>
-        /// Blocks the calling thread until logon succeeds or fails.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds"></param>
-        /// <returns></returns>
-        [Obsolete("Please use WaitForLogonEx()")]
-        public bool WaitForLogon(int timeoutInMilliseconds)
-        {
-            return WaitForLogonEx(timeoutInMilliseconds);
-        }
-
-        /// <summary>
         /// The method generates a new unique string ID.
         /// </summary>
         /// <returns>Can not be null.</returns>
@@ -493,6 +440,63 @@
             quoteFeedClient_.Dispose();
 
             GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        #region Obsoletes
+
+        /// <summary>
+        /// Gets or sets default synchronous operation timeout in milliseconds.
+        /// </summary>
+        [Obsolete("Please use OperationTimeout connection string parameter")]
+        public int SynchOperationTimeout
+        {
+            set { synchOperationTimeout_ = value;  }
+
+            get { return synchOperationTimeout_; }
+        }
+
+        /// <summary>
+        /// Occurs when currencies information is initialized.
+        /// </summary>
+        [Obsolete("Please use Logon event")]
+        public event CurrencyInfoHandler CurrencyInfo;
+
+        /// <summary>
+        /// Occurs when symbols information is initialized.
+        /// </summary>
+        [Obsolete("Please use Logon event")]
+        public event SymbolInfoHandler SymbolInfo;
+
+        /// <summary>
+        /// Occurs when local cache initialized.
+        /// </summary>
+        [Obsolete("Please use Logon event")]
+        public event CacheHandler CacheInitialized;
+
+        /// <summary>
+        /// Starts data feed/trade instance and waits for logon event.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">Timeout of logon waiting.</param>
+        /// <returns>true, if logon event is occurred, otherwise false</returns>
+        [Obsolete("Please use WaitForLogonEx()")]
+        public bool Start(int timeoutInMilliseconds)
+        {
+            Start();
+
+            return WaitForLogonEx(timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// Blocks the calling thread until logon succeeds or fails.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds"></param>
+        /// <returns></returns>
+        [Obsolete("Please use WaitForLogonEx()")]
+        public bool WaitForLogon(int timeoutInMilliseconds)
+        {
+            return WaitForLogonEx(timeoutInMilliseconds);
         }
 
         #endregion
@@ -658,7 +662,7 @@
 
                         if (initFlags_ == InitFlags.All)
                         {                     
-                            logout_ = false;                                   
+                            logout_ = false;
                             PushLoginEvents();
 
                             loginException_ = null;
