@@ -5,7 +5,7 @@
                 <field name="Username" offset="8" type="ustring" optional="N" repeatable="N"/>
                 <field name="Password" offset="16" type="ustring" optional="N" repeatable="N"/>
                 <field name="DeviceId" offset="24" type="string" optional="N" repeatable="N"/>
-                <field name="AppSessionId" offset="32" type="string" optional="N" repeatable="N"/>
+                <field name="SessionId" offset="32" type="string" optional="N" repeatable="N"/>
             </fields>
         </message>
         <message name="LoginReport" id="1" size="9">
@@ -74,7 +74,7 @@
         <message name="Request" id="6" size="16">
             <subMessages>
                 <subMessage name="CurrencyListRequest"/>
-                <subMessage name="SecurityListRequest"/>
+                <subMessage name="SymbolListRequest"/>
                 <subMessage name="TradingSessionStatusRequest"/>
                 <subMessage name="MarketDataRequest"/>
             </subMessages>
@@ -86,7 +86,7 @@
             <subMessages>
                 <subMessage name="Reject"/>
                 <subMessage name="CurrencyListReport"/>
-                <subMessage name="SecurityListReport"/>
+                <subMessage name="SymbolListReport"/>
                 <subMessage name="TradingSessionStatusReport"/>
                 <subMessage name="MarketDataReport"/>
             </subMessages>
@@ -125,18 +125,18 @@
                 <field name="Currencies" offset="16" type="Currency" optional="N" repeatable="Y"/>
             </fields>
         </message>
-        <enum name="SecurityListRequestType" size="4">
+        <enum name="SymbolListRequestType" size="4">
             <members>
                 <member name="All" value="0"/>
             </members>
         </enum>
-        <message name="SecurityListRequest" id="11" superMessage="Request" size="20">
+        <message name="SymbolListRequest" id="11" superMessage="Request" size="20">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
-                <field name="Type" offset="16" type="SecurityListRequestType" optional="N" repeatable="N"/>
+                <field name="Type" offset="16" type="SymbolListRequestType" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <enum name="CalcMode" size="4">
+        <enum name="MarginCalcMode" size="4">
             <members>
                 <member name="Forex" value="0"/>
                 <member name="Cfd" value="1"/>
@@ -145,7 +145,7 @@
                 <member name="CfdLeverage" value="4"/>
             </members>
         </enum>
-        <enum name="SettlCalcMode" size="4">
+        <enum name="ProfitCalcMode" size="4">
             <members>
                 <member name="Forex" value="0"/>
                 <member name="Cfd" value="1"/>
@@ -197,14 +197,14 @@
                 <field name="SecurityDescription" offset="85" type="ustring" optional="Y" repeatable="N"/>
                 <field name="SecuritySortOrder" offset="93" type="int32" optional="N" repeatable="N"/>
                 <field name="StatusGroupId" offset="97" type="string" optional="N" repeatable="N"/>
-                <field name="CurrencyId" offset="105" type="string" optional="N" repeatable="N"/>
-                <field name="CurrencyPrecision" offset="113" type="int32" optional="N" repeatable="N"/>
-                <field name="CurrencySortOrder" offset="117" type="int32" optional="N" repeatable="N"/>
-                <field name="CalcMode" offset="121" type="CalcMode" optional="N" repeatable="N"/>
-                <field name="SettlCurrencyId" offset="125" type="string" optional="N" repeatable="N"/>
-                <field name="SettlCurrencyPrecision" offset="133" type="int32" optional="N" repeatable="N"/>
-                <field name="SettlCurrencySortOrder" offset="137" type="int32" optional="N" repeatable="N"/>
-                <field name="SettlCalcMode" offset="141" type="SettlCalcMode" optional="N" repeatable="N"/>
+                <field name="MarginCurrId" offset="105" type="string" optional="N" repeatable="N"/>
+                <field name="MarginCurrPrecision" offset="113" type="int32" optional="N" repeatable="N"/>
+                <field name="MarginCurrSortOrder" offset="117" type="int32" optional="N" repeatable="N"/>
+                <field name="MarginCalcMode" offset="121" type="MarginCalcMode" optional="N" repeatable="N"/>
+                <field name="ProfitCurrId" offset="125" type="string" optional="N" repeatable="N"/>
+                <field name="ProfitCurrPrecision" offset="133" type="int32" optional="N" repeatable="N"/>
+                <field name="ProfitCurrSortOrder" offset="137" type="int32" optional="N" repeatable="N"/>
+                <field name="ProfitCalcMode" offset="141" type="ProfitCalcMode" optional="N" repeatable="N"/>
                 <field name="MarginHedge" offset="145" type="double" optional="N" repeatable="N"/>
                 <field name="MarginFactor" offset="153" type="double" optional="N" repeatable="N"/>
                 <field name="StopOrderMarginReduction" offset="161" type="double" optional="N" repeatable="N"/>
@@ -214,7 +214,7 @@
                 <field name="CommissionChargeMethod" offset="185" type="CommissionChargeMethod" optional="N" repeatable="N"/>
                 <field name="Commission" offset="189" type="double" optional="N" repeatable="N"/>
                 <field name="LimitsCommission" offset="197" type="double" optional="N" repeatable="N"/>
-                <field name="MinCommissionCurrencyId" offset="205" type="string" optional="N" repeatable="N"/>
+                <field name="MinCommissionCurrId" offset="205" type="string" optional="N" repeatable="N"/>
                 <field name="MinCommission" offset="213" type="double" optional="N" repeatable="N"/>
                 <field name="SwapType" offset="221" type="SwapType" optional="N" repeatable="N"/>
                 <field name="SwapSizeLong" offset="225" type="double" optional="N" repeatable="N"/>
@@ -222,7 +222,7 @@
                 <field name="TripleSwapDay" offset="241" type="int32" optional="N" repeatable="N"/>
             </fields>
         </group>
-        <message name="SecurityListReport" id="12" superMessage="Response" size="24">
+        <message name="SymbolListReport" id="12" superMessage="Response" size="24">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Symbols" offset="16" type="Symbol" optional="N" repeatable="Y"/>
@@ -554,9 +554,9 @@
                                 <message name="CurrencyListRequest"/>
                             </messages>
                         </send>
-                        <send name="SecurityListRequest" next="415_13">
+                        <send name="SymbolListRequest" next="415_13">
                             <messages>
-                                <message name="SecurityListRequest"/>
+                                <message name="SymbolListRequest"/>
                             </messages>
                         </send>
                         <send name="TradingSessionStatusRequest" next="422_13">
@@ -590,19 +590,19 @@
                 </state>
                 <state label="415_13">
                     <operations>
-                        <recv name="SecurityListReport">
+                        <recv name="SymbolListReport">
                             <messages>
-                                <message name="SecurityListReport"/>
+                                <message name="SymbolListReport"/>
                             </messages>
                         </recv>
-                        <recv name="SecurityListReject">
+                        <recv name="SymbolListReject">
                             <messages>
                                 <message name="Reject"/>
                             </messages>
                         </recv>
                     </operations>
                     <contexts>
-                        <context name="SecurityListRequest"/>
+                        <context name="SymbolListRequest"/>
                     </contexts>
                 </state>
                 <state label="422_13">
@@ -838,9 +838,9 @@
                                 <message name="CurrencyListRequest"/>
                             </messages>
                         </recv>
-                        <recv name="SecurityListRequest" next="523_13">
+                        <recv name="SymbolListRequest" next="523_13">
                             <messages>
-                                <message name="SecurityListRequest"/>
+                                <message name="SymbolListRequest"/>
                             </messages>
                         </recv>
                         <recv name="TradingSessionStatusRequest" next="530_13">
@@ -873,7 +873,7 @@
                     <operations>
                         <send>
                             <messages>
-                                <message name="SecurityListReport"/>
+                                <message name="SymbolListReport"/>
                             </messages>
                         </send>
                         <send>

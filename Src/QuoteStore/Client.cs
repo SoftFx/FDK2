@@ -115,12 +115,12 @@ namespace TickTrader.FDK.QuoteStore
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
-        public void Login(string username, string password, string deviceId, string appSessionId, int timeout)
+        public void Login(string username, string password, string deviceId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appSessionId), timeout);
+            ConvertToSync(LoginAsync(null, username, password, deviceId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appSessionId)
+        public Task LoginAsync(object data, string username, string password, string deviceId, string sessionId)
         {
             Task result;
 
@@ -142,7 +142,7 @@ namespace TickTrader.FDK.QuoteStore
                 Username = username,
                 Password = password,
                 DeviceId = deviceId,
-                AppSessionId = appSessionId
+                SessionId = sessionId
             };
 
             // Send request to the server

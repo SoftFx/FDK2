@@ -6,7 +6,7 @@
                 <field name="Password" offset="16" type="ustring" optional="N" repeatable="N"/>
                 <field name="DeviceId" offset="24" type="string" optional="N" repeatable="N"/>
                 <field name="AppId" offset="32" type="string" optional="N" repeatable="N"/>
-                <field name="AppSessionId" offset="40" type="string" optional="N" repeatable="N"/>
+                <field name="SessionId" offset="40" type="string" optional="N" repeatable="N"/>
             </fields>
         </message>
         <message name="LoginReport" id="1" size="9">
@@ -143,33 +143,40 @@
                 <member name="Blocked" value="2"/>
             </members>
         </set>
-        <group name="AccountAsset" size="24">
+        <group name="Balance" size="24">
             <fields>
-                <field name="CurrId" offset="0" type="string" optional="N" repeatable="N"/>
-                <field name="Balance" offset="8" type="double" optional="N" repeatable="N"/>
-                <field name="Locked" offset="16" type="double" optional="N" repeatable="N"/>
+                <field name="CurrId" offset="0" type="string" optional="Y" repeatable="N"/>
+                <field name="Move" offset="8" type="double" optional="Y" repeatable="N"/>
+                <field name="Total" offset="16" type="double" optional="Y" repeatable="N"/>
             </fields>
         </group>
-        <group name="AccountInfo" size="108">
+        <group name="Asset" size="32">
+            <fields>
+                <field name="CurrId" offset="0" type="string" optional="N" repeatable="N"/>
+                <field name="Move" offset="8" type="double" optional="Y" repeatable="N"/>
+                <field name="Locked" offset="16" type="double" optional="N" repeatable="N"/>
+                <field name="Total" offset="24" type="double" optional="N" repeatable="N"/>
+            </fields>
+        </group>
+        <group name="AccountInfo" size="116">
             <fields>
                 <field name="Id" offset="0" type="int64" optional="N" repeatable="N"/>
                 <field name="Type" offset="8" type="AccountType" optional="N" repeatable="N"/>
                 <field name="Flags" offset="12" type="AccountFlags" optional="N" repeatable="N"/>
                 <field name="Description" offset="16" type="ustring" optional="Y" repeatable="N"/>
                 <field name="Leverage" offset="24" type="int32" optional="N" repeatable="N"/>
-                <field name="CurrId" offset="28" type="string" optional="Y" repeatable="N"/>
-                <field name="Balance" offset="36" type="double" optional="N" repeatable="N"/>
-                <field name="Margin" offset="44" type="double" optional="N" repeatable="N"/>
-                <field name="Equity" offset="52" type="double" optional="N" repeatable="N"/>
-                <field name="MarginCallLevel" offset="60" type="double" optional="N" repeatable="N"/>
-                <field name="StopOutLevel" offset="68" type="double" optional="N" repeatable="N"/>
-                <field name="RegistEmail" offset="76" type="string" optional="Y" repeatable="N"/>
-                <field name="RegistDate" offset="84" type="timestamp" optional="N" repeatable="N"/>
-                <field name="ModifyTime" offset="92" type="timestamp" optional="N" repeatable="N"/>
-                <field name="Assets" offset="100" type="AccountAsset" optional="N" repeatable="Y"/>
+                <field name="Margin" offset="28" type="double" optional="N" repeatable="N"/>
+                <field name="Equity" offset="36" type="double" optional="N" repeatable="N"/>
+                <field name="MarginCallLevel" offset="44" type="double" optional="N" repeatable="N"/>
+                <field name="StopOutLevel" offset="52" type="double" optional="N" repeatable="N"/>
+                <field name="RegistEmail" offset="60" type="string" optional="Y" repeatable="N"/>
+                <field name="RegistDate" offset="68" type="timestamp" optional="N" repeatable="N"/>
+                <field name="ModifyTime" offset="76" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Balance" offset="84" type="Balance" optional="N" repeatable="N"/>
+                <field name="Assets" offset="108" type="Asset" optional="N" repeatable="Y"/>
             </fields>
         </group>
-        <message name="AccountInfoReport" id="12" superMessage="Response" size="124">
+        <message name="AccountInfoReport" id="12" superMessage="Response" size="132">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="AccountInfo" offset="16" type="AccountInfo" optional="N" repeatable="N"/>
@@ -286,7 +293,7 @@
                 <member name="CloseReduced" value="1"/>
             </members>
         </set>
-        <group name="OrderState" size="104">
+        <group name="OrderState" size="68">
             <fields>
                 <field name="Status" offset="0" type="OrderStatus" optional="N" repeatable="N"/>
                 <field name="CumQty" offset="4" type="double" optional="N" repeatable="N"/>
@@ -294,38 +301,25 @@
                 <field name="AvgPrice" offset="20" type="double" optional="N" repeatable="N"/>
                 <field name="LastQty" offset="28" type="double" optional="Y" repeatable="N"/>
                 <field name="LastPrice" offset="36" type="double" optional="Y" repeatable="N"/>
-                <field name="Commission" offset="44" type="double" optional="N" repeatable="N"/>
-                <field name="AgentCommission" offset="52" type="double" optional="N" repeatable="N"/>
-                <field name="Swap" offset="60" type="double" optional="N" repeatable="N"/>
-                <field name="CommissionFlags" offset="68" type="OrderCommissionFlags" optional="N" repeatable="N"/>
-                <field name="MarginRateInitial" offset="72" type="double" optional="N" repeatable="N"/>
-                <field name="Created" offset="80" type="timestamp" optional="N" repeatable="N"/>
-                <field name="Modified" offset="88" type="timestamp" optional="Y" repeatable="N"/>
-                <field name="Filled" offset="96" type="timestamp" optional="Y" repeatable="N"/>
+                <field name="Created" offset="44" type="timestamp" optional="N" repeatable="N"/>
+                <field name="Modified" offset="52" type="timestamp" optional="Y" repeatable="N"/>
+                <field name="Filled" offset="60" type="timestamp" optional="Y" repeatable="N"/>
             </fields>
         </group>
-        <group name="BalanceInfo" size="24">
-            <fields>
-                <field name="CurrId" offset="0" type="string" optional="Y" repeatable="N"/>
-                <field name="Trade" offset="8" type="double" optional="Y" repeatable="N"/>
-                <field name="Balance" offset="16" type="double" optional="Y" repeatable="N"/>
-            </fields>
-        </group>
-        <group name="ExecutionAsset" size="32">
-            <fields>
-                <field name="CurrId" offset="0" type="string" optional="N" repeatable="N"/>
-                <field name="Trade" offset="8" type="double" optional="N" repeatable="N"/>
-                <field name="Locked" offset="16" type="double" optional="N" repeatable="N"/>
-                <field name="Balance" offset="24" type="double" optional="N" repeatable="N"/>
-            </fields>
-        </group>
-        <group name="OrderMassStatusEntry" size="224">
+        <group name="OrderMassStatusEntry" size="240">
             <fields>
                 <field name="OrigClOrdId" offset="0" type="string" optional="Y" repeatable="N"/>
                 <field name="OrderId" offset="8" type="int64" optional="N" repeatable="N"/>
                 <field name="ParentOrderId" offset="16" type="int64" optional="Y" repeatable="N"/>
                 <field name="Attributes" offset="24" type="OrderAttributes" optional="N" repeatable="N"/>
                 <field name="State" offset="120" type="OrderState" optional="N" repeatable="N"/>
+                <field name="CommissionFlags" offset="188" type="OrderCommissionFlags" optional="N" repeatable="N"/>
+                <field name="CommissionCurrId" offset="192" type="string" optional="N" repeatable="N"/>
+                <field name="Commission" offset="200" type="double" optional="N" repeatable="N"/>
+                <field name="AgentCommissionCurrId" offset="208" type="string" optional="N" repeatable="N"/>
+                <field name="AgentCommission" offset="216" type="double" optional="N" repeatable="N"/>
+                <field name="Swap" offset="224" type="double" optional="N" repeatable="N"/>
+                <field name="MarginRateInitial" offset="232" type="double" optional="N" repeatable="N"/>
             </fields>
         </group>
         <message name="OrderMassStatusReport" id="16" superMessage="Response" size="24">
@@ -356,22 +350,27 @@
                 <member name="Rollover" value="6"/>
             </members>
         </enum>
-        <group name="Position" size="124">
+        <enum name="PosType" size="4">
+            <members>
+                <member name="Long" value="0"/>
+                <member name="Short" value="1"/>
+            </members>
+        </enum>
+        <group name="Position" size="112">
             <fields>
                 <field name="ReportType" offset="0" type="PositionReportType" optional="N" repeatable="N"/>
                 <field name="SymbolId" offset="4" type="string" optional="N" repeatable="N"/>
                 <field name="CurrId" offset="12" type="string" optional="Y" repeatable="N"/>
-                <field name="LongQty" offset="20" type="double" optional="N" repeatable="N"/>
-                <field name="LongPrice" offset="28" type="double" optional="N" repeatable="N"/>
-                <field name="ShortQty" offset="36" type="double" optional="N" repeatable="N"/>
-                <field name="ShortPrice" offset="44" type="double" optional="N" repeatable="N"/>
-                <field name="SettltPrice" offset="52" type="double" optional="N" repeatable="N"/>
-                <field name="CommCurrId" offset="60" type="string" optional="N" repeatable="N"/>
-                <field name="Commission" offset="68" type="double" optional="N" repeatable="N"/>
-                <field name="AgentCommCurrId" offset="76" type="string" optional="N" repeatable="N"/>
-                <field name="AgentCommission" offset="84" type="double" optional="N" repeatable="N"/>
-                <field name="Swap" offset="92" type="double" optional="N" repeatable="N"/>
-                <field name="BalanceInfo" offset="100" type="BalanceInfo" optional="N" repeatable="N"/>
+                <field name="Type" offset="20" type="PosType" optional="N" repeatable="N"/>
+                <field name="Qty" offset="24" type="double" optional="N" repeatable="N"/>
+                <field name="Price" offset="32" type="double" optional="N" repeatable="N"/>
+                <field name="SettltPrice" offset="40" type="double" optional="N" repeatable="N"/>
+                <field name="CommissionCurrId" offset="48" type="string" optional="N" repeatable="N"/>
+                <field name="Commission" offset="56" type="double" optional="N" repeatable="N"/>
+                <field name="AgentCommissionCurrId" offset="64" type="string" optional="N" repeatable="N"/>
+                <field name="AgentCommission" offset="72" type="double" optional="N" repeatable="N"/>
+                <field name="Swap" offset="80" type="double" optional="N" repeatable="N"/>
+                <field name="Balance" offset="88" type="Balance" optional="N" repeatable="N"/>
             </fields>
         </group>
         <message name="PositionListReport" id="18" superMessage="Response" size="40">
@@ -432,7 +431,7 @@
                 <member name="PendingClose" value="9"/>
             </members>
         </enum>
-        <message name="ExecutionReport" id="23" size="292">
+        <message name="ExecutionReport" id="23" size="308">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Type" offset="16" type="ExecType" optional="N" repeatable="N"/>
@@ -443,8 +442,15 @@
                 <field name="TransactTime" offset="52" type="timestamp" optional="N" repeatable="N"/>
                 <field name="Attributes" offset="60" type="OrderAttributes" optional="N" repeatable="N"/>
                 <field name="State" offset="156" type="OrderState" optional="N" repeatable="N"/>
-                <field name="BalanceInfo" offset="260" type="BalanceInfo" optional="N" repeatable="N"/>
-                <field name="Assets" offset="284" type="ExecutionAsset" optional="N" repeatable="Y"/>
+                <field name="CommissionFlags" offset="224" type="OrderCommissionFlags" optional="N" repeatable="N"/>
+                <field name="CommissionCurrId" offset="228" type="string" optional="N" repeatable="N"/>
+                <field name="Commission" offset="236" type="double" optional="N" repeatable="N"/>
+                <field name="AgentCommissionCurrId" offset="244" type="string" optional="N" repeatable="N"/>
+                <field name="AgentCommission" offset="252" type="double" optional="N" repeatable="N"/>
+                <field name="Swap" offset="260" type="double" optional="N" repeatable="N"/>
+                <field name="MarginRateInitial" offset="268" type="double" optional="N" repeatable="N"/>
+                <field name="Balance" offset="276" type="Balance" optional="N" repeatable="N"/>
+                <field name="Assets" offset="300" type="Asset" optional="N" repeatable="Y"/>
             </fields>
         </message>
         <message name="PositionReport" id="24" size="32">
@@ -477,7 +483,7 @@
                 <field name="Text" offset="20" type="ustring" optional="Y" repeatable="N"/>
             </fields>
         </message>
-        <message name="AccountInfoUpdate" id="26" size="116">
+        <message name="AccountInfoUpdate" id="26" size="124">
             <fields>
                 <field name="AccountInfo" offset="8" type="AccountInfo" optional="N" repeatable="N"/>
             </fields>
@@ -487,9 +493,9 @@
                 <field name="StatusInfo" offset="8" type="TradingSessionStatusInfo" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="BalanceInfoUpdate" id="28" size="32">
+        <message name="BalanceUpdate" id="28" size="32">
             <fields>
-                <field name="BalanceInfo" offset="8" type="BalanceInfo" optional="N" repeatable="N"/>
+                <field name="Balance" offset="8" type="Balance" optional="N" repeatable="N"/>
             </fields>
         </message>
         <enum name="NotificationType" size="4">
@@ -671,9 +677,9 @@
                                 <message name="TradingSessionStatusUpdate"/>
                             </messages>
                         </recv>
-                        <recv name="BalanceInfoUpdate" next="523_9">
+                        <recv name="BalanceUpdate" next="523_9">
                             <messages>
-                                <message name="BalanceInfoUpdate"/>
+                                <message name="BalanceUpdate"/>
                             </messages>
                         </recv>
                         <recv name="ExecutionReport" next="523_9">
@@ -732,7 +738,7 @@
                                 <message name="OrderReject"/>
                                 <message name="AccountInfoUpdate"/>
                                 <message name="TradingSessionStatusUpdate"/>
-                                <message name="BalanceInfoUpdate"/>
+                                <message name="BalanceUpdate"/>
                                 <message name="Notification"/>
                             </messages>
                         </recv>
@@ -1492,7 +1498,7 @@
                         </send>
                         <send next="749_9">
                             <messages>
-                                <message name="BalanceInfoUpdate"/>
+                                <message name="BalanceUpdate"/>
                             </messages>
                         </send>
                         <send next="749_9">
@@ -1551,7 +1557,7 @@
                                 <message name="OrderReject"/>
                                 <message name="AccountInfoUpdate"/>
                                 <message name="TradingSessionStatusUpdate"/>
-                                <message name="BalanceInfoUpdate"/>
+                                <message name="BalanceUpdate"/>
                                 <message name="Notification"/>
                             </messages>
                         </send>

@@ -6,7 +6,7 @@
                 <field name="Password" offset="16" type="ustring" optional="N" repeatable="N"/>
                 <field name="DeviceId" offset="24" type="string" optional="N" repeatable="N"/>
                 <field name="AppId" offset="32" type="string" optional="N" repeatable="N"/>
-                <field name="AppSessionId" offset="40" type="string" optional="N" repeatable="N"/>
+                <field name="SessionId" offset="40" type="string" optional="N" repeatable="N"/>
             </fields>
         </message>
         <message name="LoginReport" id="1" size="8"/>

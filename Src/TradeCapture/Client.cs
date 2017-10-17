@@ -114,12 +114,12 @@ namespace TickTrader.FDK.TradeCapture
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
-        public void Login(string username, string password, string deviceId, string appSessionId, int timeout)
+        public void Login(string username, string password, string deviceId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appSessionId), timeout);
+            ConvertToSync(LoginAsync(null, username, password, deviceId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appSessionId)
+        public Task LoginAsync(object data, string username, string password, string deviceId, string sessionId)
         {
             Task result;
 
@@ -141,7 +141,7 @@ namespace TickTrader.FDK.TradeCapture
                 Username = username,
                 Password = password,
                 DeviceId = deviceId,
-                AppSessionId = appSessionId
+                SessionId = sessionId
             };
 
             // Send request to the server
@@ -1330,9 +1330,9 @@ namespace TickTrader.FDK.TradeCapture
 
                 tradeTransactionReport.TradeTransactionReportType = Convert(trade.Type);
                 tradeTransactionReport.TradeTransactionReason = Convert(trade.Reason);
-                tradeTransactionReport.AccountBalance = trade.BalanceInfo.Balance.GetValueOrDefault(0);
-                tradeTransactionReport.TransactionAmount = trade.BalanceInfo.Move.GetValueOrDefault(0);
-                tradeTransactionReport.TransactionCurrency = trade.BalanceInfo.CurrId;
+                tradeTransactionReport.AccountBalance = trade.Balance.Total.GetValueOrDefault(0);
+                tradeTransactionReport.TransactionAmount = trade.Balance.Move.GetValueOrDefault(0);
+                tradeTransactionReport.TransactionCurrency = trade.Balance.CurrId;
                 tradeTransactionReport.Id = trade.Id;
                 tradeTransactionReport.ClientId = trade.ClOrdId;
                 tradeTransactionReport.Quantity = trade.Qty;
@@ -1403,12 +1403,12 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.CloseConversionRate = conversionRates.Close;
                 tradeTransactionReport.ActionId = trade.ActionId;
                 tradeTransactionReport.Expiration = trade.ExpireTime;
-                tradeTransactionReport.SrcAssetCurrency = trade.SrcBalanceInfo.CurrId;
-                tradeTransactionReport.SrcAssetAmount = trade.SrcBalanceInfo.Balance;
-                tradeTransactionReport.SrcAssetMovement = trade.SrcBalanceInfo.Move;
-                tradeTransactionReport.DstAssetCurrency = trade.DestBalanceInfo.CurrId;
-                tradeTransactionReport.DstAssetAmount = trade.DestBalanceInfo.Balance;
-                tradeTransactionReport.DstAssetMovement = trade.DestBalanceInfo.Move;
+                tradeTransactionReport.SrcAssetCurrency = trade.SrcAsset.CurrId;
+                tradeTransactionReport.SrcAssetAmount = trade.SrcAsset.Total;
+                tradeTransactionReport.SrcAssetMovement = trade.SrcAsset.Move;
+                tradeTransactionReport.DstAssetCurrency = trade.DestAsset.CurrId;
+                tradeTransactionReport.DstAssetAmount = trade.DestAsset.Total;
+                tradeTransactionReport.DstAssetMovement = trade.DestAsset.Move;
                 tradeTransactionReport.MarginCurrencyToUsdConversionRate = conversionRates.MarginToUsd;
                 tradeTransactionReport.UsdToMarginCurrencyConversionRate = conversionRates.UsdToMargin;
                 tradeTransactionReport.MarginCurrency = trade.MarginCurrId;

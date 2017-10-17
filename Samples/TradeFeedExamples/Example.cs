@@ -18,7 +18,6 @@
 
             ConnectionStringBuilder dataTradeBuilder = new ConnectionStringBuilder
             {
-                Port = 5040,
                 Address = address,
                 LogDirectory = LogPath,
                 Username = username,
@@ -33,7 +32,6 @@
 
             ConnectionStringBuilder dataFeedBuilder = new ConnectionStringBuilder
             {
-                Port = 5030,
                 Address = address,
                 LogDirectory = LogPath,
                 Username = username,

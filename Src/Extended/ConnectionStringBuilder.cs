@@ -26,9 +26,24 @@
         public string Address { get; set; }
 
         /// <summary>
-        /// Gets or sets trading platform port of the data feed/trade instance.
+        /// Gets or sets trading platform port of the quote feed interface.
         /// </summary>
-        public int? Port { get; set; }
+        public int? QuoteFeedPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets trading platform port of the order entry interface.
+        /// </summary>
+        public int? OrderEntryPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets trading platform port of the quote store interface.
+        /// </summary>
+        public int? QuoteStorePort { get; set; }
+
+        /// <summary>
+        /// Gets or sets trading platform port of the trade capture interface.
+        /// </summary>
+        public int? TradeCapturePort { get; set; }
 
         /// <summary>
         /// Gets or sets the username of the data feed instance.
@@ -93,12 +108,36 @@
             if (Address != null)
                 stringBuilder.AppendFormat("[String]Address={0}", Address);
 
-            if (Port != null)
+            if (QuoteFeedPort != null)
             {
                 if (stringBuilder.Length != 0)
                     stringBuilder.Append(";");
 
-                stringBuilder.AppendFormat("[Int32]Port={0}", Port);
+                stringBuilder.AppendFormat("[Int32]QuoteFeedPort={0}", QuoteFeedPort);
+            }
+
+            if (OrderEntryPort != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Int32]OrderEntryPort={0}", OrderEntryPort);
+            }
+
+            if (QuoteStorePort != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Int32]QuoteStorePort={0}", QuoteStorePort);
+            }
+
+            if (TradeCapturePort != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Int32]TradeCapturePort={0}", TradeCapturePort);
             }
 
             if (Username != null)

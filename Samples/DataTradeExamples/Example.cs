@@ -18,7 +18,6 @@
 
             this.builder = new ConnectionStringBuilder
             {
-                Port = 5040,
                 Address = address,
                 LogDirectory = LogPath,
                 Username = username,

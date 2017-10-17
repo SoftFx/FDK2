@@ -114,12 +114,12 @@ namespace TickTrader.FDK.OrderEntry
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
-        public void Login(string username, string password, string deviceId, string appSessionId, int timeout)
+        public void Login(string username, string password, string deviceId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appSessionId), timeout);
+            ConvertToSync(LoginAsync(null, username, password, deviceId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appSessionId)
+        public Task LoginAsync(object data, string username, string password, string deviceId, string sessionId)
         {
             Task result;
 
@@ -141,7 +141,7 @@ namespace TickTrader.FDK.OrderEntry
                 Username = username,
                 Password = password,
                 DeviceId = deviceId,
-                AppSessionId = appSessionId
+                SessionId = sessionId
             };
 
             // Send request to the server
@@ -226,7 +226,7 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position[] positions);
         public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Common.AccountInfo accountInfo);
         public delegate void SessionInfoUpdateDelegate(Client client, SessionInfo sessionInfo);
-        public delegate void BalanceInfoUpdateDelegate(Client client, BalanceOperation balanceOperation);
+        public delegate void BalanceUpdateDelegate(Client client, BalanceOperation balanceOperation);
         public delegate void NotificationDelegate(Client client, TickTrader.FDK.Common.Notification notification);
                 
         public event TradeServerInfoResultDelegate TradeServerInfoResultEvent;
@@ -253,7 +253,7 @@ namespace TickTrader.FDK.OrderEntry
         public event PositionUpdateDelegate PositionUpdateEvent;
         public event AccountInfoUpdateDelegate AccountInfoUpdateEvent;
         public event SessionInfoUpdateDelegate SessionInfoUpdateEvent;
-        public event BalanceInfoUpdateDelegate BalanceInfoUpdateEvent;
+        public event BalanceUpdateDelegate BalanceUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
         public TickTrader.FDK.Common.TradeServerInfo GetTradeServerInfo(int timeout)
@@ -1504,10 +1504,10 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
                     resultAccountInfo.Email = reportAccountInfo.RegistEmail;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.CurrId;
+                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.Value;
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -1521,19 +1521,19 @@ namespace TickTrader.FDK.OrderEntry
                     if ((flags & AccountFlags.Investor) != 0)
                         resultAccountInfo.IsReadOnly = true;
 
-                    AccountAssetArray reportAssets = reportAccountInfo.Assets;                   
+                    AssetArray reportAssets = reportAccountInfo.Assets;                   
 
                     int count = reportAssets.Length;
                     AssetInfo[] resultAssets = new AssetInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
-                        AccountAsset reportAsset = reportAssets[index];
+                        Asset reportAsset = reportAssets[index];
 
                         AssetInfo resultAsset = new AssetInfo();
                         resultAsset.Currency = reportAsset.CurrId;
-                        resultAsset.Balance = reportAsset.Balance;
                         resultAsset.LockedAmount = reportAsset.Locked;
+                        resultAsset.Balance = reportAsset.Total;                        
 
                         resultAssets[index] = resultAsset;
                     }
@@ -1768,9 +1768,9 @@ namespace TickTrader.FDK.OrderEntry
                         resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
                         resultExecutionReport.TradeAmount = reportEntryState.LastQty;
                         resultExecutionReport.TradePrice = reportEntryState.LastPrice;
-                        resultExecutionReport.Commission = reportEntryState.Commission;
-                        resultExecutionReport.AgentCommission = reportEntryState.AgentCommission;
-                        resultExecutionReport.Swap = reportEntryState.Swap;                        
+                        resultExecutionReport.Commission = reportEntry.Commission;
+                        resultExecutionReport.AgentCommission = reportEntry.AgentCommission;
+                        resultExecutionReport.Swap = reportEntry.Swap;
                         resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;                        
                         resultExecutionReport.Created = reportEntryState.Created;
                         resultExecutionReport.Modified = reportEntryState.Modified;
@@ -1877,13 +1877,28 @@ namespace TickTrader.FDK.OrderEntry
                         TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
                         resultPosition.Symbol = reportPosition.SymbolId;
                         resultPosition.SettlementPrice = reportPosition.SettltPrice;
-                        resultPosition.BuyAmount = reportPosition.LongQty;
-                        resultPosition.SellAmount = reportPosition.ShortQty;
                         resultPosition.Commission = reportPosition.Commission;
                         resultPosition.AgentCommission = reportPosition.AgentCommission;
                         resultPosition.Swap = reportPosition.Swap;
-                        resultPosition.BuyPrice = reportPosition.LongPrice;
-                        resultPosition.SellPrice = reportPosition.ShortPrice;                        
+                        
+                        PosType reportPosType = reportPosition.Type;
+
+                        if (reportPosType == PosType.Long)
+                        {
+                            resultPosition.BuyAmount = reportPosition.Qty;
+                            resultPosition.BuyPrice = reportPosition.Price;
+                            resultPosition.SellAmount = 0;
+                            resultPosition.SellPrice = 0;
+                        }
+                        else if (reportPosType == PosType.Short)
+                        {
+                            resultPosition.BuyAmount = 0;
+                            resultPosition.BuyPrice = 0;
+                            resultPosition.SellAmount = reportPosition.Qty;
+                            resultPosition.SellPrice = reportPosition.Price;
+                        }
+                        else
+                            throw new Exception("Invalid position type : " + reportPosType);
 
                         resultPositions[index] = resultPosition;
                     }
@@ -2835,13 +2850,28 @@ namespace TickTrader.FDK.OrderEntry
                         TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
                         resultPosition.Symbol = reportPosition.SymbolId;
                         resultPosition.SettlementPrice = reportPosition.SettltPrice;
-                        resultPosition.BuyAmount = reportPosition.LongQty;
-                        resultPosition.SellAmount = reportPosition.ShortQty;
                         resultPosition.Commission = reportPosition.Commission;
                         resultPosition.AgentCommission = reportPosition.AgentCommission;
                         resultPosition.Swap = reportPosition.Swap;
-                        resultPosition.BuyPrice = reportPosition.LongPrice;
-                        resultPosition.SellPrice = reportPosition.ShortPrice;                        
+
+                        PosType reportPosType = reportPosition.Type;
+
+                        if (reportPosType == PosType.Long)
+                        {
+                            resultPosition.BuyAmount = reportPosition.Qty;
+                            resultPosition.BuyPrice = reportPosition.Price;
+                            resultPosition.SellAmount = 0;
+                            resultPosition.SellPrice = 0;
+                        }
+                        else if (reportPosType == PosType.Short)
+                        {
+                            resultPosition.BuyAmount = 0;
+                            resultPosition.BuyPrice = 0;
+                            resultPosition.SellAmount = reportPosition.Qty;
+                            resultPosition.SellPrice = reportPosition.Price;
+                        }
+                        else
+                            throw new Exception("Invalid position type : " + reportPosType);
 
                         resultPositions[index] = resultPosition;
                     }
@@ -2872,10 +2902,10 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
                     resultAccountInfo.Email = reportAccountInfo.RegistEmail;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.CurrId;
+                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.Value;
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -2889,19 +2919,19 @@ namespace TickTrader.FDK.OrderEntry
                     if ((flags & AccountFlags.Investor) != 0)
                         resultAccountInfo.IsReadOnly = true;
 
-                    AccountAssetArray reportAssets = reportAccountInfo.Assets;                   
+                    AssetArray reportAssets = reportAccountInfo.Assets;                   
 
                     int count = reportAssets.Length;
                     AssetInfo[] resultAssets = new AssetInfo[count];
 
                     for (int index = 0; index < count; ++index)
                     {
-                        AccountAsset reportAsset = reportAssets[index];
+                        Asset reportAsset = reportAssets[index];
 
                         AssetInfo resultAsset = new AssetInfo();
                         resultAsset.Currency = reportAsset.CurrId;
-                        resultAsset.Balance = reportAsset.Balance;
                         resultAsset.LockedAmount = reportAsset.Locked;
+                        resultAsset.Balance = reportAsset.Total;                        
 
                         resultAssets[index] = resultAsset; 
                     }
@@ -2974,22 +3004,22 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnBalanceInfoUpdate(ClientSession session, BalanceInfoUpdate update)
+            public override void OnBalanceUpdate(ClientSession session, BalanceUpdate update)
             {
                 try
                 {
                     TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
-                    SoftFX.Net.OrderEntry.BalanceInfo updateBalanceInfo = update.BalanceInfo;
-                    result.Balance = updateBalanceInfo.Balance.Value;
-                    result.TransactionAmount = updateBalanceInfo.Trade.Value;
-                    result.TransactionCurrency = updateBalanceInfo.CurrId;
+                    SoftFX.Net.OrderEntry.Balance updateBalance = update.Balance;
+                    result.Balance = updateBalance.Total.Value;
+                    result.TransactionAmount = updateBalance.Move.Value;
+                    result.TransactionCurrency = updateBalance.CurrId;
 
-                    if (client_.BalanceInfoUpdateEvent != null)
+                    if (client_.BalanceUpdateEvent != null)
                     {
                         try
                         {
-                            client_.BalanceInfoUpdateEvent(client_, result);
+                            client_.BalanceUpdateEvent(client_, result);
                         }
                         catch
                         {
@@ -3085,11 +3115,11 @@ namespace TickTrader.FDK.OrderEntry
                 result.LeavesVolume = reportState.LeavesQty;
                 result.TradeAmount = reportState.LastQty;
                 result.TradePrice = reportState.LastPrice;
-                result.Commission = reportState.Commission;
-                result.AgentCommission = reportState.AgentCommission;
-                result.ReducedOpenCommission = (reportState.CommissionFlags & OrderCommissionFlags.OpenReduced) != 0;
-                result.ReducedCloseCommission = (reportState.CommissionFlags & OrderCommissionFlags.CloseReduced) != 0;
-                result.Swap = reportState.Swap;                
+                result.Commission = report.Commission;
+                result.AgentCommission = report.AgentCommission;
+                result.ReducedOpenCommission = (report.CommissionFlags & OrderCommissionFlags.OpenReduced) != 0;
+                result.ReducedCloseCommission = (report.CommissionFlags & OrderCommissionFlags.CloseReduced) != 0;
+                result.Swap = report.Swap;                
                 result.AveragePrice = reportState.AvgPrice;                
                 result.Created = reportState.Created;
                 result.Modified = reportState.Modified;
@@ -3102,25 +3132,25 @@ namespace TickTrader.FDK.OrderEntry
                 result.TradeRecordType = ConvertToTradeRecordType(reportAttributes.Type, reportAttributes.TimeInForce);
 #pragma warning restore 618
 
-                SoftFX.Net.OrderEntry.ExecutionAssetArray reportAssets = report.Assets;
+                SoftFX.Net.OrderEntry.AssetArray reportAssets = report.Assets;
                 int count = reportAssets.Length;
                 TickTrader.FDK.Common.AssetInfo[] resultAssets = new TickTrader.FDK.Common.AssetInfo[count];
 
                 for (int index = 0; index < count; ++ index)
                 {
-                    SoftFX.Net.OrderEntry.ExecutionAsset reportAsset = reportAssets[index];
+                    SoftFX.Net.OrderEntry.Asset reportAsset = reportAssets[index];
                     TickTrader.FDK.Common.AssetInfo resultAsset = new AssetInfo();
 
                     resultAsset.Currency = reportAsset.CurrId;
-                    resultAsset.Balance = reportAsset.Balance;
+                    resultAsset.TradeAmount = reportAsset.Move.Value;
                     resultAsset.LockedAmount = reportAsset.Locked;
-                    resultAsset.TradeAmount = reportAsset.Trade;
+                    resultAsset.Balance = reportAsset.Total;                    
 
                     resultAssets[index] = resultAsset;
                 }
 
                 result.Assets = resultAssets;
-                result.Balance = report.BalanceInfo.Balance;
+                result.Balance = report.Balance.Total;
 
                 return result;
             }

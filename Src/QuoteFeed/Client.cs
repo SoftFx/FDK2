@@ -116,12 +116,12 @@ namespace TickTrader.FDK.QuoteFeed
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
-        public void Login(string username, string password, string deviceId, string appSessionId, int timeout)
+        public void Login(string username, string password, string deviceId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appSessionId), timeout);
+            ConvertToSync(LoginAsync(null, username, password, deviceId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appSessionId)
+        public Task LoginAsync(object data, string username, string password, string deviceId, string sessionId)
         {
             Task result;
 
@@ -143,7 +143,7 @@ namespace TickTrader.FDK.QuoteFeed
                 Username = username,
                 Password = password,
                 DeviceId = deviceId,
-                AppSessionId = appSessionId
+                SessionId = sessionId
             };
 
             // Send request to the server
@@ -297,14 +297,14 @@ namespace TickTrader.FDK.QuoteFeed
                 result = null;
 
             // Create a request
-            var request = new SecurityListRequest(0)
+            var request = new SymbolListRequest(0)
             {
                 Id = Guid.NewGuid().ToString(),
-                Type = SecurityListRequestType.All
+                Type = SymbolListRequestType.All
             };
 
             // Send request to the server
-            session_.SendSecurityListRequest(context, request);
+            session_.SendSymbolListRequest(context, request);
 
             // Return result task
             return result;
@@ -521,7 +521,7 @@ namespace TickTrader.FDK.QuoteFeed
             public TaskCompletionSource<CurrencyInfo[]> taskCompletionSource_;
         }
 
-        class SymbolListAsyncContext : SecurityListRequestClientContext, IAsyncContext
+        class SymbolListAsyncContext : SymbolListRequestClientContext, IAsyncContext
         {
             public SymbolListAsyncContext() : base(false)
             {
@@ -1060,9 +1060,9 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            public override void OnSecurityListReport(ClientSession session, SecurityListRequestClientContext SecurityListRequestClientContext, SecurityListReport message)
+            public override void OnSymbolListReport(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, SymbolListReport message)
             {
-                var context = (SymbolListAsyncContext)SecurityListRequestClientContext;
+                var context = (SymbolListAsyncContext) SymbolListRequestClientContext;
 
                 try
                 {
@@ -1076,16 +1076,16 @@ namespace TickTrader.FDK.QuoteFeed
                         TickTrader.FDK.Common.SymbolInfo resultSymbol = new TickTrader.FDK.Common.SymbolInfo();
 
                         resultSymbol.Name = reportSymbol.Id;
-                        resultSymbol.Currency = reportSymbol.CurrencyId;
-                        resultSymbol.SettlementCurrency = reportSymbol.SettlCurrencyId;
+                        resultSymbol.Currency = reportSymbol.MarginCurrId;
+                        resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrId;
                         resultSymbol.Description = reportSymbol.Description;
                         resultSymbol.Precision = (int) Math.Log(reportSymbol.ContractMultiplier, 10);
                         resultSymbol.RoundLot = reportSymbol.RoundLot;
                         resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;
                         resultSymbol.MaxTradeVolume = reportSymbol.MaxTradeVol;
                         resultSymbol.TradeVolumeStep = reportSymbol.TradeVolStep;
-                        resultSymbol.ProfitCalcMode = Convert(reportSymbol.SettlCalcMode);
-                        resultSymbol.MarginCalcMode = Convert(reportSymbol.CalcMode); 
+                        resultSymbol.ProfitCalcMode = Convert(reportSymbol.ProfitCalcMode);
+                        resultSymbol.MarginCalcMode = Convert(reportSymbol.MarginCalcMode); 
                         resultSymbol.MarginHedge = reportSymbol.MarginHedge;
                         resultSymbol.MarginFactorFractional = reportSymbol.MarginFactor;
                         resultSymbol.ContractMultiplier = reportSymbol.ContractMultiplier;
@@ -1101,10 +1101,10 @@ namespace TickTrader.FDK.QuoteFeed
                         resultSymbol.IsTradeEnabled = reportSymbol.TradeEnabled;
                         resultSymbol.GroupSortOrder = reportSymbol.SecuritySortOrder;
                         resultSymbol.SortOrder = reportSymbol.SortOrder;
-                        resultSymbol.CurrencySortOrder = reportSymbol.CurrencySortOrder;
-                        resultSymbol.SettlementCurrencySortOrder = reportSymbol.SettlCurrencySortOrder;
-                        resultSymbol.CurrencyPrecision = reportSymbol.CurrencyPrecision;
-                        resultSymbol.SettlementCurrencyPrecision = reportSymbol.SettlCurrencyPrecision;
+                        resultSymbol.CurrencySortOrder = reportSymbol.MarginCurrSortOrder;
+                        resultSymbol.SettlementCurrencySortOrder = reportSymbol.ProfitCurrSortOrder;
+                        resultSymbol.CurrencyPrecision = reportSymbol.MarginCurrPrecision;
+                        resultSymbol.SettlementCurrencyPrecision = reportSymbol.ProfitCurrPrecision;
                         resultSymbol.StatusGroupId = reportSymbol.StatusGroupId;
                         resultSymbol.SecurityName = reportSymbol.SecurityId;
                         resultSymbol.SecurityDescription = reportSymbol.SecurityDescription;
@@ -1145,9 +1145,9 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            public override void OnSecurityListReject(ClientSession session, SecurityListRequestClientContext SecurityListRequestClientContext, Reject message)
+            public override void OnSymbolListReject(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, Reject message)
             {
-                var context = (SymbolListAsyncContext)SecurityListRequestClientContext;
+                var context = (SymbolListAsyncContext) SymbolListRequestClientContext;
 
                 try
                 {
@@ -1835,23 +1835,23 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.MarginCalcMode Convert(SoftFX.Net.QuoteFeed.CalcMode mode)
+            TickTrader.FDK.Common.MarginCalcMode Convert(SoftFX.Net.QuoteFeed.MarginCalcMode mode)
             {
                 switch (mode)
                 {
-                    case SoftFX.Net.QuoteFeed.CalcMode.Forex:
+                    case SoftFX.Net.QuoteFeed.MarginCalcMode.Forex:
                         return TickTrader.FDK.Common.MarginCalcMode.Forex;
 
-                    case SoftFX.Net.QuoteFeed.CalcMode.Cfd:
+                    case SoftFX.Net.QuoteFeed.MarginCalcMode.Cfd:
                         return TickTrader.FDK.Common.MarginCalcMode.Cfd;
 
-                    case SoftFX.Net.QuoteFeed.CalcMode.Futures:
+                    case SoftFX.Net.QuoteFeed.MarginCalcMode.Futures:
                         return TickTrader.FDK.Common.MarginCalcMode.Futures;
 
-                    case SoftFX.Net.QuoteFeed.CalcMode.CfdIndex:
+                    case SoftFX.Net.QuoteFeed.MarginCalcMode.CfdIndex:
                         return TickTrader.FDK.Common.MarginCalcMode.CfdIndex;
 
-                    case SoftFX.Net.QuoteFeed.CalcMode.CfdLeverage:
+                    case SoftFX.Net.QuoteFeed.MarginCalcMode.CfdLeverage:
                         return TickTrader.FDK.Common.MarginCalcMode.CfdLeverage;
 
                     default:
@@ -1859,23 +1859,23 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.ProfitCalcMode Convert(SoftFX.Net.QuoteFeed.SettlCalcMode mode)
+            TickTrader.FDK.Common.ProfitCalcMode Convert(SoftFX.Net.QuoteFeed.ProfitCalcMode mode)
             {
                 switch (mode)
                 {
-                    case SoftFX.Net.QuoteFeed.SettlCalcMode.Forex:
+                    case SoftFX.Net.QuoteFeed.ProfitCalcMode.Forex:
                         return TickTrader.FDK.Common.ProfitCalcMode.Forex;
 
-                    case SoftFX.Net.QuoteFeed.SettlCalcMode.Cfd:
+                    case SoftFX.Net.QuoteFeed.ProfitCalcMode.Cfd:
                         return TickTrader.FDK.Common.ProfitCalcMode.Cfd;
 
-                    case SoftFX.Net.QuoteFeed.SettlCalcMode.Futures:
+                    case SoftFX.Net.QuoteFeed.ProfitCalcMode.Futures:
                         return TickTrader.FDK.Common.ProfitCalcMode.Futures;
 
-                    case SoftFX.Net.QuoteFeed.SettlCalcMode.CfdIndex:
+                    case SoftFX.Net.QuoteFeed.ProfitCalcMode.CfdIndex:
                         return TickTrader.FDK.Common.ProfitCalcMode.CfdIndex;
 
-                    case SoftFX.Net.QuoteFeed.SettlCalcMode.CfdLeverage:
+                    case SoftFX.Net.QuoteFeed.ProfitCalcMode.CfdLeverage:
                         return TickTrader.FDK.Common.ProfitCalcMode.CfdLeverage;
 
                     default:

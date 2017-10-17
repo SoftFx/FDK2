@@ -129,7 +129,7 @@
             orderEntryClient_.AccountInfoUpdateEvent += new OrderEntry.Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
             orderEntryClient_.ExecutionReportEvent += new OrderEntry.Client.ExecutionReportDelegate(this.OnExecutionReport);
             orderEntryClient_.PositionUpdateEvent += new OrderEntry.Client.PositionUpdateDelegate(this.OnPositionUpdate);
-            orderEntryClient_.BalanceInfoUpdateEvent += new OrderEntry.Client.BalanceInfoUpdateDelegate(this.OnBalanceInfoUpdate);
+            orderEntryClient_.BalanceUpdateEvent += new OrderEntry.Client.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
 
             tradeCaptureClient_ = new TradeCapture.Client(name_ + "_TradeCapture", tradeCapturePort, true, logDirectory, decodeLogMessages);
@@ -1175,7 +1175,7 @@
             }
         }
 
-        void OnBalanceInfoUpdate(OrderEntry.Client client, BalanceOperation balanceOperation)
+        void OnBalanceUpdate(OrderEntry.Client client, BalanceOperation balanceOperation)
         {
             try
             {
