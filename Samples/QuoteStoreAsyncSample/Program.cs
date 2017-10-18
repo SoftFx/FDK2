@@ -260,10 +260,10 @@ namespace QuoteStoreAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(address_);
+            client_.ConnectAsync(this, address_);
         }
 
-        void OnConnect(Client client)
+        void OnConnect(Client client, object data)
         {
             try
             {
@@ -277,7 +277,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(Client client, object data, string text)
         {
             try
             {
@@ -321,7 +321,7 @@ namespace QuoteStoreAsyncSample
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -599,7 +599,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, string text)
+        void OnDisconnect(Client quoteFeedClient, object data, string text)
         {
             try
             {

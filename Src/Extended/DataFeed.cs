@@ -297,17 +297,17 @@
 
                     try
                     {
-                        quoteFeedClient_.ConnectAsync(address_);
+                        quoteFeedClient_.ConnectAsync(this, address_);
 
                         try
                         {
-                            quoteStoreClient_.ConnectAsync(address_);
+                            quoteStoreClient_.ConnectAsync(this, address_);
 
                             started_ = true;
                         }
                         catch
                         {
-                            quoteFeedClient_.DisconnectAsync("Client disconnect");
+                            quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                             quoteFeedClient = quoteFeedClient_;
 
                             throw;
@@ -354,20 +354,20 @@
 
                     try
                     {
-                        quoteStoreClient_.LogoutAsync(null, "Client logout");
+                        quoteStoreClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
                     {                        
-                        quoteStoreClient_.DisconnectAsync("Client disconnect");
+                        quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
                     }
 
                     try
                     {
-                        quoteFeedClient_.LogoutAsync(null, "Client logout");
+                        quoteFeedClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
                     {                        
-                        quoteFeedClient_.DisconnectAsync("Client disconnect");
+                        quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                     }
                 }
             }
@@ -506,7 +506,7 @@
 
         #region Private
 
-        void OnConnect(QuoteFeed.Client client)
+        void OnConnect(QuoteFeed.Client client, object data)
         {
             try
             {
@@ -514,18 +514,18 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync("Client disconnect");
-                quoteFeedClient_.DisconnectAsync("Client disconnect");                
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
             }
         }
 
-        void OnConnectError(QuoteFeed.Client client, string text)
+        void OnConnectError(QuoteFeed.Client client, object data, string text)
         {
             try
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -546,7 +546,7 @@
             }
         }
 
-        void OnDisconnect(QuoteFeed.Client client, string text)
+        void OnDisconnect(QuoteFeed.Client client, object data, string text)
         {
             try
             {
@@ -615,8 +615,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync("Client disconnect");
-                quoteFeedClient_.DisconnectAsync("Client disconnect");                
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
             }
         }
 
@@ -626,7 +626,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync("Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -685,8 +685,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync("Client disconnect");
-                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
                 }
             }
             catch
@@ -732,8 +732,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync("Client disconnect");
-                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
                 }
             }
             catch
@@ -779,8 +779,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync("Client disconnect");
-                    quoteFeedClient_.DisconnectAsync("Client disconnect");                    
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
                 }
             }
             catch
@@ -919,7 +919,7 @@
             }
         }
 
-        void OnConnect(QuoteStore.Client client)
+        void OnConnect(QuoteStore.Client client, object data)
         {
             try
             {
@@ -927,18 +927,18 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync("Client disconnect");
-                quoteFeedClient_.DisconnectAsync("Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
-        void OnConnectError(QuoteStore.Client client, string text)
+        void OnConnectError(QuoteStore.Client client, object data, string text)
         {
             try
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync("Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -959,7 +959,7 @@
             }
         }
 
-        void OnDisconnect(QuoteStore.Client client, string text)
+        void OnDisconnect(QuoteStore.Client client, object data, string text)
         {
             try
             {
@@ -1006,8 +1006,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync("Client disconnect");
-                quoteFeedClient_.DisconnectAsync("Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -1017,7 +1017,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync("Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {

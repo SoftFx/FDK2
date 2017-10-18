@@ -303,17 +303,17 @@
 
                     try
                     {
-                        orderEntryClient_.ConnectAsync(address_);
+                        orderEntryClient_.ConnectAsync(this, address_);
 
                         try
                         {
-                            tradeCaptureClient_.ConnectAsync(address_);
+                            tradeCaptureClient_.ConnectAsync(this, address_);
 
                             started_ = true;
                         }
                         catch
                         {
-                            orderEntryClient_.DisconnectAsync("Client disconnect");
+                            orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                             orderEntryClient = orderEntryClient_;
 
                             throw;
@@ -360,20 +360,20 @@
 
                     try
                     {
-                        tradeCaptureClient_.LogoutAsync(null, "Client logout");
+                        tradeCaptureClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
                     {                        
-                        tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
                     }
 
                     try
                     {
-                        orderEntryClient_.LogoutAsync(null, "Client logout");
+                        orderEntryClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
                     {                        
-                        orderEntryClient_.DisconnectAsync("Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                     }
                 }
             }
@@ -500,7 +500,7 @@
 
         #region Private
 
-        void OnConnect(OrderEntry.Client client)
+        void OnConnect(OrderEntry.Client client, object data)
         {
             try
             {
@@ -508,18 +508,18 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                orderEntryClient_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
-        void OnConnectError(OrderEntry.Client client, string text)
+        void OnConnectError(OrderEntry.Client client, object data, string text)
         {
             try
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -540,7 +540,7 @@
             }
         }
 
-        void OnDisconnect(OrderEntry.Client client, string text)
+        void OnDisconnect(OrderEntry.Client client, object data, string text)
         {
             try
             {
@@ -610,8 +610,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                orderEntryClient_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -621,7 +621,7 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -680,8 +680,8 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -727,8 +727,8 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -789,8 +789,8 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -841,8 +841,8 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -897,8 +897,8 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -1208,7 +1208,7 @@
             }
         }
 
-        void OnConnect(TradeCapture.Client client)
+        void OnConnect(TradeCapture.Client client, object data)
         {
             try
             {
@@ -1216,18 +1216,18 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                orderEntryClient_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
-        void OnConnectError(TradeCapture.Client client, string text)
+        void OnConnectError(TradeCapture.Client client, object data, string text)
         {
             try
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {
@@ -1248,7 +1248,7 @@
             }
         }
 
-        void OnDisconnect(TradeCapture.Client client, string text)
+        void OnDisconnect(TradeCapture.Client client, object data, string text)
         {
             try
             {
@@ -1327,8 +1327,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync("Client disconnect");
-                orderEntryClient_.DisconnectAsync("Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -1338,7 +1338,7 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync("Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (! logout_)
                     {

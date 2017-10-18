@@ -300,7 +300,7 @@ namespace TradeCaptureSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        void OnDisconnect(Client client, object data, string text)
         {
             try
             {

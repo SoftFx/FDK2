@@ -45,7 +45,8 @@ namespace TickTrader.FDK.OrderEntry
 
         public void Dispose()
         {
-            Disconnect("Client disconnect");
+            DisconnectAsync(this, "Client disconnect");
+            Join();
 
             GC.SuppressFinalize(this);
         }
@@ -54,9 +55,9 @@ namespace TickTrader.FDK.OrderEntry
 
         #region Connect / disconnect
 
-        public delegate void ConnectDelegate(Client client);
-        public delegate void ConnectErrorDelegate(Client client, string text);
-        public delegate void DisconnectDelegate(Client client, string text);
+        public delegate void ConnectDelegate(Client client, object data);
+        public delegate void ConnectErrorDelegate(Client client, object data, string text);
+        public delegate void DisconnectDelegate(Client client, object data, string text);
 
         public event ConnectDelegate ConnectEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
@@ -64,31 +65,62 @@ namespace TickTrader.FDK.OrderEntry
 
         public void Connect(string address, int timeout)
         {
-            session_.Connect(address);
-
-            if (!session_.WaitConnect(timeout))
+            try
             {
-                session_.Disconnect("Connect timeout");
-                session_.Join();
+                ConvertToSync(ConnectAsync(null, address), timeout);
+            }
+            catch (TimeoutException)
+            {
+                DisconnectAsync(this, "Connect timeout");
+                Join();
 
-                throw new TimeoutException("Connect timeout");
+                throw;
             }
         }
 
-        public void ConnectAsync(string address)
+        public Task ConnectAsync(object data, string address)
         {
-            session_.Connect(address);
+            Task result;
+
+            ConnectAsyncContext context = new ConnectAsyncContext();
+            context.Data = data;
+
+            if (data == null)
+            {
+                context.taskCompletionSource_ = new TaskCompletionSource<object>();
+                result = context.taskCompletionSource_.Task;
+            }
+            else
+                result = null;
+
+            session_.Connect(context, address);
+
+            return result;
         }
 
         public void Disconnect(string text)
         {
-            session_.Disconnect(text);
-            session_.Join();
+            ConvertToSync(DisconnectAsync(null, text), -1);
         }
 
-        public void DisconnectAsync(string text)
+        public Task DisconnectAsync(object data, string text)
         {
-            session_.Disconnect(text);
+            Task result;
+
+            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            context.Data = data;
+
+            if (data == null)
+            {
+                context.taskCompletionSource_ = new TaskCompletionSource<object>();
+                result = context.taskCompletionSource_.Task;
+            }
+            else
+                result = null;
+
+            session_.Disconnect(context, text);
+
+            return result;
         }
 
         public void Join()
@@ -849,6 +881,24 @@ namespace TickTrader.FDK.OrderEntry
             void SetDisconnectError(Exception exception);
         }
 
+        class ConnectAsyncContext : ConnectClientContext
+        {
+            public ConnectAsyncContext() : base(false)
+            {
+            }
+
+            public TaskCompletionSource<object> taskCompletionSource_;
+        }
+
+        class DisconnectAsyncContext : DisconnectClientContext
+        {
+            public DisconnectAsyncContext() : base(false)
+            {
+            }
+
+            public TaskCompletionSource<object> taskCompletionSource_;
+        }
+
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
         {
             public LoginAsyncContext() : base(false)
@@ -1045,28 +1095,35 @@ namespace TickTrader.FDK.OrderEntry
                 client_ = client;
             }
 
-            public override void OnConnect(ClientSession clientSession)
+            public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
             {
+                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
+
                 try
                 {
                     if (client_.ConnectEvent != null)
                     {
                         try
                         {
-                            client_.ConnectEvent(client_);
+                            client_.ConnectEvent(client_, context.Data);
                         }
                         catch
                         {
                         }
                     }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession)
+            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext)
             {
+                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
+
                 try
                 {
                     if (client_.ConnectErrorEvent != null)
@@ -1074,11 +1131,18 @@ namespace TickTrader.FDK.OrderEntry
                         try
                         {
                             // TODO: text
-                            client_.ConnectErrorEvent(client_, "Connect error");
+                            client_.ConnectErrorEvent(client_, context.Data, "Connect error");
                         }
                         catch
                         {
                         }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                    {
+                        // TODO: text
+                        Exception exception = new Exception("Connect error");
+                        context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch
@@ -1086,15 +1150,17 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
             {
+                DisconnectAsyncContext context = (DisconnectAsyncContext) disconnectContext;
+
                 try
                 {
                     if (client_.DisconnectEvent != null)
                     {
                         try
                         {
-                            client_.DisconnectEvent(client_, text);
+                            client_.DisconnectEvent(client_, context.Data, text);
                         }
                         catch
                         {
@@ -1111,8 +1177,11 @@ namespace TickTrader.FDK.OrderEntry
 
                     Exception exception = new Exception(message);
 
-                    foreach (ClientContext context in contexts)
-                        ((IAsyncContext)context).SetDisconnectError(exception);
+                    foreach (ClientContext context2 in contexts)
+                        ((IAsyncContext) context2).SetDisconnectError(exception);
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {

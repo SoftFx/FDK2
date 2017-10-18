@@ -361,7 +361,7 @@ namespace QuoteStoreSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, string text)
+        void OnDisconnect(Client quoteFeedClient, object data, string text)
         {
             try
             {

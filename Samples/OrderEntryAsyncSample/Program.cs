@@ -494,16 +494,16 @@ namespace OrderEntryAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(address_);
+            client_.ConnectAsync(this, address_);
         }
 
-        void OnConnect(Client client)
+        void OnConnect(Client client, object data)
         {
             try
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(null, login_, password_, "", "", "");
+                client_.LoginAsync(this, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
@@ -511,7 +511,7 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(Client client, object data, string text)
         {
             try
             {
@@ -551,11 +551,11 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                client_.LogoutAsync(null, "Client logout");
+                client_.LogoutAsync(this, "Client logout");
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -592,7 +592,7 @@ namespace OrderEntryAsyncSample
 
         void GetAccountInfo()
         {
-            client_.GetAccountInfoAsync(null);
+            client_.GetAccountInfoAsync(this);
         }
 
         void OnAccountInfoResult(Client client, object data, AccountInfo accountInfo)
@@ -631,7 +631,7 @@ namespace OrderEntryAsyncSample
 
         void GetSessionInfo()
         {
-            client_.GetSessionInfoAsync(null);
+            client_.GetSessionInfoAsync(this);
         }
 
         void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
@@ -670,7 +670,7 @@ namespace OrderEntryAsyncSample
         
         void GetOrders()
         {
-            client_.GetOrdersAsync(null);
+            client_.GetOrdersAsync(this);
         }
 
         void OnOrdersResult(Client client, object data, ExecutionReport[] executionReports)
@@ -717,7 +717,7 @@ namespace OrderEntryAsyncSample
 
         void GetPositions()
         {
-            client_.GetPositionsAsync(null);
+            client_.GetPositionsAsync(this);
         }
 
         void OnPositionsResult(Client client, object data, Position[] positions)
@@ -756,22 +756,22 @@ namespace OrderEntryAsyncSample
 
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
         }
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
         }
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
         }
 
         void OnNewOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -800,17 +800,17 @@ namespace OrderEntryAsyncSample
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void OnReplaceOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -839,7 +839,7 @@ namespace OrderEntryAsyncSample
 
         void CancelOrder(string orderId)
         {
-            client_.CancelOrderAsync(null, Guid.NewGuid().ToString(), orderId, null);
+            client_.CancelOrderAsync(this, Guid.NewGuid().ToString(), orderId, null);
         }
 
         void OnCancelOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -868,7 +868,7 @@ namespace OrderEntryAsyncSample
 
         void ClosePosition(string orderId, double qty)
         {
-            client_.ClosePositionAsync(null, Guid.NewGuid().ToString(), orderId, qty);
+            client_.ClosePositionAsync(this, Guid.NewGuid().ToString(), orderId, qty);
         }
 
         void OnClosePositionResult(Client client, object data, ExecutionReport executionReport)
@@ -912,7 +912,7 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnDisconnect(Client orderEntryClient, string text)
+        void OnDisconnect(Client orderEntryClient, object data, string text)
         {
             try
             {

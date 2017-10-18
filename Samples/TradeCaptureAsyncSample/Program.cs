@@ -204,10 +204,10 @@ namespace TradeCaptureAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(address_);
+            client_.ConnectAsync(this, address_);
         }
 
-        void OnConnect(Client client)
+        void OnConnect(Client client, object data)
         {
             try
             {
@@ -221,7 +221,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(Client client, object data, string text)
         {
             try
             {
@@ -265,7 +265,7 @@ namespace TradeCaptureAsyncSample
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -439,7 +439,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        void OnDisconnect(Client client, object data, string text)
         {
             try
             {

@@ -215,16 +215,16 @@ namespace QuoteFeedAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(address_);
+            client_.ConnectAsync(this, address_);
         }
 
-        void OnConnect(Client client)
+        void OnConnect(Client client, object data)
         {
             try
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(null, login_, password_, "", "", "");
+                client_.LoginAsync(this, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
@@ -232,7 +232,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnConnectError(Client client, string text)
+        void OnConnectError(Client client, object data, string text)
         {
             try
             {
@@ -272,11 +272,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                client_.LogoutAsync(null, "Client logout");
+                client_.LogoutAsync(this, "Client logout");
             }
             catch
             {
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -306,7 +306,7 @@ namespace QuoteFeedAsyncSample
 
         void GetCurrencyList()
         {
-            client_.GetCurrencyListAsync(null);
+            client_.GetCurrencyListAsync(this);
         }
 
         void OnCurrencyListResult(Client client, object data, CurrencyInfo[] currencies)
@@ -341,7 +341,7 @@ namespace QuoteFeedAsyncSample
 
         void GetSymbolList()
         {
-            client_.GetSymbolListAsync(null);
+            client_.GetSymbolListAsync(this);
         }
 
         void OnSymbolListResult(Client client, object data, SymbolInfo[] symbols)
@@ -376,7 +376,7 @@ namespace QuoteFeedAsyncSample
 
         void GetSessionInfo()
         {
-            client_.GetSessionInfoAsync(null);
+            client_.GetSessionInfoAsync(this);
         }
                 
         void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
@@ -415,7 +415,7 @@ namespace QuoteFeedAsyncSample
 
         void SubscribeQuotes(List<string> symbolIds)
         {
-            client_.SubscribeQuotesAsync(null, symbolIds.ToArray(), 5);
+            client_.SubscribeQuotesAsync(this, symbolIds.ToArray(), 5);
         }
 
         void OnSubscribeQuotesResult(Client client, object data)
@@ -436,7 +436,7 @@ namespace QuoteFeedAsyncSample
 
         void UnsubscribeQuotes(List<string> symbolIds)
         {
-            client_.UnsubscribeQuotesAsync(null, symbolIds.ToArray());
+            client_.UnsubscribeQuotesAsync(this, symbolIds.ToArray());
         }
 
         void OnUnsubscribeQuotesResult(Client client, object data)
@@ -457,7 +457,7 @@ namespace QuoteFeedAsyncSample
 
         void GetQuotes(List<string> symbolIds)
         {
-            client_.GetQuotesAsync(null, symbolIds.ToArray(), 5);
+            client_.GetQuotesAsync(this, symbolIds.ToArray(), 5);
         }
 
         void OnQuotesResult(Client client, object data, Quote[] quotes)
@@ -514,7 +514,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, string text)
+        void OnDisconnect(Client quoteFeedClient, object data, string text)
         {
             try
             {
