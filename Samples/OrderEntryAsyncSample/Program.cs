@@ -503,7 +503,7 @@ namespace OrderEntryAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(null, login_, password_, "", "");
+                client_.LoginAsync(null, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {

@@ -14,7 +14,7 @@
         {
             DeviceId = "";
             AppSessionId = "";
-            AppId = "FDK2";
+            AppId = "";
         }
 
         #region Properties

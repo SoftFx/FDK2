@@ -213,7 +213,7 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(this, login_, password_, "", "");
+                client_.LoginAsync(this, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {

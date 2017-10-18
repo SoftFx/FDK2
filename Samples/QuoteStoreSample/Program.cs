@@ -242,7 +242,7 @@ namespace QuoteStoreSample
 
             Console.WriteLine("Connected");
 
-            client_.Login(login_, password_, "", "", Timeout);
+            client_.Login(login_, password_, "", "", "", Timeout);
 
             Console.WriteLine("Login succeeded");
         }

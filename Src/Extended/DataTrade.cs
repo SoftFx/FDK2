@@ -80,6 +80,9 @@
             if (! connectionStringParser.TryGetStringValue("DeviceId", out deviceId_))
                 throw new Exception("DeviceId is not specified");
 
+            if (! connectionStringParser.TryGetStringValue("AppId", out appId_))
+                throw new Exception("AppId is not specified");
+
             if (! connectionStringParser.TryGetStringValue("AppSessionId", out appSessionId_))
                 throw new Exception("AppSessionId is not specified");
 
@@ -501,7 +504,7 @@
         {
             try
             {
-                orderEntryClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+                orderEntryClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
             }
             catch
             {
@@ -1209,7 +1212,7 @@
         {
             try
             {
-                tradeCaptureClient_.LoginAsync(null, login_, password_, deviceId_, appSessionId_);
+                tradeCaptureClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
             }
             catch
             {
@@ -1770,6 +1773,7 @@
         string login_;
         string password_;
         string deviceId_;
+        string appId_;
         string appSessionId_;
         internal int synchOperationTimeout_;
 

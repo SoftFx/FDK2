@@ -114,14 +114,17 @@ namespace TickTrader.FDK.TradeCapture
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
-        public void Login(string username, string password, string deviceId, string sessionId, int timeout)
+        public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, sessionId), timeout);
+            ConvertToSync(LoginAsync(null, username, password, deviceId, appId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string sessionId)
+        public Task LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
             Task result;
+
+            if (string.IsNullOrEmpty(appId))
+                appId = "FDK2";
 
             // Create a new async context
             var context = new LoginAsyncContext();
@@ -141,6 +144,7 @@ namespace TickTrader.FDK.TradeCapture
                 Username = username,
                 Password = password,
                 DeviceId = deviceId,
+                AppId = appId,
                 SessionId = sessionId
             };
 
