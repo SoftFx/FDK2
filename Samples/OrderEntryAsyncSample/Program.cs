@@ -61,7 +61,7 @@ namespace OrderEntryAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("OrderEntryAsyncSample", port, true, "Logs", false);
+            client_ = new Client("OrderEntryAsyncSample", port, true, "Logs", true);
             
             client_.ConnectEvent += new Client.ConnectDelegate(this.OnConnect);
             client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);

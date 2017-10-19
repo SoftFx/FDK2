@@ -63,7 +63,7 @@ namespace QuoteStoreSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("QuoteStoreSample", port, false, "Logs", false);
+            client_ = new Client("QuoteStoreSample", port, false, "Logs", true);
 
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);

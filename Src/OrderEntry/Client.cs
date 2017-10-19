@@ -179,6 +179,9 @@ namespace TickTrader.FDK.OrderEntry
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
         {
+            if (string.IsNullOrEmpty(appId))
+                appId = "FDK2";
+
             // Create a request
             var request = new LoginRequest(0)
             {
