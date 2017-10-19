@@ -10,7 +10,7 @@ if ERRORLEVEL 1 goto END
 mkdir %BUILD_DIR%
 if ERRORLEVEL 1 goto END
 
-xcopy Build.cmd %BUILD_DIR%
+xcopy Pack.cmd %BUILD_DIR%
 if ERRORLEVEL 1 goto END
 
 xcopy LICENSE %BUILD_DIR%
