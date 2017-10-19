@@ -35,15 +35,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="ICSharpCode.SharpZipLib">
-      <HintPath>..\..\Lib\ICSharpCode.SharpZipLib.dll</HintPath>
+      <HintPath>..\..\Bin\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
     <Reference Include="SoftFX.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f93e83ea42ea164d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\SoftFX.Net.Core.dll</HintPath>
+      <HintPath>..\..\Bin\SoftFX.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="SoftFX.Net.QuoteStore, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
+      <HintPath>..\..\Bin\SoftFX.Net.QuoteStore.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

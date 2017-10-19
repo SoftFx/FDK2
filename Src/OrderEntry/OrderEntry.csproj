@@ -36,11 +36,11 @@
   <ItemGroup>
     <Reference Include="SoftFX.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f93e83ea42ea164d, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\SoftFX.Net.Core.dll</HintPath>
+      <HintPath>..\..\Bin\SoftFX.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="SoftFX.Net.OrderEntry, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
+      <HintPath>..\..\Bin\SoftFX.Net.OrderEntry.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

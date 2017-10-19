@@ -40,13 +40,13 @@
     <Reference Include="System.XML" />
     <Reference Include="System.Xml.Serialization" />
     <Reference Include="TickTrader.BusinessLogic">
-      <HintPath>..\..\Lib\TickTrader.BusinessLogic.dll</HintPath>
+      <HintPath>..\..\Bin\TickTrader.BusinessLogic.dll</HintPath>
     </Reference>
     <Reference Include="TickTrader.BusinessObjects">
-      <HintPath>..\..\Lib\TickTrader.BusinessObjects.dll</HintPath>
+      <HintPath>..\..\Bin\TickTrader.BusinessObjects.dll</HintPath>
     </Reference>
     <Reference Include="TickTrader.Common">
-      <HintPath>..\..\Lib\TickTrader.Common.dll</HintPath>
+      <HintPath>..\..\Bin\TickTrader.Common.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
