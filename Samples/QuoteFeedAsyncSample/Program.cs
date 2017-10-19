@@ -138,7 +138,7 @@ namespace QuoteFeedAsyncSample
                         {
                             GetCurrencyList();
                         }
-                        else if (command == "security_list" || command == "s")
+                        else if (command == "symbol_list" || command == "s")
                         {
                             GetSymbolList();
                         }
@@ -296,7 +296,7 @@ namespace QuoteFeedAsyncSample
         {
             Console.WriteLine("help (h) - print commands");
             Console.WriteLine("currency_list (c) - request currency list");
-            Console.WriteLine("security_list (s) - request security list");
+            Console.WriteLine("symbol_list (s) - request symbol list");
             Console.WriteLine("session_info (i) - request session info");
             Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
             Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");

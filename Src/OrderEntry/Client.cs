@@ -67,7 +67,7 @@ namespace TickTrader.FDK.OrderEntry
         {
             try
             {
-                ConvertToSync(ConnectAsync(null, address), timeout);
+                ConvertToSync(ConnectAsync(address), timeout);
             }
             catch (TimeoutException)
             {
@@ -78,49 +78,55 @@ namespace TickTrader.FDK.OrderEntry
             }
         }
 
-        public Task ConnectAsync(object data, string address)
+        public void ConnectAsync(object data, string address)
         {
-            Task result;
-
             ConnectAsyncContext context = new ConnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            ConnectInternal(context, address);
+        }
 
+        public Task ConnectAsync(string address)
+        {
+            ConnectAsyncContext context = new ConnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            ConnectInternal(context, address);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ConnectInternal(ConnectAsyncContext context, string address)
+        {
             session_.Connect(context, address);
-
-            return result;
         }
 
         public void Disconnect(string text)
         {
-            ConvertToSync(DisconnectAsync(null, text), -1);
+            ConvertToSync(DisconnectAsync(text), -1);
         }
 
-        public Task DisconnectAsync(object data, string text)
+        public void DisconnectAsync(object data, string text)
         {
-            Task result;
-
             DisconnectAsyncContext context = new DisconnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            DisconnectInernal(context, text);
+        }
 
+        public Task DisconnectAsync(string text)
+        {
+            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            DisconnectInernal(context, text);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DisconnectInernal(DisconnectAsyncContext context, string text)
+        {
             session_.Disconnect(context, text);
-
-            return result;
         }
 
         public void Join()
@@ -148,28 +154,31 @@ namespace TickTrader.FDK.OrderEntry
 
         public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appId, sessionId), timeout);
+            ConvertToSync(LoginAsync(username, password, deviceId, appId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
+        public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
-            Task result;
-
-            if (string.IsNullOrEmpty(appId))
-                appId = "FDK2";
-
             // Create a new async context
             var context = new LoginAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+        }
 
+        public Task LoginAsync(string username, string password, string deviceId, string appId, string sessionId)
+        {
+            // Create a new async context
+            var context = new LoginAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
+        {
             // Create a request
             var request = new LoginRequest(0)
             {
@@ -182,9 +191,6 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendLoginRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public void SendOneTimePassword(string oneTimePassword)
@@ -202,25 +208,31 @@ namespace TickTrader.FDK.OrderEntry
 
         public LogoutInfo Logout(string message, int timeout)
         {
-            return ConvertToSync(LogoutAsync(null, message), timeout);
+            return ConvertToSync(LogoutAsync(message), timeout);
         }
 
-        public Task<LogoutInfo> LogoutAsync(object data, string message)
+        public void LogoutAsync(object data, string message)
         {
-            Task<LogoutInfo> result;
-
             // Create a new async context
             var context = new LogoutAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LogoutInternal(context, message);
+        }
 
+        public Task<LogoutInfo> LogoutAsync(string message)
+        {
+            // Create a new async context
+            var context = new LogoutAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
+
+            LogoutInternal(context, message);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LogoutInternal(LogoutAsyncContext context, string message)
+        {
             // Create a request
             var request = new Logout(0)
             {
@@ -229,9 +241,6 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendLogout(context, request);
-
-            // Return result task
-            return result;
         }
 
         #endregion
@@ -294,25 +303,31 @@ namespace TickTrader.FDK.OrderEntry
 
         public TickTrader.FDK.Common.TradeServerInfo GetTradeServerInfo(int timeout)
         {
-            return ConvertToSync(GetTradeServerInfoAsync(null), timeout);
+            return ConvertToSync(GetTradeServerInfoAsync(), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.TradeServerInfo> GetTradeServerInfoAsync(object data)
+        public void GetTradeServerInfoAsync(object data)
         {
-            Task<TickTrader.FDK.Common.TradeServerInfo> result;
-
             // Create a new async context
             var context = new TradeServerInfoAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<TradeServerInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetTradeServerInfoInternal(context);
+        }
 
+        public Task<TickTrader.FDK.Common.TradeServerInfo> GetTradeServerInfoAsync()
+        {
+            // Create a new async context
+            var context = new TradeServerInfoAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<TradeServerInfo>();
+
+            GetTradeServerInfoInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetTradeServerInfoInternal(TradeServerInfoAsyncContext context)
+        {
             // Create a request
             var request = new TradeServerInfoRequest(0)
             {
@@ -321,32 +336,35 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendTradeServerInfoRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.AccountInfo GetAccountInfo(int timeout)
         {
-            return ConvertToSync(GetAccountInfoAsync(null), timeout);
+            return ConvertToSync(GetAccountInfoAsync(), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.AccountInfo> GetAccountInfoAsync(object data)
+        public void GetAccountInfoAsync(object data)
         {
-            Task<TickTrader.FDK.Common.AccountInfo> result;
-
             // Create a new async context
             var context = new AccountInfoAsyncContext();
-            context.Data = data;                 
+            context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<TickTrader.FDK.Common.AccountInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetAccountInfoInternal(context);
+        }
 
+        public Task<TickTrader.FDK.Common.AccountInfo> GetAccountInfoAsync()
+        {
+            // Create a new async context
+            var context = new AccountInfoAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<TickTrader.FDK.Common.AccountInfo>();
+
+            GetAccountInfoInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetAccountInfoInternal(AccountInfoAsyncContext context)
+        {
             // Create a request
             var request = new AccountInfoRequest(0)
             {
@@ -355,64 +373,70 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendAccountInfoRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.SessionInfo GetSessionInfo(int timeout)
         {
-            return ConvertToSync(GetSessionInfoAsync(null), timeout);
+            return ConvertToSync(GetSessionInfoAsync(), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.SessionInfo> GetSessionInfoAsync(object data)
+        public void GetSessionInfoAsync(object data)
         {
-            Task<TickTrader.FDK.Common.SessionInfo> result;
-
             // Create a new async context
             var context = new SessionInfoAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<SessionInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetSessionInfoInternal(context);
+        }
 
+        public Task<TickTrader.FDK.Common.SessionInfo> GetSessionInfoAsync()
+        {
+            // Create a new async context
+            var context = new SessionInfoAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<SessionInfo>();
+
+            GetSessionInfoInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetSessionInfoInternal(SessionInfoAsyncContext context)
+        {
             // Create a request
             var request = new TradingSessionStatusRequest(0);
             request.Id = Guid.NewGuid().ToString();
 
             // Send request to the server
             session_.SendTradingSessionStatusRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] GetOrders(int timeout)
         {
-            return ConvertToSync(GetOrdersAsync(null), timeout);
+            return ConvertToSync(GetOrdersAsync(), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> GetOrdersAsync(object data)
+        public void GetOrdersAsync(object data)
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
             // Create a new async context
             var context = new OrdersAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetOrdersInternal(context);
+        }
 
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> GetOrdersAsync()
+        {
+            // Create a new async context
+            var context = new OrdersAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+
+            GetOrdersInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetOrdersInternal(OrdersAsyncContext context)
+        {
             // Create a request
             var request = new OrderMassStatusRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -420,32 +444,35 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendOrderMassStatusRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.Position[] GetPositions(int timeout)
         {
-            return ConvertToSync(GetPositionsAsync(null), timeout);
+            return ConvertToSync(GetPositionsAsync(), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.Position[]> GetPositionsAsync(object data)
+        public void GetPositionsAsync(object data)
         {
-            Task<TickTrader.FDK.Common.Position[]> result;
-
             // Create a new async context
             var context = new PositionsAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.Position[]>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetPositionsInternal(context);
+        }
 
+        public Task<TickTrader.FDK.Common.Position[]> GetPositionsAsync()
+        {
+            // Create a new async context
+            var context = new PositionsAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.Position[]>();
+
+            GetPositionsInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetPositionsInternal(PositionsAsyncContext context)
+        {
             // Create a request
             var request = new PositionListRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -453,9 +480,6 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendPositionListRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] NewOrder
@@ -482,7 +506,6 @@ namespace TickTrader.FDK.OrderEntry
             (
                 NewOrderAsync
                 (
-                    null,
                     clientOrderId,
                     symbol,
                     type,
@@ -503,9 +526,101 @@ namespace TickTrader.FDK.OrderEntry
             );
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> NewOrderAsync
+        public void NewOrderAsync
         (
             object data,
+            string clientOrderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic
+        )
+        {
+            // Create a new async context
+            var context = new NewOrderAsyncContext();
+            context.Data = data;
+
+            NewOrderInternal
+            (
+                context,
+                clientOrderId,
+                symbol,
+                type,
+                side,
+                qty,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                time,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic
+            );
+        }
+
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> NewOrderAsync
+        (
+            string clientOrderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic
+        )
+        {
+            // Create a new async context
+            var context = new NewOrderAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            NewOrderInternal
+            (
+                context,
+                clientOrderId,
+                symbol,
+                type,
+                side,
+                qty,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                time,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic
+            );
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void NewOrderInternal
+        (
+            NewOrderAsyncContext context,
             string clientOrderId,
             string symbol, 
             TickTrader.FDK.Common.OrderType type, 
@@ -523,21 +638,6 @@ namespace TickTrader.FDK.OrderEntry
             int? magic
         )
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
-            // Create a new async context
-            var context = new NewOrderAsyncContext();
-            context.Data = data;
-
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                context.executionReportList_ = new List<Common.ExecutionReport>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
-
             // Create a request
             NewOrderSingle message = new NewOrderSingle(0);
             message.ClOrdId = clientOrderId;
@@ -566,9 +666,6 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendNewOrderSingle(context, message);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] ReplaceOrder
@@ -597,7 +694,6 @@ namespace TickTrader.FDK.OrderEntry
             (
                 ReplaceOrderAsync
                 (
-                    null,
                     clientOrderId,
                     origClientOrderId,
                     orderId,
@@ -620,9 +716,109 @@ namespace TickTrader.FDK.OrderEntry
             );
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> ReplaceOrderAsync
+        public void ReplaceOrderAsync
         (
             object data,
+            string clientOrderId,
+            string origClientOrderId,
+            string orderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic
+        )
+        {
+            // Create a new async context
+            var context = new ReplaceOrderAsyncContext();
+            context.Data = data;
+
+            ReplaceOrderInternal
+            (
+                context,
+                clientOrderId,
+                origClientOrderId,
+                orderId,
+                symbol,
+                type,
+                side,
+                qty,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                time,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic
+            );
+        }
+
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ReplaceOrderAsync
+        (
+            string clientOrderId,
+            string origClientOrderId,
+            string orderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? time,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic
+        )
+        {
+            // Create a new async context
+            var context = new ReplaceOrderAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            ReplaceOrderInternal
+            (
+                context,
+                clientOrderId,
+                origClientOrderId,
+                orderId,
+                symbol,
+                type,
+                side,
+                qty,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                time,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic
+            );
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ReplaceOrderInternal
+        (
+            ReplaceOrderAsyncContext context,
             string clientOrderId,
             string origClientOrderId,
             string orderId,
@@ -642,21 +838,6 @@ namespace TickTrader.FDK.OrderEntry
             int? magic
         )
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
-            // Create a new async context
-            var context = new ReplaceOrderAsyncContext();
-            context.Data = data;
-
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                context.executionReportList_ = new List<Common.ExecutionReport>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
-
             // Create a request
             OrderCancelReplaceRequest message = new OrderCancelReplaceRequest(0);
             message.ClOrdId = clientOrderId;
@@ -694,33 +875,36 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendOrderCancelReplaceRequest(context, message);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] CancelOrder(string clientOrderId, string origClientOrderId, string orderId, int timeout)
         {
-            return ConvertToSync(CancelOrderAsync(null, clientOrderId, origClientOrderId, orderId), timeout);
+            return ConvertToSync(CancelOrderAsync(clientOrderId, origClientOrderId, orderId), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> CancelOrderAsync(object data, string clientOrderId, string origClientOrderId, string orderId)
+        public void CancelOrderAsync(object data, string clientOrderId, string origClientOrderId, string orderId)
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
             // Create a new async context
             var context = new CancelOrderAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                context.executionReportList_ = new List<Common.ExecutionReport>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            CancelOrderInternal(context, clientOrderId, origClientOrderId, orderId);
+        }
 
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> CancelOrderAsync(string clientOrderId, string origClientOrderId, string orderId)
+        {
+            // Create a new async context
+            var context = new CancelOrderAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            CancelOrderInternal(context, clientOrderId, origClientOrderId, orderId);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void CancelOrderInternal(CancelOrderAsyncContext context, string clientOrderId, string origClientOrderId, string orderId)
+        {
             // Create a request
             OrderCancelRequest message = new OrderCancelRequest(0);
             message.ClOrdId = clientOrderId;
@@ -735,33 +919,36 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendOrderCancelRequest(context, message);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] ClosePosition(string clientOrderId, string orderId, double? qty, int timeout)
         {
-            return ConvertToSync(ClosePositionAsync(null, clientOrderId, orderId, qty), timeout);
+            return ConvertToSync(ClosePositionAsync(clientOrderId, orderId, qty), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionAsync(object data, string clientOrderId, string orderId, double? qty)
+        public void ClosePositionAsync(object data, string clientOrderId, string orderId, double? qty)
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
             // Create a new async context
             var context = new ClosePositionAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                context.executionReportList_ = new List<Common.ExecutionReport>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            ClosePositionInternal(context, clientOrderId, orderId, qty);
+        }
 
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionAsync(string clientOrderId, string orderId, double? qty)
+        {
+            // Create a new async context
+            var context = new ClosePositionAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            ClosePositionInternal(context, clientOrderId, orderId, qty);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ClosePositionInternal(ClosePositionAsyncContext context, string clientOrderId, string orderId, double? qty)
+        {
             // Create a request
             ClosePositionRequest message = new ClosePositionRequest(0);
             message.ClOrdId = clientOrderId;
@@ -771,33 +958,37 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendClosePositionRequest(context, message);
-
-            // Return result task
-            return result;
         }
 
         public TickTrader.FDK.Common.ExecutionReport[] ClosePositionBy(string clientOrderId, string orderId, string byOrderId, int timeout)
         {
-            return ConvertToSync(ClosePositionByAsync(null, clientOrderId, orderId, byOrderId), timeout);
+            return ConvertToSync(ClosePositionByAsync(clientOrderId, orderId, byOrderId), timeout);
         }
 
-        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionByAsync(object data, string clientOrderId, string orderId, string byOrderId)
+        public void ClosePositionByAsync(object data, string clientOrderId, string orderId, string byOrderId)
         {
-            Task<TickTrader.FDK.Common.ExecutionReport[]> result;
-
             // Create a new async context
             var context = new ClosePositionByAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
-                context.executionReportList_ = new List<Common.ExecutionReport>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            ClosePositionByInternal(context, clientOrderId, orderId, byOrderId);
+        }
+        
 
+        public Task<TickTrader.FDK.Common.ExecutionReport[]> ClosePositionByAsync(string clientOrderId, string orderId, string byOrderId)
+        {
+            // Create a new async context
+            var context = new ClosePositionByAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.ExecutionReport[]>();
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            ClosePositionByInternal(context, clientOrderId, orderId, byOrderId);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ClosePositionByInternal(ClosePositionByAsyncContext context, string clientOrderId, string orderId, string byOrderId)
+        {
             // Create a request
             ClosePositionRequest message = new ClosePositionRequest(0);
             message.ClOrdId = clientOrderId;
@@ -807,10 +998,11 @@ namespace TickTrader.FDK.OrderEntry
 
             // Send request to the server
             session_.SendClosePositionByRequest(context, message);
-
-            // Return result task
-            return result;
         }
+
+        #endregion
+
+        #region Implementation
 
         SoftFX.Net.OrderEntry.OrderType Convert(TickTrader.FDK.Common.OrderType type)
         {
@@ -871,10 +1063,6 @@ namespace TickTrader.FDK.OrderEntry
                     throw new Exception("Invalid order time : " + time);
             }
         }
-
-        #endregion
-
-        #region Async contexts
 
         interface IAsyncContext
         {
@@ -1083,10 +1271,6 @@ namespace TickTrader.FDK.OrderEntry
             public TaskCompletionSource<TickTrader.FDK.Common.ExecutionReport[]> taskCompletionSource_;
             public List<TickTrader.FDK.Common.ExecutionReport> executionReportList_;
         }
-
-        #endregion
-
-        #region Session listener
 
         class ClientSessionListener : SoftFX.Net.OrderEntry.ClientSessionListener
         {
@@ -3560,10 +3744,6 @@ namespace TickTrader.FDK.OrderEntry
 
             Client client_;
         }
-
-        #endregion
-
-        #region Async helpers        
 
         static void ConvertToSync(Task task, int timeout)
         {

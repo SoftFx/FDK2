@@ -67,7 +67,7 @@ namespace TickTrader.FDK.TradeCapture
         {
             try
             {
-                ConvertToSync(ConnectAsync(null, address), timeout);
+                ConvertToSync(ConnectAsync(address), timeout);
             }
             catch (TimeoutException)
             {
@@ -78,49 +78,55 @@ namespace TickTrader.FDK.TradeCapture
             }
         }
 
-        public Task ConnectAsync(object data, string address)
+        public void ConnectAsync(object data, string address)
         {
-            Task result;
-
             ConnectAsyncContext context = new ConnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            ConnectInternal(context, address);
+        }
 
+        public Task ConnectAsync(string address)
+        {
+            ConnectAsyncContext context = new ConnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            ConnectInternal(context, address);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ConnectInternal(ConnectAsyncContext context, string address)
+        {
             session_.Connect(context, address);
-
-            return result;
         }
 
         public void Disconnect(string text)
         {
-            ConvertToSync(DisconnectAsync(null, text), -1);
+            ConvertToSync(DisconnectAsync(text), -1);
         }
 
-        public Task DisconnectAsync(object data, string text)
+        public void DisconnectAsync(object data, string text)
         {
-            Task result;
-
             DisconnectAsyncContext context = new DisconnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            DisconnectInternal(context, text);
+        }
 
+        public Task DisconnectAsync(string text)
+        {
+            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            DisconnectInternal(context, text);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DisconnectInternal(DisconnectAsyncContext context, string text)
+        {
             session_.Disconnect(context, text);
-
-            return result;
         }
 
         public void Join()
@@ -148,27 +154,33 @@ namespace TickTrader.FDK.TradeCapture
 
         public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appId, sessionId), timeout);
+            ConvertToSync(LoginAsync(username, password, deviceId, appId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
+        public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
-            Task result;
-
-            if (string.IsNullOrEmpty(appId))
-                appId = "FDK2";
-
             // Create a new async context
             var context = new LoginAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+        }
+
+        public Task LoginAsync(string username, string password, string deviceId, string appId, string sessionId)
+        {
+            // Create a new async context
+            var context = new LoginAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
+        {
+            if (string.IsNullOrEmpty(appId))
+                appId = "FDK2";
 
             // Create a request
             var request = new LoginRequest(0)
@@ -182,9 +194,6 @@ namespace TickTrader.FDK.TradeCapture
 
             // Send request to the server
             session_.SendLoginRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public void SendOneTimePassword(string oneTimePassword)
@@ -202,25 +211,31 @@ namespace TickTrader.FDK.TradeCapture
 
         public LogoutInfo Logout(string message, int timeout)
         {
-            return ConvertToSync(LogoutAsync(null, message), timeout);
+            return ConvertToSync(LogoutAsync(message), timeout);
         }
 
-        public Task<LogoutInfo> LogoutAsync(object data, string message)
+        public void LogoutAsync(object data, string message)
         {
-            Task<LogoutInfo> result;
-
             // Create a new async context
             var context = new LogoutAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LogoutInternal(context, message);
+        }
 
+        public Task<LogoutInfo> LogoutAsync(string message)
+        {
+            // Create a new async context
+            var context = new LogoutAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
+
+            LogoutInternal(context, message);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LogoutInternal(LogoutAsyncContext context, string message)
+        {
             // Create a request
             var request = new Logout(0)
             {
@@ -229,9 +244,6 @@ namespace TickTrader.FDK.TradeCapture
 
             // Send request to the server
             session_.SendLogout(context, request);
-
-            // Return result task
-            return result;
         }
 
         #endregion
@@ -262,25 +274,31 @@ namespace TickTrader.FDK.TradeCapture
 
         public void SubscribeTrades(bool skipCancel, int timeout)
         {
-            ConvertToSync(SubscribeTradesAsync(null, skipCancel), timeout);
+            ConvertToSync(SubscribeTradesAsync(skipCancel), timeout);
         }
 
-        public Task SubscribeTradesAsync(object data, bool skipCancel)
+        public void SubscribeTradesAsync(object data, bool skipCancel)
         {
-            Task result;
-
             // Create a new async context
             var context = new SubscribeTradesAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            SubscribeTradesInternal(context, skipCancel);
+        }
 
+        public Task SubscribeTradesAsync(bool skipCancel)
+        {
+            // Create a new async context
+            var context = new SubscribeTradesAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            SubscribeTradesInternal(context, skipCancel);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void SubscribeTradesInternal(SubscribeTradesAsyncContext context, bool skipCancel)
+        {
             // Create a request
             var request = new TradeCaptureRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -289,32 +307,35 @@ namespace TickTrader.FDK.TradeCapture
 
             // Send request to the server
             session_.SendTradeCaptureRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public void UnsubscribeTrades(int timeout)
         {
-            ConvertToSync(UnsubscribeTradesAsync(null), timeout);
+            ConvertToSync(UnsubscribeTradesAsync(), timeout);
         }
 
-        public Task UnsubscribeTradesAsync(object data)
+        public void UnsubscribeTradesAsync(object data)
         {
-            Task result;
-
             // Create a new async context
             var context = new UnsubscribeTradesAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            UnsubscribeTradesInternal(context);
+        }
 
+        public Task UnsubscribeTradesAsync()
+        {
+            // Create a new async context
+            var context = new UnsubscribeTradesAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            UnsubscribeTradesInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void UnsubscribeTradesInternal(UnsubscribeTradesAsyncContext context)
+        {
             // Create a request
             var request = new TradeCaptureRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -322,36 +343,40 @@ namespace TickTrader.FDK.TradeCapture
 
             // Send request to the server
             session_.SendTradeCaptureRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public TradeTransactionReportEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
         {
-            return ConvertToSync(DownloadTradesAsync(null, timeDirection, from, to, skipCancel), timeout);
+            return ConvertToSync(DownloadTradesAsync(timeDirection, from, to, skipCancel), timeout);
         }
 
-        public Task<TradeTransactionReportEnumerator> DownloadTradesAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
+        public void DownloadTradesAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
         {
-            Task<TradeTransactionReportEnumerator> result;
-
             // Create a new async context
             var context = new TradeDownloadAsyncContext();
             context.Data = data;
+
+            DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
+        }
+
+        public Task<TradeTransactionReportEnumerator> DownloadTradesAsync(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
+        {
+            // Create a new async context
+            var context = new TradeDownloadAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<TradeTransactionReportEnumerator>();
+
+            DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DownloadTradesInternal(TradeDownloadAsyncContext context, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
+        {
             context.timeDirection_ = timeDirection;
             context.from_ = from;
             context.to_ = to;
             context.skipCancel_ = skipCancel;
             context.reportId_ = null;
-
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<TradeTransactionReportEnumerator>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
 
             // Create a request
             TradeDownloadRequest request = new TradeDownloadRequest(0);
@@ -363,9 +388,6 @@ namespace TickTrader.FDK.TradeCapture
 
             // Send request to the server
             session_.SendTradeDownloadRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         SoftFX.Net.TradeCapture.TradeHistoryDirection Convert(TickTrader.FDK.Common.TimeDirection timeDirection)

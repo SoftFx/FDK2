@@ -70,7 +70,7 @@ namespace TickTrader.FDK.QuoteStore
         {
             try
             {
-                ConvertToSync(ConnectAsync(null, address), timeout);
+                ConvertToSync(ConnectAsync(address), timeout);
             }
             catch (TimeoutException)
             {
@@ -81,49 +81,55 @@ namespace TickTrader.FDK.QuoteStore
             }
         }
 
-        public Task ConnectAsync(object data, string address)
+        public void ConnectAsync(object data, string address)
         {
-            Task result;
-
             ConnectAsyncContext context = new ConnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            ConnectInternal(context, address);
+        }
 
+        public Task ConnectAsync(string address)
+        {
+            ConnectAsyncContext context = new ConnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            ConnectInternal(context, address);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void ConnectInternal(ConnectAsyncContext context, string address)
+        {
             session_.Connect(context, address);
-
-            return result;
         }
 
         public void Disconnect(string text)
         {
-            ConvertToSync(DisconnectAsync(null, text), -1);
+            ConvertToSync(DisconnectAsync(text), -1);
         }
 
-        public Task DisconnectAsync(object data, string text)
+        public void DisconnectAsync(object data, string text)
         {
-            Task result;
-
             DisconnectAsyncContext context = new DisconnectAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            DisconnectInternal(context, text);
+        }
 
+        public Task DisconnectAsync(string text)
+        {
+            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            DisconnectInternal(context, text);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DisconnectInternal(DisconnectAsyncContext context, string text)
+        {
             session_.Disconnect(context, text);
-
-            return result;
         }
 
         public void Join()
@@ -147,27 +153,33 @@ namespace TickTrader.FDK.QuoteStore
 
         public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(null, username, password, deviceId, appId, sessionId), timeout);
+            ConvertToSync(LoginAsync(username, password, deviceId, appId, sessionId), timeout);
         }
 
-        public Task LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
+        public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
-            Task result;
-
-            if (string.IsNullOrEmpty(appId))
-                appId = "FDK2";
-
             // Create a new async context
             var context = new LoginAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<object>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+        }
+
+        public Task LoginAsync(string username, string password, string deviceId, string appId, string sessionId)
+        {
+            // Create a new async context
+            var context = new LoginAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
+        {
+            if (string.IsNullOrEmpty(appId))
+                appId = "FDK2";
 
             // Create a request
             var request = new LoginRequest(0)
@@ -181,32 +193,35 @@ namespace TickTrader.FDK.QuoteStore
 
             // Send request to the server
             session_.SendLoginRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public LogoutInfo Logout(string message, int timeout)
         {
-            return ConvertToSync(LogoutAsync(null, message), timeout);
+            return ConvertToSync(LogoutAsync(message), timeout);
         }
 
-        public Task<LogoutInfo> LogoutAsync(object data, string message)
+        public void LogoutAsync(object data, string message)
         {
-            Task<LogoutInfo> result;
-
             // Create a new async context
             var context = new LogoutAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            LogoutInternal(context, message);
+        }
 
+        public Task<LogoutInfo> LogoutAsync(string message)
+        {
+            // Create a new async context
+            var context = new LogoutAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
+
+            LogoutInternal(context, message);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void LogoutInternal(LogoutAsyncContext context, string message)
+        {
             // Create a request
             var request = new Logout(0)
             {
@@ -215,9 +230,6 @@ namespace TickTrader.FDK.QuoteStore
 
             // Send request to the server
             session_.SendLogout(context, request);
-
-            // Return result task
-            return result;
         }
 
         #endregion
@@ -254,57 +266,66 @@ namespace TickTrader.FDK.QuoteStore
 
         public string[] GetSymbolList(int timeout)
         {
-            return ConvertToSync(GetSymbolListAsync(null), timeout);
+            return ConvertToSync(GetSymbolListAsync(), timeout);
         }
 
-        public Task<string[]> GetSymbolListAsync(object data)
+        public void GetSymbolListAsync(object data)
         {
-            Task<string[]> result;
-
             // Create a new async context
             SymbolListAsyncContext context = new SymbolListAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetSymbolListInternal(context);
+        }
 
+        public Task<string[]> GetSymbolListAsync()
+        {
+            // Create a new async context
+            SymbolListAsyncContext context = new SymbolListAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
+
+            GetSymbolListInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetSymbolListInternal(SymbolListAsyncContext context)
+        {
             // Create a request
             SymbolListRequest request = new SymbolListRequest(0);
             request.Id = Guid.NewGuid().ToString();
 
             // Send request to the server
             session_.SendSymbolListRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public string[] GetPeriodicityList(string symbol, int timeout)
         {
-            return ConvertToSync(GetPeriodicityListAsync(null, symbol), timeout);
+            return ConvertToSync(GetPeriodicityListAsync(symbol), timeout);
         }
 
-        public Task<string[]> GetPeriodicityListAsync(object data, string symbol)
+        public void GetPeriodicityListAsync(object data, string symbol)
         {
-            Task<string[]> result;
-
             // Create a new async context
             PeriodictityListAsyncContext context = new PeriodictityListAsyncContext();
             context.Data = data;
 
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
+            GetPeriodicityListInternal(context, symbol);
+        }
 
+        public Task<string[]> GetPeriodicityListAsync(string symbol)
+        {
+            // Create a new async context
+            PeriodictityListAsyncContext context = new PeriodictityListAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
+
+            GetPeriodicityListInternal(context, symbol);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetPeriodicityListInternal(PeriodictityListAsyncContext context, string symbol)
+        {
             // Create a request
             PeriodicityListRequest request = new PeriodicityListRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -312,35 +333,39 @@ namespace TickTrader.FDK.QuoteStore
 
             // Send request to the server
             session_.SendPeriodicityListRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public BarEnumerator DownloadBars(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to, int timeout)
         {
-            return ConvertToSync(DownloadBarsAsync(null, downloadId, symbol, priceType, periodicity, from, to), timeout);
+            return ConvertToSync(DownloadBarsAsync(downloadId, symbol, priceType, periodicity, from, to), timeout);
         }
 
-        public Task<BarEnumerator> DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        public void DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
         {
-            Task<BarEnumerator> result;
-
             // Create a new async context
             BarDownloadAsyncContext context = new BarDownloadAsyncContext();
             context.Data = data;
+
+            DownloadBarsInternal(context, downloadId, symbol, priceType, periodicity, from, to);
+        }
+
+        public Task<BarEnumerator> DownloadBarsAsync(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        {
+            // Create a new async context
+            BarDownloadAsyncContext context = new BarDownloadAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<BarEnumerator>();
+
+            DownloadBarsInternal(context, downloadId, symbol, priceType, periodicity, from, to);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DownloadBarsInternal(BarDownloadAsyncContext context, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        {
             context.priceType_ = priceType;
             context.periodicity_ = periodicity;
             context.from_ = from;
             context.to_ = to;
-
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<BarEnumerator>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
 
             // Create a request
             BarDownloadRequest request = new BarDownloadRequest(0);
@@ -353,34 +378,38 @@ namespace TickTrader.FDK.QuoteStore
 
             // Send request to the server
             session_.SendDownloadRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public QuoteEnumerator DownloadQuotes(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
         {
-            return ConvertToSync(DownloadQuotesAsync(null, downloadId, symbol, depth, from, to), timeout);
+            return ConvertToSync(DownloadQuotesAsync(downloadId, symbol, depth, from, to), timeout);
         }
 
-        public Task<QuoteEnumerator> DownloadQuotesAsync(object data, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        public void DownloadQuotesAsync(object data, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            Task<QuoteEnumerator> result;
-
             // Create a new async context
             TickDownloadAsyncContext context = new TickDownloadAsyncContext();
             context.Data = data;
+
+            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
+        }
+
+        public Task<QuoteEnumerator> DownloadQuotesAsync(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        {
+            // Create a new async context
+            TickDownloadAsyncContext context = new TickDownloadAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<QuoteEnumerator>();
+
+            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void DownloadQuotesInternal(TickDownloadAsyncContext context, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        {
             context.quoteDepth_ = depth;
             context.from_ = from;
             context.to_ = to;
-
-            if (data == null)
-            {
-                context.taskCompletionSource_ = new TaskCompletionSource<QuoteEnumerator>();
-                result = context.taskCompletionSource_.Task;
-            }
-            else
-                result = null;
 
             // Create a request
             TickDownloadRequest request = new TickDownloadRequest(0);
@@ -392,9 +421,6 @@ namespace TickTrader.FDK.QuoteStore
 
             // Send request to the server
             session_.SendDownloadRequest(context, request);
-
-            // Return result task
-            return result;
         }
 
         public void SendDownloadCancel(string downloadId)
@@ -406,6 +432,10 @@ namespace TickTrader.FDK.QuoteStore
             // Send message to the server
             session_.SendDownloadCancel(null, downloadCancel);
         }
+
+        #endregion
+
+        #region Implementation
 
         SoftFX.Net.QuoteStore.PriceType Convert(TickTrader.FDK.Common.PriceType priceType)
         {
@@ -434,10 +464,6 @@ namespace TickTrader.FDK.QuoteStore
 
             }
         }
-
-        #endregion
-
-        #region Async contexts
 
         interface IAsyncContext
         {
@@ -598,10 +624,6 @@ namespace TickTrader.FDK.QuoteStore
             public QuoteEnumerator quoteEnumerator_;
             public Quote quote_;            
         }       
-
-        #endregion
-
-        #region Session listener
 
         class ClientSessionListener : SoftFX.Net.QuoteStore.ClientSessionListener
         {
@@ -1815,10 +1837,6 @@ namespace TickTrader.FDK.QuoteStore
             
             Client client_;            
         }
-
-        #endregion
-
-        #region Async helpers        
 
         internal static void ConvertToSync(Task task, int timeout)
         {
