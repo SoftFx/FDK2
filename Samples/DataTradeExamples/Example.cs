@@ -86,8 +86,6 @@
             }
             finally
             {
-                // TODO: Some unexpected order rejects if we logout immediately
-                Thread.Sleep(200);
                 this.Trade.Stop();
             }
         }

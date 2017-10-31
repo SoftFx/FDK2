@@ -236,6 +236,8 @@ namespace TickTrader.FDK.QuoteFeed
 
         void LogoutInternal(LogoutAsyncContext context, string message)
         {
+            session_.Reconnect = false;
+
             // Create a request
             var request = new Logout(0)
             {
