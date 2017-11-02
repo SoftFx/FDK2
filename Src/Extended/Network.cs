@@ -12,7 +12,7 @@
         /// </summary>
         public NetworkActivity GetLastSessionActivity()
         {
-            throw new System.Exception("Not impled");
+            return new NetworkActivity(0, 0, 0, 0);
         }
     }
 }

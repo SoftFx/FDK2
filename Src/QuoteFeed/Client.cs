@@ -1199,6 +1199,8 @@ namespace TickTrader.FDK.QuoteFeed
                         resultSymbol.CommissionChargeMethod = Convert(reportSymbol.CommissionChargeMethod);
                         resultSymbol.LimitsCommission = reportSymbol.LimitsCommission;
                         resultSymbol.Commission = reportSymbol.Commission;
+                        resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
+                        resultSymbol.MinCommission = reportSymbol.MinCommission;
                         resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
                         resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
                         resultSymbol.DefaultSlippage = reportSymbol.DefaultSlippage;

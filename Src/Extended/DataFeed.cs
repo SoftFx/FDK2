@@ -890,13 +890,15 @@
         {
             try
             {
+                Quote newQuote = quote.Clone();
+
                 lock (cache_.mutex_)
                 {
-                    cache_.quotes_[quote.Symbol] = quote;
+                    cache_.quotes_[quote.Symbol] = newQuote;
                 }
 
                 TickEventArgs args = new TickEventArgs();
-                args.Tick = quote;
+                args.Tick = newQuote;
                 eventQueue_.PushEvent(args);
             }
             catch
@@ -1088,14 +1090,21 @@
             args.ProtocolVersion = "";
             eventQueue_.PushEvent(args);
 
+            SessionInfo sessionInfo;
             CurrencyInfo[] currencies;
             SymbolInfo[] symbols;
 
             lock (cache_)
             {
+                sessionInfo = cache_.sessionInfo_;
                 currencies = cache_.currencies_;
                 symbols = cache_.symbols_;
             }
+
+            // For backward comapatibility
+            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
+            sessionArgs.Information = sessionInfo;
+            eventQueue_.PushEvent(sessionArgs);
 
             // For backward comapatibility
             CurrencyInfoEventArgs currencyArgs = new CurrencyInfoEventArgs();

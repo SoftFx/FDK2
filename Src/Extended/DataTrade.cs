@@ -1422,12 +1422,19 @@
             args.ProtocolVersion = "";
             eventQueue_.PushEvent(args);
 
+            SessionInfo sessionInfo;
             AccountInfo accountInfo;
 
             lock (cache_)
             {
+                sessionInfo = cache_.sessionInfo_;
                 accountInfo = cache_.accountInfo_;
             }
+
+            // For backward comapatibility
+            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
+            sessionArgs.Information = sessionInfo;
+            eventQueue_.PushEvent(sessionArgs);
 
             // For backward comapatibility
             AccountInfoEventArgs accountInfoArgs = new AccountInfoEventArgs();

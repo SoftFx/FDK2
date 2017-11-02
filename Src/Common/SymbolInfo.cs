@@ -348,6 +348,38 @@
         }
 
         /// <summary>
+        /// Gets min commission value.
+        /// </summary>
+        /// <exception cref="SoftFX.Extended.Errors.UnsupportedFeatureException">If the feature is not supported by used protocol version.</exception>
+        public double MinCommission
+        {
+            get
+            {
+                return this.minCommission;
+            }
+            set
+            {
+                this.minCommission = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets min commission currency value.
+        /// </summary>
+        /// <exception cref="SoftFX.Extended.Errors.UnsupportedFeatureException">If the feature is not supported by used protocol version.</exception>
+        public string MinCommissionCurrency
+        {
+            get
+            {
+                return this.minCommissionCurrency;
+            }
+            set
+            {
+                this.minCommissionCurrency = value;
+            }
+        }
+
+        /// <summary>
         /// Gets swap size short.
         /// </summary>
         public double? SwapSizeShort
@@ -573,6 +605,8 @@
         CommissionType commType;
         CommissionChargeType commChargeType;
         CommissionChargeMethod commChargeMethod;
+        double minCommission;
+        string minCommissionCurrency;
         double? swapSizeShort;
         double? swapSizeLong;
         double? defaultSlippage;
