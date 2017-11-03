@@ -1,7 +1,7 @@
 ﻿namespace TickTrader.FDK.Calculator
 {
     using System.Collections.Generic;
-    using System.Linq;    
+    using System.Linq;
     using TickTrader.BusinessLogic;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.Calculator.Adapter;    
@@ -31,6 +31,8 @@
                 asset.LockedVolume = 0D;
 
             var cashAccount = new CashAccountInfo(account, this.assets.Values);
+
+            var orders = cashAccount.Orders.ToList();
 
             using (var calculator = new CashAccountCalculator(cashAccount, state))
             {

@@ -61,6 +61,7 @@
     <Compile Include="Asset.cs" />
     <Compile Include="CashAssets.cs" />
     <Compile Include="CurrencyEntries.cs" />
+    <Compile Include="CurrencyEntry.cs" />
     <Compile Include="ExceptionEventArgs.cs" />
     <Compile Include="FinancialCalculator.cs" />
     <Compile Include="FinancialEntries.cs" />
@@ -81,6 +82,7 @@
     <Compile Include="Rounding\IRoundingService.cs" />
     <Compile Include="Serialization\AccountData.cs" />
     <Compile Include="Serialization\CalculatorData.cs" />
+    <Compile Include="Serialization\CurrencyData.cs" />
     <Compile Include="Serialization\PriceData.cs" />
     <Compile Include="Serialization\SymbolData.cs" />
     <Compile Include="Serialization\TradeData.cs" />

@@ -242,6 +242,40 @@
             }
         }
 
+        /// <summary>
+        /// Gets or sets margin factor of limit orders.
+        /// </summary>
+        [Category("Parameters")]
+        [DisplayName("Stop Order Margin Reduction")]
+        public double? StopOrderMarginReduction
+        {
+            get
+            {
+                return this.stopOrderMarginReduction;
+            }
+            set
+            {
+                this.stopOrderMarginReduction = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets or sets margin factor of limit orders.
+        /// </summary>
+        [Category("Parameters")]
+        [DisplayName("Hidden Limit Order Margin Reduction")]
+        public double? HiddenLimitOrderMarginReduction
+        {
+            get
+            {
+                return this.hiddenLimitOrderMarginReduction;
+            }
+            set
+            {
+                this.hiddenLimitOrderMarginReduction = value;
+            }
+        }
+
         static double CheckAndReturnMarginFactor(double value, string name)
         {
             if (double.IsNaN(value) || double.IsInfinity(value) || value < 0 || value > 1)
@@ -276,6 +310,8 @@
         double marginFactorOfLimitOrders = 1;
         double marginFactorOfStopOrders = 1;
         double hedging = 1;
+        double? stopOrderMarginReduction = null;
+        double? hiddenLimitOrderMarginReduction = null;
 
         #endregion
     }

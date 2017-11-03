@@ -380,6 +380,38 @@
         }
 
         /// <summary>
+        /// Gets swap type.
+        /// </summary>
+        public SwapType SwapType
+        {
+            get
+            {
+                return this.swapType;
+            }
+            set
+            {
+                this.swapType = value;
+            }
+        }
+
+        /// <summary>
+        /// Gets triple swap day.
+        /// 0 - 3-days swap is disabled;
+        /// 1,2,3,4,5 - days of week from Monday to Friday;
+        /// </summary>
+        public int TripleSwapDay
+        {
+            get
+            {
+                return this.tripleSwapDay;
+            }
+            set
+            {
+                this.tripleSwapDay = value;
+            }
+        }
+
+        /// <summary>
         /// Gets swap size short.
         /// </summary>
         public double? SwapSizeShort
@@ -570,7 +602,44 @@
             }
         }
 
+        /// <summary>
+        /// </summary>
+        public double? HiddenLimitOrderMarginReduction
+        {
+            get
+            {
+                return this.hiddenLimitOrderMarginReduction;
+            }
+            set
+            {
+                this.hiddenLimitOrderMarginReduction = value;
+            }
+        }
+
         #endregion
+
+        /// <summary>
+        /// Returns whether swap is enabled for symbol.
+        /// </summary>
+        /// <param name="symbolInfo"></param>
+        /// <returns>True if swap is enabled.</returns>
+        public bool IsSwapEnabled()
+        {
+            return SwapSizeShort.HasValue && SwapSizeLong.HasValue;
+        }
+
+        /// <summary>
+        /// Returns margin factor.
+        /// </summary>
+        /// <param name="symbolInfo"></param>
+        /// <returns>Margin factor.</returns>
+        public double GetMarginFactor()
+        {
+            if (MarginFactorFractional.HasValue)
+                return MarginFactorFractional.Value;
+
+            return MarginFactor / 100D;
+        }
 
         /// <summary>
         /// Converts SymbolInfo to string; format is 'Name = {0}; ContractMultiplier = {1}'
@@ -578,8 +647,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            var result = string.Format("Name = {0}; ContractMultiplier = {1}; StatusGroupId = {2}; Descrtiption = {3}", this.Name, this.ContractMultiplier, this.StatusGroupId, this.Description);
-            return result;
+            return string.Format("Name = {0}; ContractMultiplier = {1}; StatusGroupId = {2}; Descrtiption = {3}", this.Name, this.ContractMultiplier, this.StatusGroupId, this.Description);
         }
 
         #region Members
@@ -607,6 +675,8 @@
         CommissionChargeMethod commChargeMethod;
         double minCommission;
         string minCommissionCurrency;
+        SwapType swapType;
+        int tripleSwapDay;
         double? swapSizeShort;
         double? swapSizeLong;
         double? defaultSlippage;
@@ -621,6 +691,7 @@
         string securityName;
         string securityDescription;
         double? stopOrderMarginReduction;
+        double? hiddenLimitOrderMarginReduction;
 
         #endregion
     }

@@ -71,6 +71,7 @@
     <Compile Include="StatusGroupInfo.cs" />
     <Compile Include="OrderSide.cs" />
     <Compile Include="OrderType.cs" />
+    <Compile Include="SwapType.cs" />
     <Compile Include="SymbolInfo.cs" />
     <Compile Include="TimeDirection.cs" />
     <Compile Include="TradeRecordSide.cs" />

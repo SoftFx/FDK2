@@ -27,6 +27,7 @@
             this.Side  = entry.Side;
             this.Symbol = entry.Symbol;
             this.Volume = entry.Volume;
+            this.MaxVisibleVolume = entry.MaxVisibleVolume;
             this.Price = entry.Price;
             this.StopPrice = entry.StopPrice;
             this.Commission = entry.Commission;
@@ -48,6 +49,7 @@
                 Side = this.Side,
                 Symbol = this.Symbol,
                 Volume = this.Volume,
+                MaxVisibleVolume = this.MaxVisibleVolume,
                 Price = this.Price,
                 StopPrice = this.StopPrice,
                 Commission = this.Commission,
@@ -91,6 +93,12 @@
         /// </summary>
         [XmlAttribute("Volume")]
         public double Volume { get; set; }
+
+        /// <summary>
+        /// For internal usage only
+        /// </summary>
+        [XmlAttribute("MaxVisibleVolume")]
+        public double? MaxVisibleVolume { get; set; }
 
         /// <summary>
         /// For internal usage only

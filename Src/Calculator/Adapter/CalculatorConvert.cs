@@ -5,16 +5,17 @@
     using TickTrader.BusinessLogic;
     using TickTrader.BusinessObjects;
     using TickTrader.Common.Business;
-    using TickTrader.FDK.Common;
+    using Common;
 
     static class CalculatorConvert
     {
-        public static BusinessObjects.CurrencyInfo ToCurrencyInfo(string currency, int priority)
+        public static BusinessObjects.CurrencyInfo ToCurrencyInfo(CurrencyEntry currency, int priority)
         {
             return new BusinessObjects.CurrencyInfo
             {
-                Name = currency,
-                SortOrder = priority,
+                Name = currency.Name,
+                Precision = currency.Precision,
+                SortOrder = currency.SortOrder,
                 Id = (short)currency.GetHashCode()
             };
         }
@@ -32,7 +33,9 @@
                 MarginFactorFractional = symbol.MarginFactor,
                 MarginHedged = symbol.Hedging,
                 SortOrder = symbol.SortOrder,
-                MarginMode = ToMarginCalculationModes(symbol.MarginCalcMode)
+                MarginMode = ToMarginCalculationModes(symbol.MarginCalcMode),
+                StopOrderMarginReduction = symbol.StopOrderMarginReduction ?? 1,
+                HiddenLimitOrderMarginReduction = symbol.HiddenLimitOrderMarginReduction ?? 1
             };
         }
 

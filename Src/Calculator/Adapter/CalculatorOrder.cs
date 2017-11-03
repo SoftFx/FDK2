@@ -43,7 +43,7 @@
 
         public decimal? MaxVisibleAmount
         {
-            get { return null; }
+            get { return this.entry.MaxVisibleVolume.HasValue ? (decimal?)this.entry.MaxVisibleVolume.Value : null; }
             set { }
         }
 
@@ -103,6 +103,18 @@
         public string Symbol
         {
             get { return this.entry.Symbol; }
+        }
+
+        public string MarginCurrency
+        {
+            get { return this.entry.SymbolEntry.MarginCurrency; }
+            set { }
+        }
+
+        public string ProfitCurrency
+        {
+            get { return this.entry.SymbolEntry.ProfitCurrency; }
+            set { }
         }
 
         public OrderTypes Type

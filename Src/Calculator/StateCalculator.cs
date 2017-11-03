@@ -13,8 +13,6 @@
     /// </summary>
     public class StateCalculator
     {
-        static readonly string[] MajorCurrencies = { "USD", "EUR", "GBP", "CHF", "JPY", "BTC" };
-
         readonly UpdateHandler updateHandler;
         readonly Processor processor;
 
@@ -86,7 +84,7 @@
         /// FinancialCalculator calc = calcualtor.Calculator;
         /// lock (calc)
         /// {
-        ///		calc.Currencies.Add("EUR");
+        ///     calc.Currencies.Add("EUR");
         /// }
         /// </summary>
         public FinancialCalculator Calculator
@@ -194,7 +192,7 @@
 
             if (currencyUpdate != null)
             {
-                var currencies = currencyUpdate.OrderBy(o => o.SortOrder).Select(o => o.Name);
+                var currencies = currencyUpdate.OrderBy(o => o.SortOrder).Select(c => new CurrencyEntry(this.calculator, c.Name, c.Precision, c.SortOrder));
 
                 this.calculator.Currencies.Clear();
 
@@ -212,12 +210,14 @@
                 {
                     var entry = new SymbolEntry(this.calculator, symbol.Name, symbol.SettlementCurrency, symbol.Currency)
                     {
-                        MarginFactor = GetMarginFactor(symbol),
+                        MarginFactor = symbol.GetMarginFactor(),
                         MarginFactorOfPositions = 1,
                         MarginFactorOfLimitOrders = 1,
                         MarginFactorOfStopOrders = 1,
                         Hedging = symbol.MarginHedge,
                         MarginCalcMode = symbol.MarginCalcMode,
+                        StopOrderMarginReduction = symbol.StopOrderMarginReduction,
+                        HiddenLimitOrderMarginReduction = symbol.HiddenLimitOrderMarginReduction
                     };
 
                     entry.GroupSortOrder = symbol.GroupSortOrder;
@@ -244,7 +244,7 @@
             var records = this.trade.Cache.TradeRecords;
             foreach (var record in records)
             {
-                var entry = new TradeEntry(this.account, record.Type, record.Side, record.Symbol, record.Volume, record.Price, record.StopPrice)
+                var entry = new TradeEntry(this.account, record.Type, record.Side, record.Symbol, record.Volume, record.MaxVisibleVolume, record.Price, record.StopPrice)
                 {
                     Tag = record,
                     Commission = record.Commission,
@@ -258,7 +258,7 @@
             var positions = this.trade.Cache.Positions;
             foreach (var position in positions)
             {
-                var buy = new TradeEntry(this.account, TradeRecordType.Position, TradeRecordSide.Buy, position.Symbol, position.BuyAmount, position.BuyPrice.Value, null)
+                var buy = new TradeEntry(this.account, TradeRecordType.Position, TradeRecordSide.Buy, position.Symbol, position.BuyAmount, null, position.BuyPrice.Value, null)
                 {
                     Tag = position,
                     Commission = position.Commission,
@@ -266,7 +266,7 @@
                     Swap = position.Swap
 
                 };
-                var sell = new TradeEntry(this.account, TradeRecordType.Position, TradeRecordSide.Sell, position.Symbol, position.SellAmount, position.SellPrice.Value, null)
+                var sell = new TradeEntry(this.account, TradeRecordType.Position, TradeRecordSide.Sell, position.Symbol, position.SellAmount, null, position.SellPrice.Value, null)
                 {
                     Tag = position
                 };
@@ -275,22 +275,6 @@
                 this.account.Trades.Add(buy);
                 this.account.Trades.Add(sell);
             }
-        }
-
-        /// <summary>
-        /// Returns margin factor.
-        /// </summary>
-        /// <param name="symbolInfo"></param>
-        /// <returns>Margin factor.</returns>
-        double GetMarginFactor(SymbolInfo symbolInfo)
-        {
-            if (symbolInfo == null)
-                throw new ArgumentNullException(nameof(symbolInfo));
-
-            if (symbolInfo.MarginFactorFractional.HasValue)
-                return symbolInfo.MarginFactorFractional.Value;
-
-            return symbolInfo.MarginFactor / 100D;
         }
 
         /// <summary>

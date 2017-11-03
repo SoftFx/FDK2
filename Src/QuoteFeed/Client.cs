@@ -1201,6 +1201,8 @@ namespace TickTrader.FDK.QuoteFeed
                         resultSymbol.Commission = reportSymbol.Commission;
                         resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
                         resultSymbol.MinCommission = reportSymbol.MinCommission;
+                        resultSymbol.SwapType = Convert(reportSymbol.SwapType);
+                        resultSymbol.TripleSwapDay = reportSymbol.TripleSwapDay;
                         resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
                         resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
                         resultSymbol.DefaultSlippage = reportSymbol.DefaultSlippage;
@@ -1215,6 +1217,7 @@ namespace TickTrader.FDK.QuoteFeed
                         resultSymbol.SecurityName = reportSymbol.SecurityId;
                         resultSymbol.SecurityDescription = reportSymbol.SecurityDescription;
                         resultSymbol.StopOrderMarginReduction = reportSymbol.StopOrderMarginReduction;
+                        resultSymbol.HiddenLimitOrderMarginReduction = reportSymbol.HiddenLimitOrderMarginReduction;
 
                         resultSymbols[index] = resultSymbol;
                     }
@@ -2034,6 +2037,21 @@ namespace TickTrader.FDK.QuoteFeed
 
                     default:
                         throw new Exception("Invalid commission charge method : " + method);
+                }
+            }
+
+            TickTrader.FDK.Common.SwapType Convert(SoftFX.Net.QuoteFeed.SwapType swapType)
+            {
+                switch (swapType)
+                {
+                    case SoftFX.Net.QuoteFeed.SwapType.Points:
+                        return TickTrader.FDK.Common.SwapType.Points;
+
+                    case SoftFX.Net.QuoteFeed.SwapType.PercentPerYear:
+                        return TickTrader.FDK.Common.SwapType.PercentPerYear;
+
+                    default:
+                        throw new Exception("Invalid swap type : " + swapType);
                 }
             }
 

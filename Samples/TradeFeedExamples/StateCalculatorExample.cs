@@ -43,7 +43,7 @@
 
         void OnStateInfoChanged(object sender, StateInfoEventArgs e)
         {
-            Console.WriteLine("Generation = {0}; Margin = {1}; Trades = {2}", e.Information.Generation, e.Information.Margin, e.Information.TradeRecords.Length);
+            Console.WriteLine("Generation = {0}; Margin = {1}; Equity = {2}; Balance = {3}; Trades = {4}", e.Information.Generation, e.Information.Margin, e.Information.Equity, e.Information.Balance, e.Information.TradeRecords.Length);
         }
 
         void OnCalculatorException(object sender, ExceptionEventArgs e)
