@@ -54,6 +54,8 @@
     <Compile Include="Handlers.cs" />
     <Compile Include="Network.cs" />
     <Compile Include="NetworkActivity.cs" />
+    <Compile Include="PairBars.cs" />
+    <Compile Include="PairBarsEnumerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="QuotesSingleSequence.cs" />
     <Compile Include="QuotesSingleSequenceEnumerator.cs" />

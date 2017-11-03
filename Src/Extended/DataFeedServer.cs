@@ -193,6 +193,34 @@
         }
 
         /// <summary>
+        /// The method gets history bars from the server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="priceType">A required price type: Bid or Ask.</param>
+        /// <param name="startTime">A start time of bars enumeration.</param>
+        /// <param name="endTime">A end time of bars enumeration.</param>
+        /// <param name="period">Bar period instance; can not be null.</param>
+        /// <returns></returns>
+        public PairBars GetBarsHistory(string symbol, BarPeriod period, DateTime startTime, DateTime endTime)
+        {
+            return GetBarsHistoryEx(symbol, period, startTime, endTime, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method gets history bars from the server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="priceType">A required price type: Bid or Ask.</param>
+        /// <param name="startTime">A start time of bars enumeration.</param>
+        /// <param name="endTime">A end time of bars enumeration.</param>
+        /// <param name="period">Bar period instance; can not be null.</param>
+        /// <returns></returns>
+        public PairBars GetBarsHistoryEx(string symbol, BarPeriod period, DateTime startTime, DateTime endTime, int timeoutInMilliseconds)
+        {
+            return new PairBars(dataFeed_, symbol, period, startTime, endTime, timeoutInMilliseconds);
+        }
+
+        /// <summary>
         /// The method gets history quotes from the server.
         /// </summary>
         public QuotesSingleSequence GetQuotesHistory(string symbol, DateTime startTime, DateTime endTime, int depth)
@@ -207,147 +235,7 @@
         {
             return new QuotesSingleSequence(dataFeed_, symbol, startTime, endTime, depth, timeoutInMilliseconds);
         }
-/*
-        /// <summary>
-        /// Returns version of server quotes history.
-        /// </summary>
-        /// <returns>quote history version</returns>
-        public int GetQuotesHistoryVersion()
-        {
-            throw new Exception("Not impled");
-        }
 
-        /// <summary>
-        /// The method gets history bars from the server.
-        /// </summary>
-        /// <param name="symbol">A required symbol; can not be null.</param>
-        /// <param name="time">Date and time which specifies the historical point.</param>
-        /// <param name="barsNumber">The maximum number of bars in the requested chart. The value can be negative or positive.
-        /// Positive value means historical chart from the specified historical point to future.</param>
-        /// <param name="priceType">Can be bid or ask.</param>
-        /// <param name="period">Chart periodicity.</param>
-        /// <returns>Can not be null.</returns>
-        public DataHistoryInfo GetHistoryBars(string symbol, DateTime time, int barsNumber, PriceType priceType, BarPeriod period)
-        {
-            return GetHistoryBarsEx(symbol, time, barsNumber, priceType, period, dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method gets history bars from the server.
-        /// </summary>
-        /// <param name="symbol">A required symbol; can not be null.</param>
-        /// <param name="time">Date and time which specifies the historical point.</param>
-        /// <param name="barsNumber">The maximum number of bars in the requested chart. The value can be negative or positive.
-        /// Positive value means historical chart from the specified historical point to future.</param>
-        /// <param name="priceType">Can be bid or ask.</param>
-        /// <param name="period">Chart periodicity.</param>
-        /// <param name="timeoutInMilliseconds">timeout of the operation</param>
-        /// <returns>Can not be null.</returns>
-        public DataHistoryInfo GetHistoryBarsEx(string symbol, DateTime time, int barsNumber, PriceType priceType, BarPeriod period, int timeoutInMilliseconds)
-        {
-            throw new Exception("Not impled");
-        }
-
-        /// <summary>
-        /// The method gets history bars from the server.
-        /// </summary>
-        /// <param name="symbol">A required symbol; can not be null.</param>
-        /// <param name="time">Date and time which specifies the historical point.</param>
-        /// <param name="priceType"></param>
-        /// <param name="period"></param>
-        /// <returns>Can not be null.</returns>
-        public DataHistoryInfo GetBarsHistoryFiles(string symbol, DateTime time, PriceType priceType, string period)
-        {
-            return GetBarsHistoryFilesEx(symbol, time, priceType, period, dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method gets history bars from the server.
-        /// </summary>
-        /// <param name="symbol">A required symbol; can not be null.</param>
-        /// <param name="time">Date and time which specifies the historical point.</param>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
-        /// <param name="priceType"></param>
-        /// <param name="period"></param>
-        /// <returns>Can not be null.</returns>
-        public DataHistoryInfo GetBarsHistoryFilesEx(string symbol, DateTime time, PriceType priceType, string period, int timeoutInMilliseconds)
-        {
-            throw new Exception("Not impled");
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="symbol"></param>
-        /// <param name="includeLevel2"></param>
-        /// <param name="time"></param>
-        /// <returns></returns>
-        public DataHistoryInfo GetQuotesHistoryFiles(string symbol, bool includeLevel2, DateTime time)
-        {
-            return GetQuotesHistoryFilesEx(symbol, includeLevel2, time, dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="symbol"></param>
-        /// <param name="includeLevel2"></param>
-        /// <param name="time"></param>
-        /// <param name="timeoutInMilliseconds"></param>
-        /// <returns></returns>
-        public DataHistoryInfo GetQuotesHistoryFilesEx(string symbol, bool includeLevel2, DateTime time, int timeoutInMilliseconds)
-        {
-            throw new Exception("Not impled");
-        }
-
-        /// <summary>
-        /// Gets meta information file ID for a specified input arguments.
-        /// </summary>
-        /// <param name="symbol">Can not be null.</param>
-        /// <param name="priceType"></param>
-        /// <param name="period">Can not be null</param>
-        /// <returns></returns>
-        public string GetBarsHistoryMetaInfoFile(string symbol, PriceType priceType, string period)
-        {
-            return GetBarsHistoryMetaInfoFileEx(symbol, priceType, period, dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// Gets meta information file ID for a specified input arguments.
-        /// </summary>
-        /// <param name="symbol"></param>
-        /// <param name="priceType"></param>
-        /// <param name="period"></param>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
-        /// <returns></returns>
-        public string GetBarsHistoryMetaInfoFileEx(string symbol, PriceType priceType, string period, int timeoutInMilliseconds)
-        {
-            throw new Exception("Not impled");
-        }
-
-        /// <summary>
-        /// Gets meta information file ID for a specified input arguments.
-        /// </summary>
-        /// <param name="symbol">Can not be null.</param>
-        /// <param name="includeLevel2">False: ticks contains only the best bid/ask prices; true: ticks contains full level2.</param>
-        /// <returns></returns>
-        public string GetQuotesHistoryMetaInfoFile(string symbol, bool includeLevel2)
-        {
-            return GetQuotesHistoryMetaInfoFileEx(symbol, includeLevel2, dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// Gets meta information file ID for a specified input arguments.
-        /// </summary>
-        /// <param name="symbol">Can not be null.</param>
-        /// <param name="includeLevel2">False: ticks contains only the best bid/ask prices; true: ticks contains full level2.</param>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
-        /// <returns></returns>
-        public string GetQuotesHistoryMetaInfoFileEx(string symbol, bool includeLevel2, int timeoutInMilliseconds)
-        {
-            throw new Exception("Not impled");
-        }
-*/
         /// <summary>
         /// The method returns list of currencies supported by server.
         /// </summary>

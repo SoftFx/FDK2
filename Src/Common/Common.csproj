@@ -58,6 +58,7 @@
     <Compile Include="NotificationType.cs" />
     <Compile Include="OrderStatus.cs" />
     <Compile Include="OrderTimeInForce.cs" />
+    <Compile Include="PairBar.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="PriceType.cs" />
     <Compile Include="ProfitCalcMode.cs" />

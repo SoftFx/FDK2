@@ -1,4 +1,4 @@
-﻿namespace SoftFX.Extended
+﻿namespace TickTrader.FDK.Common
 {
     /// <summary>
     /// Contains bar information for bid and/or ask.
@@ -11,7 +11,6 @@
         /// <param name="bid">a bar for bid.</param>
         /// <param name="ask">a bar for ask.</param>
         public PairBar(Bar bid, Bar ask)
-            : this()
         {
             this.Bid = bid;
             this.Ask = ask;
@@ -20,11 +19,11 @@
         /// <summary>
         /// Gets bar information for bid.
         /// </summary>
-        public Bar Bid { get; private set; }
+        public Bar Bid { get; set; }
 
         /// <summary>
         /// Gets bar information for ask.
         /// </summary>
-        public Bar Ask { get; private set; }
+        public Bar Ask { get; set; }
     }
 }
