@@ -31,7 +31,7 @@
             {
                 lock (mutex_)
                 {                    
-                    return tradeServerInfo_;                       
+                    return tradeServerInfo_ != null ? tradeServerInfo_: emptyTradeServerInfo_;
                 }
             }
         }
@@ -45,7 +45,7 @@
             {
                 lock (mutex_)
                 {
-                    return sessionInfo_;
+                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
                 }
             }
         }
@@ -59,7 +59,7 @@
             {
                 lock (mutex_)
                 {
-                    return accountInfo_;
+                    return accountInfo_ != null ? accountInfo_ : emptyAccountInfo_;
                 }
             }
         }
@@ -84,7 +84,7 @@
                         return tradeRecords;
                     }
 
-                    return null;
+                    return emptyTradeRecords_;
                 }
             }
         }
@@ -109,12 +109,18 @@
                         return positions;
                     }
 
-                    return null;
+                    return emptyPositions_;
                 }
             }
         }
 
         #endregion
+
+        static TradeServerInfo emptyTradeServerInfo_ = new TradeServerInfo();
+        static SessionInfo emptySessionInfo_ = new SessionInfo();
+        static AccountInfo emptyAccountInfo_ = new AccountInfo();
+        static TradeRecord[] emptyTradeRecords_ = new TradeRecord[0];
+        static Position[] emptyPositions_ = new Position[0];
 
         DataTrade dataTrade_;
 

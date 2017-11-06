@@ -28,7 +28,7 @@
             {
                 lock (mutex_)
                 {
-                    return sessionInfo_;
+                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
                 }
             }
         }
@@ -42,7 +42,7 @@
             {
                 lock (mutex_)
                 {
-                    return currencies_;
+                    return currencies_ != null ? currencies_ : emptyCurrencies_;
                 }
             }
         }
@@ -56,7 +56,7 @@
             {
                 lock (mutex_)
                 {
-                    return symbols_;
+                    return symbols_ != null ? symbols_ : emptySymbols_;
                 }
             }
         }
@@ -231,6 +231,10 @@
 
             return false;
         }
+
+        static SessionInfo emptySessionInfo_ = new SessionInfo();
+        static CurrencyInfo[] emptyCurrencies_ = new CurrencyInfo[0];
+        static SymbolInfo[] emptySymbols_ = new SymbolInfo[0];
 
         DataFeed dataFeed_;
 
