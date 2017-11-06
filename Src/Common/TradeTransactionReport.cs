@@ -11,6 +11,8 @@
         {
         }
 
+        public string TradeTransactionId { get; set; }
+
         /// <summary>
         ///
         /// </summary>

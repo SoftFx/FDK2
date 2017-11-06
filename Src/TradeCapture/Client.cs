@@ -1425,12 +1425,13 @@ namespace TickTrader.FDK.TradeCapture
             {
                 ConversionRates conversionRates = trade.ConversionRates;
 
+                tradeTransactionReport.TradeTransactionId = trade.Id;
                 tradeTransactionReport.TradeTransactionReportType = Convert(trade.Type);
                 tradeTransactionReport.TradeTransactionReason = Convert(trade.Reason);
                 tradeTransactionReport.AccountBalance = trade.Balance.Total.GetValueOrDefault(0);
                 tradeTransactionReport.TransactionAmount = trade.Balance.Move.GetValueOrDefault(0);
-                tradeTransactionReport.TransactionCurrency = trade.Balance.CurrId;
-                tradeTransactionReport.Id = trade.Id;
+                tradeTransactionReport.TransactionCurrency = trade.Balance.CurrId;                
+                tradeTransactionReport.Id = trade.OrderId.ToString();
                 tradeTransactionReport.ClientId = trade.ClOrdId;
                 tradeTransactionReport.Quantity = trade.Qty;
                 tradeTransactionReport.MaxVisibleQuantity = trade.MaxVisibleQty;

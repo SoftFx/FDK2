@@ -373,7 +373,7 @@ namespace TradeCaptureAsyncSample
                     Console.Error.WriteLine
                     (
                         "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
-                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
                         tradeTransactionReport.TradeTransactionReason,
@@ -390,7 +390,7 @@ namespace TradeCaptureAsyncSample
                     Console.Error.WriteLine
                     (
                         "Trade report : {0}, {1}, {2}, {3}", 
-                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
                         tradeTransactionReport.TradeTransactionReason
@@ -461,7 +461,7 @@ namespace TradeCaptureAsyncSample
                     Console.Error.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
-                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
                         tradeTransactionReport.TradeTransactionReason,
@@ -478,7 +478,7 @@ namespace TradeCaptureAsyncSample
                     Console.Error.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}", 
-                        tradeTransactionReport.Id,
+                        tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
                         tradeTransactionReport.TradeTransactionReason
