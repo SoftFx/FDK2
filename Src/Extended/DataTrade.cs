@@ -124,10 +124,15 @@
             orderEntryClient_.OrdersResultEvent += new OrderEntry.Client.OrdersResultDelegate(this.OnOrdersResult);
             orderEntryClient_.OrdersErrorEvent += new OrderEntry.Client.OrdersErrorDelegate(this.OnOrdersError);
             orderEntryClient_.NewOrderResultEvent += new OrderEntry.Client.NewOrderResultDelegate(this.OnNewOrderResult);
+            orderEntryClient_.NewOrderErrorEvent += new OrderEntry.Client.NewOrderErrorDelegate(this.OnNewOrderError);
             orderEntryClient_.ReplaceOrderResultEvent += new OrderEntry.Client.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
+            orderEntryClient_.ReplaceOrderErrorEvent += new OrderEntry.Client.ReplaceOrderErrorDelegate(this.OnReplaceOrderError);
             orderEntryClient_.CancelOrderResultEvent += new OrderEntry.Client.CancelOrderResultDelegate(this.OnCancelOrderResult);
+            orderEntryClient_.CancelOrderErrorEvent += new OrderEntry.Client.CancelOrderErrorDelegate(this.OnCancelOrderError);
             orderEntryClient_.ClosePositionResultEvent += new OrderEntry.Client.ClosePositionResultDelegate(this.OnClosePositionResult);
+            orderEntryClient_.ClosePositionErrorEvent += new OrderEntry.Client.ClosePositionErrorDelegate(this.OnClosePositionError);
             orderEntryClient_.ClosePositionByResultEvent += new OrderEntry.Client.ClosePositionByResultDelegate(this.OnClosePositionByResult);
+            orderEntryClient_.ClosePositionByErrorEvent += new OrderEntry.Client.ClosePositionByErrorDelegate(this.OnClosePositionByError);
             orderEntryClient_.SessionInfoUpdateEvent += new OrderEntry.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             orderEntryClient_.AccountInfoUpdateEvent += new OrderEntry.Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
             orderEntryClient_.ExecutionReportEvent += new OrderEntry.Client.ExecutionReportDelegate(this.OnExecutionReport);
@@ -972,6 +977,28 @@
                             cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                     }
                 }
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnNewOrderError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                ExecutionReport report = new Common.ExecutionReport();
+                report.ExecutionType = ExecutionType.Rejected;
+                report.RejectReason = Common.RejectReason.Other;
+                report.Text = message;
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -989,6 +1016,28 @@
                     if (cache_.tradeRecords_ != null)
                         cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                 }
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReplaceOrderError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                ExecutionReport report = new Common.ExecutionReport();
+                report.ExecutionType = ExecutionType.Rejected;
+                report.RejectReason = Common.RejectReason.Other;
+                report.Text = message;
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -1017,6 +1066,28 @@
                             cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                     }
                 }
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCancelOrderError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                ExecutionReport report = new Common.ExecutionReport();
+                report.ExecutionType = ExecutionType.Rejected;
+                report.RejectReason = Common.RejectReason.Other;
+                report.Text = message;
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -1045,6 +1116,28 @@
                             cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                     }
                 }
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnClosePositionError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                ExecutionReport report = new Common.ExecutionReport();
+                report.ExecutionType = ExecutionType.Rejected;
+                report.RejectReason = Common.RejectReason.Other;
+                report.Text = message;
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -1073,6 +1166,28 @@
                             cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                     }
                 }
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnClosePositionByError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                ExecutionReport report = new Common.ExecutionReport();
+                report.ExecutionType = ExecutionType.Rejected;
+                report.RejectReason = Common.RejectReason.Other;
+                report.Text = message;
+
+                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                args.Report = report;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
