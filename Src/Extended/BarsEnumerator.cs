@@ -13,7 +13,7 @@
             bars_ = bars;
             barEnumerator_ = barEnumerator;
 
-            bar_ = barEnumerator_.Next(bars_.timeout_);
+            bar_ = new Bar();
         }
 
         public Bar Current
@@ -53,7 +53,7 @@
                 bars_.timeout_
             );
 
-            bar_ = barEnumerator_.Next(bars_.timeout_);
+            bar_ = new Bar();
         }
 
         public void Dispose()

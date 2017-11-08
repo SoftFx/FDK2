@@ -14,8 +14,8 @@
             dataTrade_ = dataTrade;
             mutex_ = new object();
             tradeServerInfo_ = null;
-            sessionInfo_ = null;
             accountInfo_ = null;
+            sessionInfo_ = null;            
             tradeRecords_ = null;
             positions_ = null;
         }
@@ -37,20 +37,6 @@
         }
 
         /// <summary>
-        /// Returns cache of session information.
-        /// </summary>
-        public SessionInfo SessionInfo
-        {
-            get
-            {
-                lock (mutex_)
-                {
-                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
-                }
-            }
-        }
-
-        /// <summary>
         /// Gets account information.
         /// </summary>
         public AccountInfo AccountInfo
@@ -64,6 +50,21 @@
             }
         }
         
+
+        /// <summary>
+        /// Returns cache of session information.
+        /// </summary>
+        public SessionInfo SessionInfo
+        {
+            get
+            {
+                lock (mutex_)
+                {
+                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
+                }
+            }
+        }
+
         /// <summary>
         /// Gets trade records.
         /// </summary>
@@ -117,8 +118,8 @@
         #endregion
 
         static TradeServerInfo emptyTradeServerInfo_ = new TradeServerInfo();
-        static SessionInfo emptySessionInfo_ = new SessionInfo();
         static AccountInfo emptyAccountInfo_ = new AccountInfo();
+        static SessionInfo emptySessionInfo_ = new SessionInfo();        
         static TradeRecord[] emptyTradeRecords_ = new TradeRecord[0];
         static Position[] emptyPositions_ = new Position[0];
 
@@ -126,8 +127,8 @@
 
         internal object mutex_;
         internal TradeServerInfo tradeServerInfo_;
-        internal SessionInfo sessionInfo_;
         internal AccountInfo accountInfo_;
+        internal SessionInfo sessionInfo_;        
         internal Dictionary<string, TradeRecord> tradeRecords_;
         internal Dictionary<string, Position> positions_;
     }

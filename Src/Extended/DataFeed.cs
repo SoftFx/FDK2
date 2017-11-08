@@ -148,26 +148,6 @@
             get { return name_;  }
         }
 
-/*
-        /// Gets or sets queue size for quotes.
-        /// Note: FDK uses a separated queue for every symbol.
-        /// </summary>
-        public int QuotesQueueThresholdSize
-        {
-            get
-            {
-                throw new Exception("Not impled");
-            }
-
-            set
-            {
-                if (value < 1)
-                    throw new ArgumentOutOfRangeException(nameof(value), value, "Quotes queue size must be positive");
-
-                throw new Exception("Not impled");
-            }
-        }
-*/
         /// <summary>
         /// Gets object, which encapsulates server side methods.
         /// </summary>
@@ -240,6 +220,21 @@
         public event TwoFactorAuthHandler TwoFactorAuth;
 
         /// <summary>
+        /// Occurs when currencies information received or changed.
+        /// </summary>
+        public event CurrencyInfoHandler CurrencyInfo;
+
+        /// <summary>
+        /// Occurs when symbols information received or changed.
+        /// </summary>
+        public event SymbolInfoHandler SymbolInfo;
+
+        /// <summary>
+        /// Occurs when session info received or changed.
+        /// </summary>
+        public event SessionInfoHandler SessionInfo;
+
+        /// <summary>
         /// Occurs when subscribed to a new symbol.
         /// </summary>
         public event SubscribedHandler Subscribed;
@@ -248,11 +243,6 @@
         /// Occurs when unsubscribed from the symbol.
         /// </summary>
         public event UnsubscribedHandler Unsubscribed;
-
-        /// <summary>
-        /// Occurs when session info received or changed.
-        /// </summary>
-        public event SessionInfoHandler SessionInfo;
 
         /// <summary>
         /// Occurs when a new quote is received.
@@ -461,18 +451,6 @@
         }
 
         /// <summary>
-        /// Occurs when currencies information is initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event CurrencyInfoHandler CurrencyInfo;
-
-        /// <summary>
-        /// Occurs when symbols information is initialized.
-        /// </summary>
-        [Obsolete("Please use Logon event")]
-        public event SymbolInfoHandler SymbolInfo;
-
-        /// <summary>
         /// Occurs when local cache initialized.
         /// </summary>
         [Obsolete("Please use Logon event")]
@@ -608,10 +586,10 @@
         void OnLoginResult(QuoteFeed.Client client, object data)
         {
             try
-            {
-                quoteFeedClient_.GetSessionInfoAsync(this);
+            {                
                 quoteFeedClient_.GetCurrencyListAsync(this);
                 quoteFeedClient_.GetSymbolListAsync(this);
+                quoteFeedClient_.GetSessionInfoAsync(this);
             }
             catch
             {
@@ -640,53 +618,6 @@
                         loginException_ = new LogoutException(text);
                         loginEvent_.Set();
                     }
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoResult(QuoteFeed.Client client, object data, SessionInfo sessionInfo)
-        {
-            try
-            {
-                if (data == this)
-                {
-                    lock (synchronizer_)
-                    {
-                        lock (cache_.mutex_)
-                        {
-                            if (cache_.sessionInfo_ == null)
-                                cache_.sessionInfo_ = sessionInfo;
-                        }
-
-                        initFlags_ |= InitFlags.SessionInfo;
-
-                        if (initFlags_ == InitFlags.All)
-                        {                     
-                            logout_ = false;
-                            PushLoginEvents();
-
-                            loginException_ = null;
-                            loginEvent_.Set();                            
-                        }
-                    }
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoError(QuoteFeed.Client client, object data, string message)
-        {
-            try
-            {
-                if (data == this)
-                {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
                 }
             }
             catch
@@ -774,6 +705,53 @@
         }
 
         void OnSymbolListError(QuoteFeed.Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoResult(QuoteFeed.Client client, object data, SessionInfo sessionInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.sessionInfo_ == null)
+                                cache_.sessionInfo_ = sessionInfo;
+                        }
+
+                        initFlags_ |= InitFlags.SessionInfo;
+
+                        if (initFlags_ == InitFlags.All)
+                        {                     
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();                            
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoError(QuoteFeed.Client client, object data, string message)
         {
             try
             {
@@ -1089,22 +1067,17 @@
             LogonEventArgs args = new LogonEventArgs();
             args.ProtocolVersion = "";
             eventQueue_.PushEvent(args);
-
-            SessionInfo sessionInfo;
+                        
             CurrencyInfo[] currencies;
             SymbolInfo[] symbols;
+            SessionInfo sessionInfo;
 
             lock (cache_)
-            {
-                sessionInfo = cache_.sessionInfo_;
+            {                
                 currencies = cache_.currencies_;
                 symbols = cache_.symbols_;
+                sessionInfo = cache_.sessionInfo_;
             }
-
-            // For backward comapatibility
-            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
-            sessionArgs.Information = sessionInfo;
-            eventQueue_.PushEvent(sessionArgs);
 
             // For backward comapatibility
             CurrencyInfoEventArgs currencyArgs = new CurrencyInfoEventArgs();
@@ -1115,6 +1088,11 @@
             SymbolInfoEventArgs symbolArgs = new SymbolInfoEventArgs();
             symbolArgs.Information = symbols;
             eventQueue_.PushEvent(symbolArgs);
+
+            // For backward comapatibility
+            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
+            sessionArgs.Information = sessionInfo;
+            eventQueue_.PushEvent(sessionArgs);
 
             // For backward comapatibility
             CacheEventArgs cacheArgs = new CacheEventArgs();
@@ -1348,10 +1326,10 @@
 
         enum InitFlags
         {
-            None = 0x00,            
-            SessionInfo = 0x01,
-            Currencies = 0x02,
-            Symbols = 0x4,
+            None = 0x00,                        
+            Currencies = 0x01,
+            Symbols = 0x2,
+            SessionInfo = 0x04,
             StoreLogin = 0x08,
             All = SessionInfo | Currencies | Symbols | StoreLogin
         }

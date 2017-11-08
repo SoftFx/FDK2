@@ -1488,6 +1488,16 @@ namespace TickTrader.FDK.TradeCapture
                     tradeTransactionReport.PosRemainingSide = 0;
 
                 tradeTransactionReport.PosRemainingPrice = trade.PosPrice;
+
+                if (trade.ParentOrderType.HasValue)
+                {
+                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                }
+                else
+                    tradeTransactionReport.ReqOrderType = null;
+
+                tradeTransactionReport.ReqOpenQuantity = trade.ParentQty;
+                tradeTransactionReport.ReqOpenPrice = trade.ParentPrice;
                 tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault(0);
                 tradeTransactionReport.AgentCommission = trade.AgentCommission.GetValueOrDefault(0);
                 tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault(0);

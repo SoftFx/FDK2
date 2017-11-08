@@ -712,18 +712,12 @@ namespace OrderEntrySample
             }
         }
 
-        void OnPositionUpdate(Client client, Position[] positions)
+        void OnPositionUpdate(Client client, Position position)
         {
             try
             {
-                int count = positions.Length;
-                for (int index = 0; index < count; ++ index)
-                {
-                    Position position = positions[index];
-
-                    double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
-                    Console.Error.WriteLine("Position report : {0}, {1}", position.Symbol, qty);
-                }
+                double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
+                Console.Error.WriteLine("Position report : {0}, {1}", position.Symbol, qty);
             }
             catch (Exception exception)
             {

@@ -608,9 +608,9 @@
         {
             try
             {
-                orderEntryClient_.GetTradeServerInfoAsync(this);
-                orderEntryClient_.GetSessionInfoAsync(this);
+                orderEntryClient_.GetTradeServerInfoAsync(this);                
                 orderEntryClient_.GetAccountInfoAsync(this);
+                orderEntryClient_.GetSessionInfoAsync(this);
                 orderEntryClient_.GetOrdersAsync(this);
             }
             catch
@@ -694,53 +694,6 @@
             }
         }
 
-        void OnSessionInfoResult(OrderEntry.Client client, object data, SessionInfo sessionInfo)
-        {
-            try
-            {
-                if (data == this)
-                {
-                    lock (synchronizer_)
-                    {
-                        lock (cache_.mutex_)
-                        {
-                            if (cache_.sessionInfo_ == null)
-                                cache_.sessionInfo_ = sessionInfo;
-                        }
-
-                        initFlags_ |= InitFlags.SessionInfo;
-
-                        if (initFlags_ == InitFlags.All)
-                        {
-                            logout_ = false;
-                            PushLoginEvents();
-
-                            loginException_ = null;
-                            loginEvent_.Set();
-                        }
-                    }
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        void OnSessionInfoError(OrderEntry.Client client, object data, string message)
-        {
-            try
-            {
-                if (data == this)
-                {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
-                }
-            }
-            catch
-            {
-            }
-        }
-
         void OnAccountInfoResult(OrderEntry.Client client, object data, AccountInfo accountInfo)
         {
             try
@@ -789,6 +742,53 @@
         }
 
         void OnAccountInfoError(OrderEntry.Client client, object data, string message)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoResult(OrderEntry.Client client, object data, SessionInfo sessionInfo)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        lock (cache_.mutex_)
+                        {
+                            if (cache_.sessionInfo_ == null)
+                                cache_.sessionInfo_ = sessionInfo;
+                        }
+
+                        initFlags_ |= InitFlags.SessionInfo;
+
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSessionInfoError(OrderEntry.Client client, object data, string message)
         {
             try
             {
@@ -1262,7 +1262,7 @@
             }
         }
 
-        void OnPositionUpdate(OrderEntry.Client client, Position[] positions)
+        void OnPositionUpdate(OrderEntry.Client client, Position position)
         {
             try
             {
@@ -1270,23 +1270,13 @@
                 {
                     if (cache_.positions_ != null)
                     {
-                        for (int index = 0; index < positions.Length; ++index)
-                        {
-                            Position position = positions[index];
-
-                            cache_.positions_[position.Symbol] = position;
-                        }
+                        cache_.positions_[position.Symbol] = position;
                     }
                 }
 
-                for (int index = 0; index < positions.Length; ++index)
-                {
-                    Position position = positions[index];
-
-                    PositionReportEventArgs args = new PositionReportEventArgs();
-                    args.Report = positions[index];
-                    eventQueue_.PushEvent(args);
-                }
+                PositionReportEventArgs args = new PositionReportEventArgs();
+                args.Report = position;
+                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -1537,14 +1527,31 @@
             args.ProtocolVersion = "";
             eventQueue_.PushEvent(args);
 
-            SessionInfo sessionInfo;
             AccountInfo accountInfo;
+            SessionInfo sessionInfo;
+            Position[] positions;            
 
             lock (cache_)
-            {
-                sessionInfo = cache_.sessionInfo_;
+            {                
                 accountInfo = cache_.accountInfo_;
+                sessionInfo = cache_.sessionInfo_;
+
+                if (cache_.positions_ != null)
+                {
+                    positions = new Position[cache_.positions_.Count];
+
+                    int index = 0;
+                    foreach (KeyValuePair<string, Position> item in cache_.positions_)
+                        positions[index++] = item.Value;
+                }
+                else
+                    positions = null;
             }
+
+            // For backward comapatibility
+            AccountInfoEventArgs accountInfoArgs = new AccountInfoEventArgs();
+            accountInfoArgs.Information = accountInfo;
+            eventQueue_.PushEvent(accountInfoArgs);
 
             // For backward comapatibility
             SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
@@ -1552,9 +1559,15 @@
             eventQueue_.PushEvent(sessionArgs);
 
             // For backward comapatibility
-            AccountInfoEventArgs accountInfoArgs = new AccountInfoEventArgs();
-            accountInfoArgs.Information = accountInfo;
-            eventQueue_.PushEvent(accountInfoArgs);
+            if (positions != null)
+            {                
+                for (int index = 0; index < positions.Length; ++ index)
+                {
+                    PositionReportEventArgs positionArgs = new PositionReportEventArgs();
+                    positionArgs.Report = positions[index];
+                    eventQueue_.PushEvent(positionArgs);
+                }
+            }
 
             // For backward comapatibility
             CacheEventArgs cacheArgs = new CacheEventArgs();
@@ -1881,9 +1894,9 @@
         enum InitFlags
         {
             None = 0x00,
-            TradeServerInfo = 0x01,
-            SessionInfo = 0x02,
-            AccountInfo = 0x04,
+            TradeServerInfo = 0x01,            
+            AccountInfo = 0x02,
+            SessionInfo = 0x04,
             TradeRecords = 0x08,
             Positions = 0x10,
             TradeCaptureLogin = 0x20,

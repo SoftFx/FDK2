@@ -273,7 +273,7 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void ClosePositionByResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionByErrorDelegate(Client client, object data, string message);
         public delegate void ExecutionReportDelegate(Client client, TickTrader.FDK.Common.ExecutionReport executionReport);
-        public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position[] positions);
+        public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position position);
         public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Common.AccountInfo accountInfo);
         public delegate void SessionInfoUpdateDelegate(Client client, SessionInfo sessionInfo);
         public delegate void BalanceUpdateDelegate(Client client, BalanceOperation balanceOperation);
@@ -3101,48 +3101,39 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    SoftFX.Net.OrderEntry.PositionArray reportPositions = message.Positions;
-                    int count = reportPositions.Length;
-                    TickTrader.FDK.Common.Position[] resultPositions = new TickTrader.FDK.Common.Position[count];
+                    SoftFX.Net.OrderEntry.Position reportPosition = message.Position;
+                    TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
 
-                    for (int index = 0; index < count; ++index)
+                    resultPosition.Symbol = reportPosition.SymbolId;
+                    resultPosition.SettlementPrice = reportPosition.SettltPrice;
+                    resultPosition.Commission = reportPosition.Commission;
+                    resultPosition.AgentCommission = reportPosition.AgentCommission;
+                    resultPosition.Swap = reportPosition.Swap;
+
+                    PosType reportPosType = reportPosition.Type;
+
+                    if (reportPosType == PosType.Long)
                     {
-                        SoftFX.Net.OrderEntry.Position reportPosition = reportPositions[index];
-
-                        TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
-                        resultPosition.Symbol = reportPosition.SymbolId;
-                        resultPosition.SettlementPrice = reportPosition.SettltPrice;
-                        resultPosition.Commission = reportPosition.Commission;
-                        resultPosition.AgentCommission = reportPosition.AgentCommission;
-                        resultPosition.Swap = reportPosition.Swap;
-
-                        PosType reportPosType = reportPosition.Type;
-
-                        if (reportPosType == PosType.Long)
-                        {
-                            resultPosition.BuyAmount = reportPosition.Qty;
-                            resultPosition.BuyPrice = reportPosition.Price;
-                            resultPosition.SellAmount = 0;
-                            resultPosition.SellPrice = 0;
-                        }
-                        else if (reportPosType == PosType.Short)
-                        {
-                            resultPosition.BuyAmount = 0;
-                            resultPosition.BuyPrice = 0;
-                            resultPosition.SellAmount = reportPosition.Qty;
-                            resultPosition.SellPrice = reportPosition.Price;
-                        }
-                        else
-                            throw new Exception("Invalid position type : " + reportPosType);
-
-                        resultPositions[index] = resultPosition;
+                        resultPosition.BuyAmount = reportPosition.Qty;
+                        resultPosition.BuyPrice = reportPosition.Price;
+                        resultPosition.SellAmount = 0;
+                        resultPosition.SellPrice = 0;
                     }
+                    else if (reportPosType == PosType.Short)
+                    {
+                        resultPosition.BuyAmount = 0;
+                        resultPosition.BuyPrice = 0;
+                        resultPosition.SellAmount = reportPosition.Qty;
+                        resultPosition.SellPrice = reportPosition.Price;
+                    }
+                    else
+                        throw new Exception("Invalid position type : " + reportPosType);
 
                     if (client_.PositionUpdateEvent != null)
                     {
                         try
                         {
-                            client_.PositionUpdateEvent(client_, resultPositions);
+                            client_.PositionUpdateEvent(client_, resultPosition);
                         }
                         catch
                         {

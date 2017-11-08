@@ -139,6 +139,11 @@
         public DateTime OrderModified { get; set; }
 
         /// <summary>
+        /// Requested order type.
+        /// </summary>
+        public OrderType? ReqOrderType { get; set; }
+
+        /// <summary>
         /// Requested open price.
         /// </summary>
         public double? ReqOpenPrice { get; set; }

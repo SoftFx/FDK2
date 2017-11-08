@@ -5,6 +5,7 @@
     using Common;
     using TradeCapture;
 
+    // TODO: support IEnumerator<> and IEnumerator reset semantics ?
     public class TradeTransactionReportsEnumerator : IDisposable
     {
         internal TradeTransactionReportsEnumerator(TradeTransactionReportEnumerator tradeTransactionReportEnumerator, int timeout)

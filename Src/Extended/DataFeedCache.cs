@@ -12,25 +12,11 @@
         internal DataFeedCache(DataFeed dataFeed)
         {
             dataFeed_ = dataFeed;
-            mutex_ = new object();
-            sessionInfo_ = null;
+            mutex_ = new object();            
             currencies_ = null;
             symbols_ = null;
+            sessionInfo_ = null;
             quotes_ = new Dictionary<string, Quote>();
-        }
-
-        /// <summary>
-        /// Returns cache of session information.
-        /// </summary>
-        public SessionInfo SessionInfo
-        {
-            get
-            {
-                lock (mutex_)
-                {
-                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
-                }
-            }
         }
 
         /// <summary>
@@ -60,6 +46,21 @@
                 }
             }
         }
+
+        /// <summary>
+        /// Returns cache of session information.
+        /// </summary>
+        public SessionInfo SessionInfo
+        {
+            get
+            {
+                lock (mutex_)
+                {
+                    return sessionInfo_ != null ? sessionInfo_ : emptySessionInfo_;
+                }
+            }
+        }
+
 
         /// <summary>
         /// The method gets the best bid price by symbol.
@@ -231,17 +232,17 @@
 
             return false;
         }
-
-        static SessionInfo emptySessionInfo_ = new SessionInfo();
+                
         static CurrencyInfo[] emptyCurrencies_ = new CurrencyInfo[0];
         static SymbolInfo[] emptySymbols_ = new SymbolInfo[0];
+        static SessionInfo emptySessionInfo_ = new SessionInfo();
 
         DataFeed dataFeed_;
 
-        internal object mutex_;
-        internal SessionInfo sessionInfo_;
+        internal object mutex_;        
         internal CurrencyInfo[] currencies_;
         internal SymbolInfo[] symbols_;
+        internal SessionInfo sessionInfo_;
         internal Dictionary<string, Quote> quotes_;
     }
 }

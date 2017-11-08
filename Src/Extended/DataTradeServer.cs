@@ -32,25 +32,6 @@
         }
 
         /// <summary>
-        /// The method returns the current session information.
-        /// </summary>
-        /// <returns>Can not be null.</returns>
-        public SessionInfo GetSessionInfo()
-        {
-            return GetSessionInfoEx(dataTrade_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method returns the current session information.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">timeout of the synchrnous operation.</param>
-        /// <returns>Can not be null.</returns>
-        public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
-        {
-            return dataTrade_.orderEntryClient_.GetSessionInfo(timeoutInMilliseconds);
-        }
-
-        /// <summary>
         /// The method returns the current account information.
         /// </summary>
         /// <returns>Can not be null.</returns>
@@ -67,6 +48,25 @@
         public AccountInfo GetAccountInfoEx(int timeoutInMilliseconds)
         {
             return dataTrade_.orderEntryClient_.GetAccountInfo(timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method returns the current session information.
+        /// </summary>
+        /// <returns>Can not be null.</returns>
+        public SessionInfo GetSessionInfo()
+        {
+            return GetSessionInfoEx(dataTrade_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method returns the current session information.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">timeout of the synchrnous operation.</param>
+        /// <returns>Can not be null.</returns>
+        public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
+        {
+            return dataTrade_.orderEntryClient_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>

@@ -13,7 +13,7 @@
 			quotesSingleSequence_ = quotesSingleSequence;
             quoteEnumerator_ = quoteEnumerator;
 
-            quote_ = quoteEnumerator_.Next(quotesSingleSequence_.Timeout);
+            quote_ = new Quote();
 		}
 
 		public Quote Current
@@ -52,7 +52,7 @@
                 quotesSingleSequence_.Timeout
             );
 
-            quote_ = quoteEnumerator_.Next(quotesSingleSequence_.Timeout);
+            quote_ = new Quote();
 		}
 
 		public void Dispose()
@@ -64,6 +64,7 @@
 
 		QuotesSingleSequence quotesSingleSequence_;
         QuoteEnumerator quoteEnumerator_;
+
         Quote quote_;
 	}
 }

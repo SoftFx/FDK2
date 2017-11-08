@@ -941,18 +941,12 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnPositionUpdate(Client orderEntryClient, Position[] positions)
+        void OnPositionUpdate(Client orderEntryClient, Position position)
         {
             try
             {
-                int count = positions.Length;
-                for (int index = 0; index < count; ++ index)
-                {
-                    Position position = positions[index];
-
-                    double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
-                    Console.Error.WriteLine("Position report : {0}, {1}", position.Symbol, qty);
-                }
+                double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
+                Console.Error.WriteLine("Position report : {0}, {1}", position.Symbol, qty);
             }
             catch (Exception exception)
             {

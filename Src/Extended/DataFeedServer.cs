@@ -31,25 +31,6 @@
         }
 
         /// <summary>
-        /// The method returns the current trade session information.
-        /// </summary>
-        /// <returns>can not be null.</returns>
-        public SessionInfo GetSessionInfo()
-        {
-            return GetSessionInfoEx(dataFeed_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method returns the current trade session information.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">timeout of the operation in milliseconds</param>
-        /// <returns>can not be null.</returns>
-        public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
-        {
-            return dataFeed_.quoteFeedClient_.GetSessionInfo(timeoutInMilliseconds);
-        }
-
-        /// <summary>
         /// The method returns list of currencies supported by server.
         /// </summary>
         /// <returns></returns>
@@ -85,6 +66,25 @@
         public SymbolInfo[] GetSymbolsEx(int timeoutInMilliseconds)
         {
             return dataFeed_.quoteFeedClient_.GetSymbolList(timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method returns the current trade session information.
+        /// </summary>
+        /// <returns>can not be null.</returns>
+        public SessionInfo GetSessionInfo()
+        {
+            return GetSessionInfoEx(dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method returns the current trade session information.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">timeout of the operation in milliseconds</param>
+        /// <returns>can not be null.</returns>
+        public SessionInfo GetSessionInfoEx(int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteFeedClient_.GetSessionInfo(timeoutInMilliseconds);
         }
 
         /// <summary>

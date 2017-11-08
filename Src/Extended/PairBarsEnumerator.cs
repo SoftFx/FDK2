@@ -13,7 +13,9 @@
             this.bidEnumerator = bidEnumerator;
             this.askEnumerator = askEnumerator;
 
-            // TODO: check this
+            this.bid = null;
+            this.ask = null;
+
             this.current = new PairBar();
         }
 
@@ -45,10 +47,10 @@
         {
             this.bidEnumerator = pairBars.bids.GetEnumerator();
             this.askEnumerator = pairBars.asks.GetEnumerator();
+
             this.bid = null;
             this.ask = null;
 
-            // TODO: check this
             this.current = new PairBar();
         }
 
