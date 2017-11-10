@@ -140,15 +140,19 @@ namespace TickTrader.FDK.TradeCapture
 
         public delegate void LoginResultDelegate(Client client, object data);
         public delegate void LoginErrorDelegate(Client client, object data, string text);
-        public delegate void OneTimePasswordRequestDelegate(Client client, string text);
-        public delegate void OneTimePasswordRejectDelegate(Client client, string text);
+        public delegate void TwoFactorLoginRequestDelegate(Client client, string message);
+        public delegate void TwoFactorLoginResultDelegate(Client client, object data, DateTime expireTime);
+        public delegate void TwoFactorLoginErrorDelegate(Client client, object data, string message);
+        public delegate void TwoFactorLoginResumeDelegate(Client client, object data, DateTime expireTime);
         public delegate void LogoutResultDelegate(Client client, object data, LogoutInfo logoutInfo);
         public delegate void LogoutDelegate(Client client, LogoutInfo logoutInfo);
 
         public event LoginResultDelegate LoginResultEvent;
         public event LoginErrorDelegate LoginErrorEvent;
-        public event OneTimePasswordRequestDelegate OneTimePasswordRequestEvent;
-        public event OneTimePasswordRejectDelegate OneTimePasswordRejectEvent;
+        public event TwoFactorLoginRequestDelegate TwoFactorLoginRequestEvent;
+        public event TwoFactorLoginResultDelegate TwoFactorLoginResultEvent;
+        public event TwoFactorLoginErrorDelegate TwoFactorLoginErrorEvent;
+        public event TwoFactorLoginResumeDelegate TwoFactorLoginResumeEvent;
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
@@ -196,7 +200,32 @@ namespace TickTrader.FDK.TradeCapture
             session_.SendLoginRequest(context, request);
         }
 
-        public void SendOneTimePassword(string oneTimePassword)
+        public DateTime TwoFactorLoginResponse(string oneTimePassword, int timeout)
+        {
+            return ConvertToSync(TwoFactorLoginResponseAsync(oneTimePassword), timeout);
+        }
+
+        public void TwoFactorLoginResponseAsync(object data, string oneTimePassword)
+        {
+            // Create a new async context
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
+            context.Data = data;
+
+            TwoFactorLoginResponseInternal(context, oneTimePassword);
+        }
+
+        public Task<DateTime> TwoFactorLoginResponseAsync(string oneTimePassword)
+        {
+            // Create a new async context
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
+
+            TwoFactorLoginResponseInternal(context, oneTimePassword);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void TwoFactorLoginResponseInternal(TwoFactorLoginResponseAsyncContext context, string oneTimePassword)
         {
             // Create a message
             var message = new TwoFactorLogin(0)
@@ -206,7 +235,44 @@ namespace TickTrader.FDK.TradeCapture
             };
 
             // Send message to the server
-            session_.Send(message);
+            session_.SendTwoFactorLoginResponse(context, message);
+        }
+
+        public DateTime TwoFactorLoginResume(int timeout)
+        {
+            return ConvertToSync(TwoFactorLoginResumeAsync(), timeout);
+        }
+
+        public void TwoFactorLoginResumeAsync(object data)
+        {
+            // Create a new async context
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
+            context.Data = data;
+
+            TwoFactorLoginResumeInternal(context);
+        }
+
+        public Task<DateTime> TwoFactorLoginResumeAsync()
+        {
+            // Create a new async context
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
+
+            TwoFactorLoginResumeInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void TwoFactorLoginResumeInternal(TwoFactorLoginResumeAsyncContext context)
+        {
+            // Create a message
+            var message = new TwoFactorLogin(0)
+            {
+                Reason = TwoFactorReason.ClientResume
+            };
+
+            // Send message to the server
+            session_.SendTwoFactorLoginResume(context, message);
         }
 
         public LogoutInfo Logout(string message, int timeout)
@@ -449,6 +515,36 @@ namespace TickTrader.FDK.TradeCapture
             public TaskCompletionSource<object> taskCompletionSource_;
         }
 
+        class TwoFactorLoginResponseAsyncContext : TwoFactorLoginResponseClientContext, IAsyncContext
+        {
+            public TwoFactorLoginResponseAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public TaskCompletionSource<DateTime> taskCompletionSource_;
+        }
+
+        class TwoFactorLoginResumeAsyncContext : TwoFactorLoginResumeClientContext, IAsyncContext
+        {
+            public TwoFactorLoginResumeAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public TaskCompletionSource<DateTime> taskCompletionSource_;
+        }
+
         class LogoutAsyncContext : LogoutClientContext, IAsyncContext
         {
             public LogoutAsyncContext() : base(false)
@@ -542,23 +638,41 @@ namespace TickTrader.FDK.TradeCapture
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
             {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
                 try
                 {
-                    if (client_.ConnectEvent != null)
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectEvent != null)
                         {
-                            client_.ConnectEvent(client_, context.Data);
+                            try
+                            {
+                                client_.ConnectEvent(client_, connectAsyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
+                            connectAsyncContext.taskCompletionSource_.SetResult(null);
+                    }
+                    else
+                    {
+                        // reconnect
+
+                        if (client_.ConnectEvent != null)
                         {
+                            try
+                            {
+                                client_.ConnectEvent(client_, null);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
@@ -566,28 +680,47 @@ namespace TickTrader.FDK.TradeCapture
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext)
-            {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
+            {                
                 try
                 {
-                    if (client_.ConnectErrorEvent != null)
+                    // TODO:
+                    string message = "Connect error";
+
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectErrorEvent != null)
                         {
-                            // TODO: text
-                            client_.ConnectErrorEvent(client_, context.Data, "Connect error");
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, message);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
                         {
+                            Exception exception = new Exception(message);
+                            connectAsyncContext.taskCompletionSource_.SetException(exception);
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
+                    else
                     {
-                        // TODO: text
-                        Exception exception = new Exception("Connect error");
-                        context.taskCompletionSource_.SetException(exception);
+                        // reconnect
+
+                        if (client_.ConnectErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, null, message);
+                            }
+                            catch
+                            {
+                            }
+                        }
                     }
                 }
                 catch
@@ -597,36 +730,73 @@ namespace TickTrader.FDK.TradeCapture
 
             public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
             {
-                DisconnectAsyncContext context = (DisconnectAsyncContext) disconnectContext;
-
                 try
                 {
-                    if (client_.DisconnectEvent != null)
+                    if (disconnectContext != null)
                     {
-                        try
+                        DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+
+                        if (client_.DisconnectEvent != null)
                         {
-                            client_.DisconnectEvent(client_, context.Data, text);
+                            try
+                            {
+                                client_.DisconnectEvent(client_, disconnectAsyncContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (contexts.Length > 0)
                         {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
                         }
+
+                        if (disconnectAsyncContext.taskCompletionSource_ != null)
+                            disconnectAsyncContext.taskCompletionSource_.SetResult(null);
                     }
-
-                    string message = "Client disconnected";
-
-                    if (text != null)
+                    else
                     {
-                        message += " : ";
-                        message += text;
+                        // Unsolicited disconnect
+
+                        if (client_.DisconnectEvent != null)
+                        {
+                            try
+                            {
+                                client_.DisconnectEvent(client_, null, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (contexts.Length > 0)
+                        {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
+                        }                        
                     }
-
-                    Exception exception = new Exception(message);
-
-                    foreach (ClientContext context2 in contexts)
-                        ((IAsyncContext) context2).SetDisconnectError(exception);
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
@@ -722,11 +892,11 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     string text = message.Text;
 
-                    if (client_.OneTimePasswordRequestEvent != null)
+                    if (client_.TwoFactorLoginRequestEvent != null)
                     {
                         try
                         {
-                            client_.OneTimePasswordRequestEvent(client_, text);
+                            client_.TwoFactorLoginRequestEvent(client_, text);
                         }
                         catch
                         {
@@ -751,25 +921,64 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
+            public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        DateTime expireTime = message.ExpireTime.Value;
+
+                        if (client_.TwoFactorLoginResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetResult(expireTime);
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        throw;
+                    }
+
                     if (client_.LoginResultEvent != null)
                     {
                         try
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            client_.LoginResultEvent(client_, loginContext.Data);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetResult(null);
                 }
                 catch (Exception exception)
                 {
@@ -784,28 +993,142 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
                 }
             }
 
-            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorReject message)
+            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
                     string text = message.Text;
 
-                    if (client_.OneTimePasswordRejectEvent != null)
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                        {
+                            Exception exception = new Exception(text);
+                            responseContext.taskCompletionSource_.SetException(exception);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        // the login procedure continues..
+                    }
+
+                    // the login procedure continues..
+                }
+                catch (Exception exception)
+                {
+                    if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.OneTimePasswordRejectEvent(client_, text);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
                         }
                         catch
                         {
                         }
+                    }
+
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
+            {
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
+
+                try
+                {
+                    string text = message.Text;
+
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                        {
+                            Exception exception = new Exception(text);
+                            responseContext.taskCompletionSource_.SetException(exception);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        throw;
+                    }
+
+                    if (client_.LoginErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.LoginErrorEvent(client_, loginContext.Data, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (loginContext.taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(text);
+                        loginContext.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
@@ -814,31 +1137,31 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
                 }
             }
 
-            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
+            public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    DateTime expireTime = message.ExpireTime.Value;
 
-                    if (client_.LoginErrorEvent != null)
+                    if (client_.TwoFactorLoginResumeEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, LoginRequestClientContext.Data, text);
+                            client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
                         }
                         catch
                         {
@@ -846,18 +1169,15 @@ namespace TickTrader.FDK.TradeCapture
                     }
 
                     if (context.taskCompletionSource_ != null)
-                    {
-                        var exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
-                    }
+                        context.taskCompletionSource_.SetResult(expireTime);
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
+                    if (client_.TwoFactorLoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, LoginRequestClientContext.Data, exception.Message);
+                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception.Message);
                         }
                         catch
                         {
@@ -1452,10 +1772,9 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.Comment = trade.Comment;
                 tradeTransactionReport.Tag = trade.Tag;
                 tradeTransactionReport.Magic = trade.Magic;
-                tradeTransactionReport.IsReducedOpenCommission = (trade.CommissionFlags & CommissionFlags.OpenReduced) != 0;
-                tradeTransactionReport.IsReducedCloseCommission = (trade.CommissionFlags & CommissionFlags.CloseReduced) != 0;
-                tradeTransactionReport.ImmediateOrCancel = trade.TimeInForce == SoftFX.Net.TradeCapture.OrderTimeInForce.ImmediateOrCancel;
-                tradeTransactionReport.MarketWithSlippage = trade.OrderType == SoftFX.Net.TradeCapture.OrderType.MarketWithSlippage;
+                tradeTransactionReport.ReducedOpenCommission = (trade.CommissionFlags & CommissionFlags.OpenReduced) != 0;
+                tradeTransactionReport.ReducedCloseCommission = (trade.CommissionFlags & CommissionFlags.CloseReduced) != 0;
+                tradeTransactionReport.MarketWithSlippage = (trade.OrderFlags & OrderFlags.Slippage) != 0;
                 tradeTransactionReport.OrderCreated = trade.Created;
                 tradeTransactionReport.OrderModified = trade.Modified.GetValueOrDefault();
 
@@ -1530,7 +1849,7 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrId;
                 tradeTransactionReport.MinCommissionConversionRate = conversionRates.MinCommission;
 #pragma warning disable 618
-                tradeTransactionReport.TradeRecordType = ConvertToTradeRecordType(trade.OrderType, trade.TimeInForce);
+                tradeTransactionReport.TradeRecordType = ConvertToTradeRecordType(trade.OrderType);
                 tradeTransactionReport.TradeRecordSide = ConvertToTradeRecordSide(trade.OrderSide);
 #pragma warning restore 618
             }
@@ -1633,9 +1952,6 @@ namespace TickTrader.FDK.TradeCapture
                     case SoftFX.Net.TradeCapture.OrderType.Market:
                         return TickTrader.FDK.Common.OrderType.Market;
 
-                    case SoftFX.Net.TradeCapture.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Common.OrderType.MarketWithSlippage;
-
                     case SoftFX.Net.TradeCapture.OrderType.Limit:
                         return TickTrader.FDK.Common.OrderType.Limit;
 
@@ -1701,18 +2017,12 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.TradeCapture.OrderType type, SoftFX.Net.TradeCapture.OrderTimeInForce? timeInForce)
+            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.TradeCapture.OrderType type)
             {
-                if (timeInForce == SoftFX.Net.TradeCapture.OrderTimeInForce.ImmediateOrCancel)
-                    return TickTrader.FDK.Common.TradeRecordType.IoC;
-
                 switch (type)
                 {
                     case SoftFX.Net.TradeCapture.OrderType.Market:
                         return TickTrader.FDK.Common.TradeRecordType.Market;
-
-                    case SoftFX.Net.TradeCapture.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Common.TradeRecordType.MarketWithSlippage;
 
                     case SoftFX.Net.TradeCapture.OrderType.Limit:
                         return TickTrader.FDK.Common.TradeRecordType.Limit;

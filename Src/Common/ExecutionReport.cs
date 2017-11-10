@@ -90,6 +90,11 @@
         public double? StopLoss { get; set; }
 
         /// <summary>
+        /// Gets MarketWithSlippage flag.
+        /// </summary>
+        public bool MarketWithSlippage { get; set; }
+
+        /// <summary>
         /// Gets OrdStatus = 39 field.
         /// </summary>
         public OrderStatus OrderStatus { get; set; }

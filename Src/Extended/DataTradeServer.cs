@@ -15,6 +15,40 @@
         }
 
         /// <summary>
+        /// The method send two factor response with one time password.
+        /// </summary>
+        /// <param name="reason">Two factor response reason</param>
+        /// <param name="otp">One time password</param>
+        /// <returns>can not be null.</returns>
+        public void SendTwoFactorResponse(TwoFactorReason reason, string otp)
+        {
+            if (reason == TwoFactorReason.ClientResponse)
+            {
+                lock (dataTrade_.synchronizer_)
+                {
+                    if (dataTrade_.orderEntryTwoFactorLogin_)
+                        dataTrade_.orderEntryClient_.TwoFactorLoginResponseAsync(null, otp);
+
+                    if (dataTrade_.tradeCaptureTwoFactorLogin_)
+                        dataTrade_.tradeCaptureClient_.TwoFactorLoginResponseAsync(null, otp);
+                }
+            }
+            else if (reason == TwoFactorReason.ClientResume)
+            {
+                lock (dataTrade_.synchronizer_)
+                {
+                    if (dataTrade_.orderEntryTwoFactorLogin_)
+                        dataTrade_.orderEntryClient_.TwoFactorLoginResumeAsync(null);
+
+                    if (dataTrade_.tradeCaptureTwoFactorLogin_)
+                        dataTrade_.tradeCaptureClient_.TwoFactorLoginResumeAsync(null);
+                }
+            }
+            else
+                throw new Exception("Invalid two factor reason : " + reason);
+        }
+
+        /// <summary>
         /// </summary>
         /// <returns></returns>
         public TradeServerInfo GetTradeServerInfo()
@@ -359,22 +393,14 @@
             OrderType orderType;
             OrderTimeInForce orderTimeInForce;
 
-            if (type == TradeRecordType.IoC)
+            orderType = GetOrderType(type);
+
+            if (newExpiration != null)
             {
-                orderType = OrderType.Limit;
-                orderTimeInForce = OrderTimeInForce.ImmediateOrCancel;
+                orderTimeInForce = OrderTimeInForce.GoodTillDate;
             }
             else
-            {
-                orderType = GetOrderType(type);
-
-                if (newExpiration != null)
-                {
-                    orderTimeInForce = OrderTimeInForce.GoodTillDate;
-                }
-                else
-                    orderTimeInForce = OrderTimeInForce.GoodTillCancel;
-            }
+                orderTimeInForce = OrderTimeInForce.GoodTillCancel;
 
             OrderSide orderSide = GetOrderSide(side);
 
@@ -801,9 +827,6 @@
                 case TradeCommand.Stop:
                     return OrderType.Stop;
 
-                case TradeCommand.MarketWithSlippage:
-                    return OrderType.MarketWithSlippage;
-
                 case TradeCommand.StopLimit:
                     return OrderType.StopLimit;
 
@@ -827,9 +850,6 @@
 
                 case TradeRecordType.Stop:
                     return OrderType.Stop;
-
-                case TradeRecordType.MarketWithSlippage:
-                    return OrderType.MarketWithSlippage;
 
                 case TradeRecordType.StopLimit:
                     return OrderType.StopLimit;

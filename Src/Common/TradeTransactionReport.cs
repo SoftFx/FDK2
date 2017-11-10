@@ -111,17 +111,12 @@
         /// <summary>
         /// Gets ReducedOpenCommission flag.
         /// </summary>
-        public bool IsReducedOpenCommission { get; set; }
+        public bool ReducedOpenCommission { get; set; }
 
         /// <summary>
         /// Gets ReducedCloseCommission flag.
         /// </summary>
-        public bool IsReducedCloseCommission { get; set; }
-
-        /// <summary>
-        /// Gets ImmediateOrCancel flag.
-        /// </summary>
-        public bool ImmediateOrCancel { get; set; }
+        public bool ReducedCloseCommission { get; set; }
 
         /// <summary>
         /// Gets MarketWithSlippage flag.

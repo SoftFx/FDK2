@@ -140,15 +140,19 @@ namespace TickTrader.FDK.OrderEntry
 
         public delegate void LoginResultDelegate(Client client, object data);
         public delegate void LoginErrorDelegate(Client client, object data, string text);
-        public delegate void OneTimePasswordRequestDelegate(Client client, string text);
-        public delegate void OneTimePasswordRejectDelegate(Client client, string text);
+        public delegate void TwoFactorLoginRequestDelegate(Client client, string message);
+        public delegate void TwoFactorLoginResultDelegate(Client client, object data, DateTime expireTime);
+        public delegate void TwoFactorLoginErrorDelegate(Client client, object data, string message);
+        public delegate void TwoFactorLoginResumeDelegate(Client client, object data, DateTime expireTime);
         public delegate void LogoutResultDelegate(Client client, object data, LogoutInfo logoutInfo);
         public delegate void LogoutDelegate(Client client, LogoutInfo logoutInfo);
 
         public event LoginResultDelegate LoginResultEvent;
         public event LoginErrorDelegate LoginErrorEvent;
-        public event OneTimePasswordRequestDelegate OneTimePasswordRequestEvent;
-        public event OneTimePasswordRejectDelegate OneTimePasswordRejectEvent;
+        public event TwoFactorLoginRequestDelegate TwoFactorLoginRequestEvent;
+        public event TwoFactorLoginResultDelegate TwoFactorLoginResultEvent;
+        public event TwoFactorLoginErrorDelegate TwoFactorLoginErrorEvent;
+        public event TwoFactorLoginResumeDelegate TwoFactorLoginResumeEvent;
         public event LogoutResultDelegate LogoutResultEvent;
         public event LogoutDelegate LogoutEvent;
 
@@ -196,7 +200,32 @@ namespace TickTrader.FDK.OrderEntry
             session_.SendLoginRequest(context, request);
         }
 
-        public void SendOneTimePassword(string oneTimePassword)
+        public DateTime TwoFactorLoginResponse(string oneTimePassword, int timeout)
+        {
+            return ConvertToSync(TwoFactorLoginResponseAsync(oneTimePassword), timeout);
+        }
+
+        public void TwoFactorLoginResponseAsync(object data, string oneTimePassword)
+        {
+            // Create a new async context
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
+            context.Data = data;
+
+            TwoFactorLoginResponseInternal(context, oneTimePassword);
+        }
+
+        public Task<DateTime> TwoFactorLoginResponseAsync(string oneTimePassword)
+        {
+            // Create a new async context
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
+
+            TwoFactorLoginResponseInternal(context, oneTimePassword);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void TwoFactorLoginResponseInternal(TwoFactorLoginResponseAsyncContext context, string oneTimePassword)
         {
             // Create a message
             var message = new TwoFactorLogin(0)
@@ -206,7 +235,44 @@ namespace TickTrader.FDK.OrderEntry
             };
 
             // Send message to the server
-            session_.Send(message);
+            session_.SendTwoFactorLoginResponse(context, message);
+        }
+
+        public DateTime TwoFactorLoginResume(int timeout)
+        {
+            return ConvertToSync(TwoFactorLoginResumeAsync(), timeout);
+        }
+
+        public void TwoFactorLoginResumeAsync(object data)
+        {
+            // Create a new async context
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
+            context.Data = data;
+
+            TwoFactorLoginResumeInternal(context);
+        }
+
+        public Task<DateTime> TwoFactorLoginResumeAsync()
+        {
+            // Create a new async context
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
+
+            TwoFactorLoginResumeInternal(context);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void TwoFactorLoginResumeInternal(TwoFactorLoginResumeAsyncContext context)
+        {
+            // Create a message
+            var message = new TwoFactorLogin(0)
+            {
+                Reason = TwoFactorReason.ClientResume
+            };
+
+            // Send message to the server
+            session_.SendTwoFactorLoginResume(context, message);
         }
 
         public LogoutInfo Logout(string message, int timeout)
@@ -497,7 +563,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -519,7 +585,7 @@ namespace TickTrader.FDK.OrderEntry
                     maxVisibleQty,
                     price,
                     stopPrice,
-                    time,
+                    timeInForce,
                     expireTime,
                     stopLoss,
                     takeProfit,
@@ -542,7 +608,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -566,7 +632,7 @@ namespace TickTrader.FDK.OrderEntry
                 maxVisibleQty,
                 price,
                 stopPrice,
-                time,
+                timeInForce,
                 expireTime,
                 stopLoss,
                 takeProfit,
@@ -586,7 +652,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -611,7 +677,7 @@ namespace TickTrader.FDK.OrderEntry
                 maxVisibleQty,
                 price,
                 stopPrice,
-                time,
+                timeInForce,
                 expireTime,
                 stopLoss,
                 takeProfit,
@@ -634,7 +700,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty, 
             double? price, 
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,      
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,      
             DateTime? expireTime, 
             double? stopLoss, 
             double? takeProfit, 
@@ -655,9 +721,9 @@ namespace TickTrader.FDK.OrderEntry
             attributes.Price = price;
             attributes.StopPrice = stopPrice;
 
-            if (time.HasValue)
+            if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = Convert(time.Value);
+                attributes.TimeInForce = Convert(timeInForce.Value);
             }
             else
                 attributes.TimeInForce = null;
@@ -685,7 +751,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -709,7 +775,7 @@ namespace TickTrader.FDK.OrderEntry
                     maxVisibleQty,
                     price,
                     stopPrice,
-                    time,
+                    timeInForce,
                     expireTime,
                     stopLoss,
                     takeProfit,
@@ -734,7 +800,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -760,7 +826,7 @@ namespace TickTrader.FDK.OrderEntry
                 maxVisibleQty,
                 price,
                 stopPrice,
-                time,
+                timeInForce,
                 expireTime,
                 stopLoss,
                 takeProfit,
@@ -782,7 +848,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty,
             double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? time,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
@@ -809,7 +875,7 @@ namespace TickTrader.FDK.OrderEntry
                 maxVisibleQty,
                 price,
                 stopPrice,
-                time,
+                timeInForce,
                 expireTime,
                 stopLoss,
                 takeProfit,
@@ -834,7 +900,7 @@ namespace TickTrader.FDK.OrderEntry
             double? maxVisibleQty, 
             double? price, 
             double? stopPrice,       
-            TickTrader.FDK.Common.OrderTimeInForce? time,      
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
             DateTime? expireTime, 
             double? stopLoss, 
             double? takeProfit, 
@@ -864,9 +930,9 @@ namespace TickTrader.FDK.OrderEntry
             attributes.Price = price;
             attributes.StopPrice = stopPrice;
 
-            if (time.HasValue)
+            if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = Convert(time.Value);
+                attributes.TimeInForce = Convert(timeInForce.Value);
             }
             else
                 attributes.TimeInForce = null;
@@ -1016,9 +1082,6 @@ namespace TickTrader.FDK.OrderEntry
                 case TickTrader.FDK.Common.OrderType.Market:
                     return SoftFX.Net.OrderEntry.OrderType.Market;
 
-                case TickTrader.FDK.Common.OrderType.MarketWithSlippage:
-                    return SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage;
-
                 case TickTrader.FDK.Common.OrderType.Limit:
                     return SoftFX.Net.OrderEntry.OrderType.Limit;
 
@@ -1105,6 +1168,36 @@ namespace TickTrader.FDK.OrderEntry
             }
 
             public TaskCompletionSource<object> taskCompletionSource_;
+        }
+
+        class TwoFactorLoginResponseAsyncContext : TwoFactorLoginResponseClientContext, IAsyncContext
+        {
+            public TwoFactorLoginResponseAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public TaskCompletionSource<DateTime> taskCompletionSource_;
+        }
+
+        class TwoFactorLoginResumeAsyncContext : TwoFactorLoginResumeClientContext, IAsyncContext
+        {
+            public TwoFactorLoginResumeAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public TaskCompletionSource<DateTime> taskCompletionSource_;
         }
 
         class LogoutAsyncContext : LogoutClientContext, IAsyncContext
@@ -1286,23 +1379,41 @@ namespace TickTrader.FDK.OrderEntry
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
             {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
                 try
                 {
-                    if (client_.ConnectEvent != null)
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectEvent != null)
                         {
-                            client_.ConnectEvent(client_, context.Data);
+                            try
+                            {
+                                client_.ConnectEvent(client_, connectAsyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
+                            connectAsyncContext.taskCompletionSource_.SetResult(null);
+                    }
+                    else
+                    {
+                        // reconnect
+
+                        if (client_.ConnectEvent != null)
                         {
+                            try
+                            {
+                                client_.ConnectEvent(client_, null);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
@@ -1310,28 +1421,47 @@ namespace TickTrader.FDK.OrderEntry
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext)
-            {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
+            {                
                 try
                 {
-                    if (client_.ConnectErrorEvent != null)
+                    // TODO:
+                    string message = "Connect error";
+
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectErrorEvent != null)
                         {
-                            // TODO: text
-                            client_.ConnectErrorEvent(client_, context.Data, "Connect error");
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, message);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
                         {
+                            Exception exception = new Exception(message);
+                            connectAsyncContext.taskCompletionSource_.SetException(exception);
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
+                    else
                     {
-                        // TODO: text
-                        Exception exception = new Exception("Connect error");
-                        context.taskCompletionSource_.SetException(exception);
+                        // reconnect
+
+                        if (client_.ConnectErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, null, message);
+                            }
+                            catch
+                            {
+                            }
+                        }
                     }
                 }
                 catch
@@ -1341,36 +1471,73 @@ namespace TickTrader.FDK.OrderEntry
 
             public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
             {
-                DisconnectAsyncContext context = (DisconnectAsyncContext) disconnectContext;
-
                 try
                 {
-                    if (client_.DisconnectEvent != null)
+                    if (disconnectContext != null)
                     {
-                        try
+                        DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+
+                        if (client_.DisconnectEvent != null)
                         {
-                            client_.DisconnectEvent(client_, context.Data, text);
+                            try
+                            {
+                                client_.DisconnectEvent(client_, disconnectAsyncContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (contexts.Length > 0)
                         {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
                         }
+
+                        if (disconnectAsyncContext.taskCompletionSource_ != null)
+                            disconnectAsyncContext.taskCompletionSource_.SetResult(null);
                     }
-
-                    string message = "Client disconnected";
-
-                    if (text != null)
+                    else
                     {
-                        message += " : ";
-                        message += text;
+                        // Unsolicited disconnect
+
+                        if (client_.DisconnectEvent != null)
+                        {
+                            try
+                            {
+                                client_.DisconnectEvent(client_, null, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (contexts.Length > 0)
+                        {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
+                        }                        
                     }
-
-                    Exception exception = new Exception(message);
-
-                    foreach (ClientContext context2 in contexts)
-                        ((IAsyncContext) context2).SetDisconnectError(exception);
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
@@ -1466,11 +1633,11 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     string text = message.Text;
 
-                    if (client_.OneTimePasswordRequestEvent != null)
+                    if (client_.TwoFactorLoginRequestEvent != null)
                     {
                         try
                         {
-                            client_.OneTimePasswordRequestEvent(client_, text);
+                            client_.TwoFactorLoginRequestEvent(client_, text);
                         }
                         catch
                         {
@@ -1495,25 +1662,64 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
+            public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        DateTime expireTime = message.ExpireTime.Value;
+
+                        if (client_.TwoFactorLoginResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetResult(expireTime);
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        throw;
+                    }
+
                     if (client_.LoginResultEvent != null)
                     {
                         try
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            client_.LoginResultEvent(client_, loginContext.Data);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetResult(null);
                 }
                 catch (Exception exception)
                 {
@@ -1528,28 +1734,142 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
                 }
             }
 
-            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorReject message)
+            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
                     string text = message.Text;
 
-                    if (client_.OneTimePasswordRejectEvent != null)
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                        {
+                            Exception exception = new Exception(text);
+                            responseContext.taskCompletionSource_.SetException(exception);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        // the login procedure continues..
+                    }
+
+                    // the login procedure continues..
+                }
+                catch (Exception exception)
+                {
+                    if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.OneTimePasswordRejectEvent(client_, text);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
                         }
                         catch
                         {
                         }
+                    }
+
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
+            {
+                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
+
+                try
+                {
+                    string text = message.Text;
+
+                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+
+                    try
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                        {
+                            Exception exception = new Exception(text);
+                            responseContext.taskCompletionSource_.SetException(exception);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (responseContext.taskCompletionSource_ != null)
+                            responseContext.taskCompletionSource_.SetException(exception);
+
+                        throw;
+                    }
+
+                    if (client_.LoginErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.LoginErrorEvent(client_, loginContext.Data, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (loginContext.taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(text);
+                        loginContext.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
@@ -1558,31 +1878,31 @@ namespace TickTrader.FDK.OrderEntry
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                    if (loginContext.taskCompletionSource_ != null)
+                        loginContext.taskCompletionSource_.SetException(exception);
                 }
             }
 
-            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
+            public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                var context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    DateTime expireTime = message.ExpireTime.Value;
 
-                    if (client_.LoginErrorEvent != null)
+                    if (client_.TwoFactorLoginResumeEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, LoginRequestClientContext.Data, text);
+                            client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
                         }
                         catch
                         {
@@ -1590,18 +1910,15 @@ namespace TickTrader.FDK.OrderEntry
                     }
 
                     if (context.taskCompletionSource_ != null)
-                    {
-                        var exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
-                    }
+                        context.taskCompletionSource_.SetResult(expireTime);
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
+                    if (client_.TwoFactorLoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, LoginRequestClientContext.Data, exception.Message);
+                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception.Message);
                         }
                         catch
                         {
@@ -1764,12 +2081,13 @@ namespace TickTrader.FDK.OrderEntry
                     SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
                     resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
-                    resultAccountInfo.Email = reportAccountInfo.RegistEmail;
+                    resultAccountInfo.Name = reportAccountInfo.Name;
+                    resultAccountInfo.Email = reportAccountInfo.Email;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
                     resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.Value;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total;
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -2025,6 +2343,7 @@ namespace TickTrader.FDK.OrderEntry
                         resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
                         resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
                         resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
+                        resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
                         resultExecutionReport.OrderStatus = Convert(reportEntryState.Status); 
                         resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
                         resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
@@ -2042,7 +2361,7 @@ namespace TickTrader.FDK.OrderEntry
                         resultExecutionReport.Magic = reportEntryAttributes.Magic;
 #pragma warning disable 618
                         resultExecutionReport.TradeRecordSide = ConvertToTradeRecordSide(reportEntryAttributes.Side);
-                        resultExecutionReport.TradeRecordType = ConvertToTradeRecordType(reportEntryAttributes.Type, reportEntryAttributes.TimeInForce);
+                        resultExecutionReport.TradeRecordType = ConvertToTradeRecordType(reportEntryAttributes.Type);
 #pragma warning restore 618
                         resultExecutionReports[index] = resultExecutionReport;
                     }
@@ -2240,7 +2559,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportNewMarket(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnNewOrderSingleMarketNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
@@ -2280,7 +2599,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTrade(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnNewOrderSingleMarketTradeReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
@@ -2323,7 +2642,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportNew(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnNewOrderSingleNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
@@ -2363,7 +2682,7 @@ namespace TickTrader.FDK.OrderEntry
                 }                
             }
 
-            public override void OnExecutionReportCalculated(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnNewOrderSingleCalculatedReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
@@ -2449,7 +2768,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportPendingReplace(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnOrderCancelReplacePendingReplaceReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
 
@@ -2488,7 +2807,7 @@ namespace TickTrader.FDK.OrderEntry
                         context.taskCompletionSource_.SetException(exception);
                 }
             }
-            public override void OnExecutionReportReplaced(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnOrderCancelReplaceReplacedReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
 
@@ -2574,7 +2893,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportPendingCancel(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnOrderCancelPendingCancelReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
 
@@ -2614,7 +2933,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportCancelled(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnOrderCancelCancelledReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
 
@@ -2700,7 +3019,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportPendingClose(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionPendingCloseReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -2740,7 +3059,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTradePartial(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionTradePartiallyFilledReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -2780,7 +3099,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTradeCanclulated(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionTradeCalculatedReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -2823,7 +3142,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTrade(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionTradeFilledReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -2909,7 +3228,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportCalculated(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByCalculatedReport(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -2949,7 +3268,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTrade1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByTradeReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -2989,7 +3308,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnExecutionReportTrade2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByTradeReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -3153,12 +3472,13 @@ namespace TickTrader.FDK.OrderEntry
                     SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
                     resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
-                    resultAccountInfo.Email = reportAccountInfo.RegistEmail;
+                    resultAccountInfo.Name = reportAccountInfo.Name;
+                    resultAccountInfo.Email = reportAccountInfo.Email;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
                     resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.Value;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total;
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -3264,7 +3584,7 @@ namespace TickTrader.FDK.OrderEntry
                     TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
                     SoftFX.Net.OrderEntry.Balance updateBalance = update.Balance;
-                    result.Balance = updateBalance.Total.Value;
+                    result.Balance = updateBalance.Total;
                     result.TransactionAmount = updateBalance.Move.Value;
                     result.TransactionCurrency = updateBalance.CurrId;
 
@@ -3363,6 +3683,7 @@ namespace TickTrader.FDK.OrderEntry
                 result.Expiration = reportAttributes.ExpireTime;
                 result.TakeProfit = reportAttributes.TakeProfit;
                 result.StopLoss = reportAttributes.StopLoss;
+                result.MarketWithSlippage = (reportAttributes.Flags & OrderFlags.Slippage) != 0;
                 result.OrderStatus = Convert(reportState.Status);                
                 result.ExecutedVolume = reportState.CumQty;                
                 result.LeavesVolume = reportState.LeavesQty;
@@ -3382,7 +3703,7 @@ namespace TickTrader.FDK.OrderEntry
                 result.Magic = reportAttributes.Magic;                    
 #pragma warning disable 618
                 result.TradeRecordSide = ConvertToTradeRecordSide(reportAttributes.Side);
-                result.TradeRecordType = ConvertToTradeRecordType(reportAttributes.Type, reportAttributes.TimeInForce);
+                result.TradeRecordType = ConvertToTradeRecordType(reportAttributes.Type);
 #pragma warning restore 618
 
                 SoftFX.Net.OrderEntry.AssetArray reportAssets = report.Assets;
@@ -3516,9 +3837,6 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     case SoftFX.Net.OrderEntry.OrderType.Market:
                         return TickTrader.FDK.Common.OrderType.Market;
-
-                    case SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Common.OrderType.MarketWithSlippage;
 
                     case SoftFX.Net.OrderEntry.OrderType.Limit:
                         return TickTrader.FDK.Common.OrderType.Limit;
@@ -3654,18 +3972,12 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.OrderEntry.OrderType type, SoftFX.Net.OrderEntry.OrderTimeInForce? timeInForce)
+            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.OrderEntry.OrderType type)
             {
-                if (timeInForce == SoftFX.Net.OrderEntry.OrderTimeInForce.ImmediateOrCancel)
-                    return TickTrader.FDK.Common.TradeRecordType.IoC;
-
                 switch (type)
                 {
                     case SoftFX.Net.OrderEntry.OrderType.Market:
                         return TickTrader.FDK.Common.TradeRecordType.Market;
-
-                    case SoftFX.Net.OrderEntry.OrderType.MarketWithSlippage:
-                        return TickTrader.FDK.Common.TradeRecordType.MarketWithSlippage;
 
                     case SoftFX.Net.OrderEntry.OrderType.Limit:
                         return TickTrader.FDK.Common.TradeRecordType.Limit;

@@ -636,23 +636,41 @@ namespace TickTrader.FDK.QuoteStore
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
             {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
                 try
                 {
-                    if (client_.ConnectEvent != null)
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectEvent != null)
                         {
-                            client_.ConnectEvent(client_, context.Data);
+                            try
+                            {
+                                client_.ConnectEvent(client_, connectAsyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
+                            connectAsyncContext.taskCompletionSource_.SetResult(null);
+                    }
+                    else
+                    {
+                        // reconnect
+
+                        if (client_.ConnectEvent != null)
                         {
+                            try
+                            {
+                                client_.ConnectEvent(client_, null);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {
@@ -660,28 +678,47 @@ namespace TickTrader.FDK.QuoteStore
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext)
-            {
-                ConnectAsyncContext context = (ConnectAsyncContext) connectContext;
-
+            {                
                 try
                 {
-                    if (client_.ConnectErrorEvent != null)
+                    // TODO:
+                    string message = "Connect error";
+
+                    if (connectContext != null)
                     {
-                        try
+                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                        if (client_.ConnectErrorEvent != null)
                         {
-                            // TODO: text
-                            client_.ConnectErrorEvent(client_, context.Data, "Connect error");
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, message);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.taskCompletionSource_ != null)
                         {
+                            Exception exception = new Exception(message);
+                            connectAsyncContext.taskCompletionSource_.SetException(exception);
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
+                    else
                     {
-                        // TODO: text
-                        Exception exception = new Exception("Connect error");
-                        context.taskCompletionSource_.SetException(exception);
+                        // reconnect
+
+                        if (client_.ConnectErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, null, message);
+                            }
+                            catch
+                            {
+                            }
+                        }
                     }
                 }
                 catch
@@ -691,36 +728,73 @@ namespace TickTrader.FDK.QuoteStore
 
             public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
             {
-                DisconnectAsyncContext context = (DisconnectAsyncContext) disconnectContext;
-
                 try
                 {
-                    if (client_.DisconnectEvent != null)
+                    if (disconnectContext != null)
                     {
-                        try
+                        DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+
+                        if (client_.DisconnectEvent != null)
                         {
-                            client_.DisconnectEvent(client_, context.Data, text);
+                            try
+                            {
+                                client_.DisconnectEvent(client_, disconnectAsyncContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (contexts.Length > 0)
                         {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
                         }
+
+                        if (disconnectAsyncContext.taskCompletionSource_ != null)
+                            disconnectAsyncContext.taskCompletionSource_.SetResult(null);
                     }
-
-                    string message = "Client disconnected";
-
-                    if (text != null)
+                    else
                     {
-                        message += " : ";
-                        message += text;
+                        // Unsolicited disconnect
+
+                        if (client_.DisconnectEvent != null)
+                        {
+                            try
+                            {
+                                client_.DisconnectEvent(client_, null, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (contexts.Length > 0)
+                        {
+                            string message = "Client disconnected";
+
+                            if (text != null)
+                            {
+                                message += " : ";
+                                message += text;
+                            }
+
+                            Exception exception = new Exception(message);
+
+                            foreach (ClientContext context in contexts)
+                                ((IAsyncContext)context).SetDisconnectError(exception);
+                        }                        
                     }
-
-                    Exception exception = new Exception(message);
-
-                    foreach (ClientContext context2 in contexts)
-                        ((IAsyncContext) context2).SetDisconnectError(exception);
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
                 }
                 catch
                 {

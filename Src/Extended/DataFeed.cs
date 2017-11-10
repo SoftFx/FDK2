@@ -101,12 +101,14 @@
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed.Client(name_ + "_QuoteFeed", quoteFeedPort, true, logDirectory, decodeLogMessages);
+            quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", quoteFeedPort, true, logDirectory, decodeLogMessages);
             quoteFeedClient_.ConnectEvent += new QuoteFeed.Client.ConnectDelegate(this.OnConnect);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectEvent += new QuoteFeed.Client.DisconnectDelegate(this.OnDisconnect);
-            quoteFeedClient_.OneTimePasswordRequestEvent += new QuoteFeed.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
-            quoteFeedClient_.OneTimePasswordRejectEvent += new QuoteFeed.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            quoteFeedClient_.TwoFactorLoginRequestEvent += new QuoteFeed.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
+            quoteFeedClient_.TwoFactorLoginResultEvent += new QuoteFeed.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
+            quoteFeedClient_.TwoFactorLoginErrorEvent += new QuoteFeed.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
+            quoteFeedClient_.TwoFactorLoginResumeEvent += new QuoteFeed.Client.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             quoteFeedClient_.LoginResultEvent += new QuoteFeed.Client.LoginResultDelegate(this.OnLoginResult);
             quoteFeedClient_.LoginErrorEvent += new QuoteFeed.Client.LoginErrorDelegate(this.OnLoginError);
             quoteFeedClient_.LogoutResultEvent += new QuoteFeed.Client.LogoutResultDelegate(this.OnLogoutResult);
@@ -122,7 +124,7 @@
             quoteFeedClient_.QuotesEndEvent += new QuoteFeed.Client.QuotesEndDelegate(this.OnQuotesEnd);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
-            quoteStoreClient_ = new QuoteStore.Client(name_ + "_QuoteStore", quoteStorePort, true, logDirectory, decodeLogMessages);
+            quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, true, logDirectory, decodeLogMessages);
             quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectEvent += new QuoteStore.Client.DisconnectDelegate(this.OnDisconnect);
@@ -551,13 +553,44 @@
             }
         }
 
-        void OnOneTimePasswordRequest(QuoteFeed.Client client, string text)
+        void OnTwoFactorLoginRequest(QuoteFeed.Client client, string text)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                 twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginResult(QuoteFeed.Client client, object data, DateTime expireTime)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginError(QuoteFeed.Client client, object data, string text)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerError;
                 twoFactorAuth.Text = text;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
@@ -567,14 +600,14 @@
             }
         }
 
-        void OnOneTimePasswordReject(QuoteFeed.Client client, string text)
+        void OnTwoFactorLoginResume(QuoteFeed.Client client, object data, DateTime expireTime)
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -838,9 +871,16 @@
 
                 for (int index = 0; index < quotes.Length; ++index)
                 {
-                    SubscribedEventArgs args = new SubscribedEventArgs();
-                    args.Tick = quotes[index];
-                    eventQueue_.PushEvent(args);
+                    Quote quote = quotes[index];
+
+                    SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
+                    subscribedArgs.Tick = quote;
+                    eventQueue_.PushEvent(subscribedArgs);
+
+                    // For backward compatibility
+                    TickEventArgs tickArgs = new TickEventArgs();
+                    tickArgs.Tick = quote;
+                    eventQueue_.PushEvent(tickArgs);
                 }
             }
             catch
@@ -1324,7 +1364,7 @@
             }
         }
 
-        enum InitFlags
+        internal enum InitFlags
         {
             None = 0x00,                        
             Currencies = 0x01,
@@ -1334,13 +1374,13 @@
             All = SessionInfo | Currencies | Symbols | StoreLogin
         }
 
-        string name_;
-        string address_;
-        string login_;
-        string password_;
-        string deviceId_;
-        string appId_;
-        string appSessionId_;
+        internal string name_;
+        internal string address_;
+        internal string login_;
+        internal string password_;
+        internal string deviceId_;
+        internal string appId_;
+        internal string appSessionId_;
         internal int synchOperationTimeout_;
 
         internal DataFeedServer server_;
@@ -1349,17 +1389,17 @@
         internal QuoteFeed.Client quoteFeedClient_;
         internal QuoteStore.Client quoteStoreClient_;
 
-        object synchronizer_;        
-        bool started_;
+        internal object synchronizer_;        
+        internal bool started_;
         
-        ManualResetEvent loginEvent_;
-        Exception loginException_;
-        InitFlags initFlags_;
-        bool logout_;
+        internal ManualResetEvent loginEvent_;
+        internal Exception loginException_;
+        internal InitFlags initFlags_;
+        internal bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers
-        Thread eventThread_;
-        EventQueue eventQueue_;
+        internal Thread eventThread_;
+        internal EventQueue eventQueue_;
 
         #endregion
     }

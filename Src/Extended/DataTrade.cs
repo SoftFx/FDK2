@@ -103,12 +103,14 @@
             
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry.Client(name_ + "_OrderEntry", orderEntryPort, true, logDirectory, decodeLogMessages);
+            orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", orderEntryPort, true, logDirectory, decodeLogMessages);
             orderEntryClient_.ConnectEvent += new OrderEntry.Client.ConnectDelegate(this.OnConnect);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.Client.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectEvent += new OrderEntry.Client.DisconnectDelegate(this.OnDisconnect);
-            orderEntryClient_.OneTimePasswordRequestEvent += new OrderEntry.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
-            orderEntryClient_.OneTimePasswordRejectEvent += new OrderEntry.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            orderEntryClient_.TwoFactorLoginRequestEvent += new OrderEntry.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
+            orderEntryClient_.TwoFactorLoginResultEvent += new OrderEntry.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
+            orderEntryClient_.TwoFactorLoginErrorEvent += new OrderEntry.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
+            orderEntryClient_.TwoFactorLoginResumeEvent += new OrderEntry.Client.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             orderEntryClient_.LoginResultEvent += new OrderEntry.Client.LoginResultDelegate(this.OnLoginResult);
             orderEntryClient_.LoginErrorEvent += new OrderEntry.Client.LoginErrorDelegate(this.OnLoginError);
             orderEntryClient_.LogoutResultEvent += new OrderEntry.Client.LogoutResultDelegate(this.OnLogoutResult);
@@ -140,12 +142,14 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.Client.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture.Client(name_ + "_TradeCapture", tradeCapturePort, true, logDirectory, decodeLogMessages);
+            tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", tradeCapturePort, true, logDirectory, decodeLogMessages);
             tradeCaptureClient_.ConnectEvent += new TradeCapture.Client.ConnectDelegate(this.OnConnect);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.Client.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectEvent += new TradeCapture.Client.DisconnectDelegate(this.OnDisconnect);
-            tradeCaptureClient_.OneTimePasswordRequestEvent += new TradeCapture.Client.OneTimePasswordRequestDelegate(this.OnOneTimePasswordRequest);
-            tradeCaptureClient_.OneTimePasswordRejectEvent += new TradeCapture.Client.OneTimePasswordRejectDelegate(this.OnOneTimePasswordReject);
+            tradeCaptureClient_.TwoFactorLoginRequestEvent += new TradeCapture.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
+            tradeCaptureClient_.TwoFactorLoginResultEvent += new TradeCapture.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
+            tradeCaptureClient_.TwoFactorLoginErrorEvent += new TradeCapture.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
+            tradeCaptureClient_.TwoFactorLoginResumeEvent += new TradeCapture.Client.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             tradeCaptureClient_.LoginResultEvent += new TradeCapture.Client.LoginResultDelegate(this.OnLoginResult);
             tradeCaptureClient_.LoginErrorEvent += new TradeCapture.Client.LoginErrorDelegate(this.OnLoginError);
             tradeCaptureClient_.LogoutResultEvent += new TradeCapture.Client.LogoutResultDelegate(this.OnLogoutResult);
@@ -294,6 +298,9 @@
                 {
                     if (started_)
                         throw new Exception(string.Format("Data trade is already started : {0}", name_));
+
+                    orderEntryTwoFactorLogin_ = false;
+                    tradeCaptureTwoFactorLogin_ = false;
 
                     loginEvent_.Reset();
                     loginException_ = null;
@@ -572,13 +579,49 @@
             }
         }
 
-        void OnOneTimePasswordRequest(OrderEntry.Client client, string text)
+        void OnTwoFactorLoginRequest(OrderEntry.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    orderEntryTwoFactorLogin_ = true;
+                }
+
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginResult(OrderEntry.Client client, object data, DateTime expireTime)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginError(OrderEntry.Client client, object data, string text)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerError;
                 twoFactorAuth.Text = text;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
@@ -588,14 +631,14 @@
             }
         }
 
-        void OnOneTimePasswordReject(OrderEntry.Client client, string text)
+        void OnTwoFactorLoginResume(OrderEntry.Client client, object data, DateTime expireTime)
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -1380,13 +1423,49 @@
             }
         }
 
-        void OnOneTimePasswordRequest(TradeCapture.Client client, string text)
+        void OnTwoFactorLoginRequest(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    tradeCaptureTwoFactorLogin_ = true;
+                }
+
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginResult(TradeCapture.Client client, object data, DateTime expireTime)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
+                args.TwoFactorAuth = twoFactorAuth;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTwoFactorLoginError(TradeCapture.Client client, object data, string text)
+        {
+            try
+            {
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                twoFactorAuth.Reason = TwoFactorReason.ServerError;
                 twoFactorAuth.Text = text;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
@@ -1396,14 +1475,14 @@
             }
         }
 
-        void OnOneTimePasswordReject(TradeCapture.Client client, string text)
+        void OnTwoFactorLoginResume(TradeCapture.Client client, object data, DateTime expireTime)
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                twoFactorAuth.Expire = expireTime;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -1815,29 +1894,12 @@
             tradeRecord.Commission = executionReport.Commission;
             tradeRecord.AgentCommission = executionReport.AgentCommission;
             tradeRecord.Swap = executionReport.Swap;
-
-            if (executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel)
-            {
-                tradeRecord.Type = TradeRecordType.IoC;
-                tradeRecord.ImmediateOrCancel = true;
-            }
-            else
-            {
-                tradeRecord.Type = GetTradeRecordType(executionReport.OrderType);
-                tradeRecord.ImmediateOrCancel = false;
-            }
-
+            tradeRecord.Type = GetTradeRecordType(executionReport.OrderType);
             tradeRecord.Side = GetTradeRecordSide(executionReport.OrderSide);
             tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;
             tradeRecord.IsReducedCloseCommission = executionReport.ReducedCloseCommission;
-
-            if (executionReport.OrderType == OrderType.MarketWithSlippage)
-            {
-                tradeRecord.MarketWithSlippage = true;
-            }
-            else
-                tradeRecord.MarketWithSlippage = false;
-
+            tradeRecord.ImmediateOrCancel = executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel;
+            tradeRecord.MarketWithSlippage = executionReport.MarketWithSlippage;
             tradeRecord.Expiration = executionReport.Expiration;
             tradeRecord.Created = executionReport.Created;
             tradeRecord.Modified = executionReport.Modified;
@@ -1854,9 +1916,6 @@
             {
                 case OrderType.Market:
                     return TradeRecordType.Market;
-
-                case OrderType.MarketWithSlippage:
-                    return TradeRecordType.MarketWithSlippage;
 
                 case OrderType.Position:
                     return TradeRecordType.Position;
@@ -1891,7 +1950,7 @@
             }
         }
 
-        enum InitFlags
+        internal enum InitFlags
         {
             None = 0x00,
             TradeServerInfo = 0x01,            
@@ -1903,13 +1962,13 @@
             All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions | TradeCaptureLogin
         }
 
-        string name_;
-        string address_;
-        string login_;
-        string password_;
-        string deviceId_;
-        string appId_;
-        string appSessionId_;
+        internal string name_;
+        internal string address_;
+        internal string login_;
+        internal string password_;
+        internal string deviceId_;
+        internal string appId_;
+        internal string appSessionId_;
         internal int synchOperationTimeout_;
 
         internal DataTradeServer server_;
@@ -1918,17 +1977,20 @@
         internal OrderEntry.Client orderEntryClient_;
         internal TradeCapture.Client tradeCaptureClient_;
 
-        object synchronizer_;        
-        bool started_;
+        internal object synchronizer_;        
+        internal bool started_;
+
+        internal bool orderEntryTwoFactorLogin_;
+        internal bool tradeCaptureTwoFactorLogin_;
         
-        ManualResetEvent loginEvent_;
-        Exception loginException_;
-        InitFlags initFlags_;
-        bool logout_;
+        internal ManualResetEvent loginEvent_;
+        internal Exception loginException_;
+        internal InitFlags initFlags_;
+        internal bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers
-        Thread eventThread_;
-        EventQueue eventQueue_;
+        internal Thread eventThread_;
+        internal EventQueue eventQueue_;
 
         #endregion
     }

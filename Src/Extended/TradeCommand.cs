@@ -27,11 +27,6 @@
         IoC = 4,
 
         /// <summary>
-        /// Market order with slippage. Will be send as a limit order with IOC flag.
-        /// </summary>
-        MarketWithSlippage = 5,
-
-        /// <summary>
         /// Stop limti order.
         /// </summary>
         StopLimit = 6

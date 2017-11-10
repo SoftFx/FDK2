@@ -24,7 +24,11 @@
         {
             if (reason == TwoFactorReason.ClientResponse)
             {
-                dataFeed_.quoteFeedClient_.SendOneTimePassword(otp);
+                dataFeed_.quoteFeedClient_.TwoFactorLoginResponseAsync(null, otp);
+            }
+            else if (reason == TwoFactorReason.ClientResume)
+            {
+                dataFeed_.quoteFeedClient_.TwoFactorLoginResumeAsync(null);
             }
             else
                 throw new Exception("Invalid two factor reason : " + reason);

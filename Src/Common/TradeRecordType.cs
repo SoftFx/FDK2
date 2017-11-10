@@ -1,5 +1,7 @@
 ﻿namespace TickTrader.FDK.Common
 {
+    using System;
+
     /// <summary>
     /// Enumerates possible order types.
     /// </summary>
@@ -26,14 +28,6 @@
         /// Once the stop price is reached, the stop-limit order becomes a limit order to buy (or sell) at the limit price or better.
         /// </summary>
         Stop = 3,
-
-        /// <summary>
-        /// </summary>
-        IoC = 4,
-
-        /// <summary>
-        /// </summary>
-        MarketWithSlippage = 5,
 
         /// <summary>
         /// </summary>
