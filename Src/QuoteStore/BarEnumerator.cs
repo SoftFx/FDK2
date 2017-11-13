@@ -8,10 +8,12 @@ namespace TickTrader.FDK.QuoteStore
 {
     public class BarEnumerator : IDisposable
     {
-        internal BarEnumerator(Client client, string downloadId)
+        internal BarEnumerator(Client client, string downloadId, DateTime availFrom, DateTime availTo)
         {
             client_ = client;
             downloadId_ = downloadId;
+            availFrom_ = availFrom;
+            availTo_ = availTo;
 
             mutex_ = new object();
             completed_ = false;
@@ -23,6 +25,16 @@ namespace TickTrader.FDK.QuoteStore
         public string DownloadId
         {
             get { return downloadId_;  }
+        }
+
+        public DateTime AvailFrom
+        {
+            get { return availFrom_; }
+        }
+
+        public DateTime AvailTo
+        {
+            get { return availTo_; }
         }
 
         public Bar Next(int timeout)
@@ -90,6 +102,8 @@ namespace TickTrader.FDK.QuoteStore
 
         Client client_;
         string downloadId_;
+        DateTime availFrom_;
+        DateTime availTo_;
 
         internal object mutex_;
         internal bool completed_;

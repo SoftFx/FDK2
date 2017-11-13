@@ -423,7 +423,7 @@ namespace QuoteStoreAsyncSample
             client_.DownloadBarsAsync(this, Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to);
         }
 
-        void OnBarDownloadBeginResult(Client client, object data, string downloadId)
+        void OnBarDownloadBeginResult(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
         {
             try
             {
@@ -491,7 +491,7 @@ namespace QuoteStoreAsyncSample
             client_.DownloadQuotesAsync(this, Guid.NewGuid().ToString(), symbol, depth, from, to);
         }
 
-        void OnQuoteDownloadBeginResult(Client client, object data, string downloadId)
+        void OnQuoteDownloadBeginResult(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
         {
             try
             {

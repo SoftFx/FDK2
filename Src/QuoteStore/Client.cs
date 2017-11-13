@@ -242,11 +242,11 @@ namespace TickTrader.FDK.QuoteStore
         public delegate void SymbolListErrorDelegate(Client client, object data, string message);
         public delegate void PeriodicityListResultDelegate(Client client, object data, string[] periodicities);
         public delegate void PeriodicityListErrorDelegate(Client client, object data, string message);
-        public delegate void BarDownloadResultBeginDelegate(Client client, object data, string downloadId);
+        public delegate void BarDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
         public delegate void BarDownloadResultDelegate(Client client, object data, string downloadId, Bar bar);
         public delegate void BarDownloadResultEndDelegate(Client client, object data, string downloadId);
         public delegate void BarDownloadErrorDelegate(Client client, object data, string downloadId, string message);
-        public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string downloadId);
+        public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
         public delegate void QuoteDownloadResultDelegate(Client client, object data, string downloadId, Quote quote);
         public delegate void QuoteDownloadResultEndDelegate(Client client, object data, string downloadId);
         public delegate void QuoteDownloadErrorDelegate(Client client, object data, string downloadId, string message);
@@ -1133,11 +1133,15 @@ namespace TickTrader.FDK.QuoteStore
                         context.fileSize_ = 0;
                         context.bar_ = new Bar();
 
+                        string requestId = message.RequestId;
+                        DateTime availFrom = message.AvailFrom;
+                        DateTime availTo = message.AvailTo;
+
                         if (client_.BarDownloadResultBeginEvent != null)
                         {
                             try
                             {
-                                client_.BarDownloadResultBeginEvent(client_, context.Data, message.RequestId);
+                                client_.BarDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
                             }
                             catch
                             {
@@ -1146,7 +1150,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.taskCompletionSource_ != null)
                         {
-                            context.barEnumerator_ = new BarEnumerator(client_, message.RequestId);
+                            context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
                             context.taskCompletionSource_.SetResult(context.barEnumerator_);
                         }
                     }
@@ -1189,11 +1193,15 @@ namespace TickTrader.FDK.QuoteStore
                         context.fileSize_ = 0;
                         context.quote_ = new Quote();
 
+                        string requestId = message.RequestId;
+                        DateTime availFrom = message.AvailFrom;
+                        DateTime availTo = message.AvailTo;
+
                         if (client_.QuoteDownloadResultBeginEvent != null)
                         {
                             try
                             {
-                                client_.QuoteDownloadResultBeginEvent(client_, context.Data, message.RequestId);
+                                client_.QuoteDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
                             }
                             catch
                             {
@@ -1202,7 +1210,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.taskCompletionSource_ != null)
                         {
-                            context.quoteEnumerator_ = new QuoteEnumerator(client_, message.RequestId);
+                            context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
                             context.taskCompletionSource_.SetResult(context.quoteEnumerator_);
                         }
                     }
