@@ -1030,15 +1030,10 @@
             }
         }
 
-        void OnNewOrderError(OrderEntry.Client client, object data, string message)
+        void OnNewOrderError(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
-                ExecutionReport report = new Common.ExecutionReport();
-                report.ExecutionType = ExecutionType.Rejected;
-                report.RejectReason = Common.RejectReason.Other;
-                report.Text = message;
-
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1069,15 +1064,10 @@
             }
         }
 
-        void OnReplaceOrderError(OrderEntry.Client client, object data, string message)
+        void OnReplaceOrderError(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
-                ExecutionReport report = new Common.ExecutionReport();
-                report.ExecutionType = ExecutionType.Rejected;
-                report.RejectReason = Common.RejectReason.Other;
-                report.Text = message;
-
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1119,15 +1109,10 @@
             }
         }
 
-        void OnCancelOrderError(OrderEntry.Client client, object data, string message)
+        void OnCancelOrderError(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
-                ExecutionReport report = new Common.ExecutionReport();
-                report.ExecutionType = ExecutionType.Rejected;
-                report.RejectReason = Common.RejectReason.Other;
-                report.Text = message;
-
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1169,15 +1154,10 @@
             }
         }
 
-        void OnClosePositionError(OrderEntry.Client client, object data, string message)
+        void OnClosePositionError(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
-                ExecutionReport report = new Common.ExecutionReport();
-                report.ExecutionType = ExecutionType.Rejected;
-                report.RejectReason = Common.RejectReason.Other;
-                report.Text = message;
-
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1219,15 +1199,10 @@
             }
         }
 
-        void OnClosePositionByError(OrderEntry.Client client, object data, string message)
+        void OnClosePositionByError(OrderEntry.Client client, object data, ExecutionReport report)
         {
             try
             {
-                ExecutionReport report = new Common.ExecutionReport();
-                report.ExecutionType = ExecutionType.Rejected;
-                report.RejectReason = Common.RejectReason.Other;
-                report.Text = message;
-
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);

@@ -66,6 +66,7 @@
     <Compile Include="Quote.cs" />
     <Compile Include="QuoteDepth.cs" />
     <Compile Include="QuoteEntry.cs" />
+    <Compile Include="ExecutionException.cs" />
     <Compile Include="RejectReason.cs" />
     <Compile Include="SessionInfo.cs" />
     <Compile Include="SessionStatus.cs" />

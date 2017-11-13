@@ -329,15 +329,15 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void PositionsResultDelegate(Client client, object data, TickTrader.FDK.Common.Position[] positions);
         public delegate void PositionsErrorDelegate(Client client, object data, string message);
         public delegate void NewOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void NewOrderErrorDelegate(Client client, object data, string message);
+        public delegate void NewOrderErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ReplaceOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void ReplaceOrderErrorDelegate(Client client, object data, string message);
+        public delegate void ReplaceOrderErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void CancelOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void CancelOrderErrorDelegate(Client client, object data, string message);
+        public delegate void CancelOrderErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void ClosePositionErrorDelegate(Client client, object data, string message);
+        public delegate void ClosePositionErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionByResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void ClosePositionByErrorDelegate(Client client, object data, string message);
+        public delegate void ClosePositionByErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ExecutionReportDelegate(Client client, TickTrader.FDK.Common.ExecutionReport executionReport);
         public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position position);
         public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Common.AccountInfo accountInfo);
@@ -2355,7 +2355,7 @@ namespace TickTrader.FDK.OrderEntry
                         resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;                        
                         resultExecutionReport.Created = reportEntryState.Created;
                         resultExecutionReport.Modified = reportEntryState.Modified;
-                        resultExecutionReport.RejectReason = RejectReason.None;
+                        resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
                         resultExecutionReport.Comment = reportEntryAttributes.Comment;
                         resultExecutionReport.Tag = reportEntryAttributes.Tag;
                         resultExecutionReport.Magic = reportEntryAttributes.Magic;
@@ -2583,11 +2583,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2626,11 +2628,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2666,11 +2670,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2709,11 +2715,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2725,19 +2733,19 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnNewOrderSingleReject(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, OrderReject message)
+            public override void OnNewOrderSingleRejectReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, text);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2746,17 +2754,19 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new Exception(text);
+                        var exception = new ExecutionException(result);
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.NewOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2792,11 +2802,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ReplaceOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.ReplaceOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2834,11 +2846,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ReplaceOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.ReplaceOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2850,19 +2864,19 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnOrderCancelReplaceReject(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, OrderReject message)
+            public override void OnOrderCancelReplaceRejectReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ReplaceOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, text);
+                            client_.ReplaceOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2871,17 +2885,19 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new Exception(text);
+                        var exception = new ExecutionException(result);
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ReplaceOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.ReplaceOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2917,11 +2933,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.CancelOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.CancelOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2960,11 +2978,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.CancelOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.CancelOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2976,19 +2996,19 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnOrderCancelReject(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, OrderReject message)
+            public override void OnOrderCancelRejectReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.CancelOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.CancelOrderErrorEvent(client_, context.Data, text);
+                            client_.CancelOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -2997,17 +3017,19 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new Exception(text);
+                        var exception = new ExecutionException(result);
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.CancelOrderErrorEvent != null)
                     {
                         try
                         {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception.Message);
+                            client_.CancelOrderErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3043,11 +3065,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3083,11 +3107,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3126,11 +3152,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3169,11 +3197,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3185,19 +3215,19 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionReject(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, OrderReject message)
+            public override void OnClosePositionRejectReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, text);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3206,17 +3236,19 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new Exception(text);
+                        var exception = new ExecutionException(result);
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3252,11 +3284,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionByErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3292,11 +3326,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionByErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3335,11 +3371,13 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionByErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3351,19 +3389,19 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionByReject(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, OrderReject message)
+            public override void OnClosePositionByRejectReport(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
 
                     if (client_.ClosePositionByErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, text);
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3372,17 +3410,19 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new Exception(text);
+                        var exception = new ExecutionException(result);
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
                 catch (Exception exception)
                 {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
                     if (client_.ClosePositionByErrorEvent != null)
                     {
                         try
                         {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception.Message);
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3664,7 +3704,14 @@ namespace TickTrader.FDK.OrderEntry
                 result.ExecutionType = Convert(report.Type);
                 result.ClientOrderId = report.ClOrdId;
                 result.OrigClientOrderId = report.OrigClOrdId;
-                result.OrderId = report.OrderId.ToString();
+
+                if (report.OrderId.HasValue)
+                {
+                    result.OrderId = report.OrderId.Value.ToString();
+                }
+                else
+                    result.OrderId = null;
+
                 result.Symbol = reportAttributes.SymbolId;
                 result.OrderType = Convert(reportAttributes.Type);
                 result.OrderSide = Convert(reportAttributes.Side);
@@ -3697,7 +3744,15 @@ namespace TickTrader.FDK.OrderEntry
                 result.AveragePrice = reportState.AvgPrice;                
                 result.Created = reportState.Created;
                 result.Modified = reportState.Modified;
-                result.RejectReason = RejectReason.None;
+
+                if (report.RejectReason.HasValue)
+                {
+                    result.RejectReason = Convert(report.RejectReason.Value);
+                }
+                else
+                    result.RejectReason = TickTrader.FDK.Common.RejectReason.None;
+
+                result.Text = report.Text;
                 result.Comment = reportAttributes.Comment;
                 result.Tag = reportAttributes.Tag;
                 result.Magic = reportAttributes.Magic;                    
@@ -3727,6 +3782,17 @@ namespace TickTrader.FDK.OrderEntry
                 result.Balance = report.Balance.Total;
 
                 return result;
+            }
+
+            TickTrader.FDK.Common.ExecutionReport Convert(Exception exception)
+            {
+                TickTrader.FDK.Common.ExecutionReport executionReport = new TickTrader.FDK.Common.ExecutionReport();
+
+                executionReport.ExecutionType = ExecutionType.Rejected;
+                executionReport.RejectReason = TickTrader.FDK.Common.RejectReason.Other;
+                executionReport.Text = exception.Message;
+
+                return executionReport;
             }
 
             TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.OrderEntry.LogoutReason reason)
@@ -3927,44 +3993,44 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.OrderRejectReason reason)
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.RejectReason reason)
             {
                 switch (reason)
                 {
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.Dealer:
+                    case SoftFX.Net.OrderEntry.RejectReason.Dealer:
                         return TickTrader.FDK.Common.RejectReason.DealerReject;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.DealerTimeout:
+                    case SoftFX.Net.OrderEntry.RejectReason.DealerTimeout:
                         return TickTrader.FDK.Common.RejectReason.DealerReject;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.UnknownSymbol:
+                    case SoftFX.Net.OrderEntry.RejectReason.UnknownSymbol:
                         return TickTrader.FDK.Common.RejectReason.UnknownSymbol;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.LimitsExceeded:
+                    case SoftFX.Net.OrderEntry.RejectReason.LimitsExceeded:
                         return TickTrader.FDK.Common.RejectReason.OrderExceedsLImit;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.OffQuotes:
+                    case SoftFX.Net.OrderEntry.RejectReason.OffQuotes:
                         return TickTrader.FDK.Common.RejectReason.OffQuotes;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.UnknownOrder:
+                    case SoftFX.Net.OrderEntry.RejectReason.UnknownOrder:
                         return TickTrader.FDK.Common.RejectReason.UnknownOrder;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.DuplicateOrder:
+                    case SoftFX.Net.OrderEntry.RejectReason.DuplicateOrder:
                         return TickTrader.FDK.Common.RejectReason.DuplicateClientOrderId;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.IncorrectCharacteristics:
+                    case SoftFX.Net.OrderEntry.RejectReason.IncorrectCharacteristics:
                         return TickTrader.FDK.Common.RejectReason.InvalidTradeRecordParameters;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.IncorrectQty:
+                    case SoftFX.Net.OrderEntry.RejectReason.IncorrectQty:
                         return TickTrader.FDK.Common.RejectReason.IncorrectQuantity;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.TooLate:
+                    case SoftFX.Net.OrderEntry.RejectReason.TooLate:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.InternalServerError:
+                    case SoftFX.Net.OrderEntry.RejectReason.InternalServerError:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
-                    case SoftFX.Net.OrderEntry.OrderRejectReason.Other:
+                    case SoftFX.Net.OrderEntry.RejectReason.Other:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
                     default:

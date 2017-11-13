@@ -778,7 +778,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
             }
             catch (Exception exception)
             {
@@ -786,11 +786,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnNewOrderError(Client client, object data, string message)
+        void OnNewOrderError(Client client, object data, ExecutionReport executionReport)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
             }
             catch (Exception exception)
             {
@@ -817,7 +817,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
             }
             catch (Exception exception)
             {
@@ -825,11 +825,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnReplaceOrderError(Client client, object data, string message)
+        void OnReplaceOrderError(Client client, object data, ExecutionReport executionReport)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}, {6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
             }
             catch (Exception exception)
             {
@@ -846,7 +846,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
             }
             catch (Exception exception)
             {
@@ -854,11 +854,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnCancelOrderError(Client client, object data, string message)
+        void OnCancelOrderError(Client client, object data, ExecutionReport executionReport)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.RejectReason, executionReport.Text);
             }
             catch (Exception exception)
             {
@@ -877,10 +877,10 @@ namespace OrderEntryAsyncSample
             {
                 if (executionReport.ExecutionType == ExecutionType.Trade)
                 {
-                    Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}@{6}", executionReport.ExecutionType, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.TradeAmount, executionReport.TradePrice);
+                    Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}@{6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.TradeAmount, executionReport.TradePrice);
                 }
                 else
-                    Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
+                    Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
             }
             catch (Exception exception)
             {
@@ -888,11 +888,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnClosePositionError(Client client, object data, string message)
+        void OnClosePositionError(Client client, object data, ExecutionReport executionReport)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : {0}, {1}, {2}, {3}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.RejectReason, executionReport.Text);
             }
             catch (Exception exception)
             {
