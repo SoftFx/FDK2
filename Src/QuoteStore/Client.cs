@@ -441,14 +441,17 @@ namespace TickTrader.FDK.QuoteStore
 
         SoftFX.Net.QuoteStore.PriceType Convert(TickTrader.FDK.Common.PriceType priceType)
         {
-            SoftFX.Net.QuoteStore.PriceType result = 0;
+            switch (priceType)
+            {
+                case TickTrader.FDK.Common.PriceType.Bid:
+                    return SoftFX.Net.QuoteStore.PriceType.Bid;
 
-            if ((priceType & TickTrader.FDK.Common.PriceType.Bid) != 0)
-                result |= SoftFX.Net.QuoteStore.PriceType.Bid;
-            if ((priceType & TickTrader.FDK.Common.PriceType.Ask) != 0)
-                result |= SoftFX.Net.QuoteStore.PriceType.Ask;
+                case TickTrader.FDK.Common.PriceType.Ask:
+                    return SoftFX.Net.QuoteStore.PriceType.Ask;
 
-            return result;
+                default:
+                    throw new Exception("Invalid price type: " + priceType);
+            }
         }
 
         SoftFX.Net.QuoteStore.TickDepth Convert(TickTrader.FDK.Common.QuoteDepth quoteDepth)
@@ -463,7 +466,6 @@ namespace TickTrader.FDK.QuoteStore
 
                 default:
                     throw new Exception("Invalid quote depth: " + quoteDepth);
-
             }
         }
 

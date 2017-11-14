@@ -95,13 +95,13 @@
             if (! connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
                 logDirectory = "Logs";
 
-            bool decodeLogMessages;
-            if (! connectionStringParser.TryGetBoolValue("DecodeLogMessages", out decodeLogMessages))
-                decodeLogMessages = false;
+            bool logMessages;
+            if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
+                logMessages = false;
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", quoteFeedPort, true, logDirectory, decodeLogMessages);
+            quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", quoteFeedPort, true, logDirectory, logMessages);
             quoteFeedClient_.ConnectEvent += new QuoteFeed.Client.ConnectDelegate(this.OnConnect);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectEvent += new QuoteFeed.Client.DisconnectDelegate(this.OnDisconnect);
@@ -124,7 +124,7 @@
             quoteFeedClient_.QuotesEndEvent += new QuoteFeed.Client.QuotesEndDelegate(this.OnQuotesEnd);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
-            quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, true, logDirectory, decodeLogMessages);
+            quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, true, logDirectory, logMessages);
             quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectEvent += new QuoteStore.Client.DisconnectDelegate(this.OnDisconnect);

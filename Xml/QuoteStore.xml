@@ -104,12 +104,12 @@
                 <field name="To" offset="24" type="timestamp" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <set name="PriceType" size="4">
+        <enum name="PriceType" size="4">
             <members>
                 <member name="Bid" value="0"/>
                 <member name="Ask" value="1"/>
             </members>
-        </set>
+        </enum>
         <message name="BarDownloadRequest" id="11" superMessage="DownloadRequest" size="52">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>

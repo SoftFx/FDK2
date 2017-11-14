@@ -97,13 +97,13 @@
             if (! connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
                 logDirectory = "Logs";
 
-            bool decodeLogMessages;
-            if (! connectionStringParser.TryGetBoolValue("DecodeLogMessages", out decodeLogMessages))
-                decodeLogMessages = false;
+            bool logMessages;
+            if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
+                logMessages = false;
             
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", orderEntryPort, true, logDirectory, decodeLogMessages);
+            orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", orderEntryPort, true, logDirectory, logMessages);
             orderEntryClient_.ConnectEvent += new OrderEntry.Client.ConnectDelegate(this.OnConnect);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.Client.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectEvent += new OrderEntry.Client.DisconnectDelegate(this.OnDisconnect);
@@ -142,7 +142,7 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.Client.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", tradeCapturePort, true, logDirectory, decodeLogMessages);
+            tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", tradeCapturePort, true, logDirectory, logMessages);
             tradeCaptureClient_.ConnectEvent += new TradeCapture.Client.ConnectDelegate(this.OnConnect);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.Client.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectEvent += new TradeCapture.Client.DisconnectDelegate(this.OnDisconnect);

@@ -93,9 +93,9 @@
         public string LogDirectory { get; set; }
 
         /// <summary>
-        /// If true, the FDK converts messages to good readable format.
+        /// If true, the FDK logs messages.
         /// </summary>
-        public bool? DecodeLogMessages { get; set; }
+        public bool? LogMessages { get; set; }
 
         /// <summary>
         /// Makes and returns connection string.
@@ -204,12 +204,12 @@
                 stringBuilder.AppendFormat("[String]LogDirectory={0}", LogDirectory);
             }
 
-            if (DecodeLogMessages != null)
+            if (LogMessages != null)
             {
                 if (stringBuilder.Length != 0)
                     stringBuilder.Append(";");
 
-                stringBuilder.AppendFormat("[Boolean]DecodeLogMessages={0}", DecodeLogMessages);
+                stringBuilder.AppendFormat("[Boolean]LogMessages={0}", LogMessages);
             }
 
             return stringBuilder.ToString();
