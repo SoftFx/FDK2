@@ -98,12 +98,12 @@
         /// <summary>
         /// Gets type of the order.
         /// </summary>
-        public TradeRecordType Type { get; set; }
+        public OrderType Type { get; set; }
 
         /// <summary>
         /// Gets side of the order.
         /// </summary>
-        public TradeRecordSide Side { get; set; }
+        public OrderSide Side { get; set; }
 
         /// <summary>
         /// Gets ReducedOpenCommission flag.
@@ -184,7 +184,7 @@
         {
             get
             {
-                return this.Type == TradeRecordType.Position;
+                return this.Type == OrderType.Position;
             }
         }
 
@@ -195,7 +195,7 @@
         {
             get
             {
-                return this.Type == TradeRecordType.Stop;
+                return this.Type == OrderType.Stop;
             }
         }
 
@@ -206,7 +206,7 @@
         {
             get
             {
-                return this.Type == TradeRecordType.Limit;
+                return this.Type == OrderType.Limit;
             }
         }
 
@@ -217,7 +217,7 @@
         {
             get
             {
-                return this.Type == TradeRecordType.StopLimit;
+                return this.Type == OrderType.StopLimit;
             }
         }
 
@@ -314,7 +314,7 @@
         /// <param name="timeoutInMilliseconds">timeout of the operation in milliseconds</param>
         public void DeleteEx(string operationId, int timeoutInMilliseconds)
         {
-            DataTrade.Server.DeletePendingOrderEx(operationId, this.OrderId, this.Side, timeoutInMilliseconds);
+            DataTrade.Server.DeletePendingOrderEx(operationId, this.OrderId, timeoutInMilliseconds);
         }
 
         /// <summary>

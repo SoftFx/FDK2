@@ -1869,8 +1869,8 @@
             tradeRecord.Commission = executionReport.Commission;
             tradeRecord.AgentCommission = executionReport.AgentCommission;
             tradeRecord.Swap = executionReport.Swap;
-            tradeRecord.Type = GetTradeRecordType(executionReport.OrderType);
-            tradeRecord.Side = GetTradeRecordSide(executionReport.OrderSide);
+            tradeRecord.Type = executionReport.OrderType;
+            tradeRecord.Side = executionReport.OrderSide;
             tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;
             tradeRecord.IsReducedCloseCommission = executionReport.ReducedCloseCommission;
             tradeRecord.ImmediateOrCancel = executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel;
@@ -1883,46 +1883,6 @@
             tradeRecord.Magic = executionReport.Magic;
 
             return tradeRecord;
-        }
-
-        TradeRecordType GetTradeRecordType(OrderType orderType)
-        {
-            switch (orderType)
-            {
-                case OrderType.Market:
-                    return TradeRecordType.Market;
-
-                case OrderType.Position:
-                    return TradeRecordType.Position;
-
-                case OrderType.Limit:
-                    return TradeRecordType.Limit;
-
-                case OrderType.Stop:
-                    return TradeRecordType.Stop;
-
-                case OrderType.StopLimit:
-                    return TradeRecordType.StopLimit;
-
-                default:
-                    throw new Exception("Invalid order type : " + orderType);
-            }
-        }
-
-
-        TradeRecordSide GetTradeRecordSide(OrderSide orderSide)
-        {
-            switch (orderSide)
-            {
-                case OrderSide.Buy:
-                    return TradeRecordSide.Buy;
-
-                case OrderSide.Sell:
-                    return TradeRecordSide.Sell;
-
-                default:
-                    throw new Exception("Invalid order side : " + orderSide);
-            }
         }
 
         internal enum InitFlags

@@ -2,6 +2,7 @@
 {
     using System;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
 
     /// <summary>
     /// Represents bid/ask prices entry.
@@ -45,11 +46,11 @@
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double PriceFromSide(TradeRecordSide side)
+        public double PriceFromSide(OrderSide side)
         {
-            if (side == TradeRecordSide.Buy)
+            if (side == OrderSide.Buy)
                 return this.Ask;
-            else if (side == TradeRecordSide.Sell)
+            else if (side == OrderSide.Sell)
                 return this.Bid;
 
             var message = string.Format("Unknown side = {0}", side);
@@ -61,13 +62,13 @@
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double PriceFromOppositeSide(TradeRecordSide side)
+        public double PriceFromOppositeSide(OrderSide side)
         {
             switch (side)
             {
-                case TradeRecordSide.Buy:
+                case OrderSide.Buy:
                     return this.Bid;
-                case TradeRecordSide.Sell:
+                case OrderSide.Sell:
                     return this.Ask;
             }
 

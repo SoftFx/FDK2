@@ -5,7 +5,8 @@
     using TickTrader.BusinessLogic;
     using TickTrader.BusinessObjects;
     using TickTrader.Common.Business;
-    using Common;
+    using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
 
     static class CalculatorConvert
     {
@@ -74,32 +75,32 @@
             return new CalculatorOrder(trade);
         }
 
-        public static OrderSides ToOrderSides(TradeRecordSide side)
+        public static OrderSides ToOrderSides(OrderSide side)
         {
             switch (side)
             {
-                case TradeRecordSide.Buy:
+                case OrderSide.Buy:
                     return OrderSides.Buy;
-                case TradeRecordSide.Sell:
+                case OrderSide.Sell:
                     return OrderSides.Sell;
             }
 
             throw new ArgumentException("side");
         }
 
-        public static OrderTypes ToOrderTypes(TradeRecordType type)
+        public static OrderTypes ToOrderTypes(OrderType type)
         {
             switch (type)
             {
-                case TradeRecordType.Market:
+                case OrderType.Market:
                     return OrderTypes.Market;
-                case TradeRecordType.Position:
+                case OrderType.Position:
                     return OrderTypes.Position;
-                case TradeRecordType.Limit:
+                case OrderType.Limit:
                     return OrderTypes.Limit;
-                case TradeRecordType.Stop:
+                case OrderType.Stop:
                     return OrderTypes.Stop;
-                case TradeRecordType.StopLimit:
+                case OrderType.StopLimit:
                     return OrderTypes.StopLimit;
             }
 

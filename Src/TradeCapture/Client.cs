@@ -1848,10 +1848,6 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.UsdToDstAssetConversionRate = conversionRates.UsdToDest;
                 tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrId;
                 tradeTransactionReport.MinCommissionConversionRate = conversionRates.MinCommission;
-#pragma warning disable 618
-                tradeTransactionReport.TradeRecordType = ConvertToTradeRecordType(trade.OrderType);
-                tradeTransactionReport.TradeRecordSide = ConvertToTradeRecordSide(trade.OrderSide);
-#pragma warning restore 618
             }
 
             TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LogoutReason reason)
@@ -2014,45 +2010,6 @@ namespace TickTrader.FDK.TradeCapture
 
                     default:
                         throw new Exception("Invalid position type : " + posType);
-                }
-            }
-
-            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.TradeCapture.OrderType type)
-            {
-                switch (type)
-                {
-                    case SoftFX.Net.TradeCapture.OrderType.Market:
-                        return TickTrader.FDK.Common.TradeRecordType.Market;
-
-                    case SoftFX.Net.TradeCapture.OrderType.Limit:
-                        return TickTrader.FDK.Common.TradeRecordType.Limit;
-
-                    case SoftFX.Net.TradeCapture.OrderType.Stop:
-                        return TickTrader.FDK.Common.TradeRecordType.Stop;
-
-                    case SoftFX.Net.TradeCapture.OrderType.Position:
-                        return TickTrader.FDK.Common.TradeRecordType.Position;
-
-                    case SoftFX.Net.TradeCapture.OrderType.StopLimit:
-                        return TickTrader.FDK.Common.TradeRecordType.StopLimit;
-
-                    default:
-                        throw new Exception("Invalid order type : " + type);
-                }
-            }
-
-            TickTrader.FDK.Common.TradeRecordSide ConvertToTradeRecordSide(SoftFX.Net.TradeCapture.OrderSide side)
-            {
-                switch (side)
-                {
-                    case SoftFX.Net.TradeCapture.OrderSide.Buy:
-                        return TickTrader.FDK.Common.TradeRecordSide.Buy;
-
-                    case SoftFX.Net.TradeCapture.OrderSide.Sell:
-                        return TickTrader.FDK.Common.TradeRecordSide.Sell;
-
-                    default:
-                        throw new Exception("Invalid order side : " + side);
                 }
             }
 

@@ -4,6 +4,7 @@
     using TickTrader.BusinessLogic;
     using TickTrader.BusinessObjects;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
 
     sealed class CalculatorOrder : IOrderModel
     {
@@ -23,7 +24,7 @@
             }
             else
             {
-                var assetCurrency = this.entry.Side == TradeRecordSide.Buy ? this.entry.SymbolEntry.ProfitCurrency : this.entry.SymbolEntry.MarginCurrency;
+                var assetCurrency = this.entry.Side == OrderSide.Buy ? this.entry.SymbolEntry.ProfitCurrency : this.entry.SymbolEntry.MarginCurrency;
 
                 this.roundMargin = o => this.entry.Owner.RoundingService.RoundMargin(assetCurrency, o);
                 this.roundProfit = o => this.entry.Owner.RoundingService.RoundProfit(assetCurrency, o);

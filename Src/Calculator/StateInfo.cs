@@ -80,7 +80,7 @@
             position.Margin = entry.Margin;
 
             // some magic; see Calculate method of state calcualtor
-            if (entry.Side == TradeRecordSide.Buy)
+            if (entry.Side == OrderSide.Buy)
                 positions.Add(position);
 
             return true;

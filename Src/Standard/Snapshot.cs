@@ -200,16 +200,16 @@
                             Symbol = element.Symbol,
                             Volume = Math.Abs(volume),
                             OrderId = this.VirtualOrderIdFromSymbol(element.Symbol),
-                            Type = TradeRecordType.Position
+                            Type = OrderType.Position
                         };
                         if (volume >= 0)
                         {
-                            record.Side = TradeRecordSide.Buy;
+                            record.Side = OrderSide.Buy;
                             record.Price = element.BuyPrice ?? Math.Abs(element.SettlementPrice);
                         }
                         else
                         {
-                            record.Side = TradeRecordSide.Sell;
+                            record.Side = OrderSide.Sell;
                             record.Price = element.SellPrice ?? Math.Abs(element.SettlementPrice);
                         }
                         

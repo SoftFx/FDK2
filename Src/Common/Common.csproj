@@ -76,8 +76,6 @@
     <Compile Include="SwapType.cs" />
     <Compile Include="SymbolInfo.cs" />
     <Compile Include="TimeDirection.cs" />
-    <Compile Include="TradeRecordSide.cs" />
-    <Compile Include="TradeRecordType.cs" />
     <Compile Include="TradeServerInfo.cs" />
     <Compile Include="TradeTransactionReason.cs" />
     <Compile Include="TradeTransactionReport.cs" />

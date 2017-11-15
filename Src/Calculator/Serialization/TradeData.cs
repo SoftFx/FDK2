@@ -3,6 +3,7 @@
     using System;
     using System.Xml.Serialization;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
 
     /// <summary>
     /// For internal usage only
@@ -80,7 +81,7 @@
         /// For internal usage only
         /// </summary>
         [XmlAttribute("Side")]
-        public TradeRecordSide Side { get; set; }
+        public OrderSide Side { get; set; }
 
         /// <summary>
         /// For internal usage only
@@ -159,44 +160,44 @@
 
         #region Methods
 
-        static TradeRecordType TradeRecordTypeFromTradeType(TradeType type)
+        static OrderType TradeRecordTypeFromTradeType(TradeType type)
         {
             if (type == TradeType.Position)
             {
-                return TradeRecordType.Position;
+                return OrderType.Position;
             }
             if (type == TradeType.Limit)
             {
-                return TradeRecordType.Limit;
+                return OrderType.Limit;
             }
             if (type == TradeType.Stop)
             {
-                return TradeRecordType.Stop;
+                return OrderType.Stop;
             }
             if (type == TradeType.StopLimit)
             {
-                return TradeRecordType.StopLimit;
+                return OrderType.StopLimit;
             }
 
             var message = string.Format("Unsupporred trade type = {0}", type);
             throw new ArgumentException(message, nameof(type));
         }
 
-        static TradeType TradeTypeFromTradeRecordType(TradeRecordType type)
+        static TradeType TradeTypeFromTradeRecordType(OrderType type)
         {
-            if (type == TradeRecordType.Position)
+            if (type == OrderType.Position)
             {
                 return TradeType.Position;
             }
-            if (type == TradeRecordType.Limit)
+            if (type == OrderType.Limit)
             {
                 return TradeType.Limit;
             }
-            if (type == TradeRecordType.Stop)
+            if (type == OrderType.Stop)
             {
                 return TradeType.Stop;
             }
-            if (type == TradeRecordType.StopLimit)
+            if (type == OrderType.StopLimit)
             {
                 return TradeType.StopLimit;
             }

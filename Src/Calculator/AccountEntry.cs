@@ -6,6 +6,7 @@
     using System.Linq;
     using TickTrader.BusinessLogic;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
     using TickTrader.FDK.Calculator.Adapter;
     using TickTrader.FDK.Calculator.Rounding;
 
@@ -130,7 +131,7 @@
 
             foreach (var element in this.Trades)
             {
-                if (element.Type != TradeRecordType.Position)
+                if (element.Type != OrderType.Position)
                     continue;
 
                 var symbol = element.SymbolEntry;
@@ -140,12 +141,12 @@
                     continue;
                 }
 
-                if (element.Side == TradeRecordSide.Buy)
+                if (element.Side == OrderSide.Buy)
                 {
                     assets[symbol.ToIndex].Volume += element.NativeVolume;
                     assets[symbol.FromIndex].Volume -= element.NativeVolume * (element.Price ?? 0);
                 }
-                else if (element.Side == TradeRecordSide.Sell)
+                else if (element.Side == OrderSide.Sell)
                 {
                     assets[symbol.ToIndex].Volume -= element.NativeVolume;
                     assets[symbol.FromIndex].Volume += element.NativeVolume * (element.Price ?? 0);

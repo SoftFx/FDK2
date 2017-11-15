@@ -3,6 +3,7 @@
     using System;
     using System.ComponentModel;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.Extended;
 
     /// <summary>
     /// Represents trade entry.
@@ -18,8 +19,8 @@
         public TradeEntry(AccountEntry owner)
             : base(owner)
         {
-            this.Type = TradeRecordType.Position;
-            this.Side = TradeRecordSide.Buy;
+            this.Type = OrderType.Position;
+            this.Side = OrderSide.Buy;
             this.Symbol = string.Empty;
         }
 
@@ -35,7 +36,7 @@
         /// <param name="price"></param>
         /// <param name="stopPrice"></param>
         /// <param name="staticMarginRate"></param>
-        public TradeEntry(AccountEntry owner, TradeRecordType type, TradeRecordSide side, string symbol, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? staticMarginRate = null)
+        public TradeEntry(AccountEntry owner, OrderType type, OrderSide side, string symbol, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? staticMarginRate = null)
             : base(owner)
         {
             this.Type = type;
@@ -72,14 +73,14 @@
         /// </summary>
         [Category("Parameters")]
         [Description("Type of trade entry: Position, Limit or Stop")]
-        public TradeRecordType Type { get; set; }
+        public OrderType Type { get; set; }
 
         /// <summary>
         /// Gets and sets side of the trade entry.
         /// </summary>
         [Category("Parameters")]
         [Description("Side of trade entry: Buy or Sell")]
-        public TradeRecordSide Side { get; set; }
+        public OrderSide Side { get; set; }
 
         /// <summary>
         /// Gets and sets trade symbol.

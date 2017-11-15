@@ -2359,10 +2359,6 @@ namespace TickTrader.FDK.OrderEntry
                         resultExecutionReport.Comment = reportEntryAttributes.Comment;
                         resultExecutionReport.Tag = reportEntryAttributes.Tag;
                         resultExecutionReport.Magic = reportEntryAttributes.Magic;
-#pragma warning disable 618
-                        resultExecutionReport.TradeRecordSide = ConvertToTradeRecordSide(reportEntryAttributes.Side);
-                        resultExecutionReport.TradeRecordType = ConvertToTradeRecordType(reportEntryAttributes.Type);
-#pragma warning restore 618
                         resultExecutionReports[index] = resultExecutionReport;
                     }
 
@@ -3756,10 +3752,6 @@ namespace TickTrader.FDK.OrderEntry
                 result.Comment = reportAttributes.Comment;
                 result.Tag = reportAttributes.Tag;
                 result.Magic = reportAttributes.Magic;                    
-#pragma warning disable 618
-                result.TradeRecordSide = ConvertToTradeRecordSide(reportAttributes.Side);
-                result.TradeRecordType = ConvertToTradeRecordType(reportAttributes.Type);
-#pragma warning restore 618
 
                 SoftFX.Net.OrderEntry.AssetArray reportAssets = report.Assets;
                 int count = reportAssets.Length;
@@ -4035,45 +4027,6 @@ namespace TickTrader.FDK.OrderEntry
 
                     default:
                         throw new Exception("Invalid order reject reason : " + reason);
-                }
-            }
-
-            TickTrader.FDK.Common.TradeRecordType ConvertToTradeRecordType(SoftFX.Net.OrderEntry.OrderType type)
-            {
-                switch (type)
-                {
-                    case SoftFX.Net.OrderEntry.OrderType.Market:
-                        return TickTrader.FDK.Common.TradeRecordType.Market;
-
-                    case SoftFX.Net.OrderEntry.OrderType.Limit:
-                        return TickTrader.FDK.Common.TradeRecordType.Limit;
-
-                    case SoftFX.Net.OrderEntry.OrderType.Stop:
-                        return TickTrader.FDK.Common.TradeRecordType.Stop;
-
-                    case SoftFX.Net.OrderEntry.OrderType.Position:
-                        return TickTrader.FDK.Common.TradeRecordType.Position;
-
-                    case SoftFX.Net.OrderEntry.OrderType.StopLimit:
-                        return TickTrader.FDK.Common.TradeRecordType.StopLimit;
-
-                    default:
-                        throw new Exception("Invalid order type : " + type);
-                }
-            }
-
-            TickTrader.FDK.Common.TradeRecordSide ConvertToTradeRecordSide(SoftFX.Net.OrderEntry.OrderSide side)
-            {
-                switch (side)
-                {
-                    case SoftFX.Net.OrderEntry.OrderSide.Buy:
-                        return TickTrader.FDK.Common.TradeRecordSide.Buy;
-
-                    case SoftFX.Net.OrderEntry.OrderSide.Sell:
-                        return TickTrader.FDK.Common.TradeRecordSide.Sell;
-
-                    default:
-                        throw new Exception("Invalid order side : " + side);
                 }
             }
 
