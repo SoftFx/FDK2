@@ -22,7 +22,7 @@
                 LogDirectory = LogPath,
                 Username = username,
                 Password = password,
-                DecodeLogMessages = true,
+                LogMessages = true,
                 OperationTimeout = 30000
             };
 
@@ -32,7 +32,7 @@
                 LogDirectory = LogPath,
                 Username = username,
                 Password = password,
-                DecodeLogMessages = true,
+                LogMessages = true,
                 OperationTimeout = 30000
             };
 

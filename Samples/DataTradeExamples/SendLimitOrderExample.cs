@@ -13,7 +13,7 @@
 
         protected override void RunExample()
         {
-            var record = this.Trade.Server.SendOrderEx(Guid.NewGuid().ToString(), "EURUSD", TradeCommand.Limit, TradeRecordSide.Buy, 100000, null, 1.15, null, null, null, null, null, null, null);
+            var record = this.Trade.Server.SendOrderEx(Guid.NewGuid().ToString(), "EURUSD", TradeCommand.Limit, OrderSide.Buy, 100000, null, 1.15, null, null, null, null, null, null, null);
             Console.WriteLine(record);
         }
     }
