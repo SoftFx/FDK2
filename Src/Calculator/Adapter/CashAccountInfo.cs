@@ -3,8 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using TickTrader.BusinessLogic;
-    using TickTrader.BusinessObjects;
 
     sealed class CashAccountInfo : ICashAccountInfo
     {

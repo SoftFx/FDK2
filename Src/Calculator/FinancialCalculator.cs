@@ -5,10 +5,11 @@
     using System.IO;
     using System.Linq;
     using System.Xml.Serialization;
-    using TickTrader.BusinessLogic;
     using TickTrader.FDK.Calculator.Adapter;
     using TickTrader.FDK.Calculator.Serialization;
     using TickTrader.FDK.Calculator.Rounding;
+    using TickTrader.FDK.Calculator.Netting;
+    using TickTrader.FDK.Calculator.Conversion;
 
     /// <summary>
     /// Contains methods for offline calculation of profit and margin.

@@ -1,16 +1,16 @@
-﻿namespace TickTrader.FDK.Calculator
+﻿   
+namespace TickTrader.FDK.Calculator
 {
     using System.Collections.Generic;
     using System.Linq;
-    using TickTrader.BusinessLogic;
     using TickTrader.FDK.Common;
-    using TickTrader.FDK.Calculator.Adapter;    
+    using TickTrader.FDK.Calculator.Adapter;
 
     sealed class CashAssets
     {
         readonly IDictionary<string, Asset> assets;
 
-        public CashAssets(IEnumerable<AssetInfo> assets, AccountEntry account, MarketState state)
+        public CashAssets(IEnumerable<Common.AssetInfo> assets, AccountEntry account, MarketState state)
         {
             var query = assets.Select(o => new Asset(account)
             {

@@ -4,7 +4,6 @@
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Linq;
-    using TickTrader.BusinessLogic;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.Extended;
     using TickTrader.FDK.Calculator.Adapter;

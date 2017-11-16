@@ -2,17 +2,14 @@
 {
     using System;
     using System.Collections.Generic;
-    using TickTrader.BusinessLogic;
-    using TickTrader.BusinessObjects;
-    using TickTrader.Common.Business;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.Extended;
 
     static class CalculatorConvert
     {
-        public static BusinessObjects.CurrencyInfo ToCurrencyInfo(CurrencyEntry currency, int priority)
+        public static Calculator.CurrencyInfo ToCurrencyInfo(CurrencyEntry currency, int priority)
         {
-            return new BusinessObjects.CurrencyInfo
+            return new Calculator.CurrencyInfo
             {
                 Name = currency.Name,
                 Precision = currency.Precision,
@@ -21,9 +18,9 @@
             };
         }
 
-        public static BusinessObjects.SymbolInfo ToSymbolInfo(SymbolEntry symbol)
+        public static Calculator.SymbolInfo ToSymbolInfo(SymbolEntry symbol)
         {
-            return new BusinessObjects.SymbolInfo
+            return new Calculator.SymbolInfo
             {
                 Symbol = symbol.Symbol,
                 MarginCurrency = symbol.MarginCurrency,

@@ -1,7 +1,6 @@
 ﻿namespace TickTrader.FDK.Calculator.Rounding
 {
     using System;
-    using TickTrader.Common;
 
     sealed class FinancialRounding : IRounding
     {

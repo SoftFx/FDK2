@@ -7,11 +7,11 @@
     sealed class UpdateHandler
     {
         readonly Processor processor;
-        readonly Action<CurrencyInfo[], SymbolInfo[], AccountInfo, Quote> updateCallback;
+        readonly Action<Common.CurrencyInfo[], Common.SymbolInfo[], Common.AccountInfo, Quote> updateCallback;
 
         public object SyncRoot { get; private set; }
 
-        public UpdateHandler(DataTrade trade, DataFeed feed, Action<CurrencyInfo[], SymbolInfo[], AccountInfo, Quote> updateCallback, Processor processor)
+        public UpdateHandler(DataTrade trade, DataFeed feed, Action<Common.CurrencyInfo[], Common.SymbolInfo[], Common.AccountInfo, Quote> updateCallback, Processor processor)
         {
             if (trade == null)
                 throw new ArgumentNullException(nameof(trade));

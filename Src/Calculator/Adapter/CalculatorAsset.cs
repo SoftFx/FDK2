@@ -1,7 +1,6 @@
 ﻿namespace TickTrader.FDK.Calculator.Adapter
 {
     using System;
-    using TickTrader.BusinessLogic;
 
     sealed class CalculatorAsset : IAssetModel
     {

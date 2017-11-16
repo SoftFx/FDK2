@@ -2,7 +2,6 @@
 {
     using System;
     using System.Threading;
-    using TickTrader.Common;
 
     sealed class Processor
     {

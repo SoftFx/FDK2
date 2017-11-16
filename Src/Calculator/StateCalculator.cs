@@ -3,7 +3,6 @@
     using System;
     using System.Collections.Generic;
     using System.Linq;
-    using TickTrader.Common;
     using TickTrader.FDK.Common;    
     using TickTrader.FDK.Extended;
     using TickTrader.FDK.Calculator.Rounding;
@@ -27,9 +26,9 @@
 
         #region State Fields
 
-        IEnumerable<CurrencyInfo> currencyInfo;
-        IEnumerable<SymbolInfo> symbolInfo;
-        AccountInfo accountInfo;
+        IEnumerable<Common.CurrencyInfo> currencyInfo;
+        IEnumerable<Common.SymbolInfo> symbolInfo;
+        Common.AccountInfo accountInfo;
         IDictionary<string, Quote> quotes;
 
         #endregion
@@ -99,7 +98,7 @@
 
         #region Event Handlers
 
-        void OnUpdate(CurrencyInfo[] currencyInfo, SymbolInfo[] symbolInfo, AccountInfo accountInfo, Quote quote)
+        void OnUpdate(Common.CurrencyInfo[] currencyInfo, Common.SymbolInfo[] symbolInfo, Common.AccountInfo accountInfo, Quote quote)
         {
             if (currencyInfo != null)
                 this.currencyInfo = currencyInfo;
@@ -133,9 +132,9 @@
         /// </summary>
         public void Calculate()
         {
-            IEnumerable<CurrencyInfo> currencyUpdate;
-            IEnumerable<SymbolInfo> symbolsUpdate;
-            AccountInfo accountUpdate;
+            IEnumerable<Common.CurrencyInfo> currencyUpdate;
+            IEnumerable<Common.SymbolInfo> symbolsUpdate;
+            Common.AccountInfo accountUpdate;
             IDictionary<string, Quote> quotesUpdate;
 
             var newQuotes = new Dictionary<string, Quote>();
@@ -165,7 +164,7 @@
             }
         }
 
-        void PrepareCalculator(AccountInfo accountUpdate, IEnumerable<CurrencyInfo> currencyUpdate, IEnumerable<SymbolInfo> symbolsUpdate, IDictionary<string, Quote> quotesUpdate)
+        void PrepareCalculator(Common.AccountInfo accountUpdate, IEnumerable<Common.CurrencyInfo> currencyUpdate, IEnumerable<Common.SymbolInfo> symbolsUpdate, IDictionary<string, Quote> quotesUpdate)
         {
             if (accountUpdate != null)
             {

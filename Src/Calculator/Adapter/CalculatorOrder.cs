@@ -1,8 +1,6 @@
 ﻿namespace TickTrader.FDK.Calculator.Adapter
 {
     using System;
-    using TickTrader.BusinessLogic;
-    using TickTrader.BusinessObjects;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.Extended;
 

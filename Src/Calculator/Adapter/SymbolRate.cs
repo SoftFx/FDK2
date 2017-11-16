@@ -1,7 +1,5 @@
 ﻿namespace TickTrader.FDK.Calculator.Adapter
 {
-    using TickTrader.Common.Business;
-
     sealed class SymbolRate : ISymbolRate
     {
         readonly PriceEntry price;
