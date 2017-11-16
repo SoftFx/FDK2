@@ -602,16 +602,7 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     if (tradeTransactionReportEnumerator_ != null)
                     {
-                        lock (tradeTransactionReportEnumerator_.mutex_)
-                        {
-                            tradeTransactionReportEnumerator_.completed_ = true;
-
-                            if (tradeTransactionReportEnumerator_.taskCompletionSource_ != null)
-                            {
-                                tradeTransactionReportEnumerator_.taskCompletionSource_.SetException(exception);
-                                tradeTransactionReportEnumerator_.taskCompletionSource_ = null;
-                            }
-                        }
+                        tradeTransactionReportEnumerator_.SetError(exception);
                     }
                     else
                         taskCompletionSource_.SetException(exception);
@@ -1446,7 +1437,11 @@ namespace TickTrader.FDK.TradeCapture
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetTradeEnumeratorResult(context);
+                        {
+                            TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
+
+                            context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
+                        }
                     }
 
                     if (message.Last)
@@ -1463,7 +1458,7 @@ namespace TickTrader.FDK.TradeCapture
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetTradeEnumeratorEnd(context);
+                            context.tradeTransactionReportEnumerator_.SetEnd();
                     }
                 }
                 catch (Exception exception)
@@ -1483,7 +1478,7 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
-                            SetTradeEnumeratorError(context, exception);
+                            context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
                             context.taskCompletionSource_.SetException(exception);
@@ -1516,7 +1511,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
-                            SetTradeEnumeratorError(context, exception);
+                            context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
                             context.taskCompletionSource_.SetException(exception);
@@ -1539,7 +1534,7 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
-                            SetTradeEnumeratorError(context, exception);
+                            context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
                             context.taskCompletionSource_.SetException(exception);
@@ -1665,79 +1660,6 @@ namespace TickTrader.FDK.TradeCapture
                 }
                 catch
                 {
-                }
-            }
-
-            void SetTradeEnumeratorResult(TradeDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.tradeTransactionReportEnumerator_.mutex_)
-                    {
-                        if (context.tradeTransactionReportEnumerator_.completed_)
-                            break;
-
-                        if (context.tradeTransactionReportEnumerator_.taskCompletionSource_ != null)
-                        {
-                            TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_;
-                            context.tradeTransactionReport_ = context.tradeTransactionReportEnumerator_.tradeTransactionReport_;
-                            context.tradeTransactionReportEnumerator_.tradeTransactionReport_ = tradeTransactionReport;
-
-                            context.tradeTransactionReportEnumerator_.completed_ = false;
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_.SetResult(tradeTransactionReport);
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-                    }
-
-                    context.tradeTransactionReportEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetTradeEnumeratorEnd(TradeDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.tradeTransactionReportEnumerator_.mutex_)
-                    {
-                        if (context.tradeTransactionReportEnumerator_.completed_)
-                            break;
-
-                        if (context.tradeTransactionReportEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.tradeTransactionReportEnumerator_.completed_ = true;
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_.SetResult(null);
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-                    }
-
-                    context.tradeTransactionReportEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetTradeEnumeratorError(TradeDownloadAsyncContext context, Exception exception)
-            {
-                while (true)
-                {
-                    lock (context.tradeTransactionReportEnumerator_.mutex_)
-                    {
-                        if (context.tradeTransactionReportEnumerator_.completed_)
-                            break;
-
-                        if (context.tradeTransactionReportEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.tradeTransactionReportEnumerator_.completed_ = true;
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_.SetException(exception);
-                            context.tradeTransactionReportEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-                    }
-
-                    context.tradeTransactionReportEnumerator_.event_.WaitOne();
                 }
             }
 

@@ -376,9 +376,108 @@
         /// </summary>
         public double? MinCommissionConversionRate { get; set; }
 
+        public TradeTransactionReport Clone()
+        {
+            TradeTransactionReport tradeTransactionReport = new TradeTransactionReport();
+            tradeTransactionReport.TradeTransactionId = TradeTransactionId;
+            tradeTransactionReport.TradeTransactionReportType = TradeTransactionReportType;
+            tradeTransactionReport.TradeTransactionReason = TradeTransactionReason;
+            tradeTransactionReport.AccountBalance = AccountBalance;
+            tradeTransactionReport.TransactionAmount = TransactionAmount;
+            tradeTransactionReport.TransactionCurrency = TransactionCurrency;
+            tradeTransactionReport.Id = Id;
+            tradeTransactionReport.ClientId = ClientId;
+            tradeTransactionReport.Quantity = Quantity;
+            tradeTransactionReport.MaxVisibleQuantity = MaxVisibleQuantity;
+            tradeTransactionReport.LeavesQuantity = LeavesQuantity;
+            tradeTransactionReport.Price = Price;
+            tradeTransactionReport.StopPrice = StopPrice;
+            tradeTransactionReport.OrderType = OrderType;
+            tradeTransactionReport.OrderSide = OrderSide;
+            tradeTransactionReport.TimeInForce = TimeInForce;
+            tradeTransactionReport.Symbol = Symbol;
+            tradeTransactionReport.Comment = Comment;
+            tradeTransactionReport.Tag = Tag;
+            tradeTransactionReport.Magic = Magic;
+            tradeTransactionReport.ReducedOpenCommission = ReducedOpenCommission;
+            tradeTransactionReport.ReducedCloseCommission = ReducedCloseCommission;
+            tradeTransactionReport.MarketWithSlippage = MarketWithSlippage;
+            tradeTransactionReport.OrderCreated = OrderCreated;
+            tradeTransactionReport.OrderModified = OrderModified;
+            tradeTransactionReport.ReqOrderType = ReqOrderType;
+            tradeTransactionReport.ReqOpenPrice = ReqOpenPrice;
+            tradeTransactionReport.ReqOpenQuantity = ReqOpenQuantity;
+            tradeTransactionReport.ReqClosePrice = ReqClosePrice;
+            tradeTransactionReport.ReqCloseQuantity = ReqCloseQuantity;
+            tradeTransactionReport.PositionId = PositionId;
+            tradeTransactionReport.PositionById = PositionById;
+            tradeTransactionReport.PositionOpened = PositionOpened;
+            tradeTransactionReport.PosOpenReqPrice = PosOpenReqPrice;
+            tradeTransactionReport.PosOpenPrice = PosOpenPrice;
+            tradeTransactionReport.PositionQuantity = PositionQuantity;
+            tradeTransactionReport.PositionLastQuantity = PositionLastQuantity;
+            tradeTransactionReport.PositionLeavesQuantity = PositionLeavesQuantity;
+            tradeTransactionReport.PositionCloseRequestedPrice = PositionCloseRequestedPrice;
+            tradeTransactionReport.PositionClosePrice = PositionClosePrice;
+            tradeTransactionReport.PositionClosed = PositionClosed;
+            tradeTransactionReport.PositionModified = PositionModified;
+            tradeTransactionReport.PosRemainingSide = PosRemainingSide;
+            tradeTransactionReport.PosRemainingPrice = PosRemainingPrice;
+            tradeTransactionReport.Commission = Commission;
+            tradeTransactionReport.AgentCommission = AgentCommission;
+            tradeTransactionReport.Swap = Swap;
+            tradeTransactionReport.CommCurrency = CommCurrency;
+            tradeTransactionReport.StopLoss = StopLoss;
+            tradeTransactionReport.TakeProfit = TakeProfit;
+            tradeTransactionReport.NextStreamPositionId = NextStreamPositionId;
+            tradeTransactionReport.TransactionTime = TransactionTime;
+            tradeTransactionReport.OrderFillPrice = OrderFillPrice;
+            tradeTransactionReport.OrderLastFillAmount = OrderLastFillAmount;
+            tradeTransactionReport.OpenConversionRate = OpenConversionRate;
+            tradeTransactionReport.CloseConversionRate = CloseConversionRate;
+            tradeTransactionReport.ActionId = ActionId;
+            tradeTransactionReport.Expiration = Expiration;
+            tradeTransactionReport.SrcAssetCurrency = SrcAssetCurrency;
+            tradeTransactionReport.SrcAssetAmount = SrcAssetAmount;
+            tradeTransactionReport.SrcAssetMovement = SrcAssetMovement;
+            tradeTransactionReport.DstAssetCurrency = DstAssetCurrency;
+            tradeTransactionReport.DstAssetAmount = DstAssetAmount;
+            tradeTransactionReport.DstAssetMovement = DstAssetMovement;
+            tradeTransactionReport.MarginCurrencyToUsdConversionRate = MarginCurrencyToUsdConversionRate;
+            tradeTransactionReport.UsdToMarginCurrencyConversionRate = UsdToMarginCurrencyConversionRate;
+            tradeTransactionReport.MarginCurrency = MarginCurrency;
+            tradeTransactionReport.ProfitCurrencyToUsdConversionRate = ProfitCurrencyToUsdConversionRate;
+            tradeTransactionReport.UsdToProfitCurrencyConversionRate = UsdToProfitCurrencyConversionRate;
+            tradeTransactionReport.ProfitCurrency = ProfitCurrency;
+            tradeTransactionReport.SrcAssetToUsdConversionRate = SrcAssetToUsdConversionRate;
+            tradeTransactionReport.UsdToSrcAssetConversionRate = UsdToSrcAssetConversionRate;
+            tradeTransactionReport.DstAssetToUsdConversionRate = DstAssetToUsdConversionRate;
+            tradeTransactionReport.UsdToDstAssetConversionRate = UsdToDstAssetConversionRate;
+            tradeTransactionReport.MinCommissionCurrency = MinCommissionCurrency;
+            tradeTransactionReport.MinCommissionConversionRate = MinCommissionConversionRate;
+
+            return tradeTransactionReport;
+        }
+
         public override string ToString()
         {
-            return string.Format("Id = {0}; Type = {1}; Reason = {2}; Time = {3}; ClientId = {4}; OrderType = {5}; Symbol = {6}; OrderSide = {7}; InitialVolume = {8}; Price = {9}; LeavesVolume = {10}; TradeAmount = {11}; TradePrice = {12}", Id, TradeTransactionReportType, TradeTransactionReason, TransactionTime, ClientId, OrderType, Symbol, OrderSide, Quantity, Price, LeavesQuantity, OrderLastFillAmount, OrderFillPrice);
+            return string.Format
+            (
+                "Id = {0}; Type = {1}; Reason = {2}; Time = {3}; ClientId = {4}; OrderType = {5}; Symbol = {6}; OrderSide = {7}; InitialVolume = {8}; Price = {9}; LeavesVolume = {10}; TradeAmount = {11}; TradePrice = {12}", 
+                Id, 
+                TradeTransactionReportType, 
+                TradeTransactionReason, 
+                TransactionTime, 
+                ClientId, 
+                OrderType, 
+                Symbol, 
+                OrderSide, 
+                Quantity, 
+                Price, 
+                LeavesQuantity, 
+                OrderLastFillAmount, 
+                OrderFillPrice
+            );
         }
     }
 }

@@ -18,8 +18,11 @@ namespace TickTrader.FDK.QuoteStore
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
-            bar_ = new Bar();
-            event_ = new AutoResetEvent(false);
+            bars_ = new Bar[GrowSize];
+            barCount_ = 0;
+            beginIndex_ = 0;
+            endIndex_ = 0;
+            exception_ = null;
         }
 
         public string DownloadId
@@ -46,14 +49,39 @@ namespace TickTrader.FDK.QuoteStore
         {
             lock (mutex_)
             {
-                if (completed_)
-                    throw new Exception(string.Format("Enumerator completed : {0}", downloadId_));
-
                 if (taskCompletionSource_ != null)
                     throw new Exception("Invalid enumerator call");
 
+                if (barCount_ > 0)
+                {
+                    Bar bar = bars_[beginIndex_];
+                    bars_[beginIndex_] = null;       // !
+                    beginIndex_ = (beginIndex_ + 1) % bars_.Length;
+                    -- barCount_;
+
+                    TaskCompletionSource<Bar> taskCompletionSource = new TaskCompletionSource<Bar>();
+                    taskCompletionSource.SetResult(bar);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (exception_ != null)
+                {
+                    TaskCompletionSource<Bar> taskCompletionSource = new TaskCompletionSource<Bar>();
+                    taskCompletionSource.SetException(exception_);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (completed_)
+                {
+                    TaskCompletionSource<Bar> taskCompletionSource = new TaskCompletionSource<Bar>();
+                    taskCompletionSource.SetResult(null);
+
+                    return taskCompletionSource.Task;
+                }
+
                 taskCompletionSource_ = new TaskCompletionSource<Bar>();
-                event_.Set();
 
                 return taskCompletionSource_.Task;
             }            
@@ -67,14 +95,6 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     completed_ = true;
 
-                    if (taskCompletionSource_ != null)
-                    {
-                        Exception exception = new Exception(string.Format("Enumerator closed : {0}", downloadId_));
-
-                        taskCompletionSource_.SetException(exception);
-                        taskCompletionSource_ = null;
-                    }
-
                     try
                     {
                         client_.SendDownloadCancel(downloadId_);
@@ -82,14 +102,20 @@ namespace TickTrader.FDK.QuoteStore
                     catch
                     {
                     }
+
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetResult(null);
+                        taskCompletionSource_ = null;
+                    }
                 }
 
-                if (event_ != null)
-                {
-                    event_.Set();
-                    event_.Close();
-                    event_ = null;
-                }
+                for (int index = beginIndex_; index != endIndex_; ++ index)
+                    bars_[index % bars_.Length] = null;
+
+                barCount_ = 0;
+                beginIndex_ = 0;
+                endIndex_ = 0;
             }
         }
 
@@ -100,15 +126,96 @@ namespace TickTrader.FDK.QuoteStore
             GC.SuppressFinalize(this);
         }
 
+        internal void SetResult(Bar bar)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetResult(bar);
+                        taskCompletionSource_ = null;
+                    }
+                    else
+                    {
+                        if (barCount_ == bars_.Length)
+                        {
+                            Bar[] bars = new Bar[bars_.Length + GrowSize];
+
+                            if (endIndex_ > beginIndex_)
+                            {
+                                Array.Copy(bars_, beginIndex_, bars, 0, barCount_);
+                            }
+                            else
+                            {
+                                int count = bars_.Length - beginIndex_;
+                                Array.Copy(bars_, beginIndex_, bars, 0, count);
+                                Array.Copy(bars_, 0, bars, count, endIndex_);
+                            }
+
+                            bars_ = bars;
+                            beginIndex_ = 0;
+                            endIndex_ = barCount_;
+                        }
+
+                        bars_[endIndex_] = bar;
+                        endIndex_ = (endIndex_ + 1) % bars_.Length;
+                        ++ barCount_;
+                    }
+                }
+            }
+        }
+
+        internal void SetEnd()
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    completed_ = true;
+
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetResult(null);
+                        taskCompletionSource_ = null;
+                    }
+                }
+            }
+        }
+
+        internal void SetError(Exception exception)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    completed_ = true;
+                    exception_ = exception;                        
+
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetException(exception);
+                        taskCompletionSource_ = null;
+                    }                        
+                }
+            }
+        }
+        
+        const int GrowSize = 1000;
+
         Client client_;
         string downloadId_;
         DateTime availFrom_;
         DateTime availTo_;
 
-        internal object mutex_;
-        internal bool completed_;
-        internal TaskCompletionSource<Bar> taskCompletionSource_;
-        internal Bar bar_;
-        internal AutoResetEvent event_;
+        object mutex_;
+        bool completed_;
+        TaskCompletionSource<Bar> taskCompletionSource_;
+        Bar[] bars_;
+        int barCount_;
+        int beginIndex_;
+        int endIndex_;
+        Exception exception_;
     }
 }

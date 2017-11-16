@@ -15,8 +15,11 @@ namespace TickTrader.FDK.TradeCapture
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
-            tradeTransactionReport_ = new TradeTransactionReport();
-            event_ = new AutoResetEvent(false);
+            tradeTransactionReports_ = new TradeTransactionReport[GrowSize];
+            tradeTransactionReportCount_ = 0;
+            beginIndex_ = 0;
+            endIndex_ = 0;
+            exception_ = null;
         }
 
         public TradeTransactionReport Next(int timeout)
@@ -28,14 +31,39 @@ namespace TickTrader.FDK.TradeCapture
         {
             lock (mutex_)
             {
-                if (completed_)
-                    throw new Exception("Enumerator completed");
-
                 if (taskCompletionSource_ != null)
                     throw new Exception("Invalid enumerator call");
 
+                if (tradeTransactionReportCount_ > 0)
+                {
+                    TradeTransactionReport tradeTransactionReport = tradeTransactionReports_[beginIndex_];
+                    tradeTransactionReports_[beginIndex_] = null;       // !
+                    beginIndex_ = (beginIndex_ + 1) % tradeTransactionReports_.Length;
+                    -- tradeTransactionReportCount_;
+
+                    TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
+                    taskCompletionSource.SetResult(tradeTransactionReport);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (exception_ != null)
+                {
+                    TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
+                    taskCompletionSource.SetException(exception_);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (completed_)
+                {
+                    TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
+                    taskCompletionSource.SetResult(null);
+
+                    return taskCompletionSource.Task;
+                }
+
                 taskCompletionSource_ = new TaskCompletionSource<TradeTransactionReport>();
-                event_.Set();
 
                 return taskCompletionSource_.Task;
             }            
@@ -51,19 +79,17 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (taskCompletionSource_ != null)
                     {
-                        Exception exception = new Exception("Enumerator closed");
-
-                        taskCompletionSource_.SetException(exception);
+                        taskCompletionSource_.SetResult(null);
                         taskCompletionSource_ = null;
                     }
                 }
 
-                if (event_ != null)
-                {
-                    event_.Set();
-                    event_.Close();
-                    event_ = null;
-                }
+                for (int index = beginIndex_; index != endIndex_; ++ index)
+                    tradeTransactionReports_[index % tradeTransactionReports_.Length] = null;
+
+                tradeTransactionReportCount_ = 0;
+                beginIndex_ = 0;
+                endIndex_ = 0;
             }
         }
 
@@ -74,12 +100,93 @@ namespace TickTrader.FDK.TradeCapture
             GC.SuppressFinalize(this);
         }
 
+        internal void SetResult(TradeTransactionReport tradeTransactionReport)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetResult(tradeTransactionReport);
+                        taskCompletionSource_ = null;
+                    }
+                    else
+                    {
+                        if (tradeTransactionReportCount_ == tradeTransactionReports_.Length)
+                        {
+                            TradeTransactionReport[] tradeTransactionReports = new TradeTransactionReport[tradeTransactionReports_.Length + GrowSize];
+
+                            if (endIndex_ > beginIndex_)
+                            {
+                                Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, tradeTransactionReportCount_);
+                            }
+                            else
+                            {
+                                int count = tradeTransactionReports_.Length - beginIndex_;
+                                Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, count);
+                                Array.Copy(tradeTransactionReports_, 0, tradeTransactionReports, count, endIndex_);
+                            }
+
+                            tradeTransactionReports_ = tradeTransactionReports;
+                            beginIndex_ = 0;
+                            endIndex_ = tradeTransactionReportCount_;
+                        }
+
+                        tradeTransactionReports_[endIndex_] = tradeTransactionReport;
+                        endIndex_ = (endIndex_ + 1) % tradeTransactionReports_.Length;
+                        ++ tradeTransactionReportCount_;
+                    }
+                }
+            }
+        }
+
+        internal void SetEnd()
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    completed_ = true;
+
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetResult(null);
+                        taskCompletionSource_ = null;
+                    }
+                }
+            }
+        }
+
+        internal void SetError(Exception exception)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    completed_ = true;
+                    exception_ = exception;                        
+
+                    if (taskCompletionSource_ != null)
+                    {
+                        taskCompletionSource_.SetException(exception);
+                        taskCompletionSource_ = null;
+                    }                        
+                }
+            }
+        }
+
+        const int GrowSize = 1000;
+
         Client client_;
 
         internal object mutex_;
         internal bool completed_;
-        internal TaskCompletionSource<TradeTransactionReport> taskCompletionSource_;
-        internal TradeTransactionReport tradeTransactionReport_;
-        internal AutoResetEvent event_;
+        TaskCompletionSource<TradeTransactionReport> taskCompletionSource_;
+        TradeTransactionReport[] tradeTransactionReports_;
+        int tradeTransactionReportCount_;
+        int beginIndex_;
+        int endIndex_;
+        Exception exception_;
     }
 }

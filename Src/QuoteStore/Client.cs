@@ -564,16 +564,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     if (barEnumerator_ != null)
                     {
-                        lock (barEnumerator_.mutex_)
-                        {
-                            barEnumerator_.completed_ = true;
-
-                            if (barEnumerator_.taskCompletionSource_ != null)
-                            {
-                                barEnumerator_.taskCompletionSource_.SetException(exception);
-                                barEnumerator_.taskCompletionSource_ = null;
-                            }
-                        }
+                        barEnumerator_.SetError(exception);
                     }
                     else
                         taskCompletionSource_.SetException(exception);
@@ -603,16 +594,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     if (quoteEnumerator_ != null)
                     {
-                        lock (quoteEnumerator_.mutex_)
-                        {
-                            quoteEnumerator_.completed_ = true;
-
-                            if (quoteEnumerator_.taskCompletionSource_ != null)
-                            {
-                                quoteEnumerator_.taskCompletionSource_.SetException(exception);
-                                quoteEnumerator_.taskCompletionSource_ = null;
-                            }                            
-                        }
+                        quoteEnumerator_.SetError(exception);
                     }
                     else
                         taskCompletionSource_.SetException(exception);
@@ -1268,7 +1250,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetBarEnumeratorError(context, exception);
+                            context.barEnumerator_.SetError(exception);
                     }
                 }
                 else
@@ -1302,7 +1284,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetQuoteEnumeratorError(context, exception);
+                            context.quoteEnumerator_.SetError(exception);
                     }
                 }
             }
@@ -1351,7 +1333,11 @@ namespace TickTrader.FDK.QuoteStore
                                     }
 
                                     if (context.taskCompletionSource_ != null)
-                                        SetBarEnumeratorResult(context);
+                                    {
+                                        Bar bar = context.bar_.Clone();
+
+                                        context.barEnumerator_.SetResult(bar);
+                                    }
                                 }                                    
                             }
                         }
@@ -1385,7 +1371,11 @@ namespace TickTrader.FDK.QuoteStore
                             }
 
                             if (context.taskCompletionSource_ != null)
-                                SetBarEnumeratorResult(context);
+                            {
+                                Bar bar = context.bar_.Clone();
+
+                                context.barEnumerator_.SetResult(bar);
+                            }
                         }
                     }
                 }
@@ -1435,7 +1425,11 @@ namespace TickTrader.FDK.QuoteStore
                                     }
 
                                     if (context.taskCompletionSource_ != null)
-                                        SetQuoteEnumeratorResult(context);
+                                    {
+                                        Quote quote = context.quote_.Clone();
+
+                                        context.quoteEnumerator_.SetResult(quote);
+                                    }
                                 }
                             }
                         }
@@ -1469,7 +1463,11 @@ namespace TickTrader.FDK.QuoteStore
                             }
 
                             if (context.taskCompletionSource_ != null)
-                                SetQuoteEnumeratorResult(context);
+                            {
+                                Quote quote = context.quote_.Clone();
+
+                                context.quoteEnumerator_.SetResult(quote);
+                            }
                         }                                    
                     }
                 }
@@ -1495,7 +1493,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetBarEnumeratorEnd(context);
+                            context.barEnumerator_.SetEnd();
                     }
                     catch (Exception exception)
                     {
@@ -1511,7 +1509,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetBarEnumeratorError(context, exception);
+                            context.barEnumerator_.SetError(exception);
                     }
                 }
                 else
@@ -1532,7 +1530,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetQuoteEnumeratorEnd(context);
+                            context.quoteEnumerator_.SetEnd();
                     }
                     catch (Exception exception)
                     {
@@ -1548,7 +1546,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            SetQuoteEnumeratorError(context, exception);
+                            context.quoteEnumerator_.SetError(exception);
                     }
                 }
             }
@@ -1580,7 +1578,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.barEnumerator_ != null)
                             {
-                                SetBarEnumeratorError(context, exception);
+                                context.barEnumerator_.SetError(exception);
                             }
                             else
                                 context.taskCompletionSource_.SetException(exception);
@@ -1603,7 +1601,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             if (context.barEnumerator_ != null)
                             {
-                                SetBarEnumeratorError(context, exception);
+                                context.barEnumerator_.SetError(exception);
                             }
                             else
                                 context.taskCompletionSource_.SetException(exception);
@@ -1635,7 +1633,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.quoteEnumerator_ != null)
                             {
-                                SetQuoteEnumeratorError(context, exception);
+                                context.quoteEnumerator_.SetError(exception);
                             }
                             else
                                 context.taskCompletionSource_.SetException(exception);
@@ -1658,7 +1656,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             if (context.quoteEnumerator_ != null)
                             {
-                                SetQuoteEnumeratorError(context, exception);
+                                context.quoteEnumerator_.SetError(exception);
                             }
                             else
                                 context.taskCompletionSource_.SetException(exception);
@@ -1714,152 +1712,6 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch
                 {
-                }
-            }
-
-            void SetBarEnumeratorResult(BarDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.barEnumerator_.mutex_)
-                    {
-                        if (context.barEnumerator_.taskCompletionSource_ != null)
-                        {
-                            Bar bar = context.bar_;
-                            context.bar_ = context.barEnumerator_.bar_;
-                            context.barEnumerator_.bar_ = bar;
-
-                            context.barEnumerator_.completed_ = false;
-                            context.barEnumerator_.taskCompletionSource_.SetResult(bar);
-                            context.barEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-
-                        if (context.barEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.barEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetBarEnumeratorEnd(BarDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.barEnumerator_.mutex_)
-                    {
-                        if (context.barEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.barEnumerator_.completed_ = true;
-                            context.barEnumerator_.taskCompletionSource_.SetResult(null);
-                            context.barEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-
-                        if (context.barEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.barEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetBarEnumeratorError(BarDownloadAsyncContext context, Exception exception)
-            {
-                while (true)
-                {
-                    lock (context.barEnumerator_.mutex_)
-                    {
-                        if (context.barEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.barEnumerator_.completed_ = true;
-                            context.barEnumerator_.taskCompletionSource_.SetException(exception);
-                            context.barEnumerator_.taskCompletionSource_ = null;
-
-                            break;
-                        }
-
-                        if (context.barEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.barEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetQuoteEnumeratorResult(TickDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.quoteEnumerator_.mutex_)
-                    {
-                        if (context.quoteEnumerator_.taskCompletionSource_ != null)
-                        {
-                            Quote quote = context.quote_;
-                            context.quote_ = context.quoteEnumerator_.quote_;
-                            context.quoteEnumerator_.quote_ = quote;
-
-                            context.quoteEnumerator_.completed_ = false;
-                            context.quoteEnumerator_.taskCompletionSource_.SetResult(quote);
-                            context.quoteEnumerator_.taskCompletionSource_ = null;                            
-
-                            break;
-                        }
-
-                        if (context.quoteEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.quoteEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetQuoteEnumeratorEnd(TickDownloadAsyncContext context)
-            {
-                while (true)
-                {
-                    lock (context.quoteEnumerator_.mutex_)
-                    {
-                        if (context.quoteEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.quoteEnumerator_.completed_ = true;
-                            context.quoteEnumerator_.taskCompletionSource_.SetResult(null);
-                            context.quoteEnumerator_.taskCompletionSource_ = null;                            
-
-                            break;
-                        }
-
-                        if (context.quoteEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.quoteEnumerator_.event_.WaitOne();
-                }
-            }
-
-            void SetQuoteEnumeratorError(TickDownloadAsyncContext context, Exception exception)
-            {
-                while (true)
-                {
-                    lock (context.quoteEnumerator_.mutex_)
-                    {
-                        if (context.quoteEnumerator_.taskCompletionSource_ != null)
-                        {
-                            context.quoteEnumerator_.completed_ = true;
-                            context.quoteEnumerator_.taskCompletionSource_.SetException(exception);
-                            context.quoteEnumerator_.taskCompletionSource_ = null;                            
-
-                            break;
-                        }
-
-                        if (context.quoteEnumerator_.completed_)
-                            break;
-                    }
-
-                    context.quoteEnumerator_.event_.WaitOne();
                 }
             }
 
