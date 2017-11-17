@@ -200,7 +200,7 @@ namespace QuoteStoreAsyncSample
                             (
                                 symbol,
                                 (PriceType)Enum.Parse(typeof(PriceType), priceType),
-                                periodicity,
+                                new BarPeriod(periodicity),
                                 DateTime.Parse(from),
                                 DateTime.Parse(to)
                             );
@@ -388,14 +388,14 @@ namespace QuoteStoreAsyncSample
             client_.GetPeriodicityListAsync(this, symbol);
         }
 
-        void OnPeriodicityListResult(Client quoteFeedClient, object data, string[] periodicities)
+        void OnPeriodicityListResult(Client quoteFeedClient, object data, BarPeriod[] periodicities)
         {
             try
             {
                 int count = periodicities.Length;
                 for (int index = 0; index < count; ++index)
                 {
-                    string periodicity = periodicities[index];
+                    BarPeriod periodicity = periodicities[index];
 
                     Console.Error.WriteLine("Periodicity : {0}", periodicity);
                 }
@@ -418,7 +418,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void DownloadBars(string symbol, PriceType priceType, string periodicity, DateTime from, DateTime to)
+        void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
             client_.DownloadBarsAsync(this, Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to);
         }
@@ -444,7 +444,7 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}", bar.From, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
+                Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
             }
             catch (Exception exception)
             {

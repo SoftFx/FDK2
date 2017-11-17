@@ -47,7 +47,7 @@
                 Guid.NewGuid().ToString(), 
                 bars_.symbol_, 
                 bars_.priceType_, 
-                bars_.period_.ToString(), 
+                bars_.period_, 
                 bars_.startTime_, 
                 bars_.endTime_, 
                 bars_.timeout_

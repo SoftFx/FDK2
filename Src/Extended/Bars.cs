@@ -71,7 +71,7 @@
                 Guid.NewGuid().ToString(), 
                 symbol_, 
                 priceType_, 
-                period_.ToString(), 
+                period_, 
                 startTime_, 
                 endTime_, 
                 timeout_
@@ -91,7 +91,7 @@
                 Guid.NewGuid().ToString(), 
                 symbol_, 
                 priceType_, 
-                period_.ToString(), 
+                period_, 
                 startTime_, 
                 endTime_, 
                 timeout_

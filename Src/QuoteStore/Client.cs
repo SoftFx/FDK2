@@ -240,10 +240,14 @@ namespace TickTrader.FDK.QuoteStore
 
         public delegate void SymbolListResultDelegate(Client client, object data, string[] symbols);
         public delegate void SymbolListErrorDelegate(Client client, object data, string message);
-        public delegate void PeriodicityListResultDelegate(Client client, object data, string[] periodicities);
+        public delegate void PeriodicityListResultDelegate(Client client, object data, BarPeriod[] barPeriods);
         public delegate void PeriodicityListErrorDelegate(Client client, object data, string message);
+        public delegate void BarListResultDelegate(Client client, object data, TickTrader.FDK.Common.Bar[] bars);
+        public delegate void BarListErrorDelegate(Client client, object data, string message);
+        public delegate void QuoteListResultDelegate(Client client, object data, Quote[] bars);
+        public delegate void QuoteListErrorDelegate(Client client, object data, string message);
         public delegate void BarDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
-        public delegate void BarDownloadResultDelegate(Client client, object data, string downloadId, Bar bar);
+        public delegate void BarDownloadResultDelegate(Client client, object data, string downloadId, TickTrader.FDK.Common.Bar bar);
         public delegate void BarDownloadResultEndDelegate(Client client, object data, string downloadId);
         public delegate void BarDownloadErrorDelegate(Client client, object data, string downloadId, string message);
         public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
@@ -256,6 +260,10 @@ namespace TickTrader.FDK.QuoteStore
         public event SymbolListErrorDelegate SymbolListErrorEvent;
         public event PeriodicityListResultDelegate PeriodicityListResultEvent;
         public event PeriodicityListErrorDelegate PeriodicityListErrorEvent;
+        public event BarListResultDelegate BarListResultEvent;
+        public event BarListErrorDelegate BarListErrorEvent;
+        public event QuoteListResultDelegate QuoteListResultEvent;
+        public event QuoteListErrorDelegate QuoteListErrorEvent;
         public event BarDownloadResultBeginDelegate BarDownloadResultBeginEvent;
         public event BarDownloadResultDelegate BarDownloadResultEvent;
         public event BarDownloadResultEndDelegate BarDownloadResultEndEvent;
@@ -301,7 +309,7 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendSymbolListRequest(context, request);
         }
 
-        public string[] GetPeriodicityList(string symbol, int timeout)
+        public BarPeriod[] GetPeriodicityList(string symbol, int timeout)
         {
             return ConvertToSync(GetPeriodicityListAsync(symbol), timeout);
         }
@@ -315,11 +323,11 @@ namespace TickTrader.FDK.QuoteStore
             GetPeriodicityListInternal(context, symbol);
         }
 
-        public Task<string[]> GetPeriodicityListAsync(string symbol)
+        public Task<BarPeriod[]> GetPeriodicityListAsync(string symbol)
         {
             // Create a new async context
             PeriodictityListAsyncContext context = new PeriodictityListAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
+            context.taskCompletionSource_ = new TaskCompletionSource<BarPeriod[]>();
 
             GetPeriodicityListInternal(context, symbol);
 
@@ -337,35 +345,116 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendPeriodicityListRequest(context, request);
         }
 
-        public BarEnumerator DownloadBars(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to, int timeout)
+        public TickTrader.FDK.Common.Bar[] GetBarList(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count, int timeout)
         {
-            return ConvertToSync(DownloadBarsAsync(downloadId, symbol, priceType, periodicity, from, to), timeout);
+            return ConvertToSync(GetBarListAsync(symbol, priceType, barPeriod, from, count), timeout);
         }
 
-        public void DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        public void GetBarListAsync(object data, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
+        {
+            // Create a new async context
+            BarListAsyncContext context = new BarListAsyncContext();
+            context.Data = data;
+
+            GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
+        }
+
+        public Task<TickTrader.FDK.Common.Bar[]> GetBarListAsync(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
+        {
+            // Create a new async context
+            BarListAsyncContext context = new BarListAsyncContext();            
+            context.taskCompletionSource_ = new TaskCompletionSource<Common.Bar[]>();            
+
+            GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetBarListInternal(BarListAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
+        {
+            context.barPeriod_ = barPeriod;
+
+            // Create a request
+            BarListRequest request = new BarListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.PriceType = Convert(priceType);
+            request.Periodicity = barPeriod.ToString();
+            request.From = from;
+            request.Count = count;
+
+            // Send request to the server
+            session_.SendBarListRequest(context, request);
+        }
+
+        public Quote[] GetQuoteList(string symbol, QuoteDepth depth, DateTime from, int count, int timeout)
+        {
+            return ConvertToSync(GetQuoteListAsync(symbol, depth, from, count), timeout);
+        }
+
+        public void GetQuoteListAsync(object data, string symbol, QuoteDepth depth, DateTime from, int count)
+        {
+            // Create a new async context
+            QuoteListAsyncContext context = new QuoteListAsyncContext();
+            context.Data = data;
+
+            GetQuoteListInternal(context, symbol, depth, from, count);
+        }
+
+        public Task<Quote[]> GetQuoteListAsync(string symbol, QuoteDepth depth, DateTime from, int count)
+        {
+            // Create a new async context
+            QuoteListAsyncContext context = new QuoteListAsyncContext();
+            context.taskCompletionSource_ = new TaskCompletionSource<Quote[]>();
+
+            GetQuoteListInternal(context, symbol, depth, from, count);
+
+            return context.taskCompletionSource_.Task;
+        }
+
+        void GetQuoteListInternal(QuoteListAsyncContext context, string symbol, QuoteDepth depth, DateTime from, int count)
+        {
+            // Create a request
+            TickListRequest request = new TickListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.Depth = Convert(depth);
+            request.From = from;
+            request.Count = count;
+
+            // Send request to the server
+            session_.SendTickListRequest(context, request);
+        }
+
+        public BarEnumerator DownloadBars(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
+        {
+            return ConvertToSync(DownloadBarsAsync(downloadId, symbol, priceType, barPeriod, from, to), timeout);
+        }
+
+        public void DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             // Create a new async context
             BarDownloadAsyncContext context = new BarDownloadAsyncContext();
             context.Data = data;
 
-            DownloadBarsInternal(context, downloadId, symbol, priceType, periodicity, from, to);
+            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
         }
 
-        public Task<BarEnumerator> DownloadBarsAsync(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        public Task<BarEnumerator> DownloadBarsAsync(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             // Create a new async context
             BarDownloadAsyncContext context = new BarDownloadAsyncContext();
             context.taskCompletionSource_ = new TaskCompletionSource<BarEnumerator>();
 
-            DownloadBarsInternal(context, downloadId, symbol, priceType, periodicity, from, to);
+            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
 
             return context.taskCompletionSource_.Task;
         }
 
-        void DownloadBarsInternal(BarDownloadAsyncContext context, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, string periodicity, DateTime from, DateTime to)
+        void DownloadBarsInternal(BarDownloadAsyncContext context, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             context.priceType_ = priceType;
-            context.periodicity_ = periodicity;
+            context.barPeriod_ = barPeriod;
             context.from_ = from;
             context.to_ = to;
 
@@ -374,7 +463,7 @@ namespace TickTrader.FDK.QuoteStore
             request.Id = downloadId;
             request.SymbolId = symbol;
             request.PriceType = Convert(priceType);
-            request.Periodicity = periodicity;
+            request.Periodicity = barPeriod.ToString();
             request.From = from;
             request.To = to;
 
@@ -390,7 +479,7 @@ namespace TickTrader.FDK.QuoteStore
         public void DownloadQuotesAsync(object data, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             // Create a new async context
-            TickDownloadAsyncContext context = new TickDownloadAsyncContext();
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext();
             context.Data = data;
 
             DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
@@ -399,7 +488,7 @@ namespace TickTrader.FDK.QuoteStore
         public Task<QuoteEnumerator> DownloadQuotesAsync(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             // Create a new async context
-            TickDownloadAsyncContext context = new TickDownloadAsyncContext();
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext();
             context.taskCompletionSource_ = new TaskCompletionSource<QuoteEnumerator>();
 
             DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
@@ -407,7 +496,7 @@ namespace TickTrader.FDK.QuoteStore
             return context.taskCompletionSource_.Task;
         }
 
-        void DownloadQuotesInternal(TickDownloadAsyncContext context, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        void DownloadQuotesInternal(QuoteDownloadAsyncContext context, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             context.quoteDepth_ = depth;
             context.from_ = from;
@@ -549,7 +638,38 @@ namespace TickTrader.FDK.QuoteStore
                     taskCompletionSource_.SetException(exception);
             }
 
-            public TaskCompletionSource<string[]> taskCompletionSource_;
+            public TaskCompletionSource<BarPeriod[]> taskCompletionSource_;
+        }
+
+        class BarListAsyncContext : BarListRequestClientContext, IAsyncContext
+        {
+            public BarListAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public BarPeriod barPeriod_;
+            public TaskCompletionSource<TickTrader.FDK.Common.Bar[]> taskCompletionSource_;
+        }
+
+        class QuoteListAsyncContext : TickListRequestClientContext, IAsyncContext
+        {
+            public QuoteListAsyncContext() : base(false)
+            {
+            }
+
+            public void SetDisconnectError(Exception exception)
+            {
+                if (taskCompletionSource_ != null)
+                    taskCompletionSource_.SetException(exception);
+            }
+
+            public TaskCompletionSource<Quote[]> taskCompletionSource_;
         }
 
         class BarDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
@@ -572,19 +692,19 @@ namespace TickTrader.FDK.QuoteStore
             }
                         
             public TickTrader.FDK.Common.PriceType priceType_;
-            public string periodicity_;
+            public BarPeriod barPeriod_;
             public DateTime from_;
             public DateTime to_;            
             public byte[] fileData_;
             public int fileSize_;
             public TaskCompletionSource<BarEnumerator> taskCompletionSource_;
             public BarEnumerator barEnumerator_;
-            public Bar bar_;            
+            public TickTrader.FDK.Common.Bar bar_;            
         }
 
-        class TickDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
+        class QuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
         {
-            public TickDownloadAsyncContext() : base(false)
+            public QuoteDownloadAsyncContext() : base(false)
             {
             }
 
@@ -1011,11 +1131,14 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     StringArray reportPeriodicities = message.Periodicities;
                     int count = reportPeriodicities.Length;
-                    string[] resultPeriodicities = new string[count];
+                    BarPeriod[] resultPeriodicities = new BarPeriod[count];
 
                     for (int index = 0; index < count; ++index)
                     {
-                        resultPeriodicities[index] = reportPeriodicities[index];
+                        string reportPeriodicity = reportPeriodicities[index];
+                        BarPeriod resultPeriodicity = new BarPeriod(reportPeriodicity); 
+
+                        resultPeriodicities[index] = resultPeriodicity;
                     }
 
                     if (client_.PeriodicityListResultEvent != null)
@@ -1034,11 +1157,11 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SymbolListErrorEvent != null)
+                    if (client_.PeriodicityListErrorEvent != null)
                     {
                         try
                         {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception.Message);
+                            client_.PeriodicityListErrorEvent(client_, context.Data, exception.Message);
                         }
                         catch
                         {
@@ -1093,6 +1216,243 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
+            public override void OnBarListReport(ClientSession session, BarListRequestClientContext BarListRequestClientContext, BarListReport message)
+            {
+                BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
+
+                try
+                {
+                    SoftFX.Net.QuoteStore.BarArray reportBars = message.Bars;
+                    int count = reportBars.Length;
+                    TickTrader.FDK.Common.Bar[] resultBars = new TickTrader.FDK.Common.Bar[count];
+
+                    for (int index = 0; index < count; ++index)
+                    {
+                        SoftFX.Net.QuoteStore.Bar reportBar = reportBars[index];
+                        TickTrader.FDK.Common.Bar resultBar = new TickTrader.FDK.Common.Bar();
+
+                        resultBar.From = reportBar.Time;
+                        resultBar.To = reportBar.Time + context.barPeriod_;
+                        resultBar.Open = reportBar.Open;
+                        resultBar.Close = reportBar.Close;
+                        resultBar.High = reportBar.High;
+                        resultBar.Low = reportBar.Low;
+                        resultBar.Volume = reportBar.Volume;
+
+                        resultBars[index] = resultBar;
+                    }
+
+                    if (client_.BarListResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarListResultEvent(client_, context.Data, resultBars);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetResult(resultBars);
+                }
+                catch (Exception exception)
+                {
+                    if (client_.BarListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarListErrorEvent(client_, context.Data, exception.Message);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnBarListReject(ClientSession session, BarListRequestClientContext BarListRequestClientContext, Reject message)
+            {
+                var context = (BarListAsyncContext) BarListRequestClientContext;
+
+                try
+                {
+                    string text = message.Text;
+
+                    if (client_.BarListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarListErrorEvent(client_, context.Data, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(text);
+                        context.taskCompletionSource_.SetException(exception);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    if (client_.BarListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarListErrorEvent(client_, context.Data, exception.Message);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnTickListReport(ClientSession session, TickListRequestClientContext TickListRequestClientContext, TickListReport message)
+            {
+                QuoteListAsyncContext context = (QuoteListAsyncContext) TickListRequestClientContext;
+
+                try
+                {
+                    SoftFX.Net.QuoteStore.TickArray reportTicks = message.Ticks;
+                    int count = reportTicks.Length;
+                    TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+
+                    for (int index = 0; index < count; ++index)
+                    {
+                        SoftFX.Net.QuoteStore.Tick reportTick = reportTicks[index];
+                        TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+
+                        DateTime time = reportTick.Time;
+
+                        if (reportTick.Index != 0)
+                        {
+                            string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
+                        }
+                        else
+                            string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
+
+                        resultQuote.CreatingTime = time;                        
+
+                        SoftFX.Net.QuoteStore.PriceLevelArray reportBids = reportTick.Bids;
+                        int bidCount = reportBids.Length;
+                        QuoteEntry[] resultBids = new QuoteEntry[bidCount];
+
+                        QuoteEntry resultBid = new QuoteEntry();
+
+                        for (int bidIndex = 0; bidIndex < bidCount; ++bidIndex)
+                        {
+                            SoftFX.Net.QuoteStore.PriceLevel reportBid = reportBids[bidIndex];
+
+                            resultBid.Price = reportBid.Price;
+                            resultBid.Volume = reportBid.Size;
+
+                            resultBids[bidIndex] = resultBid;
+                        }
+                        
+                        SoftFX.Net.QuoteStore.PriceLevelArray reportAsks = reportTick.Asks;
+                        int askCount = reportAsks.Length;
+                        QuoteEntry[] resultAsks = new QuoteEntry[askCount];
+
+                        QuoteEntry resultAsk = new QuoteEntry();
+
+                        for (int askIndex = 0; askIndex < askCount; ++askIndex)
+                        {
+                            SoftFX.Net.QuoteStore.PriceLevel reportAsk = reportAsks[askIndex];
+
+                            resultAsk.Price = reportAsk.Price;
+                            resultAsk.Volume = reportAsk.Size;
+
+                            resultAsks[askIndex] = resultAsk;
+                        }
+
+                        resultQuotes[index] = resultQuote;
+                    }
+
+                    if (client_.QuoteListResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuoteListResultEvent(client_, context.Data, resultQuotes);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetResult(resultQuotes);
+                }
+                catch (Exception exception)
+                {
+                    if (client_.QuoteListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuoteListErrorEvent(client_, context.Data, exception.Message);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnTickListReject(ClientSession session, TickListRequestClientContext TickListRequestClientContext, Reject message)
+            {
+                var context = (QuoteListAsyncContext) TickListRequestClientContext;
+
+                try
+                {
+                    string text = message.Text;
+
+                    if (client_.QuoteListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuoteListErrorEvent(client_, context.Data, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(text);
+                        context.taskCompletionSource_.SetException(exception);
+                    }
+                }
+                catch (Exception exception)
+                {
+                    if (client_.QuoteListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuoteListErrorEvent(client_, context.Data, exception.Message);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
             public override void OnDownloadBeginReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadBeginReport message)
             {
                 if (DownloadRequestClientContext is BarDownloadAsyncContext)
@@ -1115,7 +1475,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         context.fileData_ = new byte[maxFileSize];
                         context.fileSize_ = 0;
-                        context.bar_ = new Bar();
+                        context.bar_ = new TickTrader.FDK.Common.Bar();
 
                         string requestId = message.RequestId;
                         DateTime availFrom = message.AvailFrom;
@@ -1157,7 +1517,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 else
                 {
-                    TickDownloadAsyncContext context = (TickDownloadAsyncContext) DownloadRequestClientContext;
+                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
 
                     try
                     {
@@ -1255,7 +1615,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 else
                 {
-                    TickDownloadAsyncContext context = (TickDownloadAsyncContext) DownloadRequestClientContext;
+                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
 
                     try
                     {
@@ -1301,7 +1661,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         using (ZipFile zipFile = new ZipFile(memoryStream))
                         {
-                            string fileName = context.periodicity_ + " " + context.priceType_.ToString("g").ToLowerInvariant() + ".txt";
+                            string fileName = context.barPeriod_.ToString() + " " + context.priceType_.ToString("g").ToLowerInvariant() + ".txt";
                             ZipEntry zipEntry = zipFile.GetEntry(fileName);
 
                             if (zipEntry == null)
@@ -1313,7 +1673,7 @@ namespace TickTrader.FDK.QuoteStore
 
                                 while (! barFormatter.IsEnd)
                                 {
-                                    barFormatter.Deserialize(context.bar_);
+                                    barFormatter.Deserialize(context.barPeriod_, context.bar_);
 
                                     if (context.bar_.From < context.from_)
                                         continue;
@@ -1334,7 +1694,7 @@ namespace TickTrader.FDK.QuoteStore
 
                                     if (context.taskCompletionSource_ != null)
                                     {
-                                        Bar bar = context.bar_.Clone();
+                                        TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
 
                                         context.barEnumerator_.SetResult(bar);
                                     }
@@ -1351,7 +1711,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         while (! barFormatter.IsEnd)
                         {
-                            barFormatter.Deserialize(context.bar_);
+                            barFormatter.Deserialize(context.barPeriod_, context.bar_);
 
                             if (context.bar_.From < context.from_)
                                 continue;
@@ -1372,7 +1732,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.taskCompletionSource_ != null)
                             {
-                                Bar bar = context.bar_.Clone();
+                                TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
 
                                 context.barEnumerator_.SetResult(bar);
                             }
@@ -1381,7 +1741,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            void ProcessQuoteDownloadFile(TickDownloadAsyncContext context, string downloadId)
+            void ProcessQuoteDownloadFile(QuoteDownloadAsyncContext context, string downloadId)
             {
                 if (context.fileSize_ >= 4 && 
                     context.fileData_[0] == 0x50 && 
@@ -1514,7 +1874,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 else
                 {
-                    TickDownloadAsyncContext context = (TickDownloadAsyncContext) DownloadRequestClientContext;
+                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
 
                     try
                     {
@@ -1610,7 +1970,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 else
                 {
-                    TickDownloadAsyncContext context = (TickDownloadAsyncContext) DownloadRequestClientContext;
+                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
 
                     try
                     {

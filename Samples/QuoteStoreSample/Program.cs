@@ -182,7 +182,7 @@ namespace QuoteStoreSample
                             (
                                 symbol,
                                 (PriceType)Enum.Parse(typeof(PriceType), priceType),
-                                periodicity,
+                                new BarPeriod(periodicity),
                                 DateTime.Parse(from),
                                 DateTime.Parse(to)
                             );
@@ -286,18 +286,18 @@ namespace QuoteStoreSample
 
         void GetPeriodicityList(string symbol)
         {
-            string[] periodicities = client_.GetPeriodicityList(symbol, -1);
+            BarPeriod[] periodicities = client_.GetPeriodicityList(symbol, -1);
 
             int count = periodicities.Length;
             for (int index = 0; index < count; ++index)
             {
-                string periodicity = periodicities[index];
+                BarPeriod periodicity = periodicities[index];
 
                 Console.Error.WriteLine("Periodicity : {0}", periodicity);
             }
         }
 
-        void DownloadBars(string symbol, PriceType priceType, string periodicity, DateTime from, DateTime to)
+        void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
             BarEnumerator barEnumerator = client_.DownloadBars(Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to, -1);
 
@@ -306,7 +306,7 @@ namespace QuoteStoreSample
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
 
                 for (Bar bar = barEnumerator.Next(-1); bar != null; bar = barEnumerator.Next(-1))
-                    Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}", bar.From, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
+                    Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
 
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
             }

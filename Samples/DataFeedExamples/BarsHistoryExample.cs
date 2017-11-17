@@ -17,24 +17,44 @@
             var startTime = DateTime.Parse("06/01/2017 08:00:00", CultureInfo.InvariantCulture);
             var endTime = DateTime.Parse("06/30/2017 07:59:59", CultureInfo.InvariantCulture);
 
-            var bars = this.Feed.Server.GetBarsHistory("EURUSD", PriceType.Bid, BarPeriod.M1, startTime, endTime);
+            var bars = this.Feed.Server.GetBarsHistory("EURUSD", BarPeriod.M1, startTime, endTime);
 
-            var sumDeviation = 0D;
-            var count = 0;
+            var bidSumDeviation = 0D;
+            var bidCount = 0;
+
+            var askSumDeviation = 0D;
+            var askCount = 0;            
 
             foreach (var bar in bars)
             {
-                sumDeviation += (bar.High - bar.Low);
-                count++;
+                if (bar.Bid != null)
+                {
+                    bidSumDeviation += (bar.Bid.High - bar.Bid.Low);
+                    bidCount++;
+                }               
+
+                if (bar.Ask != null)
+                {
+                    askSumDeviation += (bar.Ask.High - bar.Ask.Low);
+                    askCount++;
+                }                
             }
 
-            if (count != 0)
+            if (bidCount != 0)
             {
-                var averageDeviation = sumDeviation / count;
-                Console.WriteLine("Average deviation = {0}", averageDeviation);
+                var averageDeviation = bidSumDeviation / bidCount;
+                Console.WriteLine("Average bid deviation = {0}", averageDeviation);
             }
             else
-                Console.WriteLine("Average deviation = NA");
+                Console.WriteLine("Average bid deviation = NA");
+
+            if (askCount != 0)
+            {
+                var averageDeviation = askSumDeviation / askCount;
+                Console.WriteLine("Average ask deviation = {0}", averageDeviation);
+            }
+            else
+                Console.WriteLine("Average ask deviation = NA");
         }
     }
 }

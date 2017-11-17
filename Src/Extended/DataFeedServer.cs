@@ -169,6 +169,116 @@
         }
 
         /// <summary>
+        /// This method retrieves a limited list of bars of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="priceType"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Bar[] GetBars(string symbol, PriceType priceType, BarPeriod period, DateTime startTime, int count)
+        {
+            return GetBarsEx(symbol, priceType, period, startTime, count, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bars of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="priceType"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Bar[] GetBarsEx(string symbol, PriceType priceType, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteStoreClient_.GetBarList(symbol, priceType, period, startTime, count, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bar pairs of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public PairBar[] GetBars(string symbol, BarPeriod period, DateTime startTime, int count)
+        {
+            return GetBarsEx(symbol, period, startTime, count, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bar pairs of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public PairBar[] GetBarsEx(string symbol, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
+        {
+            Bar[] bidBars = dataFeed_.quoteStoreClient_.GetBarList(symbol, PriceType.Bid, period, startTime, count, timeoutInMilliseconds);
+            Bar[] askBars = dataFeed_.quoteStoreClient_.GetBarList(symbol, PriceType.Ask, period, startTime, count, timeoutInMilliseconds);
+
+            int absCount = Math.Abs(count);
+            List<PairBar> pairBars = new List<PairBar>(absCount);
+
+            int bidIndex = 0;
+            int askIndex = 0;
+
+            while (pairBars.Count < absCount)
+            {
+                Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
+                Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
+
+                PairBar pairBar;
+
+                if (bidBar != null)
+                {
+                    if (askBar != null)
+                    {
+                        int i = DateTime.Compare(bidBar.From, askBar.From);
+
+                        if (i < 0)
+                        {
+                            pairBar = new PairBar(bidBar, null);
+                            ++bidIndex;
+                        }
+                        else if (i > 0)
+                        {
+                            pairBar = new PairBar(null, askBar);
+                            ++askIndex;
+                        }
+                        else
+                        {
+                            pairBar = new PairBar(bidBar, askBar);
+                            ++bidIndex;
+                            ++askIndex;
+                        }
+                    }
+                    else
+                    {
+                        pairBar = new PairBar(bidBar, null);
+                        ++bidIndex;
+                    }
+                }
+                else if (askBar != null)
+                {
+                    pairBar = new PairBar(null, askBar);
+                    ++askIndex;
+                }
+                else
+                    break;
+
+                pairBars.Add(pairBar);
+            }
+
+            return pairBars.ToArray();
+        }
+
+        /// <summary>
         /// The method gets history bars from the server.
         /// </summary>
         /// <param name="symbol">A required symbol; can not be null.</param>
@@ -222,6 +332,32 @@
         public PairBars GetBarsHistoryEx(string symbol, BarPeriod period, DateTime startTime, DateTime endTime, int timeoutInMilliseconds)
         {
             return new PairBars(dataFeed_, symbol, period, startTime, endTime, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of quotes of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <param name="depth"></param>
+        /// <returns></returns>
+        public Quote[] GetQuotes(string symbol, DateTime startTime, int count, int depth)
+        {
+            return GetQuotesEx(symbol, startTime, count, depth, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of quotes of a symbol
+        /// </summary>
+        /// <param name="symbol"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <param name="depth"></param>
+        /// <returns></returns>
+        public Quote[] GetQuotesEx(string symbol, DateTime startTime, int count, int depth, int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteStoreClient_.GetQuoteList(symbol, depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2, startTime, count, timeoutInMilliseconds);
         }
 
         /// <summary>

@@ -16,7 +16,7 @@ namespace TickTrader.FDK.QuoteStore.Serialization
             get { return streamParser_.IsEnd(); }
         }
 
-        public void Deserialize(Bar bar)
+        public void Deserialize(BarPeriod barPeriod, Bar bar)
         {
             int year, mon, day, hour, min, sec;            
             
@@ -49,6 +49,7 @@ namespace TickTrader.FDK.QuoteStore.Serialization
             streamParser_.ReadDouble(out vol);
 
             bar.From = dt;
+            bar.To = dt + barPeriod;
             bar.Open = op;
             bar.High = hi;
             bar.Low = lo;
