@@ -87,7 +87,7 @@ namespace OrderEntryAsyncSample
 
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.ExecutionReportEvent += new Client.ExecutionReportDelegate(this.OnExecutionReport);
+            client_.OrderUpdateEvent += new Client.OrderUpdateDelegate(this.OnOrderUpdate);
             client_.PositionUpdateEvent += new Client.PositionUpdateDelegate(this.OnPositionUpdate);
             client_.AccountInfoUpdateEvent += new Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
@@ -924,7 +924,7 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnExecutionReport(Client orderEntryClient, ExecutionReport executionReport)
+        void OnOrderUpdate(Client orderEntryClient, ExecutionReport executionReport)
         {
             try
             {

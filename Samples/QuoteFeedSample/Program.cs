@@ -68,7 +68,8 @@ namespace QuoteFeedSample
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            client_.QuotesBeginEvent += new Client.QuotesBeginDelegate(this.OnQuotesBegin);
+            client_.SubscribeQuotesResultEvent += new Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
+            client_.UnsubscribeQuotesResultEvent += new Client.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             client_.QuoteUpdateEvent += new Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
             address_ = address;
@@ -358,7 +359,7 @@ namespace QuoteFeedSample
             }
         }
 
-        void OnQuotesBegin(Client client, Quote[] quotes)
+        void OnSubscribeQuotesResult(Client client, object data, Quote[] quotes)
         {
             try
             {
@@ -366,7 +367,7 @@ namespace QuoteFeedSample
                 {
                     Quote quote = quotes[index];
 
-                    Console.Error.WriteLine("Snapshot : {0}, {1}", quote.Symbol, quote.CreatingTime);
+                    Console.Error.WriteLine("Subscribed : {0}, {1}", quote.Symbol, quote.CreatingTime);
                     Console.Error.Write("    Bid :");
 
                     foreach (QuoteEntry entry in quote.Bids)
@@ -379,6 +380,23 @@ namespace QuoteFeedSample
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
 
                     Console.Error.WriteLine();
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnUnsubscribeQuotesResult(Client client, object data, string[] symbolIds)
+        {
+            try
+            {
+                for (int index = 0; index < symbolIds.Length; ++index)
+                {
+                    string symbolId = symbolIds[index];
+
+                    Console.Error.WriteLine("Unsubscribed {0}", symbolId);
                 }
             }
             catch (Exception exception)

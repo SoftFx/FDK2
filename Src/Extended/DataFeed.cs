@@ -120,8 +120,8 @@
             quoteFeedClient_.SymbolListResultEvent += new QuoteFeed.Client.SymbolListResultDelegate(this.OnSymbolListResult);
             quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.Client.SymbolListErrorDelegate(this.OnSymbolListError);
             quoteFeedClient_.SessionInfoUpdateEvent += new QuoteFeed.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            quoteFeedClient_.QuotesBeginEvent += new QuoteFeed.Client.QuotesBeginDelegate(this.OnQuotesBegin);
-            quoteFeedClient_.QuotesEndEvent += new QuoteFeed.Client.QuotesEndDelegate(this.OnQuotesEnd);
+            quoteFeedClient_.SubscribeQuotesResultEvent += new QuoteFeed.Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
+            quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.Client.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
             quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, true, logDirectory, logMessages);
@@ -799,6 +799,54 @@
             }
         }
 
+        void OnSubscribeQuotesResult(QuoteFeed.Client client, object data, Quote[] quotes)
+        {
+            try
+            {
+                lock (cache_.mutex_)
+                {
+                    for (int index = 0; index < quotes.Length; ++index)
+                    {
+                        Quote quote = quotes[index];
+                        cache_.quotes_[quote.Symbol] = quote;
+                    }
+                }
+
+                for (int index = 0; index < quotes.Length; ++index)
+                {
+                    Quote quote = quotes[index];
+
+                    SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
+                    subscribedArgs.Tick = quote;
+                    eventQueue_.PushEvent(subscribedArgs);
+
+                    // For backward compatibility
+                    TickEventArgs tickArgs = new TickEventArgs();
+                    tickArgs.Tick = quote;
+                    eventQueue_.PushEvent(tickArgs);
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnUnsubscribeQuotesResult(QuoteFeed.Client client, object data, string[] symbolIds)
+        {
+            try
+            {
+                for (int index = 0; index < symbolIds.Length; ++index)
+                {
+                    UnsubscribedEventArgs args = new UnsubscribedEventArgs();
+                    args.Symbol = symbolIds[index];
+                    eventQueue_.PushEvent(args);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         void OnLogoutResult(QuoteFeed.Client client, object data, LogoutInfo logoutInfo)
         {
             try
@@ -850,54 +898,6 @@
                 SessionInfoEventArgs args = new SessionInfoEventArgs();
                 args.Information = info;
                 eventQueue_.PushEvent(args);
-            }
-            catch
-            {
-            }
-        }
-
-        void OnQuotesBegin(QuoteFeed.Client client, Quote[] quotes)
-        {
-            try
-            {
-                lock (cache_.mutex_)
-                {
-                    for (int index = 0; index < quotes.Length; ++index)
-                    {
-                        Quote quote = quotes[index];
-                        cache_.quotes_[quote.Symbol] = quote;
-                    }
-                }
-
-                for (int index = 0; index < quotes.Length; ++index)
-                {
-                    Quote quote = quotes[index];
-
-                    SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
-                    subscribedArgs.Tick = quote;
-                    eventQueue_.PushEvent(subscribedArgs);
-
-                    // For backward compatibility
-                    TickEventArgs tickArgs = new TickEventArgs();
-                    tickArgs.Tick = quote;
-                    eventQueue_.PushEvent(tickArgs);
-                }
-            }
-            catch
-            {
-            }
-        }
-
-        void OnQuotesEnd(QuoteFeed.Client client, string[] symbolIds)
-        {
-            try
-            {
-                for (int index = 0; index < symbolIds.Length; ++index)
-                {
-                    UnsubscribedEventArgs args = new UnsubscribedEventArgs();
-                    args.Symbol = symbolIds[index];
-                    eventQueue_.PushEvent(args);
-                }
             }
             catch
             {

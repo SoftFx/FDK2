@@ -137,7 +137,7 @@
             orderEntryClient_.ClosePositionByErrorEvent += new OrderEntry.Client.ClosePositionByErrorDelegate(this.OnClosePositionByError);
             orderEntryClient_.SessionInfoUpdateEvent += new OrderEntry.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             orderEntryClient_.AccountInfoUpdateEvent += new OrderEntry.Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
-            orderEntryClient_.ExecutionReportEvent += new OrderEntry.Client.ExecutionReportDelegate(this.OnExecutionReport);
+            orderEntryClient_.OrderUpdateEvent += new OrderEntry.Client.OrderUpdateDelegate(this.OnOrderUpdate);
             orderEntryClient_.PositionUpdateEvent += new OrderEntry.Client.PositionUpdateDelegate(this.OnPositionUpdate);
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.Client.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
@@ -1248,7 +1248,7 @@
             }
         }
 
-        void OnExecutionReport(OrderEntry.Client client, ExecutionReport executionReport)
+        void OnOrderUpdate(OrderEntry.Client client, ExecutionReport executionReport)
         {
             try
             {

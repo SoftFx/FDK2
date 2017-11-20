@@ -324,15 +324,13 @@ namespace TickTrader.FDK.QuoteFeed
         public delegate void SymbolListErrorDelegate(Client client, object data, string message);
         public delegate void SessionInfoResultDelegate(Client client, object data, SessionInfo info);
         public delegate void SessionInfoErrorDelegate(Client client, object data, string message);
-        public delegate void SubscribeQuotesResultDelegate(Client client, object data);
+        public delegate void SubscribeQuotesResultDelegate(Client client, object data, Quote[] quotes);
         public delegate void SubscribeQuotesErrorDelegate(Client client, object data, string message);
-        public delegate void UnsubscribeQuotesResultDelegate(Client client, object data);
+        public delegate void UnsubscribeQuotesResultDelegate(Client client, object data, string[] symbolIds);
         public delegate void UnsubscribeQuotesErrorDelegate(Client client, object data, string message);
         public delegate void QuotesResultDelegate(Client client, object data, Quote[] quotes);
         public delegate void QuotesErrorDelegate(Client client, object data, string message);
         public delegate void SessionInfoUpdateDelegate(Client client, SessionInfo info);
-        public delegate void QuotesBeginDelegate(Client client, Quote[] quotes);
-        public delegate void QuotesEndDelegate(Client client, string[] symbolIds);
         public delegate void QuoteUpdateDelegate(Client client, Quote quote);        
         public delegate void NotificationDelegate(Client client, Common.Notification notification);
 
@@ -349,8 +347,6 @@ namespace TickTrader.FDK.QuoteFeed
         public event QuotesResultDelegate QuotesResultEvent;
         public event QuotesErrorDelegate QuotesErrorEvent;
         public event SessionInfoUpdateDelegate SessionInfoUpdateEvent;
-        public event QuotesBeginDelegate QuotesBeginEvent;
-        public event QuotesEndDelegate QuotesEndEvent;
         public event QuoteUpdateDelegate QuoteUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
@@ -1783,18 +1779,7 @@ namespace TickTrader.FDK.QuoteFeed
                         {
                             try
                             {
-                                client_.SubscribeQuotesResultEvent(client_, context.Data);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (client_.QuotesBeginEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuotesBeginEvent(client_, resultQuotes);
+                                client_.SubscribeQuotesResultEvent(client_, context.Data, resultQuotes);
                             }
                             catch
                             {
@@ -1829,22 +1814,11 @@ namespace TickTrader.FDK.QuoteFeed
 
                     try
                     {
-                        if (client_.QuotesEndEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuotesEndEvent(client_, context.SymbolIds);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
                         if (client_.UnsubscribeQuotesResultEvent != null)
                         {
                             try
                             {
-                                client_.UnsubscribeQuotesResultEvent(client_, context.Data);
+                                client_.UnsubscribeQuotesResultEvent(client_, context.Data, context.SymbolIds);
                             }
                             catch
                             {

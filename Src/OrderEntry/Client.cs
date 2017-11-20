@@ -338,7 +338,7 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void ClosePositionErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionByResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
         public delegate void ClosePositionByErrorDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport report);
-        public delegate void ExecutionReportDelegate(Client client, TickTrader.FDK.Common.ExecutionReport executionReport);
+        public delegate void OrderUpdateDelegate(Client client, TickTrader.FDK.Common.ExecutionReport executionReport);
         public delegate void PositionUpdateDelegate(Client client, TickTrader.FDK.Common.Position position);
         public delegate void AccountInfoUpdateDelegate(Client client, TickTrader.FDK.Common.AccountInfo accountInfo);
         public delegate void SessionInfoUpdateDelegate(Client client, SessionInfo sessionInfo);
@@ -365,7 +365,7 @@ namespace TickTrader.FDK.OrderEntry
         public event ClosePositionErrorDelegate ClosePositionErrorEvent;
         public event ClosePositionByResultDelegate ClosePositionByResultEvent;
         public event ClosePositionByErrorDelegate ClosePositionByErrorEvent;
-        public event ExecutionReportDelegate ExecutionReportEvent;
+        public event OrderUpdateDelegate OrderUpdateEvent;
         public event PositionUpdateDelegate PositionUpdateEvent;
         public event AccountInfoUpdateDelegate AccountInfoUpdateEvent;
         public event SessionInfoUpdateDelegate SessionInfoUpdateEvent;
@@ -3436,11 +3436,11 @@ namespace TickTrader.FDK.OrderEntry
                 {       
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                                  
-                    if (client_.ExecutionReportEvent != null)
+                    if (client_.OrderUpdateEvent != null)
                     {
                         try
                         {
-                            client_.ExecutionReportEvent(client_, result);
+                            client_.OrderUpdateEvent(client_, result);
                         }
                         catch
                         {

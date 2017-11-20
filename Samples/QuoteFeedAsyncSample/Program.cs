@@ -84,7 +84,6 @@ namespace QuoteFeedAsyncSample
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            client_.QuotesBeginEvent += new Client.QuotesBeginDelegate(this.OnQuotesBegin);
             client_.QuoteUpdateEvent += new Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
             address_ = address;
@@ -418,8 +417,33 @@ namespace QuoteFeedAsyncSample
             client_.SubscribeQuotesAsync(this, symbolIds.ToArray(), 5);
         }
 
-        void OnSubscribeQuotesResult(Client client, object data)
+        void OnSubscribeQuotesResult(Client client, object data, Quote[] quotes)
         {
+            try
+            {
+                for (int index = 0; index < quotes.Length; ++ index)
+                {
+                    Quote quote = quotes[index];
+
+                    Console.Error.WriteLine("Subscribed : {0}, {1}", quote.Symbol, quote.CreatingTime);
+                    Console.Error.Write("    Bid :");
+
+                    foreach (QuoteEntry entry in quote.Bids)
+                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Ask :");
+
+                    foreach (QuoteEntry entry in quote.Asks)
+                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
         void OnSubscribeQuotesError(Client client, object data, string message)
@@ -439,8 +463,14 @@ namespace QuoteFeedAsyncSample
             client_.UnsubscribeQuotesAsync(this, symbolIds.ToArray());
         }
 
-        void OnUnsubscribeQuotesResult(Client client, object data)
+        void OnUnsubscribeQuotesResult(Client client, object data, string[] symbolIds)
         {
+            for (int index = 0; index < symbolIds.Length; ++index)
+            {
+                string symbolId = symbolIds[index];
+
+                Console.Error.WriteLine("Unsubscribed {0}", symbolId);
+            }
         }
 
         void OnUnsubscribeQuotesError(Client client, object data, string message)
@@ -548,34 +578,6 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnQuotesBegin(Client quoteFeedClient, Quote[] quotes)
-        {
-            try
-            {
-                for (int index = 0; index < quotes.Length; ++ index)
-                {
-                    Quote quote = quotes[index];
-
-                    Console.Error.WriteLine("Snapshot : {0}, {1}", quote.Symbol, quote.CreatingTime);
-                    Console.Error.Write("    Bid :");
-
-                    foreach (QuoteEntry entry in quote.Bids)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                    Console.Error.Write("    Ask :");
-
-                    foreach (QuoteEntry entry in quote.Asks)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
 
         void OnQuoteUpdate(Client quoteFeedClient, Quote quote)
         {
