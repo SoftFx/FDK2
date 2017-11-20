@@ -19,8 +19,8 @@
 
             using (TradeTransactionReportsEnumerator enumerator = this.Trade.Server.GetTradeTransactionReports(TimeDirection.Forward, true, from, to, false))
             {
-                for (; ! enumerator.EndOfStream; enumerator.Next())
-                    Console.WriteLine(enumerator.Item);
+                for (enumerator.MoveNext(); enumerator.Current != null; enumerator.MoveNext())
+                    Console.WriteLine(enumerator.Current);
             }
 
             Console.WriteLine("Press any key to stop");

@@ -709,6 +709,72 @@
             throw new Exception("Not impled");
         }
 */
+
+        /// <summary>
+        /// The method starts trade transaction reports receiving.
+        /// </summary>
+        /// <param name="skipCancel"></param>
+        public void SubscribeTradeTransactionReports(bool skipCancel)
+        {
+            dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancel, dataTrade_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method starts trade transaction reports receiving.
+        /// </summary>
+        /// <param name="skipCancel"></param>
+        /// <param name="timeoutInMilliseconds"></param>
+        public void SubscribeTradeTransactionReportsEx(bool skipCancel, int timeoutInMilliseconds)
+        {
+            dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancel, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method stops trade transaction reports receiving.
+        /// </summary>
+        public void UnsubscribeTradeTransactionReports()
+        {
+            UnsubscribeTradeTransactionReportsEx(dataTrade_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method stops trade transaction reports receiving.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
+        public void UnsubscribeTradeTransactionReportsEx(int timeoutInMilliseconds)
+        {
+            dataTrade_.tradeCaptureClient_.UnsubscribeTrades(timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method gets history trades from the server.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="subscribeToNotifications"></param>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="skipCancel"></param>
+        /// <returns></returns>
+        public TradeTransactionReports GetTradeTransactionReportsHistory(TimeDirection direction, DateTime? startTime, DateTime? endTime, bool skipCancel)
+        {
+            return GetTradeTransactionReportsHistoryEx(direction, startTime, endTime, skipCancel, dataTrade_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method gets history trades from the server.
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="subscribeToNotifications"></param>
+        /// <param name="startTime"></param>
+        /// <param name="endTime"></param>
+        /// <param name="skipCancel"></param>
+        /// <param name="timeoutInMilliseconds"></param>
+        /// <returns></returns>
+        public TradeTransactionReports GetTradeTransactionReportsHistoryEx(TimeDirection direction, DateTime? startTime, DateTime? endTime, bool skipCancel, int timeoutInMilliseconds)
+        {
+            return new TradeTransactionReports(dataTrade_, direction, startTime, endTime, skipCancel, timeoutInMilliseconds);
+        }
+
         /// <summary>
         /// The method gets snapshot of trade transaction reports and subscribe to notifications.
         /// All reports will be received as events.
@@ -784,16 +850,9 @@
 
             try
             {
-                TradeCapture.TradeTransactionReportEnumerator tradeTransactionReportEnumerator = dataTrade_.tradeCaptureClient_.DownloadTrades
-                (
-                    direction,
-                    from,
-                    to,
-                    skipCancelValue,
-                    timeoutInMilliseconds
-                );
+                TradeTransactionReports tradeTransactionReports = new TradeTransactionReports(dataTrade_, direction, from, to, skipCancelValue, timeoutInMilliseconds);
 
-                return new TradeTransactionReportsEnumerator(tradeTransactionReportEnumerator, timeoutInMilliseconds);
+                return tradeTransactionReports.GetEnumerator();
             }
             catch
             {
@@ -804,23 +863,6 @@
 
                 throw;
             }
-        }
-
-        /// <summary>
-        /// The method stops trade transaction reports receiving.
-        /// </summary>
-        public void UnsubscribeTradeTransactionReports()
-        {
-            UnsubscribeTradeTransactionReportsEx(dataTrade_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method stops trade transaction reports receiving.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
-        public void UnsubscribeTradeTransactionReportsEx(int timeoutInMilliseconds)
-        {
-            dataTrade_.tradeCaptureClient_.UnsubscribeTrades(timeoutInMilliseconds);
         }
 
         ClosePositionResult GetClosePositionResult(ExecutionReport executionReport)

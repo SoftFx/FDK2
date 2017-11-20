@@ -8,7 +8,7 @@
     using TickTrader.FDK.Common;
     using TickTrader.FDK.QuoteStore;
 
-    class PairBarsEnumerator : IEnumerator<PairBar>
+    public class PairBarsEnumerator : IEnumerator<PairBar>
     {
         public PairBarsEnumerator(PairBars pairBars, BarEnumerator bidEnumerator, BarEnumerator askEnumerator)
         {

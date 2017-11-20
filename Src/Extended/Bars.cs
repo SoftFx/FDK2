@@ -64,7 +64,7 @@
         /// The method returns bars enumerator.
         /// </summary>
         /// <returns>Can not be null.</returns>
-        public IEnumerator<Bar> GetEnumerator()
+        public BarsEnumerator GetEnumerator()
         {
             BarEnumerator barEnumerator = datafeed_.quoteStoreClient_.DownloadBars
             (
@@ -84,20 +84,18 @@
         /// The method returns bars enumerator.
         /// </summary>
         /// <returns>Can not be null.</returns>
+        IEnumerator<Bar> IEnumerable<Bar>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        /// <summary>
+        /// The method returns bars enumerator.
+        /// </summary>
+        /// <returns>Can not be null.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            BarEnumerator barEnumerator = datafeed_.quoteStoreClient_.DownloadBars
-            (
-                Guid.NewGuid().ToString(), 
-                symbol_, 
-                priceType_, 
-                period_, 
-                startTime_, 
-                endTime_, 
-                timeout_
-            );
-
-            return new BarsEnumerator(this, barEnumerator);
+            return GetEnumerator();
         }
 
         internal DataFeed datafeed_;

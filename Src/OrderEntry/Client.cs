@@ -2597,7 +2597,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnNewOrderSingleMarketTradeReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnNewOrderSingleMarketFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
@@ -3298,7 +3298,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionByTradeReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByFillReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -3340,7 +3340,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionByTradeReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByFillReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -3953,7 +3953,7 @@ namespace TickTrader.FDK.OrderEntry
                     case SoftFX.Net.OrderEntry.ExecType.New:
                         return TickTrader.FDK.Common.ExecutionType.New;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Trade:
+                    case SoftFX.Net.OrderEntry.ExecType.Fill:
                         return TickTrader.FDK.Common.ExecutionType.Trade;
 
                     case SoftFX.Net.OrderEntry.ExecType.Cancelled:

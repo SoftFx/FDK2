@@ -1,91 +1,59 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
+    using System.Collections;
     using System.Collections.Generic;
-    using Common;
-    using TradeCapture;
+    using TickTrader.FDK.Common;
+    using TickTrader.FDK.TradeCapture;
 
-    // TODO: support IEnumerator<> and IEnumerator reset semantics ?
-    public class TradeTransactionReportsEnumerator : IDisposable
+    public class TradeTransactionReportsEnumerator : IEnumerator<TradeTransactionReport>
     {
-        internal TradeTransactionReportsEnumerator(TradeTransactionReportEnumerator tradeTransactionReportEnumerator, int timeout)
+        internal TradeTransactionReportsEnumerator(TradeTransactionReports tradeTransactionReports, TradeTransactionReportEnumerator tradeTransactionReportEnumerator)
         {
+            tradeTransactionReports_ = tradeTransactionReports;
             tradeTransactionReportEnumerator_ = tradeTransactionReportEnumerator;
-            timeout_ = timeout;
-            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(timeout_);
+
+            tradeTransactionReport_ = new TradeTransactionReport();
         }
 
-        #region Public Methods
-
-        /// <summary>
-        /// Returns total items in the iterator (0 if information is not available).
-        /// </summary>
-        public int TotalItems
+        public TradeTransactionReport Current
         {
-            get
+            get { return tradeTransactionReport_; }
+        }
+
+        object IEnumerator.Current
+        {
+            get { return tradeTransactionReport_; }
+        }
+
+        public bool MoveNext()
+        {
+            if (tradeTransactionReport_ != null)
             {
-                return 0;
-            }
-        }
+                tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(tradeTransactionReports_.timeout_);
 
-        /// <summary>
-        /// Returns true, if the end of associated stream has been reached.
-        /// </summary>
-        public bool EndOfStream
-        {
-            get
-            {
-                return tradeTransactionReport_ == null;
-            }
-        }
-
-        /// <summary>
-        /// Moves the iterator to the next stream element.
-        /// </summary>
-        public void Next()
-        {
-            NextEx(timeout_);
-        }
-
-        /// <summary>
-        /// Moves the iterator to the next stream element.
-        /// </summary>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
-        public void NextEx(int timeoutInMilliseconds)
-        {
-            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(timeoutInMilliseconds);
-        }
-
-        /// <summary>
-        /// Gets the current stream element.
-        /// </summary>
-        public TradeTransactionReport Item
-        {
-            get
-            {
-                return tradeTransactionReport_;
-            }
-        }
-
-        /// <summary>
-        /// Reads an associated stream to the end and returns all elements as array.
-        /// </summary>
-        /// <returns>Can not be null.</returns>
-        public TradeTransactionReport[] ToArray()
-        {
-            var list = new List<TradeTransactionReport>();
-            for (; !this.EndOfStream; this.Next())
-            {
-                var item = this.Item;
-                list.Add(item);
+                return tradeTransactionReport_ != null;
             }
 
-            return list.ToArray();
+            return false;
         }
 
-        /// <summary>
-        /// Release all unmanaged resources.
-        /// </summary>
+        public void Reset()
+        {
+            tradeTransactionReportEnumerator_.Dispose();
+
+            tradeTransactionReportEnumerator_ = tradeTransactionReports_.dataTrade_.tradeCaptureClient_.DownloadTrades
+            (
+                tradeTransactionReports_.direction_, 
+                tradeTransactionReports_.startTime_, 
+                tradeTransactionReports_.endTime_, 
+                tradeTransactionReports_.skipCancel_,
+                tradeTransactionReports_.timeout_
+            );
+
+            tradeTransactionReport_ = new TradeTransactionReport();
+        }
+
         public void Dispose()
         {
             tradeTransactionReportEnumerator_.Dispose();
@@ -93,14 +61,8 @@
             GC.SuppressFinalize(this);
         }
 
-        #endregion
-
-        #region Members
-        
+        TradeTransactionReports tradeTransactionReports_;
         TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;
-        int timeout_;
         TradeTransactionReport tradeTransactionReport_;
-
-        #endregion
     }
 }

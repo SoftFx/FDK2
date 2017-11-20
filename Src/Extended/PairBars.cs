@@ -63,22 +63,8 @@
         /// <summary>
         /// The method returns bars enumerator.
         /// </summary>
-        /// <returns>Can not be null.</returns>
-        public IEnumerator<PairBar> GetEnumerator()
-        {
-            return GetPairBarEnumerator();
-        }
-
-        /// <summary>
-        /// The method returns bars enumerator.
-        /// </summary>
-        /// <returns>Can not be null.</returns>
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetPairBarEnumerator();
-        }
-
-        PairBarsEnumerator GetPairBarEnumerator()
+        /// <returns></returns>
+        public PairBarsEnumerator GetEnumerator()
         {
             try
             {
@@ -119,6 +105,24 @@
                 // Unreacheble code...
                 return null;
             }
+        }
+
+        /// <summary>
+        /// The method returns bars enumerator.
+        /// </summary>
+        /// <returns>Can not be null.</returns>
+        IEnumerator<PairBar> IEnumerable<PairBar>.GetEnumerator()
+        {
+            return GetEnumerator();
+        }
+
+        /// <summary>
+        /// The method returns bars enumerator.
+        /// </summary>
+        /// <returns>Can not be null.</returns>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
 
         internal DataFeed datafeed_;

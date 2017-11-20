@@ -6,7 +6,7 @@
     using TickTrader.FDK.Common;
     using TickTrader.FDK.QuoteStore;
 
-	class QuotesSingleSequenceEnumerator : IEnumerator<Quote>
+	public class QuotesSingleSequenceEnumerator : IEnumerator<Quote>
 	{
 		internal QuotesSingleSequenceEnumerator(QuotesSingleSequence quotesSingleSequence, QuoteEnumerator quoteEnumerator)
 		{

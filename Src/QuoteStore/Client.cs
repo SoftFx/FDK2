@@ -1336,16 +1336,16 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (reportTick.Index != 0)
                         {
-                            string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
+                            resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
                         }
                         else
-                            string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
+                            resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
 
                         resultQuote.CreatingTime = time;                        
 
                         SoftFX.Net.QuoteStore.PriceLevelArray reportBids = reportTick.Bids;
                         int bidCount = reportBids.Length;
-                        QuoteEntry[] resultBids = new QuoteEntry[bidCount];
+                        List<QuoteEntry> resultBids = new List<QuoteEntry>(bidCount);
 
                         QuoteEntry resultBid = new QuoteEntry();
 
@@ -1356,12 +1356,12 @@ namespace TickTrader.FDK.QuoteStore
                             resultBid.Price = reportBid.Price;
                             resultBid.Volume = reportBid.Size;
 
-                            resultBids[bidIndex] = resultBid;
+                            resultBids.Add(resultBid);
                         }
                         
                         SoftFX.Net.QuoteStore.PriceLevelArray reportAsks = reportTick.Asks;
                         int askCount = reportAsks.Length;
-                        QuoteEntry[] resultAsks = new QuoteEntry[askCount];
+                        List<QuoteEntry> resultAsks = new List<QuoteEntry>(askCount);
 
                         QuoteEntry resultAsk = new QuoteEntry();
 
@@ -1372,8 +1372,11 @@ namespace TickTrader.FDK.QuoteStore
                             resultAsk.Price = reportAsk.Price;
                             resultAsk.Volume = reportAsk.Size;
 
-                            resultAsks[askIndex] = resultAsk;
+                            resultAsks.Add(resultAsk);
                         }
+
+                        resultQuote.Bids = resultBids;
+                        resultQuote.Asks = resultAsks;
 
                         resultQuotes[index] = resultQuote;
                     }

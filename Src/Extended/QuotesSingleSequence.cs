@@ -95,13 +95,32 @@
 
 		#endregion
 
+		/// <summary>
+		/// Creates enumerator for the sequence.
+		/// </summary>
+		/// <returns>a new enumerator instance.</returns>
+		public QuotesSingleSequenceEnumerator GetEnumerator()
+		{
+            QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
+            (
+                Guid.NewGuid().ToString(), 
+                Symbol,
+                Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
+                StartTime,
+                EndTime,
+                Timeout
+            );
+
+            return new QuotesSingleSequenceEnumerator(this, quoteEnumerator);
+		}
+
 		#region IEnumerable Interface Implementation
 
 		/// <summary>
 		/// Creates enumerator for the sequence.
 		/// </summary>
 		/// <returns>a new enumerator instance.</returns>
-		public IEnumerator<Quote> GetEnumerator()
+		IEnumerator<Quote> IEnumerable<Quote>.GetEnumerator()
 		{
             QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (

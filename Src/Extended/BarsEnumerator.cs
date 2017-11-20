@@ -6,7 +6,7 @@
     using TickTrader.FDK.Common;
     using TickTrader.FDK.QuoteStore;
 
-    class BarsEnumerator : IEnumerator<Bar>
+    public class BarsEnumerator : IEnumerator<Bar>
     {
         internal BarsEnumerator(Bars bars, BarEnumerator barEnumerator)
         {

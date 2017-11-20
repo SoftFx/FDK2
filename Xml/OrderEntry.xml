@@ -413,7 +413,7 @@
         <enum name="ExecType" size="4">
             <members>
                 <member name="New" value="0"/>
-                <member name="Trade" value="1"/>
+                <member name="Fill" value="1"/>
                 <member name="Cancelled" value="2"/>
                 <member name="PendingCancel" value="3"/>
                 <member name="Rejected" value="4"/>
@@ -1052,7 +1052,7 @@
                 </state>
                 <state label="638_17">
                     <operations>
-                        <recv name="NewOrderSingleMarketTradeReport">
+                        <recv name="NewOrderSingleMarketFillReport">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1063,7 +1063,7 @@
                                             </equal>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                         </and>
                                     </expression>
@@ -1282,7 +1282,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -1300,7 +1300,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -1337,7 +1337,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -1398,13 +1398,13 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByTradeReport1" next="710_17">
+                        <recv name="ClosePositionByFillReport1" next="710_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -1429,13 +1429,13 @@
                 </state>
                 <state label="699_17">
                     <operations>
-                        <recv name="ClosePositionByTradeReport1" next="701_21">
+                        <recv name="ClosePositionByFillReport1" next="701_21">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -1460,13 +1460,13 @@
                 </state>
                 <state label="701_21">
                     <operations>
-                        <recv name="ClosePositionByTradeReport2">
+                        <recv name="ClosePositionByFillReport2">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -1491,13 +1491,13 @@
                 </state>
                 <state label="710_17">
                     <operations>
-                        <recv name="ClosePositionByTradeReport2">
+                        <recv name="ClosePositionByFillReport2">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2034,7 +2034,7 @@
                                             </equal>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                         </and>
                                     </expression>
@@ -2232,7 +2232,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -2250,7 +2250,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -2284,7 +2284,7 @@
                                         <and>
                                             <equal>
                                                 <field name="Type"/>
-                                                <enumMember name="ExecType.Trade"/>
+                                                <enumMember name="ExecType.Fill"/>
                                             </equal>
                                             <equal>
                                                 <field name="State.Status"/>
@@ -2345,7 +2345,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2373,7 +2373,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2401,7 +2401,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2429,7 +2429,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Trade"/>
+                                            <enumMember name="ExecType.Fill"/>
                                         </equal>
                                     </expression>
                                 </message>
