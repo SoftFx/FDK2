@@ -3,11 +3,14 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Runtime.ExceptionServices;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.QuoteStore;
 
     class PairBarsEnumerator : IEnumerator<PairBar>
     {
-        public PairBarsEnumerator(PairBars pairBars, IEnumerator<Bar> bidEnumerator, IEnumerator<Bar> askEnumerator)
+        public PairBarsEnumerator(PairBars pairBars, BarEnumerator bidEnumerator, BarEnumerator askEnumerator)
         {
             this.pairBars = pairBars;
             this.bidEnumerator = bidEnumerator;
@@ -45,13 +48,49 @@
 
         public void Reset()
         {
-            this.bidEnumerator = pairBars.bids.GetEnumerator();
-            this.askEnumerator = pairBars.asks.GetEnumerator();
+            try
+            {
+                this.bidEnumerator.Dispose();
+                this.askEnumerator.Dispose();
 
-            this.bid = null;
-            this.ask = null;
+                Task<BarEnumerator> bidTask = pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
+                (
+                    Guid.NewGuid().ToString(),
+                    pairBars.symbol_,
+                    PriceType.Bid,
+                    pairBars.period_,
+                    pairBars.startTime_,
+                    pairBars.endTime_
+                );
 
-            this.current = new PairBar();
+                Task<BarEnumerator> askTask = pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
+                (
+                    Guid.NewGuid().ToString(),
+                    pairBars.symbol_,
+                    PriceType.Ask,
+                    pairBars.period_,
+                    pairBars.startTime_,
+                    pairBars.endTime_
+                );
+
+                if (!bidTask.Wait(pairBars.timeout_))
+                    throw new TimeoutException("Method call timed out");
+
+                if (!askTask.Wait(pairBars.timeout_))
+                    throw new TimeoutException("Method call timed out");
+
+                this.bidEnumerator = bidTask.Result;
+                this.askEnumerator = askTask.Result;
+
+                this.bid = null;
+                this.ask = null;
+
+                this.current = new PairBar();
+            }
+            catch (AggregateException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
+            }
         }
 
         public void Dispose()
@@ -88,19 +127,38 @@
 
         void Move()
         {
-            if (this.bid == null)
+            try
             {
-                if (this.bidEnumerator.MoveNext())
+                Task<Bar> bidTask = null;
+                Task<Bar> askTask = null;
+
+                if (this.bid == null)
+                    bidTask = this.bidEnumerator.NextAsync();
+
+                if (this.ask == null)
+                    askTask = this.askEnumerator.NextAsync();
+
+                if (bidTask != null)
                 {
-                    this.bid = this.bidEnumerator.Current;
+                    if (!bidTask.Wait(pairBars.timeout_))
+                        throw new TimeoutException("Method call timed out");
                 }
+
+                if (askTask != null)
+                {
+                    if (!askTask.Wait(pairBars.timeout_))
+                        throw new TimeoutException("Method call timed out");
+                }
+
+                if (bidTask != null)
+                    this.bid = bidTask.Result;
+
+                if (askTask != null)
+                    this.ask = askTask.Result;
             }
-            if (this.ask == null)
+            catch (AggregateException ex)
             {
-                if (this.askEnumerator.MoveNext())
-                {
-                    this.ask = this.askEnumerator.Current;
-                }
+                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
             }
         }
 
@@ -132,8 +190,8 @@
 
         PairBars pairBars;
 
-        IEnumerator<Bar> bidEnumerator;
-        IEnumerator<Bar> askEnumerator;
+        BarEnumerator bidEnumerator;
+        BarEnumerator askEnumerator;
 
         Bar bid;
         Bar ask;

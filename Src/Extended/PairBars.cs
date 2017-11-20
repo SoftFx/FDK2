@@ -3,7 +3,10 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Runtime.ExceptionServices;
     using TickTrader.FDK.Common;
+    using TickTrader.FDK.QuoteStore;
 
     /// <summary>
     /// Bars enumeration.
@@ -21,11 +24,9 @@
         /// <param name="startTime">A start time of bars enumeration.</param>
         /// <param name="endTime">A end time of bars enumeration.</param>
         /// <exception cref="System.ArgumentNullException">If datafeed, period or symbol is null.</exception>
-        public PairBars(DataFeed datafeed, string symbol, BarPeriod period, DateTime startTime, DateTime endTime)
+        public PairBars(DataFeed datafeed, string symbol, BarPeriod period, DateTime startTime, DateTime endTime) :
+            this(datafeed, symbol, period, startTime, endTime, datafeed.synchOperationTimeout_)
         {
-            this.bids = new Bars(datafeed, symbol, PriceType.Bid, period, startTime, endTime);
-            this.asks = new Bars(datafeed, symbol, PriceType.Ask, period, startTime, endTime);
-            this.positive = DateTime.Compare(startTime, endTime) >= 0;
         }
 
         /// <summary>
@@ -41,9 +42,22 @@
         /// <exception cref="System.ArgumentNullException">If datafeed, period or symbol is null.</exception>
         public PairBars(DataFeed datafeed, string symbol, BarPeriod period, DateTime startTime, DateTime endTime, int timeout)
         {
-            this.bids = new Bars(datafeed, symbol, PriceType.Bid, period, startTime, endTime, timeout);
-            this.asks = new Bars(datafeed, symbol, PriceType.Ask, period, startTime, endTime, timeout);
-            this.positive = DateTime.Compare(startTime, endTime) >= 0;
+            if (datafeed == null)
+                throw new ArgumentNullException(nameof(datafeed), "DataFeed instance can not be null.");
+
+            if (symbol == null)
+                throw new ArgumentNullException(nameof(symbol), "Symbol can not be null.");
+
+            if (period == null)
+                throw new ArgumentNullException(nameof(period), "Bar period instance can not be null.");
+
+            datafeed_ = datafeed;
+            symbol_ = symbol;
+            period_ = period;
+            startTime_ = startTime;
+            endTime_ = endTime;
+            timeout_ = timeout;
+            positive = DateTime.Compare(startTime, endTime) >= 0;
         }
 
         /// <summary>
@@ -52,10 +66,7 @@
         /// <returns>Can not be null.</returns>
         public IEnumerator<PairBar> GetEnumerator()
         {
-            IEnumerator<Bar> bidBarsEnumerator = bids.GetEnumerator();
-            IEnumerator<Bar> askBarsEnumerator = asks.GetEnumerator();
-
-            return new PairBarsEnumerator(this, bidBarsEnumerator, askBarsEnumerator);
+            return GetPairBarEnumerator();
         }
 
         /// <summary>
@@ -64,14 +75,58 @@
         /// <returns>Can not be null.</returns>
         IEnumerator IEnumerable.GetEnumerator()
         {
-            IEnumerator<Bar> bidBarsEnumerator = bids.GetEnumerator();
-            IEnumerator<Bar> askBarsEnumerator = asks.GetEnumerator();
-
-            return new PairBarsEnumerator(this, bidBarsEnumerator, askBarsEnumerator);
+            return GetPairBarEnumerator();
         }
 
-        internal IEnumerable<Bar> bids;
-        internal IEnumerable<Bar> asks;
+        PairBarsEnumerator GetPairBarEnumerator()
+        {
+            try
+            {
+                Task<BarEnumerator> bidTask = datafeed_.quoteStoreClient_.DownloadBarsAsync
+                (
+                    Guid.NewGuid().ToString(),
+                    symbol_,
+                    PriceType.Bid,
+                    period_,
+                    startTime_,
+                    endTime_
+                );
+
+                Task<BarEnumerator> askTask = datafeed_.quoteStoreClient_.DownloadBarsAsync
+                (
+                    Guid.NewGuid().ToString(),
+                    symbol_,
+                    PriceType.Ask,
+                    period_,
+                    startTime_,
+                    endTime_
+                );
+
+                if (!bidTask.Wait(timeout_))
+                    throw new TimeoutException("Method call timed out");
+
+                if (!askTask.Wait(timeout_))
+                    throw new TimeoutException("Method call timed out");
+
+                BarEnumerator bidBarEnumerator = bidTask.Result;
+                BarEnumerator askBarEnumerator = askTask.Result;
+
+                return new PairBarsEnumerator(this, bidBarEnumerator, askBarEnumerator);
+            }
+            catch (AggregateException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
+                // Unreacheble code...
+                return null;
+            }
+        }
+
+        internal DataFeed datafeed_;
+        internal string symbol_;
+        internal BarPeriod period_;
+        internal DateTime startTime_;
+        internal DateTime endTime_;
+        internal int timeout_;
         internal bool positive;
     }
 }

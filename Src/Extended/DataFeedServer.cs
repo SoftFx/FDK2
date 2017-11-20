@@ -2,6 +2,8 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Threading.Tasks;
+    using System.Runtime.ExceptionServices;
     using Common;
 
     /// <summary>
@@ -219,63 +221,81 @@
         /// <returns></returns>
         public PairBar[] GetBarsEx(string symbol, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
         {
-            Bar[] bidBars = dataFeed_.quoteStoreClient_.GetBarList(symbol, PriceType.Bid, period, startTime, count, timeoutInMilliseconds);
-            Bar[] askBars = dataFeed_.quoteStoreClient_.GetBarList(symbol, PriceType.Ask, period, startTime, count, timeoutInMilliseconds);
-
-            int absCount = Math.Abs(count);
-            List<PairBar> pairBars = new List<PairBar>(absCount);
-
-            int bidIndex = 0;
-            int askIndex = 0;
-
-            while (pairBars.Count < absCount)
+            try
             {
-                Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
-                Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
+                Task<Bar[]> bidTask = dataFeed_.quoteStoreClient_.GetBarListAsync(symbol, PriceType.Bid, period, startTime, count);
+                Task<Bar[]> askTask = dataFeed_.quoteStoreClient_.GetBarListAsync(symbol, PriceType.Ask, period, startTime, count);
 
-                PairBar pairBar;
+                if (!bidTask.Wait(timeoutInMilliseconds))
+                    throw new TimeoutException("Methof call timed out");
 
-                if (bidBar != null)
+                if (!askTask.Wait(timeoutInMilliseconds))
+                    throw new TimeoutException("Methof call timed out");
+
+                Bar[] bidBars = bidTask.Result;
+                Bar[] askBars = askTask.Result;
+
+                int absCount = Math.Abs(count);
+                List<PairBar> pairBars = new List<PairBar>(absCount);
+
+                int bidIndex = 0;
+                int askIndex = 0;
+
+                while (pairBars.Count < absCount)
                 {
-                    if (askBar != null)
-                    {
-                        int i = DateTime.Compare(bidBar.From, askBar.From);
+                    Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
+                    Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
 
-                        if (i < 0)
+                    PairBar pairBar;
+
+                    if (bidBar != null)
+                    {
+                        if (askBar != null)
+                        {
+                            int i = DateTime.Compare(bidBar.From, askBar.From);
+
+                            if (i < 0)
+                            {
+                                pairBar = new PairBar(bidBar, null);
+                                ++bidIndex;
+                            }
+                            else if (i > 0)
+                            {
+                                pairBar = new PairBar(null, askBar);
+                                ++askIndex;
+                            }
+                            else
+                            {
+                                pairBar = new PairBar(bidBar, askBar);
+                                ++bidIndex;
+                                ++askIndex;
+                            }
+                        }
+                        else
                         {
                             pairBar = new PairBar(bidBar, null);
                             ++bidIndex;
                         }
-                        else if (i > 0)
-                        {
-                            pairBar = new PairBar(null, askBar);
-                            ++askIndex;
-                        }
-                        else
-                        {
-                            pairBar = new PairBar(bidBar, askBar);
-                            ++bidIndex;
-                            ++askIndex;
-                        }
+                    }
+                    else if (askBar != null)
+                    {
+                        pairBar = new PairBar(null, askBar);
+                        ++askIndex;
                     }
                     else
-                    {
-                        pairBar = new PairBar(bidBar, null);
-                        ++bidIndex;
-                    }
-                }
-                else if (askBar != null)
-                {
-                    pairBar = new PairBar(null, askBar);
-                    ++askIndex;
-                }
-                else
-                    break;
+                        break;
 
-                pairBars.Add(pairBar);
+                    pairBars.Add(pairBar);
+                }
+
+                return pairBars.ToArray();
             }
-
-            return pairBars.ToArray();
+            catch (AggregateException ex)
+            {
+                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
+                // Unreacheble code...
+                return null;
+            }
         }
 
         /// <summary>
