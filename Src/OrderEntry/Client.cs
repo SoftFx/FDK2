@@ -2084,10 +2084,10 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Name = reportAccountInfo.Name;
                     resultAccountInfo.Email = reportAccountInfo.Email;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
+                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId != null ? reportAccountInfo.Balance.CurrId : "";   // TODO: something in the client calculator crashes if null
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.GetValueOrDefault(0);
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -3511,10 +3511,10 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Name = reportAccountInfo.Name;
                     resultAccountInfo.Email = reportAccountInfo.Email;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId;
+                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId != null ? reportAccountInfo.Balance.CurrId : null;   // something in the client calculator crashes if nullable
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total;
+                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.GetValueOrDefault(0);
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -3620,7 +3620,7 @@ namespace TickTrader.FDK.OrderEntry
                     TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
                     SoftFX.Net.OrderEntry.Balance updateBalance = update.Balance;
-                    result.Balance = updateBalance.Total;
+                    result.Balance = updateBalance.Total.Value;
                     result.TransactionAmount = updateBalance.Move.Value;
                     result.TransactionCurrency = updateBalance.CurrId;
 
@@ -3771,7 +3771,10 @@ namespace TickTrader.FDK.OrderEntry
                 }
 
                 result.Assets = resultAssets;
-                result.Balance = report.Balance.Total;
+
+                Balance reportBalance = report.Balance;
+                result.Balance = reportBalance.Total;
+                result.BalanceTradeAmount = reportBalance.Move;
 
                 return result;
             }

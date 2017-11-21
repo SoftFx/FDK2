@@ -1002,23 +1002,9 @@
         {
             try
             {
-                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                lock (cache_.mutex_)
                 {
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_.Remove(report.OrderId);
-                    }
-                }
-                else
-                {
-                    TradeRecord tradeRecord = GetTradeRecord(report);
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
+                    UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
@@ -1047,12 +1033,9 @@
         {
             try
             {
-                TradeRecord tradeRecord = GetTradeRecord(report);
-
                 lock (cache_.mutex_)
                 {
-                    if (cache_.tradeRecords_ != null)
-                        cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                    UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
@@ -1081,23 +1064,9 @@
         {
             try
             {
-                if (report.ExecutionType == ExecutionType.Canceled)
+                lock (cache_.mutex_)
                 {
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_.Remove(report.OrderId);
-                    }
-                }
-                else
-                {
-                    TradeRecord tradeRecord = GetTradeRecord(report);
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
+                    UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
@@ -1126,23 +1095,9 @@
         {
             try
             {
-                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                lock (cache_.mutex_)
                 {
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_.Remove(report.OrderId);
-                    }
-                }
-                else
-                {
-                    TradeRecord tradeRecord = GetTradeRecord(report);
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
+                    UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
@@ -1171,23 +1126,9 @@
         {
             try
             {
-                if (report.ExecutionType == ExecutionType.Trade && report.OrderStatus == OrderStatus.Filled)
+                lock (cache_.mutex_)
                 {
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_.Remove(report.OrderId);
-                    }
-                }
-                else
-                {
-                    TradeRecord tradeRecord = GetTradeRecord(report);
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
+                    UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
@@ -1252,25 +1193,11 @@
         {
             try
             {
-                if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled)
+                lock (cache_.mutex_)
                 {
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_.Remove(executionReport.OrderId);
-                    }
+                    UpdateCacheData(executionReport);
                 }
-                else
-                {
-                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
-
-                    lock (cache_.mutex_)
-                    {
-                        if (cache_.tradeRecords_ != null)
-                            cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
-                    }
-                }
-
+                
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = executionReport;
                 eventQueue_.PushEvent(args);
@@ -1305,6 +1232,14 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    if (cache_.accountInfo_ != null)
+                    {
+                        cache_.accountInfo_.Balance = balanceOperation.Balance;
+                    }
+                }
+
                 NotificationEventArgs<BalanceOperation> args = new NotificationEventArgs<Common.BalanceOperation>();
                 args.Type = NotificationType.Balance;
                 args.Severity = NotificationSeverity.Information;
@@ -1572,6 +1507,69 @@
             }
             catch
             {
+            }
+        }
+
+        void UpdateCacheData(ExecutionReport executionReport)
+        {
+            if (cache_.tradeRecords_ != null)
+            {
+                if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled) 
+                {
+                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
+                else if (executionReport.ExecutionType == ExecutionType.Canceled) 
+                {
+                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
+                else if (executionReport.ExecutionType == ExecutionType.Expired) 
+                {
+                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
+                else
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
+
+                    cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
+                }
+            }
+
+            if (cache_.accountInfo_ != null)
+            {
+                AssetInfo[] reportAssets = executionReport.Assets;
+
+                for (int reportIndex = 0; reportIndex < reportAssets.Length; ++reportIndex)
+                {
+                    AssetInfo reportAsset = reportAssets[reportIndex];
+
+                    AssetInfo[] cacheAssets = cache_.accountInfo_.Assets;
+
+                    int cacheIndex;
+                    for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                    {
+                        AssetInfo cacheAsset = cacheAssets[cacheIndex];
+
+                        if (cacheAsset.Currency == reportAsset.Currency)
+                        {
+                            cacheAssets[cacheIndex] = reportAsset;
+                            break;
+                        }
+                    }
+
+                    if (cacheIndex == cacheAssets.Length)
+                    {
+                        AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
+                        Array.Copy(cacheAssets, assets, cacheAssets.Length);
+                        assets[cacheAssets.Length] = reportAsset;
+
+                        cache_.accountInfo_.Assets = assets;
+                    }
+                }
+
+                if (executionReport.Balance.HasValue)
+                {
+                    cache_.accountInfo_.Balance = executionReport.Balance.Value;
+                }
             }
         }
 
