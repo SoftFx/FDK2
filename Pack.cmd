@@ -1,10 +1,10 @@
-@echo off
+rem @echo off
 
 if [%1]==[] goto INVALID_COMMAND_LINE_ERROR
 
 set BUILD_DIR="TickTrader FDK "%1""
 
-rd /S /Q %BUILD_DIR% || goto END
+rd /S /Q %BUILD_DIR%
 mkdir %BUILD_DIR% || goto END
 xcopy Pack.cmd %BUILD_DIR% || goto END
 xcopy LICENSE %BUILD_DIR% || goto END
@@ -13,16 +13,13 @@ xcopy README.md %BUILD_DIR% || goto END
 rem Bin
 
 mkdir %BUILD_DIR%\Bin || goto END
+xcopy Bin\ICSharpCode.SharpZipLib.dll %BUILD_DIR%\Bin || goto END
+xcopy Bin\NDesk.Options.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.Core.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.QuoteFeed.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.OrderEntry.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.QuoteStore.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.TradeCapture.dll %BUILD_DIR%\Bin || goto END
-xcopy Bin\TickTrader.Common.dll %BUILD_DIR%\Bin || goto END
-xcopy Bin\TickTrader.BusinessObjects.dll %BUILD_DIR%\Bin || goto END
-xcopy Bin\TickTrader.BusinessLogic.dll %BUILD_DIR%\Bin || goto END
-xcopy Bin\ICSharpCode.SharpZipLib.dll %BUILD_DIR%\Bin || goto END
-xcopy Bin\NDesk.Options.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Common.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.QuoteFeed.dll %BUILD_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.OrderEntry.dll %BUILD_DIR%\Bin || goto END
