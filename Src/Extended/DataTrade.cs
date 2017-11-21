@@ -1234,10 +1234,7 @@
             {
                 lock (cache_.mutex_)
                 {
-                    if (cache_.accountInfo_ != null)
-                    {
-                        cache_.accountInfo_.Balance = balanceOperation.Balance;
-                    }
+                    UpdateCacheData(balanceOperation);
                 }
 
                 NotificationEventArgs<BalanceOperation> args = new NotificationEventArgs<Common.BalanceOperation>();
@@ -1569,6 +1566,50 @@
                 if (executionReport.Balance.HasValue)
                 {
                     cache_.accountInfo_.Balance = executionReport.Balance.Value;
+                }
+            }
+        }
+
+        void UpdateCacheData(BalanceOperation balanceOperation)
+        {
+            if (cache_.accountInfo_ != null)
+            {
+                if (cache_.accountInfo_.Type == AccountType.Cash)
+                {
+                    AssetInfo[] cacheAssets = cache_.accountInfo_.Assets;
+
+                    int cacheIndex;
+                    for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                    {
+                        AssetInfo cacheAsset = cacheAssets[cacheIndex];
+
+                        if (cacheAsset.Currency == balanceOperation.TransactionCurrency)
+                        {
+                            cacheAsset.Balance = balanceOperation.Balance;
+                            cacheAsset.TradeAmount = balanceOperation.TransactionAmount;
+
+                            break;
+                        }
+                    }
+
+                    if (cacheIndex == cacheAssets.Length)
+                    {
+                        AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
+                        Array.Copy(cacheAssets, assets, cacheAssets.Length);
+
+                        AssetInfo assetInfo = new AssetInfo();
+                        assetInfo.Currency = balanceOperation.TransactionCurrency;
+                        assetInfo.Balance = balanceOperation.Balance;
+                        assetInfo.TradeAmount = balanceOperation.TransactionAmount;
+
+                        assets[cacheAssets.Length] = assetInfo;
+
+                        cache_.accountInfo_.Assets = assets;
+                    }
+                }
+                else
+                {
+                    cache_.accountInfo_.Balance = balanceOperation.Balance;
                 }
             }
         }
