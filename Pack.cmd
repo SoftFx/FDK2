@@ -6,8 +6,6 @@ set BUILD_DIR="TickTrader FDK "%1""
 
 rd /S /Q %BUILD_DIR%
 mkdir %BUILD_DIR% || goto END
-xcopy Pack.cmd %BUILD_DIR% || goto END
-xcopy LICENSE %BUILD_DIR% || goto END
 xcopy README.md %BUILD_DIR% || goto END
 
 rem Bin
@@ -132,79 +130,6 @@ xcopy Samples\TradeFeedExamples\*.cs %BUILD_DIR%\Samples\TradeFeedExamples || go
 
 mkdir %BUILD_DIR%\Samples\TradeFeedExamples\Properties || goto END
 xcopy Samples\TradeFeedExamples\Properties\*.cs %BUILD_DIR%\Samples\TradeFeedExamples\Properties || goto END
-
-rem Src
-
-mkdir %BUILD_DIR%\Src || goto END
-xcopy Src\FDK.sln %BUILD_DIR%\Src || goto END
-
-mkdir %BUILD_DIR%\Src\Calculator || goto END
-xcopy Src\Calculator\Calculator.csproj %BUILD_DIR%\Src\Calculator || goto END
-xcopy Src\Calculator\*.cs %BUILD_DIR%\Src\Calculator || goto END
-
-mkdir %BUILD_DIR%\Src\Calculator\Adapter || goto END
-xcopy Src\Calculator\Adapter\*.cs %BUILD_DIR%\Src\Calculator\Adapter || goto END
-
-mkdir %BUILD_DIR%\Src\Calculator\Properties || goto END
-xcopy Src\Calculator\Properties\*.cs %BUILD_DIR%\Src\Calculator\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\Calculator\Rounding || goto END
-xcopy Src\Calculator\Rounding\*.cs %BUILD_DIR%\Src\Calculator\Rounding || goto END
-
-mkdir %BUILD_DIR%\Src\Calculator\Serialization || goto END
-xcopy Src\Calculator\Serialization\*.cs %BUILD_DIR%\Src\Calculator\Serialization || goto END
-
-mkdir %BUILD_DIR%\Src\Common || goto END
-xcopy Src\Common\Common.csproj %BUILD_DIR%\Src\Common || goto END 
-xcopy Src\Common\*.cs %BUILD_DIR%\Src\Common || goto END
-
-mkdir %BUILD_DIR%\Src\Common\Properties || goto END
-xcopy Src\Common\Properties\*.cs %BUILD_DIR%\Src\Common\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\Extended || goto END
-xcopy Src\Extended\Extended.csproj %BUILD_DIR%\Src\Extended || goto END
-xcopy Src\Extended\*.cs %BUILD_DIR%\Src\Extended || goto END
-
-mkdir %BUILD_DIR%\Src\Extended\Properties || goto END
-xcopy Src\Extended\Properties\*.cs %BUILD_DIR%\Src\Extended\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\OrderEntry || goto END
-xcopy Src\OrderEntry\OrderEntry.csproj %BUILD_DIR%\Src\OrderEntry || goto END
-xcopy Src\OrderEntry\*.cs %BUILD_DIR%\Src\OrderEntry || goto END
-
-mkdir %BUILD_DIR%\Src\OrderEntry\Properties || goto END
-xcopy Src\OrderEntry\Properties\*.cs %BUILD_DIR%\Src\OrderEntry\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\QuoteFeed || goto END
-xcopy Src\QuoteFeed\QuoteFeed.csproj %BUILD_DIR%\Src\QuoteFeed || goto END
-xcopy Src\QuoteFeed\*.cs %BUILD_DIR%\Src\QuoteFeed || goto END
-
-mkdir %BUILD_DIR%\Src\QuoteFeed\Properties || goto END
-xcopy Src\QuoteFeed\Properties\*.cs %BUILD_DIR%\Src\QuoteFeed\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\QuoteStore || goto END
-xcopy Src\QuoteStore\QuoteStore.csproj %BUILD_DIR%\Src\QuoteStore || goto END
-xcopy Src\QuoteStore\*.cs %BUILD_DIR%\Src\QuoteStore || goto END
-
-mkdir %BUILD_DIR%\Src\QuoteStore\Properties || goto END
-xcopy Src\QuoteStore\Properties\*.cs %BUILD_DIR%\Src\QuoteStore\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\QuoteStore\Serialization || goto END
-xcopy Src\QuoteStore\Serialization\*.cs %BUILD_DIR%\Src\QuoteStore\Serialization || goto END
-
-mkdir %BUILD_DIR%\Src\TradeCapture || goto END
-xcopy Src\TradeCapture\TradeCapture.csproj %BUILD_DIR%\Src\TradeCapture || goto END
-xcopy Src\TradeCapture\*.cs %BUILD_DIR%\Src\TradeCapture || goto END
-
-mkdir %BUILD_DIR%\Src\TradeCapture\Properties || goto END
-xcopy Src\TradeCapture\Properties\*.cs %BUILD_DIR%\Src\TradeCapture\Properties || goto END
-
-mkdir %BUILD_DIR%\Src\Standard || goto END
-xcopy Src\Standard\Standard.csproj %BUILD_DIR%\Src\Standard || goto END
-xcopy Src\Standard\*.cs %BUILD_DIR%\Src\Standard || goto END
-
-mkdir %BUILD_DIR%\Src\Standard\Properties || goto END
-xcopy Src\Standard\Properties\*.cs %BUILD_DIR%\Src\Standard\Properties || goto END
 
 rem Xml
 
