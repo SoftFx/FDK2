@@ -781,13 +781,10 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext)
+            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
             {                
                 try
                 {
-                    // TODO:
-                    string message = "Connect error";
-
                     if (connectContext != null)
                     {
                         ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
@@ -796,7 +793,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, message);
+                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, text);
                             }
                             catch
                             {
@@ -805,7 +802,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (connectAsyncContext.taskCompletionSource_ != null)
                         {
-                            Exception exception = new Exception(message);
+                            Exception exception = new Exception(text);
                             connectAsyncContext.taskCompletionSource_.SetException(exception);
                         }
                     }
@@ -817,7 +814,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.ConnectErrorEvent(client_, null, message);
+                                client_.ConnectErrorEvent(client_, null, text);
                             }
                             catch
                             {
@@ -851,15 +848,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (contexts.Length > 0)
                         {
-                            string message = "Client disconnected";
-
-                            if (text != null)
-                            {
-                                message += " : ";
-                                message += text;
-                            }
-
-                            Exception exception = new Exception(message);
+                            Exception exception = new Exception(text);
 
                             foreach (ClientContext context in contexts)
                                 ((IAsyncContext)context).SetDisconnectError(exception);
@@ -885,15 +874,7 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (contexts.Length > 0)
                         {
-                            string message = "Client disconnected";
-
-                            if (text != null)
-                            {
-                                message += " : ";
-                                message += text;
-                            }
-
-                            Exception exception = new Exception(message);
+                            Exception exception = new Exception(text);
 
                             foreach (ClientContext context in contexts)
                                 ((IAsyncContext)context).SetDisconnectError(exception);
