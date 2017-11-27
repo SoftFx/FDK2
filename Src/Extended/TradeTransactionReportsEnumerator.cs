@@ -13,7 +13,7 @@
             tradeTransactionReports_ = tradeTransactionReports;
             tradeTransactionReportEnumerator_ = tradeTransactionReportEnumerator;
 
-            tradeTransactionReport_ = new TradeTransactionReport();
+            tradeTransactionReport_ = null;
         }
 
         public TradeTransactionReport Current
@@ -28,14 +28,9 @@
 
         public bool MoveNext()
         {
-            if (tradeTransactionReport_ != null)
-            {
-                tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(tradeTransactionReports_.timeout_);
+            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(tradeTransactionReports_.timeout_);
 
-                return tradeTransactionReport_ != null;
-            }
-
-            return false;
+            return tradeTransactionReport_ != null;
         }
 
         public void Reset()
@@ -51,7 +46,7 @@
                 tradeTransactionReports_.timeout_
             );
 
-            tradeTransactionReport_ = new TradeTransactionReport();
+            tradeTransactionReport_ = null;
         }
 
         public void Dispose()

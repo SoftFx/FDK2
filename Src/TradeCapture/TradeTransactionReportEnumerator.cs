@@ -15,6 +15,7 @@ namespace TickTrader.FDK.TradeCapture
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
+            arrayTaskCompletionSource_ = null;
             tradeTransactionReports_ = new TradeTransactionReport[GrowSize];
             tradeTransactionReportCount_ = 0;
             beginIndex_ = 0;
@@ -27,11 +28,16 @@ namespace TickTrader.FDK.TradeCapture
             return Client.ConvertToSync(NextAsync(), timeout);
         }
 
+        public int Next(TradeTransactionReport[] tradeTransactionReports, int timeout)
+        {
+            return Client.ConvertToSync(NextAsync(tradeTransactionReports), timeout);
+        }
+
         public Task<TradeTransactionReport> NextAsync()
         {
             lock (mutex_)
             {
-                if (taskCompletionSource_ != null)
+                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
                     throw new Exception("Invalid enumerator call");
 
                 if (tradeTransactionReportCount_ > 0)
@@ -69,6 +75,63 @@ namespace TickTrader.FDK.TradeCapture
             }            
         }
 
+        public Task<int> NextAsync(TradeTransactionReport[] tradeTransactionReports)
+        {
+            lock (mutex_)
+            {
+                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
+                    throw new Exception("Invalid enumerator call");
+
+                if (tradeTransactionReports.Length == 0)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(0);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (tradeTransactionReportCount_ > 0)
+                {
+                    int count = 0;
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % tradeTransactionReports_.Length)
+                    {
+                        tradeTransactionReports[count ++] = tradeTransactionReports_[index];
+                        tradeTransactionReports_[index] = null;         // !
+                    }
+
+                    beginIndex_ = (beginIndex_ + count) % tradeTransactionReports_.Length;
+                    tradeTransactionReportCount_ -= count;
+
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(count);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (exception_ != null)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetException(exception_);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (completed_)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(0);
+
+                    return taskCompletionSource.Task;
+                }
+
+                arrayTaskCompletionSource_ = new TaskCompletionSource<int>();
+                arrayTradeTransactionReports_ = tradeTransactionReports;
+                arrayTradeTransactionReportCount_ = 0;
+
+                return arrayTaskCompletionSource_.Task;
+            }            
+        }
+
         public void Close()
         {
             lock (mutex_)
@@ -82,14 +145,23 @@ namespace TickTrader.FDK.TradeCapture
                         taskCompletionSource_.SetResult(null);
                         taskCompletionSource_ = null;
                     }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetResult(0);
+                        arrayTaskCompletionSource_ = null;
+                        arrayTradeTransactionReports_ = null;
+                    }
                 }
 
-                for (int index = beginIndex_; index != endIndex_; ++ index)
-                    tradeTransactionReports_[index % tradeTransactionReports_.Length] = null;
+                if (tradeTransactionReportCount_ > 0)
+                {
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % tradeTransactionReports_.Length)
+                        tradeTransactionReports_[index] = null;
 
-                tradeTransactionReportCount_ = 0;
-                beginIndex_ = 0;
-                endIndex_ = 0;
+                    tradeTransactionReportCount_ = 0;
+                    beginIndex_ = 0;
+                    endIndex_ = 0;
+                }
             }
         }
 
@@ -108,34 +180,60 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     if (taskCompletionSource_ != null)
                     {
-                        taskCompletionSource_.SetResult(tradeTransactionReport);
-                        taskCompletionSource_ = null;
+                        if (tradeTransactionReport != null)
+                        {
+                            taskCompletionSource_.SetResult(tradeTransactionReport);
+                            taskCompletionSource_ = null;
+                        }
+                    }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        if (tradeTransactionReport != null)
+                        {
+                            arrayTradeTransactionReports_[arrayTradeTransactionReportCount_++] = tradeTransactionReport;
+
+                            if (arrayTradeTransactionReportCount_ == arrayTradeTransactionReports_.Length)
+                            {
+                                arrayTaskCompletionSource_.SetResult(arrayTradeTransactionReportCount_);
+                                arrayTaskCompletionSource_ = null;
+                                arrayTradeTransactionReports_ = null;
+                            }
+                        }
+                        else if (arrayTradeTransactionReportCount_ > 0)
+                        {
+                            arrayTaskCompletionSource_.SetResult(arrayTradeTransactionReportCount_);
+                            arrayTaskCompletionSource_ = null;
+                            arrayTradeTransactionReports_ = null;
+                        }
                     }
                     else
                     {
-                        if (tradeTransactionReportCount_ == tradeTransactionReports_.Length)
+                        if (tradeTransactionReport != null)
                         {
-                            TradeTransactionReport[] tradeTransactionReports = new TradeTransactionReport[tradeTransactionReports_.Length + GrowSize];
-
-                            if (endIndex_ > beginIndex_)
+                            if (tradeTransactionReportCount_ == tradeTransactionReports_.Length)
                             {
-                                Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, tradeTransactionReportCount_);
-                            }
-                            else
-                            {
-                                int count = tradeTransactionReports_.Length - beginIndex_;
-                                Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, count);
-                                Array.Copy(tradeTransactionReports_, 0, tradeTransactionReports, count, endIndex_);
+                                TradeTransactionReport[] tradeTransactionReports = new TradeTransactionReport[tradeTransactionReports_.Length + GrowSize];
+
+                                if (endIndex_ > beginIndex_)
+                                {
+                                    Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, tradeTransactionReportCount_);
+                                }
+                                else
+                                {
+                                    int count = tradeTransactionReports_.Length - beginIndex_;
+                                    Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, count);
+                                    Array.Copy(tradeTransactionReports_, 0, tradeTransactionReports, count, endIndex_);
+                                }
+
+                                tradeTransactionReports_ = tradeTransactionReports;
+                                beginIndex_ = 0;
+                                endIndex_ = tradeTransactionReportCount_;
                             }
 
-                            tradeTransactionReports_ = tradeTransactionReports;
-                            beginIndex_ = 0;
-                            endIndex_ = tradeTransactionReportCount_;
+                            tradeTransactionReports_[endIndex_] = tradeTransactionReport;
+                            endIndex_ = (endIndex_ + 1) % tradeTransactionReports_.Length;
+                            ++tradeTransactionReportCount_;
                         }
-
-                        tradeTransactionReports_[endIndex_] = tradeTransactionReport;
-                        endIndex_ = (endIndex_ + 1) % tradeTransactionReports_.Length;
-                        ++ tradeTransactionReportCount_;
                     }
                 }
             }
@@ -153,6 +251,12 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         taskCompletionSource_.SetResult(null);
                         taskCompletionSource_ = null;
+                    }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetResult(0);
+                        arrayTaskCompletionSource_ = null;
+                        arrayTradeTransactionReports_ = null;
                     }
                 }
             }
@@ -172,6 +276,12 @@ namespace TickTrader.FDK.TradeCapture
                         taskCompletionSource_.SetException(exception);
                         taskCompletionSource_ = null;
                     }                        
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetException(exception);
+                        arrayTaskCompletionSource_ = null;
+                        arrayTradeTransactionReports_ = null;
+                    }
                 }
             }
         }
@@ -182,7 +292,12 @@ namespace TickTrader.FDK.TradeCapture
 
         internal object mutex_;
         internal bool completed_;
+
         TaskCompletionSource<TradeTransactionReport> taskCompletionSource_;
+        TaskCompletionSource<int> arrayTaskCompletionSource_;
+        TradeTransactionReport[] arrayTradeTransactionReports_;
+        int arrayTradeTransactionReportCount_;
+
         TradeTransactionReport[] tradeTransactionReports_;
         int tradeTransactionReportCount_;
         int beginIndex_;

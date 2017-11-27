@@ -13,7 +13,7 @@
             bars_ = bars;
             barEnumerator_ = barEnumerator;
 
-            bar_ = new Bar();
+            bar_ = null;
         }
 
         public Bar Current
@@ -28,14 +28,9 @@
 
         public bool MoveNext()
         {
-            if (bar_ != null)
-            {
-                bar_ = barEnumerator_.Next(bars_.timeout_);
+            bar_ = barEnumerator_.Next(bars_.timeout_);
 
-                return bar_ != null;
-            }
-
-            return false;
+            return bar_ != null;
         }
 
         public void Reset()
@@ -53,7 +48,7 @@
                 bars_.timeout_
             );
 
-            bar_ = new Bar();
+            bar_ = null;
         }
 
         public void Dispose()

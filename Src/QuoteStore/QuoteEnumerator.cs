@@ -18,6 +18,7 @@ namespace TickTrader.FDK.QuoteStore
             mutex_ = new object();
             completed_ = false;
             taskCompletionSource_ = null;
+            arrayTaskCompletionSource_ = null;
             quotes_ = new Quote[GrowSize];
             quoteCount_ = 0;
             beginIndex_ = 0;
@@ -45,11 +46,16 @@ namespace TickTrader.FDK.QuoteStore
             return Client.ConvertToSync(NextAsync(), timeout);
         }
 
+        public int Next(Quote[] quotes, int timeout)
+        {
+            return Client.ConvertToSync(NextAsync(quotes), timeout);
+        }
+
         public Task<Quote> NextAsync()
         {
             lock (mutex_)
             {
-                if (taskCompletionSource_ != null)
+                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
                     throw new Exception("Invalid enumerator call");
 
                 if (quoteCount_ > 0)
@@ -87,6 +93,63 @@ namespace TickTrader.FDK.QuoteStore
             }            
         }
 
+        public Task<int> NextAsync(Quote[] quotes)
+        {
+            lock (mutex_)
+            {
+                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
+                    throw new Exception("Invalid enumerator call");
+
+                if (quotes.Length == 0)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(0);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (quoteCount_ > 0)
+                {
+                    int count = 0;
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % quotes.Length)
+                    {
+                        quotes[count ++] = quotes_[index];
+                        quotes_[index] = null;         // !
+                    }
+
+                    beginIndex_ = (beginIndex_ + count) % quotes_.Length;
+                    quoteCount_ -= count;
+
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(count);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (exception_ != null)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetException(exception_);
+
+                    return taskCompletionSource.Task;
+                }
+
+                if (completed_)
+                {
+                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
+                    taskCompletionSource.SetResult(0);
+
+                    return taskCompletionSource.Task;
+                }
+
+                arrayTaskCompletionSource_ = new TaskCompletionSource<int>();
+                arrayQuotes_ = quotes;
+                arrayQuoteCount_ = 0;
+
+                return arrayTaskCompletionSource_.Task;
+            }            
+        }
+
         public void Close()
         {
             lock (mutex_)
@@ -108,14 +171,23 @@ namespace TickTrader.FDK.QuoteStore
                         taskCompletionSource_.SetResult(null);
                         taskCompletionSource_ = null;
                     }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetResult(0);
+                        arrayTaskCompletionSource_ = null;
+                        arrayQuotes_ = null;
+                    }
                 }
 
-                for (int index = beginIndex_; index != endIndex_; ++ index)
-                    quotes_[index % quotes_.Length] = null;
+                if (quoteCount_ > 0)
+                {
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % quotes_.Length)
+                        quotes_[index] = null;
 
-                quoteCount_ = 0;
-                beginIndex_ = 0;
-                endIndex_ = 0;
+                    quoteCount_ = 0;
+                    beginIndex_ = 0;
+                    endIndex_ = 0;
+                }
             }
         }
 
@@ -134,34 +206,60 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     if (taskCompletionSource_ != null)
                     {
-                        taskCompletionSource_.SetResult(quote);
-                        taskCompletionSource_ = null;
+                        if (quote != null)
+                        {
+                            taskCompletionSource_.SetResult(quote);
+                            taskCompletionSource_ = null;
+                        }
+                    }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        if (quote != null)
+                        {
+                            arrayQuotes_[arrayQuoteCount_++] = quote;
+
+                            if (arrayQuoteCount_ == arrayQuotes_.Length)
+                            {
+                                arrayTaskCompletionSource_.SetResult(arrayQuoteCount_);
+                                arrayTaskCompletionSource_ = null;
+                                arrayQuotes_ = null;
+                            }
+                        }
+                        else if (arrayQuoteCount_ > 0)
+                        {
+                            arrayTaskCompletionSource_.SetResult(arrayQuoteCount_);
+                            arrayTaskCompletionSource_ = null;
+                            arrayQuotes_ = null;
+                        }
                     }
                     else
                     {
-                        if (quoteCount_ == quotes_.Length)
+                        if (quote != null)
                         {
-                            Quote[] quotes = new Quote[quotes_.Length + GrowSize];
-
-                            if (endIndex_ > beginIndex_)
+                            if (quoteCount_ == quotes_.Length)
                             {
-                                Array.Copy(quotes_, beginIndex_, quotes, 0, quoteCount_);
-                            }
-                            else
-                            {
-                                int count = quotes_.Length - beginIndex_;
-                                Array.Copy(quotes_, beginIndex_, quotes, 0, count);
-                                Array.Copy(quotes_, 0, quotes, count, endIndex_);
+                                Quote[] quotes = new Quote[quotes_.Length + GrowSize];
+
+                                if (endIndex_ > beginIndex_)
+                                {
+                                    Array.Copy(quotes_, beginIndex_, quotes, 0, quoteCount_);
+                                }
+                                else
+                                {
+                                    int count = quotes_.Length - beginIndex_;
+                                    Array.Copy(quotes_, beginIndex_, quotes, 0, count);
+                                    Array.Copy(quotes_, 0, quotes, count, endIndex_);
+                                }
+
+                                quotes_ = quotes;
+                                beginIndex_ = 0;
+                                endIndex_ = quoteCount_;
                             }
 
-                            quotes_ = quotes;
-                            beginIndex_ = 0;
-                            endIndex_ = quoteCount_;
+                            quotes_[endIndex_] = quote;
+                            endIndex_ = (endIndex_ + 1) % quotes_.Length;
+                            ++quoteCount_;
                         }
-
-                        quotes_[endIndex_] = quote;
-                        endIndex_ = (endIndex_ + 1) % quotes_.Length;
-                        ++ quoteCount_;
                     }
                 }
             }
@@ -179,6 +277,12 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         taskCompletionSource_.SetResult(null);
                         taskCompletionSource_ = null;
+                    }
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetResult(0);
+                        arrayTaskCompletionSource_ = null;
+                        arrayQuotes_ = null;
                     }
                 }
             }
@@ -198,6 +302,12 @@ namespace TickTrader.FDK.QuoteStore
                         taskCompletionSource_.SetException(exception);
                         taskCompletionSource_ = null;
                     }                        
+                    else if (arrayTaskCompletionSource_ != null)
+                    {
+                        arrayTaskCompletionSource_.SetException(exception);;
+                        arrayTaskCompletionSource_ = null;
+                        arrayQuotes_ = null;
+                    }
                 }
             }
         }
@@ -211,7 +321,12 @@ namespace TickTrader.FDK.QuoteStore
 
         object mutex_;
         bool completed_;
+
         TaskCompletionSource<Quote> taskCompletionSource_;
+        TaskCompletionSource<int> arrayTaskCompletionSource_;
+        Quote[] arrayQuotes_;
+        int arrayQuoteCount_;
+
         Quote[] quotes_;
         int quoteCount_;
         int beginIndex_;

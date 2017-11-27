@@ -1425,6 +1425,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
 
+                    if (context.taskCompletionSource_ != null)
+                        context.tradeTransactionReportEnumerator_.SetResult(null);
+
                     if (message.Last)
                     {
                         if (client_.TradeDownloadResultEndEvent != null)

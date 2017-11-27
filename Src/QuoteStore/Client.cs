@@ -1683,6 +1683,9 @@ namespace TickTrader.FDK.QuoteStore
                                         context.barEnumerator_.SetResult(bar);
                                     }
                                 }                                    
+
+                                if (context.taskCompletionSource_ != null)
+                                    context.barEnumerator_.SetResult(null);
                             }
                         }
                     }
@@ -1721,6 +1724,9 @@ namespace TickTrader.FDK.QuoteStore
                                 context.barEnumerator_.SetResult(bar);
                             }
                         }
+
+                        if (context.taskCompletionSource_ != null)
+                            context.barEnumerator_.SetResult(null);
                     }
                 }
             }
@@ -1776,6 +1782,9 @@ namespace TickTrader.FDK.QuoteStore
                                     }
                                 }
                             }
+
+                            if (context.taskCompletionSource_ != null)
+                                context.quoteEnumerator_.SetResult(null);
                         }
                     }
                 }
@@ -1813,6 +1822,9 @@ namespace TickTrader.FDK.QuoteStore
                                 context.quoteEnumerator_.SetResult(quote);
                             }
                         }                                    
+
+                        if (context.taskCompletionSource_ != null)
+                            context.quoteEnumerator_.SetResult(null);
                     }
                 }
             }
