@@ -1020,6 +1020,11 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    UpdateCacheData(report);
+                }
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1051,6 +1056,11 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    UpdateCacheData(report);
+                }
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1082,6 +1092,11 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    UpdateCacheData(report);
+                }
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1113,6 +1128,11 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    UpdateCacheData(report);
+                }
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
@@ -1144,6 +1164,11 @@
         {
             try
             {
+                lock (cache_.mutex_)
+                {
+                    UpdateCacheData(report);
+                }
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
