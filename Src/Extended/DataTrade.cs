@@ -1536,7 +1536,11 @@
         {
             if (cache_.tradeRecords_ != null)
             {
-                if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled) 
+                if (executionReport.ExecutionType == ExecutionType.Rejected)
+                {
+                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
+                else if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
@@ -1544,7 +1548,7 @@
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
-                else if (executionReport.ExecutionType == ExecutionType.Expired) 
+                else if (executionReport.ExecutionType == ExecutionType.Expired)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
