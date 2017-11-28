@@ -2064,11 +2064,23 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Type = Convert(reportAccountInfo.Type);
                     resultAccountInfo.Name = reportAccountInfo.Name;
                     resultAccountInfo.Email = reportAccountInfo.Email;
-                    resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId != null ? reportAccountInfo.Balance.CurrId : "";   // TODO: something in the client calculator crashes if null
+                    resultAccountInfo.Comment = reportAccountInfo.Description;                    
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.GetValueOrDefault(0);
+
+                    BalanceNull reportBalance = reportAccountInfo.Balance;
+
+                    if (reportBalance.HasValue)
+                    {
+                        resultAccountInfo.Currency = reportBalance.CurrId;   
+                        resultAccountInfo.Balance = reportBalance.Total;
+                    }
+                    else
+                    {
+                        resultAccountInfo.Currency = "";     // TODO: something in the client calculator crashes if null
+                        resultAccountInfo.Balance = 0;
+                    }
+                    
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -3492,10 +3504,22 @@ namespace TickTrader.FDK.OrderEntry
                     resultAccountInfo.Name = reportAccountInfo.Name;
                     resultAccountInfo.Email = reportAccountInfo.Email;
                     resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.Currency = reportAccountInfo.Balance.CurrId != null ? reportAccountInfo.Balance.CurrId : null;   // something in the client calculator crashes if nullable
                     resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
                     resultAccountInfo.Leverage = reportAccountInfo.Leverage;
-                    resultAccountInfo.Balance = reportAccountInfo.Balance.Total.GetValueOrDefault(0);
+
+                    BalanceNull reportBalance = reportAccountInfo.Balance;
+
+                    if (reportBalance.HasValue)
+                    {
+                        resultAccountInfo.Currency = reportBalance.CurrId;   
+                        resultAccountInfo.Balance = reportBalance.Total;
+                    }
+                    else
+                    {
+                        resultAccountInfo.Currency = "";     // TODO: something in the client calculator crashes if null
+                        resultAccountInfo.Balance = 0;
+                    }
+
                     resultAccountInfo.Margin = reportAccountInfo.Margin;
                     resultAccountInfo.Equity = reportAccountInfo.Equity;
                     resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
@@ -3601,9 +3625,9 @@ namespace TickTrader.FDK.OrderEntry
                     TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
                     SoftFX.Net.OrderEntry.Balance updateBalance = update.Balance;
-                    result.Balance = updateBalance.Total.Value;
-                    result.TransactionAmount = updateBalance.Move.Value;
                     result.TransactionCurrency = updateBalance.CurrId;
+                    result.TransactionAmount = updateBalance.Move.Value;
+                    result.Balance = updateBalance.Total;
 
                     if (client_.BalanceUpdateEvent != null)
                     {
@@ -3732,30 +3756,50 @@ namespace TickTrader.FDK.OrderEntry
                 result.Text = report.Text;
                 result.Comment = reportAttributes.Comment;
                 result.Tag = reportAttributes.Tag;
-                result.Magic = reportAttributes.Magic;                    
+                result.Magic = reportAttributes.Magic;
 
-                SoftFX.Net.OrderEntry.AssetArray reportAssets = report.Assets;
-                int count = reportAssets.Length;
-                TickTrader.FDK.Common.AssetInfo[] resultAssets = new TickTrader.FDK.Common.AssetInfo[count];
+                BalanceNull reportBalance = report.Balance;
 
-                for (int index = 0; index < count; ++ index)
+                if (reportBalance.HasValue)
                 {
-                    SoftFX.Net.OrderEntry.Asset reportAsset = reportAssets[index];
-                    TickTrader.FDK.Common.AssetInfo resultAsset = new AssetInfo();
-
-                    resultAsset.Currency = reportAsset.CurrId;
-                    resultAsset.TradeAmount = reportAsset.Move.Value;
-                    resultAsset.LockedAmount = reportAsset.Locked;
-                    resultAsset.Balance = reportAsset.Total;                    
-
-                    resultAssets[index] = resultAsset;
+                    result.Balance = reportBalance.Total;
+                    result.BalanceTradeAmount = reportBalance.Move;
+                }
+                else
+                {
+                    result.Balance = null;
+                    result.BalanceTradeAmount = null;
                 }
 
-                result.Assets = resultAssets;
+                SoftFX.Net.OrderEntry.AssetNull reportAsset1 = report.Asset1;
+                SoftFX.Net.OrderEntry.AssetNull reportAsset2 = report.Asset2;
 
-                Balance reportBalance = report.Balance;
-                result.Balance = reportBalance.Total;
-                result.BalanceTradeAmount = reportBalance.Move;
+                if (reportAsset1.HasValue && reportAsset2.HasValue)
+                {
+                    TickTrader.FDK.Common.AssetInfo resultAsset1 = new AssetInfo();
+                    resultAsset1.Currency = reportAsset1.CurrId;
+                    resultAsset1.TradeAmount = reportAsset1.Move.Value;
+                    resultAsset1.LockedAmount = reportAsset1.Locked;
+                    resultAsset1.Balance = reportAsset1.Total;
+
+                    TickTrader.FDK.Common.AssetInfo resultAsset2 = new AssetInfo();
+                    resultAsset2.Currency = reportAsset2.CurrId;
+                    resultAsset2.TradeAmount = reportAsset2.Move.Value;
+                    resultAsset2.LockedAmount = reportAsset2.Locked;
+                    resultAsset2.Balance = reportAsset2.Total;
+
+                    result.Assets = new TickTrader.FDK.Common.AssetInfo[]
+                    {
+                        resultAsset1,
+                        resultAsset2
+                    };
+                }
+                else if (!reportAsset1.HasValue && !reportAsset2.HasValue)
+                {
+                    result.Assets = new TickTrader.FDK.Common.AssetInfo[0];   // TODO: or null ?
+                }
+                else
+                    throw new Exception("Invalid assets");
 
                 return result;
             }

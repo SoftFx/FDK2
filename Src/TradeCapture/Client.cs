@@ -1573,7 +1573,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeCaptureRefresh(ClientSession session, TradeCaptureRefresh message)
+            public override void OnTradeCaptureUpdate(ClientSession session, TradeCaptureUpdate message)
             {
                 try
                 {
@@ -1649,23 +1649,45 @@ namespace TickTrader.FDK.TradeCapture
 
             void Convert(TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport, SoftFX.Net.TradeCapture.Trade trade)
             {
-                ConversionRates conversionRates = trade.ConversionRates;
-
                 tradeTransactionReport.TradeTransactionId = trade.Id;
                 tradeTransactionReport.TradeTransactionReportType = Convert(trade.Type);
                 tradeTransactionReport.TradeTransactionReason = Convert(trade.Reason);
-                tradeTransactionReport.AccountBalance = trade.Balance.Total.GetValueOrDefault(0);
-                tradeTransactionReport.TransactionAmount = trade.Balance.Move.GetValueOrDefault(0);
-                tradeTransactionReport.TransactionCurrency = trade.Balance.CurrId;                
-                tradeTransactionReport.Id = trade.OrderId.ToString();
+
+                BalanceNull balance = trade.Balance;
+                if (balance.HasValue)
+                {
+                    tradeTransactionReport.AccountBalance = balance.Total;
+                    tradeTransactionReport.TransactionAmount = balance.Move;
+                    tradeTransactionReport.TransactionCurrency = balance.CurrId;
+                }
+                else
+                {
+                    tradeTransactionReport.AccountBalance = 0;
+                    tradeTransactionReport.TransactionAmount = 0;
+                    tradeTransactionReport.TransactionCurrency = null;
+                }
+
+                tradeTransactionReport.Id = trade.OrderId.GetValueOrDefault(0).ToString();
                 tradeTransactionReport.ClientId = trade.ClOrdId;
-                tradeTransactionReport.Quantity = trade.Qty;
+                tradeTransactionReport.Quantity = trade.Qty.GetValueOrDefault(0);
                 tradeTransactionReport.MaxVisibleQuantity = trade.MaxVisibleQty;
-                tradeTransactionReport.LeavesQuantity = trade.LeavesQty;
+                tradeTransactionReport.LeavesQuantity = trade.LeavesQty.GetValueOrDefault(0);
                 tradeTransactionReport.Price = trade.Price.GetValueOrDefault(0);
                 tradeTransactionReport.StopPrice = trade.StopPrice.GetValueOrDefault(0);
-                tradeTransactionReport.OrderType = Convert(trade.OrderType);
-                tradeTransactionReport.OrderSide = Convert(trade.OrderSide);
+
+                if (trade.OrderType.HasValue)
+                {
+                    tradeTransactionReport.OrderType = Convert(trade.OrderType.Value);
+                }
+                else
+                    tradeTransactionReport.OrderType = TickTrader.FDK.Common.OrderType.Market;
+
+                if (trade.OrderSide.HasValue)
+                {
+                    tradeTransactionReport.OrderSide = Convert(trade.OrderSide.Value);
+                }
+                else
+                    tradeTransactionReport.OrderSide = TickTrader.FDK.Common.OrderSide.Buy;
 
                 if (trade.TimeInForce.HasValue)
                 {
@@ -1681,8 +1703,20 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.ReducedOpenCommission = (trade.CommissionFlags & CommissionFlags.OpenReduced) != 0;
                 tradeTransactionReport.ReducedCloseCommission = (trade.CommissionFlags & CommissionFlags.CloseReduced) != 0;
                 tradeTransactionReport.MarketWithSlippage = (trade.OrderFlags & OrderFlags.Slippage) != 0;
-                tradeTransactionReport.OrderCreated = trade.Created;
+                tradeTransactionReport.OrderCreated = trade.Created.GetValueOrDefault();
                 tradeTransactionReport.OrderModified = trade.Modified.GetValueOrDefault();
+
+                if (trade.ParentOrderType.HasValue)
+                {
+                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                }
+                else
+                    tradeTransactionReport.ReqOrderType = null;
+
+                tradeTransactionReport.ReqOpenQuantity = trade.ParentQty;
+                tradeTransactionReport.ReqOpenPrice = trade.ParentPrice;
+                tradeTransactionReport.ReqClosePrice = null;
+                tradeTransactionReport.ReqCloseQuantity = null;
 
                 if (trade.Type == TradeType.PositionClosed)
                 {
@@ -1695,65 +1729,154 @@ namespace TickTrader.FDK.TradeCapture
                     else
                         tradeTransactionReport.PositionById = null;
 
-                    tradeTransactionReport.PositionOpened = trade.Created;
+                    tradeTransactionReport.PositionOpened = trade.Created.GetValueOrDefault();
+                    tradeTransactionReport.PosOpenReqPrice = 0;
                     tradeTransactionReport.PosOpenPrice = trade.Price.Value;
-                    tradeTransactionReport.PositionQuantity = trade.Qty;
-                    tradeTransactionReport.PositionLastQuantity = trade.LastQty.GetValueOrDefault(0);
-                    tradeTransactionReport.PositionLeavesQuantity = trade.LeavesQty;
-                    tradeTransactionReport.PositionClosePrice = trade.LastPrice.GetValueOrDefault(0);
+                    tradeTransactionReport.PositionQuantity = trade.Qty.Value;
+                    tradeTransactionReport.PositionLastQuantity = trade.LastQty.Value;
+                    tradeTransactionReport.PositionLeavesQuantity = trade.LeavesQty.Value;
+                    tradeTransactionReport.PositionCloseRequestedPrice = 0;
+                    tradeTransactionReport.PositionClosePrice = trade.LastPrice.Value;
                     tradeTransactionReport.PositionClosed = trade.TransactTime;
-                    tradeTransactionReport.PositionModified = trade.Modified.GetValueOrDefault();
-                }
-
-                if (trade.PosType.HasValue)
-                {
-                    tradeTransactionReport.PosRemainingSide = Convert(trade.PosType.Value);                        
+                    tradeTransactionReport.PositionModified = trade.Modified.Value;
                 }
                 else
-                    tradeTransactionReport.PosRemainingSide = 0;
-
-                tradeTransactionReport.PosRemainingPrice = trade.PosPrice;
-
-                if (trade.ParentOrderType.HasValue)
                 {
-                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                    tradeTransactionReport.PositionId = null;
+                    tradeTransactionReport.PositionById = null;
+                    tradeTransactionReport.PositionOpened = new DateTime();
+                    tradeTransactionReport.PosOpenReqPrice = 0;
+                    tradeTransactionReport.PosOpenPrice = 0;
+                    tradeTransactionReport.PositionQuantity = 0;
+                    tradeTransactionReport.PositionLastQuantity = 0;
+                    tradeTransactionReport.PositionLeavesQuantity = 0;
+                    tradeTransactionReport.PositionCloseRequestedPrice = 0;
+                    tradeTransactionReport.PositionClosePrice = 0;
+                    tradeTransactionReport.PositionClosed = new DateTime();
+                    tradeTransactionReport.PositionModified = new DateTime();
+                }
+
+                SoftFX.Net.TradeCapture.PositionNull position = trade.Position;
+                if (position.HasValue)
+                {
+                    tradeTransactionReport.PosRemainingSide = Convert(position.Type);
+                    tradeTransactionReport.PosRemainingPrice = trade.Price;
                 }
                 else
-                    tradeTransactionReport.ReqOrderType = null;
-
-                tradeTransactionReport.ReqOpenQuantity = trade.ParentQty;
-                tradeTransactionReport.ReqOpenPrice = trade.ParentPrice;
+                {
+                    tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
+                    tradeTransactionReport.PosRemainingPrice = null;
+                }
+                
                 tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault(0);
                 tradeTransactionReport.AgentCommission = trade.AgentCommission.GetValueOrDefault(0);
-                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault(0);
-                tradeTransactionReport.CommCurrency = trade.ComissionCurrId;
+                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault(0);                
+                tradeTransactionReport.CommCurrency = trade.CommissionCurrId;
                 tradeTransactionReport.StopLoss = trade.StopLoss.GetValueOrDefault(0);
                 tradeTransactionReport.TakeProfit = trade.TakeProfit.GetValueOrDefault(0);
                 tradeTransactionReport.TransactionTime = trade.TransactTime;
                 tradeTransactionReport.OrderFillPrice = trade.LastPrice;
-                tradeTransactionReport.OrderLastFillAmount = trade.LastQty;                    
-                tradeTransactionReport.OpenConversionRate = conversionRates.Open;
-                tradeTransactionReport.CloseConversionRate = conversionRates.Close;
-                tradeTransactionReport.ActionId = trade.ActionId;
+                tradeTransactionReport.OrderLastFillAmount = trade.LastQty;
+                tradeTransactionReport.ActionId = trade.ActionId.GetValueOrDefault(0);
                 tradeTransactionReport.Expiration = trade.ExpireTime;
-                tradeTransactionReport.SrcAssetCurrency = trade.SrcAsset.CurrId;
-                tradeTransactionReport.SrcAssetAmount = trade.SrcAsset.Total;
-                tradeTransactionReport.SrcAssetMovement = trade.SrcAsset.Move;
-                tradeTransactionReport.DstAssetCurrency = trade.DestAsset.CurrId;
-                tradeTransactionReport.DstAssetAmount = trade.DestAsset.Total;
-                tradeTransactionReport.DstAssetMovement = trade.DestAsset.Move;
-                tradeTransactionReport.MarginCurrencyToUsdConversionRate = conversionRates.MarginToUsd;
-                tradeTransactionReport.UsdToMarginCurrencyConversionRate = conversionRates.UsdToMargin;
                 tradeTransactionReport.MarginCurrency = trade.MarginCurrId;
-                tradeTransactionReport.ProfitCurrencyToUsdConversionRate = conversionRates.ProfitToUsd;
-                tradeTransactionReport.UsdToProfitCurrencyConversionRate = conversionRates.UsdToProfit;
                 tradeTransactionReport.ProfitCurrency = trade.ProfitCurrId;
-                tradeTransactionReport.SrcAssetToUsdConversionRate = conversionRates.SrcToUsd;
-                tradeTransactionReport.UsdToSrcAssetConversionRate = conversionRates.UsdToSrc;
-                tradeTransactionReport.DstAssetToUsdConversionRate = conversionRates.DestToUsd;
-                tradeTransactionReport.UsdToDstAssetConversionRate = conversionRates.UsdToDest;
                 tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrId;
-                tradeTransactionReport.MinCommissionConversionRate = conversionRates.MinCommission;
+
+                AssetNull asset1 = trade.Asset1;
+                if (asset1.HasValue)
+                {
+                    tradeTransactionReport.SrcAssetCurrency = asset1.CurrId;
+                    tradeTransactionReport.SrcAssetAmount = asset1.Total;
+                    tradeTransactionReport.SrcAssetMovement = asset1.Move;
+                }
+                else
+                {
+                    tradeTransactionReport.SrcAssetCurrency = null;
+                    tradeTransactionReport.SrcAssetAmount = null;
+                    tradeTransactionReport.SrcAssetMovement = null;
+                }
+
+                AssetNull asset2 = trade.Asset2;
+                if (asset2.HasValue)
+                {
+                    tradeTransactionReport.DstAssetCurrency = asset2.CurrId;
+                    tradeTransactionReport.DstAssetAmount = asset2.Total;
+                    tradeTransactionReport.DstAssetMovement = asset2.Move;
+                }
+                else
+                {
+                    tradeTransactionReport.DstAssetCurrency = null;
+                    tradeTransactionReport.DstAssetAmount = null;
+                    tradeTransactionReport.DstAssetMovement = null;
+                }
+
+                tradeTransactionReport.OpenConversionRate = null;
+                tradeTransactionReport.CloseConversionRate = null;
+                tradeTransactionReport.MarginCurrencyToUsdConversionRate = null;
+                tradeTransactionReport.UsdToMarginCurrencyConversionRate = null;
+                tradeTransactionReport.ProfitCurrencyToUsdConversionRate = null;
+                tradeTransactionReport.UsdToProfitCurrencyConversionRate = null;
+                tradeTransactionReport.SrcAssetToUsdConversionRate = null;
+                tradeTransactionReport.UsdToSrcAssetConversionRate = null;
+                tradeTransactionReport.DstAssetToUsdConversionRate = null;
+                tradeTransactionReport.UsdToDstAssetConversionRate = null;
+                tradeTransactionReport.MinCommissionConversionRate = null;
+
+                ConversionArray conversions = trade.Conversions;
+                int conversionCount = conversions.Length;
+
+                for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
+                {
+                    Conversion conversion = conversions[conversionIndex];
+
+                    switch (conversion.Type)
+                    {
+                        case ConversionType.MarginToBalance:
+                            tradeTransactionReport.OpenConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.MarginToUsd:
+                            tradeTransactionReport.MarginCurrencyToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.ProfitToBalance:
+                            tradeTransactionReport.CloseConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.ProfitToUsd:
+                            tradeTransactionReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.Asset1ToUsd:
+                            tradeTransactionReport.SrcAssetToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.Asset2ToUsd:
+                            tradeTransactionReport.DstAssetToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.MinCommissionToBalance:
+                            tradeTransactionReport.MinCommissionConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToMargin:
+                            tradeTransactionReport.UsdToMarginCurrencyConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToProfit:
+                            tradeTransactionReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToAsset1:
+                            tradeTransactionReport.UsdToSrcAssetConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToAsset2:
+                            tradeTransactionReport.UsdToDstAssetConversionRate = conversion.Rate;
+                            break;
+                    }
+                }
             }
 
             TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LogoutReason reason)
@@ -1799,11 +1922,11 @@ namespace TickTrader.FDK.TradeCapture
                     case SoftFX.Net.TradeCapture.TradeType.OrderExpired:
                         return TickTrader.FDK.Common.TradeTransactionReportType.OrderExpired;
 
+                    case SoftFX.Net.TradeCapture.TradeType.OrderActivated:
+                        return TickTrader.FDK.Common.TradeTransactionReportType.OrderActivated;
+
                     case SoftFX.Net.TradeCapture.TradeType.Balance:
                         return TickTrader.FDK.Common.TradeTransactionReportType.BalanceTransaction;
-
-                    case SoftFX.Net.TradeCapture.TradeType.Credit:
-                        return TickTrader.FDK.Common.TradeTransactionReportType.Credit;
 
                     default:
                         throw new Exception("Invalid trade type : " + type);
@@ -1923,15 +2046,6 @@ namespace TickTrader.FDK.TradeCapture
             {
                 switch (type)
                 {
-                    case SoftFX.Net.TradeCapture.NotificationType.MarginCall:
-                        return TickTrader.FDK.Common.NotificationType.MarginCall;
-
-                    case SoftFX.Net.TradeCapture.NotificationType.MarginCallRevocation:
-                        return TickTrader.FDK.Common.NotificationType.MarginCallRevocation;
-
-                    case SoftFX.Net.TradeCapture.NotificationType.StopOut:
-                        return TickTrader.FDK.Common.NotificationType.StopOut;
-
                     case SoftFX.Net.TradeCapture.NotificationType.ConfigUpdate:
                         return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 

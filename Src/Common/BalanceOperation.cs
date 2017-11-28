@@ -10,9 +10,9 @@
         }
 
         /// <summary>
-        /// Actual account balance after balance operation.
+        /// Currency of a balance transaction.
         /// </summary>
-        public double Balance { get; set; }
+        public string TransactionCurrency { get; set; }
 
         /// <summary>
         /// Amount of a balance transaction.
@@ -20,9 +20,9 @@
         public double TransactionAmount { get; set; }
 
         /// <summary>
-        /// Currency of a balance transaction.
+        /// Actual account balance after balance operation.
         /// </summary>
-        public string TransactionCurrency { get; set; }
+        public double Balance { get; set; }
 
         /// <summary>
         /// Returns formatted string for the class instance.

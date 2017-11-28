@@ -1481,7 +1481,7 @@ namespace TickTrader.FDK.QuoteFeed
                         resultSymbol.Currency = reportSymbol.MarginCurrId;
                         resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrId;
                         resultSymbol.Description = reportSymbol.Description;
-                        resultSymbol.Precision = (int) Math.Log(reportSymbol.ContractMultiplier, 10);
+                        resultSymbol.Precision = reportSymbol.Precision;
                         resultSymbol.RoundLot = reportSymbol.RoundLot;
                         resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;
                         resultSymbol.MaxTradeVolume = reportSymbol.MaxTradeVol;
