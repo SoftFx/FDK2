@@ -155,6 +155,7 @@
             tradeCaptureClient_.LogoutResultEvent += new TradeCapture.Client.LogoutResultDelegate(this.OnLogoutResult);
             tradeCaptureClient_.LogoutEvent += new TradeCapture.Client.LogoutDelegate(this.OnLogout);
             tradeCaptureClient_.TradeUpdateEvent += new TradeCapture.Client.TradeUpdateDelegate(this.OnTradeUpdate);
+            tradeCaptureClient_.NotificationEvent += new TradeCapture.Client.NotificationDelegate(this.OnNotification);
 
             loginEvent_ = new ManualResetEvent(false);
 
@@ -700,19 +701,30 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.tradeServerInfo_ == null)
-                                cache_.tradeServerInfo_ = tradeServerInfo;
+                            cache_.tradeServerInfo_ = tradeServerInfo;
                         }
 
-                        initFlags_ |= InitFlags.TradeServerInfo;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.TradeServerInfo;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.TradeServerInfo;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -747,33 +759,47 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.accountInfo_ == null)
-                                cache_.accountInfo_ = accountInfo;
+                            cache_.accountInfo_ = accountInfo;
                         }
 
-                        initFlags_ |= InitFlags.AccountInfo;
+                        if (initFlags_ != InitFlags.All)
+                        {
+                            initFlags_ |= InitFlags.AccountInfo;
 
-                        if (accountInfo.Type == AccountType.Net)
-                        {
-                            orderEntryClient_.GetPositionsAsync(this);
-                        }
-                        else
-                        {
-                            lock (cache_.mutex_)
+                            if (accountInfo.Type == AccountType.Net)
                             {
-                                if (cache_.positions_ == null)
-                                    cache_.positions_ = new Dictionary<string, Position>();
+                                orderEntryClient_.GetPositionsAsync(this);
                             }
-
-                            initFlags_ |= InitFlags.Positions;
-
-                            if (initFlags_ == InitFlags.All)
+                            else
                             {
-                                logout_ = false;
-                                PushLoginEvents();
+                                initFlags_ |= InitFlags.Positions;
 
-                                loginException_ = null;
-                                loginEvent_.Set();
+                                if (initFlags_ == InitFlags.All)
+                                {
+                                    logout_ = false;
+                                    PushLoginEvents();
+
+                                    loginException_ = null;
+                                    loginEvent_.Set();
+                                }
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.AccountInfo;
+
+                            if (accountInfo.Type == AccountType.Net)
+                            {
+                                orderEntryClient_.GetPositionsAsync(this);
+                            }
+                            else
+                            {
+                                reloadFlags_ |= ReloadFlags.Positions;
+
+                                if (reloadFlags_ == ReloadFlags.All)
+                                {
+                                    PushConfigUpdateEvents();
+                                }
                             }
                         }
                     }
@@ -809,19 +835,30 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.sessionInfo_ == null)
-                                cache_.sessionInfo_ = sessionInfo;
+                            cache_.sessionInfo_ = sessionInfo;
                         }
 
-                        initFlags_ |= InitFlags.SessionInfo;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.SessionInfo;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.SessionInfo;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -856,24 +893,33 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.positions_ == null)
-                            {
-                                cache_.positions_ = new Dictionary<string, Position>(positions.Length);
+                            cache_.positions_ = new Dictionary<string, Position>(positions.Length);
 
-                                foreach (Position position in positions)
-                                    cache_.positions_.Add(position.Symbol, position);
-                            }
+                            foreach (Position position in positions)
+                                cache_.positions_.Add(position.Symbol, position);
                         }
 
-                        initFlags_ |= InitFlags.Positions;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.Positions;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.Positions;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -908,28 +954,37 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.tradeRecords_ == null)
+                            cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
+
+                            foreach (ExecutionReport executionReport in executionReports)
                             {
-                                cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
+                                TradeRecord tradeRecord = GetTradeRecord(executionReport);
 
-                                foreach (ExecutionReport executionReport in executionReports)
-                                {
-                                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
-
-                                    cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
-                                }
+                                cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
                             }
                         }
 
-                        initFlags_ |= InitFlags.TradeRecords;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.TradeRecords;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.TradeRecords;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -1277,6 +1332,31 @@
         {
             try
             {
+                if (notification.Type == NotificationType.ConfigUpdated)
+                {
+                    lock (synchronizer_)
+                    {
+                        // reload everything that might have changed
+
+                        reloadFlags_ &= ~(ReloadFlags.TradeServerInfo | ReloadFlags.AccountInfo | ReloadFlags.SessionInfo | ReloadFlags.TradeRecords | ReloadFlags.Positions);
+
+                        try
+                        {
+                            orderEntryClient_.GetTradeServerInfoAsync(this);                
+                            orderEntryClient_.GetAccountInfoAsync(this);
+                            orderEntryClient_.GetSessionInfoAsync(this);
+                            orderEntryClient_.GetOrdersAsync(this);
+                        }
+                        catch
+                        {
+                            tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                            orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        }
+                    }                    
+
+                    return;
+                }
+
                 NotificationEventArgs args = new NotificationEventArgs();
                 args.Type = notification.Type;
                 args.Severity = notification.Severity;
@@ -1532,6 +1612,22 @@
             }
         }
 
+        void OnNotification(TradeCapture.Client client, Notification notification)
+        {
+            try
+            {
+                if (notification.Type == NotificationType.ConfigUpdated)
+                {
+                    // nothing to reload here
+
+                    return;
+                }
+            }
+            catch
+            {
+            }
+        }
+
         void UpdateCacheData(ExecutionReport executionReport)
         {
             if (cache_.tradeRecords_ != null)
@@ -1694,6 +1790,57 @@
             // For backward comapatibility
             CacheEventArgs cacheArgs = new CacheEventArgs();
             eventQueue_.PushEvent(cacheArgs);
+        }
+
+        void PushConfigUpdateEvents()
+        {
+            NotificationEventArgs args = new NotificationEventArgs();
+            args.Type = NotificationType.ConfigUpdated;
+            args.Severity = NotificationSeverity.Information;
+            args.Text = "Data trade configuration changed";
+            eventQueue_.PushEvent(args);
+
+            AccountInfo accountInfo;
+            SessionInfo sessionInfo;
+            Position[] positions;            
+
+            lock (cache_)
+            {                
+                accountInfo = cache_.accountInfo_;
+                sessionInfo = cache_.sessionInfo_;
+
+                if (cache_.positions_ != null)
+                {
+                    positions = new Position[cache_.positions_.Count];
+
+                    int index = 0;
+                    foreach (KeyValuePair<string, Position> item in cache_.positions_)
+                        positions[index++] = item.Value;
+                }
+                else
+                    positions = null;
+            }
+
+            // For backward comapatibility
+            AccountInfoEventArgs accountInfoArgs = new AccountInfoEventArgs();
+            accountInfoArgs.Information = accountInfo;
+            eventQueue_.PushEvent(accountInfoArgs);
+
+            // For backward comapatibility
+            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
+            sessionArgs.Information = sessionInfo;
+            eventQueue_.PushEvent(sessionArgs);
+
+            // For backward comapatibility
+            if (positions != null)
+            {                
+                for (int index = 0; index < positions.Length; ++ index)
+                {
+                    PositionReportEventArgs positionArgs = new PositionReportEventArgs();
+                    positionArgs.Report = positions[index];
+                    eventQueue_.PushEvent(positionArgs);
+                }
+            }
         }
 
         void EventThread()
@@ -1965,6 +2112,17 @@
             All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions | TradeCaptureLogin
         }
 
+        internal enum ReloadFlags
+        {
+            None = 0x00,
+            TradeServerInfo = 0x01,            
+            AccountInfo = 0x02,
+            SessionInfo = 0x04,
+            TradeRecords = 0x08,
+            Positions = 0x10,
+            All = TradeServerInfo | SessionInfo | AccountInfo | TradeRecords | Positions
+        }
+
         internal string name_;
         internal string address_;
         internal string login_;
@@ -1989,7 +2147,8 @@
         internal ManualResetEvent loginEvent_;
         internal Exception loginException_;
         internal InitFlags initFlags_;
-        internal bool logout_;
+        internal ReloadFlags reloadFlags_;
+        internal bool logout_;        
 
         // We employ a queue to allow the client call sync functions from event handlers
         internal Thread eventThread_;

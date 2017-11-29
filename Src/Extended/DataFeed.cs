@@ -123,6 +123,7 @@
             quoteFeedClient_.SubscribeQuotesResultEvent += new QuoteFeed.Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
             quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.Client.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
+            quoteFeedClient_.NotificationEvent += new QuoteFeed.Client.NotificationDelegate(this.OnNotification);
 
             quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, true, logDirectory, logMessages);
             quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
@@ -132,6 +133,7 @@
             quoteStoreClient_.LoginErrorEvent += new QuoteStore.Client.LoginErrorDelegate(this.OnLoginError);
             quoteStoreClient_.LogoutResultEvent += new QuoteStore.Client.LogoutResultDelegate(this.OnLogoutResult);
             quoteStoreClient_.LogoutEvent += new QuoteStore.Client.LogoutDelegate(this.OnLogout);
+            quoteStoreClient_.NotificationEvent += new QuoteStore.Client.NotificationDelegate(this.OnNotification);
 
             loginEvent_ = new ManualResetEvent(false);
 
@@ -668,19 +670,30 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.currencies_ == null)
-                                cache_.currencies_ = currencies;
+                            cache_.currencies_ = currencies;
                         }
 
-                        initFlags_ |= InitFlags.Currencies;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.Currencies;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.Currencies;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -715,19 +728,30 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.symbols_ == null)
-                                cache_.symbols_ = symbols;
+                            cache_.symbols_ = symbols;
                         }
 
-                        initFlags_ |= InitFlags.Symbols;
-
-                        if (initFlags_ == InitFlags.All)
+                        if (initFlags_ != InitFlags.All)
                         {
-                            logout_ = false;
-                            PushLoginEvents();
+                            initFlags_ |= InitFlags.Symbols;
 
-                            loginException_ = null;
-                            loginEvent_.Set();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.Symbols;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -762,19 +786,30 @@
                     {
                         lock (cache_.mutex_)
                         {
-                            if (cache_.sessionInfo_ == null)
-                                cache_.sessionInfo_ = sessionInfo;
+                            cache_.sessionInfo_ = sessionInfo;
                         }
 
-                        initFlags_ |= InitFlags.SessionInfo;
+                        if (initFlags_ != InitFlags.All)
+                        {
+                            initFlags_ |= InitFlags.SessionInfo;
 
-                        if (initFlags_ == InitFlags.All)
-                        {                     
-                            logout_ = false;
-                            PushLoginEvents();
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
 
-                            loginException_ = null;
-                            loginEvent_.Set();                            
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.SessionInfo;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
                         }
                     }
                 }
@@ -928,6 +963,30 @@
         {
             try
             {
+                if (notification.Type == NotificationType.ConfigUpdated)
+                {
+                    lock (synchronizer_)
+                    {
+                        // reload everything that might have changed
+
+                        reloadFlags_ &= ~(ReloadFlags.Currencies | ReloadFlags.Symbols | ReloadFlags.SessionInfo);
+
+                        try
+                        {
+                            quoteFeedClient_.GetCurrencyListAsync(this);
+                            quoteFeedClient_.GetSymbolListAsync(this);
+                            quoteFeedClient_.GetSessionInfoAsync(this);
+                        }
+                        catch
+                        {
+                            quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                            quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                        }
+                    }
+
+                    return;
+                }
+
                 NotificationEventArgs args = new NotificationEventArgs();
                 args.Type = notification.Type;
                 args.Severity = notification.Severity;
@@ -1012,15 +1071,18 @@
             {
                 lock (synchronizer_)
                 {
-                    initFlags_ |= InitFlags.StoreLogin;
-
-                    if (initFlags_ == InitFlags.All)
+                    if (initFlags_ != InitFlags.All)
                     {
-                        logout_ = false;
-                        PushLoginEvents();
+                        initFlags_ |= InitFlags.StoreLogin;
 
-                        loginException_ = null;
-                        loginEvent_.Set();
+                        if (initFlags_ == InitFlags.All)
+                        {
+                            logout_ = false;
+                            PushLoginEvents();
+
+                            loginException_ = null;
+                            loginEvent_.Set();
+                        }
                     }
                 }
             }
@@ -1102,6 +1164,22 @@
             }
         }
 
+        void OnNotification(QuoteStore.Client client, Notification notification)
+        {
+            try
+            {
+                if (notification.Type == NotificationType.ConfigUpdated)
+                {
+                    // nothing to reload here
+
+                    return;
+                }
+            }
+            catch
+            {
+            }            
+        }
+
         void PushLoginEvents()
         {
             LogonEventArgs args = new LogonEventArgs();
@@ -1137,6 +1215,41 @@
             // For backward comapatibility
             CacheEventArgs cacheArgs = new CacheEventArgs();
             eventQueue_.PushEvent(cacheArgs);
+        }
+
+        void PushConfigUpdateEvents()
+        {
+            NotificationEventArgs args = new NotificationEventArgs();
+            args.Type = NotificationType.ConfigUpdated;
+            args.Severity = NotificationSeverity.Information;
+            args.Text = "Data feed configuration changed";
+            eventQueue_.PushEvent(args);
+                        
+            CurrencyInfo[] currencies;
+            SymbolInfo[] symbols;
+            SessionInfo sessionInfo;
+
+            lock (cache_)
+            {                
+                currencies = cache_.currencies_;
+                symbols = cache_.symbols_;
+                sessionInfo = cache_.sessionInfo_;
+            }
+
+            // For backward comapatibility
+            CurrencyInfoEventArgs currencyArgs = new CurrencyInfoEventArgs();
+            currencyArgs.Information = currencies;
+            eventQueue_.PushEvent(currencyArgs);
+
+            // For backward comapatibility
+            SymbolInfoEventArgs symbolArgs = new SymbolInfoEventArgs();
+            symbolArgs.Information = symbols;
+            eventQueue_.PushEvent(symbolArgs);
+
+            // For backward comapatibility
+            SessionInfoEventArgs sessionArgs = new SessionInfoEventArgs();
+            sessionArgs.Information = sessionInfo;
+            eventQueue_.PushEvent(sessionArgs);
         }
 
         void EventThread()
@@ -1374,6 +1487,15 @@
             All = SessionInfo | Currencies | Symbols | StoreLogin
         }
 
+        internal enum ReloadFlags
+        {
+            None = 0x00,                        
+            Currencies = 0x01,
+            Symbols = 0x2,
+            SessionInfo = 0x04,
+            All = SessionInfo | Currencies | Symbols
+        }
+
         internal string name_;
         internal string address_;
         internal string login_;
@@ -1395,7 +1517,8 @@
         internal ManualResetEvent loginEvent_;
         internal Exception loginException_;
         internal InitFlags initFlags_;
-        internal bool logout_;
+        internal ReloadFlags reloadFlags_;
+        internal bool logout_;        
 
         // We employ a queue to allow the client call sync functions from event handlers
         internal Thread eventThread_;
