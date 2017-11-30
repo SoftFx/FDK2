@@ -97,6 +97,9 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         tradeTransactionReports[count ++] = tradeTransactionReports_[index];
                         tradeTransactionReports_[index] = null;         // !
+
+                        if (count == tradeTransactionReports.Length)
+                            break;
                     }
 
                     beginIndex_ = (beginIndex_ + count) % tradeTransactionReports_.Length;

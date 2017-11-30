@@ -115,6 +115,9 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         bars[count ++] = bars_[index];
                         bars_[index] = null;         // !                        
+
+                        if (count == bars.Length)
+                            break;
                     }
 
                     beginIndex_ = (beginIndex_ + count) % bars_.Length;
