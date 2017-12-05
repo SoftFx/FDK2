@@ -1640,6 +1640,10 @@
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
+                else if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Activated)
+                {
+                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
                 else if (executionReport.ExecutionType == ExecutionType.Canceled) 
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);

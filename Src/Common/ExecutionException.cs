@@ -9,19 +9,19 @@ namespace TickTrader.FDK.Common
     {
         public ExecutionException()
         {
-            report_ = null;
+            reports_ = null;
         }
 
-        public ExecutionException(ExecutionReport report)
+        public ExecutionException(ExecutionReport[] reports)
         {
-            report_ = report;
+            reports_ = reports;
         }
 
-        public ExecutionReport Report
+        public ExecutionReport[] Reports
         {
             get
             {
-                return report_;
+                return reports_;
             }
         }
 
@@ -29,10 +29,17 @@ namespace TickTrader.FDK.Common
         {
             get
             {
-                return report_ != null ? report_.Text : null;
+                if (reports_ != null && reports_.Length > 0)
+                {
+                    ExecutionReport lastReport = reports_[reports_.Length - 1];
+
+                    return lastReport.Text;
+                }
+
+                return null;
             }
         }
 
-        ExecutionReport report_;
+        ExecutionReport[] reports_;
     }
 }

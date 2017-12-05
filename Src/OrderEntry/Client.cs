@@ -2635,6 +2635,48 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
+            public override void OnNewOrderSingleMarketPartialFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                try
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+
+                    if (client_.NewOrderResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.NewOrderResultEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.executionReportList_.Add(result);
+                }
+                catch (Exception exception)
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
+                    if (client_.NewOrderErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.NewOrderErrorEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
             public override void OnNewOrderSingleNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (NewOrderAsyncContext) NewOrderSingleClientContext;
@@ -2743,7 +2785,8 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new ExecutionException(result);
+                        context.executionReportList_.Add(result);
+                        ExecutionException exception = new ExecutionException(context.executionReportList_.ToArray());
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
@@ -2874,7 +2917,8 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new ExecutionException(result);
+                        context.executionReportList_.Add(result);
+                        ExecutionException exception = new ExecutionException(context.executionReportList_.ToArray());
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
@@ -3006,7 +3050,8 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new ExecutionException(result);
+                        context.executionReportList_.Add(result);
+                        ExecutionException exception = new ExecutionException(context.executionReportList_.ToArray());
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
@@ -3072,49 +3117,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionTradePartiallyFilledReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
-            {
-                var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
-
-                try
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-
-                    if (client_.ClosePositionResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionResultEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.executionReportList_.Add(result);
-                }
-                catch (Exception exception)
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
-
-                    if (client_.ClosePositionErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionErrorEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
-                }
-            }
-
-            public override void OnClosePositionTradeCalculatedReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionFillReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -3159,7 +3162,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionTradeFilledReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionPartialFillReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
@@ -3225,7 +3228,8 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new ExecutionException(result);
+                        context.executionReportList_.Add(result);
+                        ExecutionException exception = new ExecutionException(context.executionReportList_.ToArray());
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
@@ -3238,48 +3242,6 @@ namespace TickTrader.FDK.OrderEntry
                         try
                         {
                             client_.ClosePositionErrorEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
-                }
-            }
-
-            public override void OnClosePositionByCalculatedReport(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
-            {
-                var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
-                try
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-
-                    if (client_.ClosePositionByResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByResultEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.executionReportList_.Add(result);
-                }
-                catch (Exception exception)
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
-
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
                         }
                         catch
                         {
@@ -3378,7 +3340,91 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionByRejectReport(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            public override void OnClosePositionByPartialFillReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
+
+                try
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+
+                    if (client_.ClosePositionByResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionByResultEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.executionReportList_.Add(result);
+                }
+                catch (Exception exception)
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
+                    if (client_.ClosePositionByErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnClosePositionByRejectReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
+
+                try
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+
+                    if (client_.ClosePositionByErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.executionReportList_.Add(result);
+                }
+                catch (Exception exception)
+                {
+                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
+
+                    if (client_.ClosePositionByErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.taskCompletionSource_ != null)
+                        context.taskCompletionSource_.SetException(exception);
+                }
+            }
+
+            public override void OnClosePositionByRejectReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
 
@@ -3399,7 +3445,8 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.taskCompletionSource_ != null)
                     {
-                        var exception = new ExecutionException(result);
+                        context.executionReportList_.Add(result);
+                        ExecutionException exception = new ExecutionException(context.executionReportList_.ToArray());
                         context.taskCompletionSource_.SetException(exception);
                     }
                 }
@@ -3982,6 +4029,9 @@ namespace TickTrader.FDK.OrderEntry
                         return TickTrader.FDK.Common.ExecutionType.New;
 
                     case SoftFX.Net.OrderEntry.ExecType.Fill:
+                        return TickTrader.FDK.Common.ExecutionType.Trade;
+
+                    case SoftFX.Net.OrderEntry.ExecType.PartialFill:
                         return TickTrader.FDK.Common.ExecutionType.Trade;
 
                     case SoftFX.Net.OrderEntry.ExecType.Cancelled:
