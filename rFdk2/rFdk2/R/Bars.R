@@ -11,6 +11,19 @@ tt2.QS.GetBarList <- function(symbol, priceType, periodicity, from, count) {
   tt2.QS.GetBarFrame()
 }
 
+#' Gets the bars as requested
+#' @param symbol Symbol
+#' @param priceType PriceType
+#' @param periodicity Periodicity
+#' @param from From
+#' @param to To
+#'
+#' @export
+tt2.QS.DownloadBars <- function(symbol, priceType, periodicity, from, to) {
+  rClr::clrCallStatic('FDK2toR.QuoteStore', 'DownloadBars',symbol, priceType, periodicity, from, to)
+  tt2.QS.GetBarFrame()
+}
+
 #' Get bar table
 tt2.QS.GetBarFrame<-function()
 {

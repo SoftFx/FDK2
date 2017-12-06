@@ -8,7 +8,16 @@ tt2.QS.GetTickL2List <- function(symbol, from, count) {
   rClr::clrCallStatic('FDK2toR.QuoteStore', 'GetTickL2List',symbol, from, count)
   tt2.QS.GetTickL2Frame()
 }
-
+#' Gets the ticks L2 as requested
+#' @param symbol Symbol
+#' @param from From
+#' @param to To
+#'
+#' @export
+tt2.QS.DownloadTicksL2 <- function(symbol, from, to) {
+  rClr::clrCallStatic('FDK2toR.QuoteStore', 'DownloadTicksL2',symbol, from, to)
+  tt2.QS.GetTickL2Frame()
+}
 #' Get tick L2 table
 tt2.QS.GetTickL2Frame<-function()
 {

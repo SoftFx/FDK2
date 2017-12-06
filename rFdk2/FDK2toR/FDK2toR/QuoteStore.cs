@@ -65,6 +65,24 @@ namespace FDK2toR
                 Console.WriteLine(ex);
             }
         }
+
+        public static void DownloadTicks(string symbol, DateTime from, DateTime to)
+        {
+            try
+            {
+                _ticks = new List<Quote>();
+                var tickEnumerator = _client.DownloadQuotes(Guid.NewGuid().ToString(), symbol, QuoteDepth.Top, from, to,
+                    Timeout);
+                for (Quote tick = tickEnumerator.Next(Timeout); tick != null; tick = tickEnumerator.Next(Timeout))
+                {
+                    _ticks.Add(tick);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
         public static double[] GetTickBidPrice()
         {
             return _ticks.Select(it => it.Bids.First().Price).ToArray();
@@ -96,6 +114,23 @@ namespace FDK2toR
             {
                 _ticks?.Clear();
                 _ticks = _client.GetQuoteList(symbol, QuoteDepth.Level2, from, (int)count, Timeout).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+        public static void DownloadTicksL2(string symbol, DateTime from, DateTime to)
+        {
+            try
+            {
+                _ticks = new List<Quote>();
+                var tickEnumerator = _client.DownloadQuotes(Guid.NewGuid().ToString(), symbol, QuoteDepth.Level2, from, to,
+                    Timeout);
+                for (Quote tick = tickEnumerator.Next(Timeout); tick != null; tick = tickEnumerator.Next(Timeout))
+                {
+                    _ticks.Add(tick);
+                }
             }
             catch (Exception ex)
             {
@@ -202,6 +237,23 @@ namespace FDK2toR
                 _bars =
                     _client.GetBarList(symbol, priceType.Equals("Ask") ? PriceType.Ask : PriceType.Bid,
                         new BarPeriod(periodicity), from, (int) count, Timeout).ToList();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
+            }
+        }
+        public static void DownloadBars(string symbol, string priceType, string periodicity, DateTime from, DateTime to)
+        {
+            try
+            {
+                _bars = new List<Bar>();
+                var barEnumerator = _client.DownloadBars(Guid.NewGuid().ToString(), symbol, priceType.Equals("Ask") ? PriceType.Ask : PriceType.Bid,new BarPeriod(periodicity), from, to,
+                    Timeout);
+                for (Bar bar = barEnumerator.Next(Timeout); bar != null; bar = barEnumerator.Next(Timeout))
+                {
+                    _bars.Add(bar);
+                }
             }
             catch (Exception ex)
             {
