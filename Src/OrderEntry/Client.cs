@@ -3162,51 +3162,6 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnClosePositionPartialFillReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
-            {
-                var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
-
-                try
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-
-                    if (client_.ClosePositionResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionResultEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                    {
-                        context.executionReportList_.Add(result);
-                        context.taskCompletionSource_.SetResult(context.executionReportList_.ToArray());
-                    }
-                }
-                catch (Exception exception)
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
-
-                    if (client_.ClosePositionErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionErrorEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
-                }
-            }
-
             public override void OnClosePositionRejectReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 var context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
@@ -3319,48 +3274,6 @@ namespace TickTrader.FDK.OrderEntry
                         context.executionReportList_.Add(result);
                         context.taskCompletionSource_.SetResult(context.executionReportList_.ToArray());
                     }
-                }
-                catch (Exception exception)
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(exception);
-
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
-                }
-            }
-
-            public override void OnClosePositionByPartialFillReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
-            {
-                var context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
-                try
-                {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-
-                    if (client_.ClosePositionByResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByResultEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.executionReportList_.Add(result);
                 }
                 catch (Exception exception)
                 {
