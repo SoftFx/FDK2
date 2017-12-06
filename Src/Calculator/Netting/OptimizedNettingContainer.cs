@@ -77,7 +77,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
             if (Type == OrderTypes.Position)
             {
-                TotalWeight += order.RemainingAmount * order.Price.GetValueOrDefault();
+                TotalWeight += order.RemainingAmount * order.OrderPrice.GetValueOrDefault();
                 UpdateAveragePrice();
             }
         }
@@ -92,7 +92,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
             if (Type == OrderTypes.Position)
             {
-                TotalWeight -= order.RemainingAmount * order.Price.GetValueOrDefault();
+                TotalWeight -= order.RemainingAmount * order.OrderPrice.GetValueOrDefault();
                 UpdateAveragePrice();
             }
         }

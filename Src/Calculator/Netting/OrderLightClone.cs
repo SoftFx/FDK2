@@ -19,6 +19,7 @@
             this.Amount = originalOrder.Amount;
             this.RemainingAmount = originalOrder.RemainingAmount;
             this.Price = originalOrder.Price;
+            this.StopPrice = originalOrder.StopPrice;
             this.Commission = originalOrder.Commission.GetValueOrDefault();
             this.AgentCommission = originalOrder.AgentCommision.GetValueOrDefault();
             this.Swap = originalOrder.Swap.GetValueOrDefault();
@@ -40,9 +41,12 @@
         public bool IsHidden { get; set; }
         public bool IsIceberg { get; }
         public decimal? Price { get; set; }
+        public decimal? StopPrice { get; set; }
         public decimal Commission { get; set; }
         public decimal AgentCommission { get; set; }
         public decimal Swap { get; set; }
         public decimal? Margin { get; set; }
+
+        public decimal? OrderPrice => StopPrice ?? Price;
     }
 }

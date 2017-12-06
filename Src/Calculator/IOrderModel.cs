@@ -11,6 +11,7 @@ namespace TickTrader.FDK.Calculator
         OrderTypes Type { get; set; }
         OrderSides Side { get; set; }
         decimal? Price { get; set; }
+        decimal? StopPrice { get; set; }
         decimal Amount { get; set; }
         decimal RemainingAmount { get; set; }
         bool IsHidden { get; }

@@ -55,8 +55,17 @@ namespace TickTrader.FDK.Calculator
             if (order.Type != OrderTypes.Limit && order.Type != OrderTypes.StopLimit)
                 throw new ArgumentException("Invalid Order Type", "order");
 
-            if (order.Price == null || order.Price <= 0)
-                throw new ArgumentException("Invalid Price", "order");
+            if (order.Type == OrderTypes.Stop || order.Type == OrderTypes.StopLimit)
+            {
+                if (order.StopPrice == null || order.StopPrice <= 0)
+                    throw new ArgumentException("Invalid Stop Price", "order");
+            }
+
+            if (order.Type != OrderTypes.Stop)
+            {
+                if (order.Price == null || order.Price <= 0)
+                    throw new ArgumentException("Invalid Price", "order");
+            }
 
             if (order.Amount <= 0)
                 throw new ArgumentException("Invalid Amount", "order");
@@ -74,17 +83,21 @@ namespace TickTrader.FDK.Calculator
             return true;
         }
 
-        public static decimal CalculateMargin(ICommonOrder order)
+        public static decimal CalculateMargin(ICommonOrder order, ISymbolInfo symbol)
         {
-            return CalculateMargin(order.RemainingAmount, order.Price.Value, order.Side);
-        }
+            decimal combinedMarginFactor = 1.0M;
+            if (order.Type == OrderTypes.Stop || order.Type == OrderTypes.StopLimit)
+                combinedMarginFactor *= (decimal)symbol.StopOrderMarginReduction;
+            else if (order.Type == OrderTypes.Limit && order.IsHidden)
+                combinedMarginFactor *= (decimal)symbol.HiddenLimitOrderMarginReduction;
 
-        public static decimal CalculateMargin(decimal amount, decimal price, OrderSides side)
-        {
-            if (side == OrderSides.Buy)
-                return amount * price;
+            decimal amount = order.RemainingAmount;
+            decimal price = (order.Type == OrderTypes.Stop) ? order.StopPrice.Value : order.Price.Value;
+
+            if (order.Side == OrderSides.Buy)
+                return combinedMarginFactor * amount * price;
             else
-                return amount;
+                return combinedMarginFactor * amount;
         }
 
         public IAssetModel GetMarginAsset(ICommonOrder order)
@@ -116,7 +129,8 @@ namespace TickTrader.FDK.Calculator
 
         public void AddOrder(IOrderModel order)
         {
-            decimal margin = CalculateMargin(order);
+            ISymbolInfo symbol = Market.GetSymbolInfoOrThrow(order.Symbol);
+            decimal margin = CalculateMargin(order, symbol);
             order.Margin = margin;
             OrderLightClone clone = new OrderLightClone(order);
             orders.Add(order.OrderId, clone);
@@ -130,11 +144,12 @@ namespace TickTrader.FDK.Calculator
 
         public void UpdateOrder(IOrderModel order)
         {
+            ISymbolInfo symbol = Market.GetSymbolInfoOrThrow(order.Symbol);
             OrderLightClone clone = GetOrderOrThrow(order.OrderId);
             IAssetModel marginAsset = GetMarginAsset(order);
             marginAsset.Margin -= clone.Margin.GetValueOrDefault();
 
-            decimal margin = CalculateMargin(order);
+            decimal margin = CalculateMargin(order, symbol);
             marginAsset.Margin += margin;
             order.Margin = margin;
 
