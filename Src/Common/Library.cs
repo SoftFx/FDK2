@@ -48,7 +48,9 @@
 
         static Library()
         {
-            Version = "2";
+            Version = TickTrader.FDK.Common.Version.Major + "." + TickTrader.FDK.Common.Version.Minor;
+            if (TickTrader.FDK.Common.Version.Stage != "")
+                Version = Version + " " + TickTrader.FDK.Common.Version.Stage;
             Id = string.Empty;
             ResolveDotNetAssemblies = true;
             Platform = "MSIL";

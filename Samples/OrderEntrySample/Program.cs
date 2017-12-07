@@ -462,14 +462,17 @@ namespace OrderEntrySample
                     }
                     catch (ExecutionException executionException)
                     {
-                        ExecutionReport executionReport = executionException.Report;
-
-                        if (executionReport.OrigClientOrderId == null)
+                        foreach (ExecutionReport executionReport in executionException.Reports)
                         {
-                            Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
+                            if (executionReport.OrigClientOrderId == null)
+                            {
+                                Console.WriteLine("Execution report  : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
+                            }
+                            else
+                                Console.WriteLine("Execution report  : {0}, {1}, {2}, {3}, {4}, {5}, {6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
                         }
-                        else
-                            Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}, {6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
+
+                        Console.WriteLine("Error : " + executionException.Message);
                     }
                     catch (Exception exception)
                     {
