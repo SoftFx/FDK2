@@ -1760,12 +1760,14 @@ namespace TickTrader.FDK.TradeCapture
                 if (position.HasValue)
                 {
                     tradeTransactionReport.PosRemainingSide = Convert(position.Type);
-                    tradeTransactionReport.PosRemainingPrice = trade.Price;
+                    tradeTransactionReport.PosRemainingPrice = position.Price;
+                    tradeTransactionReport.PositionLeavesQuantity = position.Qty;
                 }
                 else
                 {
                     tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
                     tradeTransactionReport.PosRemainingPrice = null;
+                    tradeTransactionReport.PositionLeavesQuantity = 0;
                 }
                 
                 tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault(0);
