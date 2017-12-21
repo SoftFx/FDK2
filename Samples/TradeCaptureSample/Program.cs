@@ -63,7 +63,7 @@ namespace TradeCaptureSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("TradeCaptureSample", port, false, "Logs", true);
+            client_ = new Client("TradeCaptureSample", port : port, reconnectAttempts : 0, logMessages : true);
 
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);

@@ -11,16 +11,25 @@ namespace TickTrader.FDK.OrderEntry
     {
         #region Constructors
 
-        public Client(string name) : this(name, 5040, true, "Logs", false)
-        {
-        }
-
-        public Client(string name, int port, bool reconnect, string logDirectory, bool logMessages)
+        public Client
+        (
+            string name,
+            int port = 5040, 
+            int connectAttempts = -1,
+            int reconnectAttempts = -1,
+            int connectInterval = 10000,
+            int heartbeatInterval = 10000,
+            string logDirectory = "Logs",
+            bool logMessages =  false
+        )
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.Secure;
             options.ServerCertificateName = "TickTraderManagerService";
-            options.ReconnectMaxCount = reconnect ? -1 : 0;
+            options.ConnectMaxCount = connectAttempts;
+            options.ReconnectMaxCount = reconnectAttempts;
+            options.ConnectInterval = connectInterval;
+            options.HeartbeatInterval = heartbeatInterval;
             options.Log.Directory = logDirectory;
 #if DEBUG
             options.Log.Events = true;
@@ -2331,6 +2340,7 @@ namespace TickTrader.FDK.OrderEntry
                             resultExecutionReport.OrderTimeInForce = null;
 
                         resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
+                        resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
                         resultExecutionReport.Price = reportEntryAttributes.Price;
                         resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
                         resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
