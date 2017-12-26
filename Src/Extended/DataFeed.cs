@@ -101,7 +101,7 @@
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", quoteFeedPort, -1, -1, 10000, 10000, logDirectory, logMessages);
+            quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", logMessages, quoteFeedPort, 1, -1, 10000, 10000, logDirectory);
             quoteFeedClient_.ConnectEvent += new QuoteFeed.Client.ConnectDelegate(this.OnConnect);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectEvent += new QuoteFeed.Client.DisconnectDelegate(this.OnDisconnect);
@@ -125,7 +125,7 @@
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.Client.NotificationDelegate(this.OnNotification);
 
-            quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", quoteStorePort, -1, -1, 10000, 10000, logDirectory, logMessages);
+            quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", logMessages, quoteStorePort, 1, -1, 10000, 10000, logDirectory);
             quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.Client.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectEvent += new QuoteStore.Client.DisconnectDelegate(this.OnDisconnect);

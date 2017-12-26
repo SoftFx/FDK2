@@ -103,7 +103,7 @@
             
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", orderEntryPort, -1, -1, 10000, 10000, logDirectory, logMessages);
+            orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", logMessages, orderEntryPort, 1, -1, 10000, 10000, logDirectory);
             orderEntryClient_.ConnectEvent += new OrderEntry.Client.ConnectDelegate(this.OnConnect);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.Client.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectEvent += new OrderEntry.Client.DisconnectDelegate(this.OnDisconnect);
@@ -142,7 +142,7 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.Client.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", tradeCapturePort, -1, -1, 10000, 10000, logDirectory, logMessages);
+            tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", logMessages, tradeCapturePort, 1, -1, 10000, 10000, logDirectory);
             tradeCaptureClient_.ConnectEvent += new TradeCapture.Client.ConnectDelegate(this.OnConnect);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.Client.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectEvent += new TradeCapture.Client.DisconnectDelegate(this.OnDisconnect);

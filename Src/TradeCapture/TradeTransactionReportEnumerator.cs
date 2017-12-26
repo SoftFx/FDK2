@@ -48,7 +48,7 @@ namespace TickTrader.FDK.TradeCapture
                     -- tradeTransactionReportCount_;
 
                     TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
-                    taskCompletionSource.SetResult(tradeTransactionReport);
+                    Task.Run(() => { taskCompletionSource.SetResult(tradeTransactionReport); });
 
                     return taskCompletionSource.Task;
                 }
@@ -56,7 +56,7 @@ namespace TickTrader.FDK.TradeCapture
                 if (exception_ != null)
                 {
                     TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
-                    taskCompletionSource.SetException(exception_);
+                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
 
                     return taskCompletionSource.Task;
                 }
@@ -64,7 +64,7 @@ namespace TickTrader.FDK.TradeCapture
                 if (completed_)
                 {
                     TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
-                    taskCompletionSource.SetResult(null);
+                    Task.Run(() => { taskCompletionSource.SetResult(null); });
 
                     return taskCompletionSource.Task;
                 }
@@ -85,7 +85,7 @@ namespace TickTrader.FDK.TradeCapture
                 if (tradeTransactionReports.Length == 0)
                 {
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    taskCompletionSource.SetResult(0);
+                    Task.Run(() => { taskCompletionSource.SetResult(0); });
 
                     return taskCompletionSource.Task;
                 }
@@ -106,7 +106,7 @@ namespace TickTrader.FDK.TradeCapture
                     tradeTransactionReportCount_ -= count;
 
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    taskCompletionSource.SetResult(count);
+                    Task.Run(() => { taskCompletionSource.SetResult(count); });
 
                     return taskCompletionSource.Task;
                 }
@@ -114,7 +114,7 @@ namespace TickTrader.FDK.TradeCapture
                 if (exception_ != null)
                 {
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    taskCompletionSource.SetException(exception_);
+                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
 
                     return taskCompletionSource.Task;
                 }
@@ -122,7 +122,7 @@ namespace TickTrader.FDK.TradeCapture
                 if (completed_)
                 {
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    taskCompletionSource.SetResult(0);
+                    Task.Run(() => { taskCompletionSource.SetResult(0); });
 
                     return taskCompletionSource.Task;
                 }
@@ -145,12 +145,14 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (taskCompletionSource_ != null)
                     {
-                        taskCompletionSource_.SetResult(null);
+                        TaskCompletionSource<TradeTransactionReport> taskCompletionSource = taskCompletionSource_;                        
+                        Task.Run(() => { taskCompletionSource.SetResult(null); });
                         taskCompletionSource_ = null;
                     }
                     else if (arrayTaskCompletionSource_ != null)
                     {
-                        arrayTaskCompletionSource_.SetResult(0);
+                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
+                        Task.Run(() => { arrayTaskCompletionSource.SetResult(0); });
                         arrayTaskCompletionSource_ = null;
                         arrayTradeTransactionReports_ = null;
                     }
@@ -185,7 +187,8 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         if (tradeTransactionReport != null)
                         {
-                            taskCompletionSource_.SetResult(tradeTransactionReport);
+                            TaskCompletionSource<TradeTransactionReport> taskCompletionSource = taskCompletionSource_;
+                            Task.Run(() => { taskCompletionSource.SetResult(tradeTransactionReport); });
                             taskCompletionSource_ = null;
                         }
                     }
@@ -197,14 +200,16 @@ namespace TickTrader.FDK.TradeCapture
 
                             if (arrayTradeTransactionReportCount_ == arrayTradeTransactionReports_.Length)
                             {
-                                arrayTaskCompletionSource_.SetResult(arrayTradeTransactionReportCount_);
+                                TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
+                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount_); });
                                 arrayTaskCompletionSource_ = null;
                                 arrayTradeTransactionReports_ = null;
                             }
                         }
                         else if (arrayTradeTransactionReportCount_ > 0)
                         {
-                            arrayTaskCompletionSource_.SetResult(arrayTradeTransactionReportCount_);
+                            TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
+                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount_); });
                             arrayTaskCompletionSource_ = null;
                             arrayTradeTransactionReports_ = null;
                         }
@@ -252,12 +257,14 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (taskCompletionSource_ != null)
                     {
-                        taskCompletionSource_.SetResult(null);
+                        TaskCompletionSource<TradeTransactionReport> taskCompletionSource = taskCompletionSource_;
+                        Task.Run(() => { taskCompletionSource.SetResult(null); });
                         taskCompletionSource_ = null;
                     }
                     else if (arrayTaskCompletionSource_ != null)
                     {
-                        arrayTaskCompletionSource_.SetResult(0);
+                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
+                        Task.Run(() => { arrayTaskCompletionSource.SetResult(0); });
                         arrayTaskCompletionSource_ = null;
                         arrayTradeTransactionReports_ = null;
                     }
@@ -276,12 +283,14 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (taskCompletionSource_ != null)
                     {
-                        taskCompletionSource_.SetException(exception);
+                        TaskCompletionSource<TradeTransactionReport> taskCompletionSource = taskCompletionSource_;
+                        Task.Run(() => { taskCompletionSource.SetException(exception); });
                         taskCompletionSource_ = null;
                     }                        
                     else if (arrayTaskCompletionSource_ != null)
                     {
-                        arrayTaskCompletionSource_.SetException(exception);
+                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
+                        Task.Run(() => { arrayTaskCompletionSource.SetException(exception); });
                         arrayTaskCompletionSource_ = null;
                         arrayTradeTransactionReports_ = null;
                     }

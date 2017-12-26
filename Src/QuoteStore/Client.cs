@@ -18,13 +18,13 @@ namespace TickTrader.FDK.QuoteStore
         public Client
         (
             string name,
-            int port = 5030,
+            bool logMessages =  false,
+            int port = 5050,
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
             int heartbeatInterval = 10000,
-            string logDirectory = "Logs",
-            bool logMessages =  false
+            string logDirectory = "Logs"            
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
@@ -113,32 +113,33 @@ namespace TickTrader.FDK.QuoteStore
             session_.Connect(context, address);
         }
 
-        public void Disconnect(string text)
+        public bool Disconnect(string text)
         {
-            ConvertToSync(DisconnectAsync(text), -1);
+            return ConvertToSync(DisconnectAsync(text), -1);
         }
 
-        public void DisconnectAsync(object data, string text)
+        public bool DisconnectAsync(object data, string text)
         {
             DisconnectAsyncContext context = new DisconnectAsyncContext();
             context.Data = data;
 
-            DisconnectInternal(context, text);
+            return DisconnectInternal(context, text);
         }
 
-        public Task DisconnectAsync(string text)
+        public Task<bool> DisconnectAsync(string text)
         {
             DisconnectAsyncContext context = new DisconnectAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
+            context.taskCompletionSource_ = new TaskCompletionSource<bool>();
 
-            DisconnectInternal(context, text);
+            if (! DisconnectInternal(context, text))
+                Task.Run(() => { context.taskCompletionSource_.SetResult(false); });
 
             return context.taskCompletionSource_.Task;
         }
 
-        void DisconnectInternal(DisconnectAsyncContext context, string text)
+        bool DisconnectInternal(DisconnectAsyncContext context, string text)
         {
-            session_.Disconnect(context, text);
+            return session_.Disconnect(context, text);
         }
 
         public void Join()
@@ -587,7 +588,7 @@ namespace TickTrader.FDK.QuoteStore
             {
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public TaskCompletionSource<bool> taskCompletionSource_;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
@@ -599,7 +600,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public TaskCompletionSource<object> taskCompletionSource_;
@@ -614,7 +615,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public TaskCompletionSource<LogoutInfo> taskCompletionSource_;
@@ -629,7 +630,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public TaskCompletionSource<string[]> taskCompletionSource_;
@@ -644,7 +645,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public TaskCompletionSource<BarPeriod[]> taskCompletionSource_;
@@ -659,7 +660,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public BarPeriod barPeriod_;
@@ -675,7 +676,7 @@ namespace TickTrader.FDK.QuoteStore
             public void SetDisconnectError(Exception exception)
             {
                 if (taskCompletionSource_ != null)
-                    taskCompletionSource_.SetException(exception);
+                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
             }
 
             public TaskCompletionSource<Quote[]> taskCompletionSource_;
@@ -696,7 +697,7 @@ namespace TickTrader.FDK.QuoteStore
                         barEnumerator_.SetError(exception);
                     }
                     else
-                        taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { taskCompletionSource_.SetException(exception); });
                 }
             }
                         
@@ -726,7 +727,7 @@ namespace TickTrader.FDK.QuoteStore
                         quoteEnumerator_.SetError(exception);
                     }
                     else
-                        taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { taskCompletionSource_.SetException(exception); });
                 }
             }
                         
@@ -767,7 +768,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (connectAsyncContext.taskCompletionSource_ != null)
-                            connectAsyncContext.taskCompletionSource_.SetResult(null);
+                            Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetResult(null); });
                     }
                     else
                     {
@@ -812,7 +813,7 @@ namespace TickTrader.FDK.QuoteStore
                         if (connectAsyncContext.taskCompletionSource_ != null)
                         {
                             Exception exception = new Exception(text);
-                            connectAsyncContext.taskCompletionSource_.SetException(exception);
+                            Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetException(exception); });
                         }
                     }
                     else
@@ -864,7 +865,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (disconnectAsyncContext.taskCompletionSource_ != null)
-                            disconnectAsyncContext.taskCompletionSource_.SetResult(null);
+                            Task.Run(() => { disconnectAsyncContext.taskCompletionSource_.SetResult(true); });
                     }
                     else
                     {
@@ -913,7 +914,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(null);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(null); });
                 }
                 catch (Exception exception)
                 {
@@ -929,7 +930,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -955,7 +956,7 @@ namespace TickTrader.FDK.QuoteStore
                     if (context.taskCompletionSource_ != null)
                     {
                         Exception exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 catch (Exception exception)
@@ -972,7 +973,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -998,7 +999,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(result);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
                 }
                 catch
                 {
@@ -1019,7 +1020,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(result);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
                 }
             }
 
@@ -1050,7 +1051,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(resultSymbols);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultSymbols); });
                 }
                 catch (Exception exception)
                 {
@@ -1066,7 +1067,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1092,7 +1093,7 @@ namespace TickTrader.FDK.QuoteStore
                     if (context.taskCompletionSource_ != null)
                     {
                         Exception exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 catch (Exception exception)
@@ -1109,7 +1110,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1143,7 +1144,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(resultPeriodicities);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultPeriodicities); });
                 }
                 catch (Exception exception)
                 {
@@ -1159,7 +1160,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1185,7 +1186,7 @@ namespace TickTrader.FDK.QuoteStore
                     if (context.taskCompletionSource_ != null)
                     {
                         Exception exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 catch (Exception exception)
@@ -1202,7 +1203,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1244,7 +1245,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(resultBars);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultBars); });
                 }
                 catch (Exception exception)
                 {
@@ -1260,7 +1261,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1286,7 +1287,7 @@ namespace TickTrader.FDK.QuoteStore
                     if (context.taskCompletionSource_ != null)
                     {
                         Exception exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 catch (Exception exception)
@@ -1303,7 +1304,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1383,7 +1384,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetResult(resultQuotes);
+                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultQuotes); });
                 }
                 catch (Exception exception)
                 {
@@ -1399,7 +1400,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1425,7 +1426,7 @@ namespace TickTrader.FDK.QuoteStore
                     if (context.taskCompletionSource_ != null)
                     {
                         Exception exception = new Exception(text);
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 catch (Exception exception)
@@ -1442,7 +1443,7 @@ namespace TickTrader.FDK.QuoteStore
                     }
 
                     if (context.taskCompletionSource_ != null)
-                        context.taskCompletionSource_.SetException(exception);
+                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                 }
             }
 
@@ -1488,7 +1489,7 @@ namespace TickTrader.FDK.QuoteStore
                         if (context.taskCompletionSource_ != null)
                         {
                             context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
-                            context.taskCompletionSource_.SetResult(context.barEnumerator_);
+                            Task.Run(() => { context.taskCompletionSource_.SetResult(context.barEnumerator_); });
                         }
                     }
                     catch (Exception exception)
@@ -1505,7 +1506,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            context.taskCompletionSource_.SetException(exception);
+                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
                 else
@@ -1548,7 +1549,7 @@ namespace TickTrader.FDK.QuoteStore
                         if (context.taskCompletionSource_ != null)
                         {
                             context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
-                            context.taskCompletionSource_.SetResult(context.quoteEnumerator_);
+                            Task.Run(() => { context.taskCompletionSource_.SetResult(context.quoteEnumerator_); });
                         }
                     }
                     catch (Exception exception)
@@ -1565,7 +1566,7 @@ namespace TickTrader.FDK.QuoteStore
                         }
 
                         if (context.taskCompletionSource_ != null)
-                            context.taskCompletionSource_.SetException(exception);
+                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                     }
                 }
             }
@@ -1946,7 +1947,7 @@ namespace TickTrader.FDK.QuoteStore
                                 context.barEnumerator_.SetError(exception);
                             }
                             else
-                                context.taskCompletionSource_.SetException(exception);
+                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                         }
                     }
                     catch (Exception exception)
@@ -1969,7 +1970,7 @@ namespace TickTrader.FDK.QuoteStore
                                 context.barEnumerator_.SetError(exception);
                             }
                             else
-                                context.taskCompletionSource_.SetException(exception);
+                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                         }
                     }
                 }
@@ -2001,7 +2002,7 @@ namespace TickTrader.FDK.QuoteStore
                                 context.quoteEnumerator_.SetError(exception);
                             }
                             else
-                                context.taskCompletionSource_.SetException(exception);
+                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                         }
                     }
                     catch (Exception exception)
@@ -2024,7 +2025,7 @@ namespace TickTrader.FDK.QuoteStore
                                 context.quoteEnumerator_.SetError(exception);
                             }
                             else
-                                context.taskCompletionSource_.SetException(exception);
+                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
                         }
                     }
                 }
