@@ -64,13 +64,19 @@ namespace TickTrader.FDK.TradeCapture
 
         #region Connect / disconnect
 
-        public delegate void ConnectDelegate(Client client, object data);
+        public delegate void ConnectResultDelegate(Client client, object data);
         public delegate void ConnectErrorDelegate(Client client, object data, string text);
-        public delegate void DisconnectDelegate(Client client, object data, string text);
+        public delegate void DisconnectResultDelegate(Client client, object data, string text);
+        public delegate void DisconnectDelegate(Client client, string text);
+        public delegate void ReconnectDelegate(Client client);
+        public delegate void ReconnectErrorDelegate(Client client, string text);
 
-        public event ConnectDelegate ConnectEvent;
+        public event ConnectResultDelegate ConnectResultEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
+        public event DisconnectResultDelegate DisconnectResultEvent;
         public event DisconnectDelegate DisconnectEvent;
+        public event ReconnectDelegate ReconnectEvent;
+        public event ReconnectErrorDelegate ReconnectErrorEvent;
 
         public void Connect(string address, int timeout)
         {
@@ -641,37 +647,39 @@ namespace TickTrader.FDK.TradeCapture
             {
                 try
                 {
-                    if (connectContext != null)
-                    {
-                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
-                        if (client_.ConnectEvent != null)
+                    if (client_.ConnectResultEvent != null)
+                    {
+                        try
                         {
-                            try
-                            {
-                                client_.ConnectEvent(client_, connectAsyncContext.Data);
-                            }
-                            catch
-                            {
-                            }
+                            client_.ConnectResultEvent(client_, connectAsyncContext.Data);
                         }
-
-                        if (connectAsyncContext.taskCompletionSource_ != null)
-                            Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetResult(null); });
-                    }
-                    else
-                    {
-                        // reconnect
-
-                        if (client_.ConnectEvent != null)
+                        catch
                         {
-                            try
-                            {
-                                client_.ConnectEvent(client_, null);
-                            }
-                            catch
-                            {
-                            }
+                        }
+                    }
+
+                    if (connectAsyncContext.taskCompletionSource_ != null)
+                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetResult(null); });
+                }
+                catch
+                {
+                }
+            }
+
+            public override void OnConnect(ClientSession clientSession)
+            {
+                try
+                {
+                    if (client_.ReconnectEvent != null)
+                    {
+                        try
+                        {
+                            client_.ReconnectEvent(client_);
+                        }
+                        catch
+                        {
                         }
                     }
                 }
@@ -684,40 +692,42 @@ namespace TickTrader.FDK.TradeCapture
             {                
                 try
                 {
-                    if (connectContext != null)
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
+                    if (client_.ConnectErrorEvent != null)
                     {
-                        ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
-
-                        if (client_.ConnectErrorEvent != null)
+                        try
                         {
-                            try
-                            {
-                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, text);
-                            }
-                            catch
-                            {
-                            }
+                            client_.ConnectErrorEvent(client_, connectAsyncContext.Data, text);
                         }
-
-                        if (connectAsyncContext.taskCompletionSource_ != null)
+                        catch
                         {
-                            Exception exception = new Exception(text);
-                            Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetException(exception); });
                         }
                     }
-                    else
-                    {
-                        // reconnect
 
-                        if (client_.ConnectErrorEvent != null)
+                    if (connectAsyncContext.taskCompletionSource_ != null)
+                    {
+                        Exception exception = new Exception(text);
+                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetException(exception); });
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            public override void OnConnectError(ClientSession clientSession, string text)
+            {                
+                try
+                {
+                    if (client_.ReconnectErrorEvent != null)
+                    {
+                        try
                         {
-                            try
-                            {
-                                client_.ConnectErrorEvent(client_, null, text);
-                            }
-                            catch
-                            {
-                            }
+                            client_.ReconnectErrorEvent(client_, text);
+                        }
+                        catch
+                        {
                         }
                     }
                 }
@@ -730,54 +740,56 @@ namespace TickTrader.FDK.TradeCapture
             {
                 try
                 {
-                    if (disconnectContext != null)
+                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+
+                    if (client_.DisconnectResultEvent != null)
                     {
-                        DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
-
-                        if (client_.DisconnectEvent != null)
+                        try
                         {
-                            try
-                            {
-                                client_.DisconnectEvent(client_, disconnectAsyncContext.Data, text);
-                            }
-                            catch
-                            {
-                            }
+                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
                         }
-
-                        if (contexts.Length > 0)
+                        catch
                         {
-                            Exception exception = new Exception(text);
-
-                            foreach (ClientContext context in contexts)
-                                ((IAsyncContext)context).SetDisconnectError(exception);
                         }
-
-                        if (disconnectAsyncContext.taskCompletionSource_ != null)
-                            Task.Run(() => { disconnectAsyncContext.taskCompletionSource_.SetResult(true); });
                     }
-                    else
+
+                    if (contexts.Length > 0)
                     {
-                        // Unsolicited disconnect
+                        Exception exception = new Exception(text);
 
-                        if (client_.DisconnectEvent != null)
+                        foreach (ClientContext context in contexts)
+                            ((IAsyncContext)context).SetDisconnectError(exception);
+                    }
+
+                    if (disconnectAsyncContext.taskCompletionSource_ != null)
+                        Task.Run(() => { disconnectAsyncContext.taskCompletionSource_.SetResult(true); });
+                }
+                catch
+                {
+                }
+            }
+
+            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
+            {
+                try
+                {
+                    if (client_.DisconnectEvent != null)
+                    {
+                        try
                         {
-                            try
-                            {
-                                client_.DisconnectEvent(client_, null, text);
-                            }
-                            catch
-                            {
-                            }
+                            client_.DisconnectEvent(client_, text);
                         }
-
-                        if (contexts.Length > 0)
+                        catch
                         {
-                            Exception exception = new Exception(text);
+                        }
+                    }
 
-                            foreach (ClientContext context in contexts)
-                                ((IAsyncContext)context).SetDisconnectError(exception);
-                        }                        
+                    if (contexts.Length > 0)
+                    {
+                        Exception exception = new Exception(text);
+
+                        foreach (ClientContext context in contexts)
+                            ((IAsyncContext)context).SetDisconnectError(exception);
                     }
                 }
                 catch

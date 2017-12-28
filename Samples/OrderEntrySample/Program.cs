@@ -490,25 +490,39 @@ namespace OrderEntrySample
         {
             client_.Connect(address_, Timeout);
 
-            Console.WriteLine("Connected");
+            try
+            {
+                Console.WriteLine("Connected");
 
-            client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "", "", "", Timeout);
 
-            Console.WriteLine("Login succeeded");
+                Console.WriteLine("Login succeeded");
+            }
+            catch
+            {
+                client_.Disconnect("Client disconnect");
+
+                Console.WriteLine("Disconnected");
+
+                throw;
+            }
         }
 
         void Disconnect()
         {
             try
             {
-                client_.Logout("Client logout", Timeout);
-
-                Console.WriteLine("Logout : Client logout");
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);                
             }
             catch
             {
-                client_.Disconnect("Client disconnect");
             }
+
+            Console.WriteLine("Logout");
+
+            client_.Disconnect("Client disconnect");
+
+            Console.WriteLine("Disconnected");
         }
 
         void PrintCommands()
@@ -685,11 +699,11 @@ namespace OrderEntrySample
             }
         }
 
-        void OnDisconnect(Client client, object data, string text)
+        void OnLogout(Client client, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {
@@ -697,11 +711,11 @@ namespace OrderEntrySample
             }
         }
 
-        void OnLogout(Client client, LogoutInfo info)
+        void OnDisconnect(Client client, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

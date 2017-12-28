@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.Threading;
 using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.QuoteFeed;
@@ -65,7 +67,7 @@ namespace QuoteFeedSample
         {
             client_ = new Client("QuoteFeedSample", port : port, reconnectAttempts : 0, logMessages : true);
 
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);            
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
             client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.SubscribeQuotesResultEvent += new Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
@@ -202,11 +204,22 @@ namespace QuoteFeedSample
         {
             client_.Connect(address_, Timeout);
 
-            Console.WriteLine("Connected");
+            try
+            {
+                Console.WriteLine("Connected");
 
-            client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "", "", "", Timeout);
 
-            Console.WriteLine("Login succeeded");
+                Console.WriteLine("Login succeeded");
+            }
+            catch
+            {
+                client_.Disconnect("Client disconnect");
+
+                Console.WriteLine("Disconnected");
+
+                throw;
+            }
         }
 
         void Disconnect()
@@ -214,13 +227,16 @@ namespace QuoteFeedSample
             try
             {
                 client_.Logout("Client logout", Timeout);
-
-                Console.WriteLine("Logout : Client logout");
             }
             catch
             {
-                client_.Disconnect("Client disconnect");
             }
+
+            Console.WriteLine("Logout");
+
+            client_.Disconnect("Client disconnect");
+
+            Console.WriteLine("Disconnected");
         }
 
         void PrintCommands()
@@ -313,11 +329,11 @@ namespace QuoteFeedSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
+        void OnDisconnect(Client client, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {
@@ -325,11 +341,11 @@ namespace QuoteFeedSample
             }
         }
 
-        void OnDisconnect(Client client, object data, string text)
+        public void OnLogout(Client client, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {

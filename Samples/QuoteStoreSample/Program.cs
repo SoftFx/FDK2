@@ -240,25 +240,39 @@ namespace QuoteStoreSample
         {
             client_.Connect(address_, Timeout);
 
-            Console.WriteLine("Connected");
+            try
+            {
+                Console.WriteLine("Connected");
 
-            client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "", "", "", Timeout);
 
-            Console.WriteLine("Login succeeded");
+                Console.WriteLine("Login succeeded");
+            }
+            catch
+            {
+                client_.Disconnect("Client disconnect");
+
+                Console.WriteLine("Disconnected");
+
+                throw;
+            }
         }
 
         void Disconnect()
         {
             try
             {
-                client_.Logout("Client logout", Timeout);
-
-                Console.WriteLine("Logout : Client logout");
+                client_.Logout("Client logout", Timeout);                
             }
             catch
             {
-                client_.Disconnect("Client disconnect");
             }
+
+            Console.WriteLine("Logout");
+
+            client_.Disconnect("Client disconnect");
+
+            Console.WriteLine("Disconnect");
         }
 
         void PrintCommands()
@@ -349,11 +363,11 @@ namespace QuoteStoreSample
             }
         }
 
-        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
+        void OnDisconnect(Client quoteFeedClient, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {
@@ -361,11 +375,11 @@ namespace QuoteStoreSample
             }
         }
 
-        void OnDisconnect(Client quoteFeedClient, object data, string text)
+        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : {0}", info.Message);
             }
             catch (Exception exception)
             {

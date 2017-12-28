@@ -102,9 +102,12 @@
             synchronizer_ = new object();
 
             quoteFeedClient_ = new QuoteFeed.Client(name_ + ".QuoteFeed", logMessages, quoteFeedPort, 1, -1, 10000, 10000, logDirectory);
-            quoteFeedClient_.ConnectEvent += new QuoteFeed.Client.ConnectDelegate(this.OnConnect);
+            quoteFeedClient_.ConnectResultEvent += new QuoteFeed.Client.ConnectResultDelegate(this.OnConnectResult);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.Client.ConnectErrorDelegate(this.OnConnectError);
+            quoteFeedClient_.DisconnectResultEvent += new QuoteFeed.Client.DisconnectResultDelegate(this.OnDisconnectResult);
             quoteFeedClient_.DisconnectEvent += new QuoteFeed.Client.DisconnectDelegate(this.OnDisconnect);
+            quoteFeedClient_.ReconnectEvent += new QuoteFeed.Client.ReconnectDelegate(this.OnReconnect);
+            quoteFeedClient_.ReconnectErrorEvent += new QuoteFeed.Client.ReconnectErrorDelegate(this.OnReconnectError);
             quoteFeedClient_.TwoFactorLoginRequestEvent += new QuoteFeed.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
             quoteFeedClient_.TwoFactorLoginResultEvent += new QuoteFeed.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
             quoteFeedClient_.TwoFactorLoginErrorEvent += new QuoteFeed.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
@@ -126,9 +129,12 @@
             quoteFeedClient_.NotificationEvent += new QuoteFeed.Client.NotificationDelegate(this.OnNotification);
 
             quoteStoreClient_ = new QuoteStore.Client(name_ + ".QuoteStore", logMessages, quoteStorePort, 1, -1, 10000, 10000, logDirectory);
-            quoteStoreClient_.ConnectEvent += new QuoteStore.Client.ConnectDelegate(this.OnConnect);
+            quoteStoreClient_.ConnectResultEvent += new QuoteStore.Client.ConnectResultDelegate(this.OnConnectResult);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.Client.ConnectErrorDelegate(this.OnConnectError);
+            quoteStoreClient_.DisconnectResultEvent += new QuoteStore.Client.DisconnectResultDelegate(this.OnDisconnectResult);
             quoteStoreClient_.DisconnectEvent += new QuoteStore.Client.DisconnectDelegate(this.OnDisconnect);
+            quoteStoreClient_.ReconnectEvent += new QuoteStore.Client.ReconnectDelegate(this.OnReconnect);
+            quoteStoreClient_.ReconnectErrorEvent += new QuoteStore.Client.ReconnectErrorDelegate(this.OnReconnectError);
             quoteStoreClient_.LoginResultEvent += new QuoteStore.Client.LoginResultDelegate(this.OnLoginResult);
             quoteStoreClient_.LoginErrorEvent += new QuoteStore.Client.LoginErrorDelegate(this.OnLoginError);
             quoteStoreClient_.LogoutResultEvent += new QuoteStore.Client.LogoutResultDelegate(this.OnLogoutResult);
@@ -488,7 +494,7 @@
 
         #region Private
 
-        void OnConnect(QuoteFeed.Client client, object data)
+        void OnConnectResult(QuoteFeed.Client client, object data)
         {
             try
             {
@@ -528,7 +534,34 @@
             }
         }
 
-        void OnDisconnect(QuoteFeed.Client client, object data, string text)
+        void OnDisconnectResult(QuoteFeed.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(QuoteFeed.Client client, string text)
         {
             try
             {
@@ -549,6 +582,30 @@
                         loginEvent_.Set();
                     }
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReconnect(QuoteFeed.Client client)
+        {
+            try
+            {
+                quoteFeedClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
+            }
+            catch
+            {
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
+            }
+        }
+
+        void OnReconnectError(QuoteFeed.Client client, string text)
+        {
+            try
+            {
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
             }
             catch
             {
@@ -888,6 +945,8 @@
             {
                 lock (synchronizer_)
                 {
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;
@@ -910,6 +969,8 @@
             {
                 lock (synchronizer_)
                 {
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;
@@ -998,7 +1059,7 @@
             }
         }
 
-        void OnConnect(QuoteStore.Client client, object data)
+        void OnConnectResult(QuoteStore.Client client, object data)
         {
             try
             {
@@ -1038,7 +1099,34 @@
             }
         }
 
-        void OnDisconnect(QuoteStore.Client client, object data, string text)
+        void OnDisconnectResult(QuoteStore.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~InitFlags.StoreLogin;
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(QuoteStore.Client client, string text)
         {
             try
             {
@@ -1059,6 +1147,30 @@
                         loginEvent_.Set();
                     }
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReconnect(QuoteStore.Client client)
+        {
+            try
+            {
+                quoteStoreClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
+            }
+            catch
+            {
+                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+            }
+        }
+
+        void OnReconnectError(QuoteStore.Client client, string text)
+        {
+            try
+            {
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
             catch
             {
@@ -1126,6 +1238,8 @@
             {
                 lock (synchronizer_)
                 {
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;
@@ -1148,6 +1262,8 @@
             {
                 lock (synchronizer_)
                 {
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;

@@ -63,11 +63,16 @@ namespace OrderEntryAsyncSample
         {
             client_ = new Client("OrderEntryAsyncSample", port : port, logMessages : true);
             
-            client_.ConnectEvent += new Client.ConnectDelegate(this.OnConnect);
+            client_.ConnectResultEvent += new Client.ConnectResultDelegate(this.OnConnectResult);
             client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
+            client_.DisconnectResultEvent += new Client.DisconnectResultDelegate(this.OnDisconnectResult);
+            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
+            client_.ReconnectEvent += new Client.ReconnectDelegate(this.OnReconnect);
+            client_.ReconnectErrorEvent += new Client.ReconnectErrorDelegate(this.OnReconnectError);
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);            
             client_.AccountInfoResultEvent += new Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
             client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
             client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
@@ -83,10 +88,7 @@ namespace OrderEntryAsyncSample
             client_.CancelOrderResultEvent += new Client.CancelOrderResultDelegate(this.OnCancelOrderResult);
             client_.CancelOrderErrorEvent += new Client.CancelOrderErrorDelegate(this.OnCancelOrderError);
             client_.ClosePositionResultEvent += new Client.ClosePositionResultDelegate(this.OnClosePositionResult);
-            client_.ClosePositionErrorEvent += new Client.ClosePositionErrorDelegate(this.OnClosePositionError);
-
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
+            client_.ClosePositionErrorEvent += new Client.ClosePositionErrorDelegate(this.OnClosePositionError);            
             client_.OrderUpdateEvent += new Client.OrderUpdateDelegate(this.OnOrderUpdate);
             client_.PositionUpdateEvent += new Client.PositionUpdateDelegate(this.OnPositionUpdate);
             client_.AccountInfoUpdateEvent += new Client.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
@@ -497,7 +499,21 @@ namespace OrderEntryAsyncSample
             client_.ConnectAsync(this, address_);
         }
 
-        void OnConnect(Client client, object data)
+        void Disconnect()
+        {
+            try
+            {
+                client_.LogoutAsync(this, "Client logout");
+            }
+            catch
+            {
+                client_.DisconnectAsync(this, "Client disconnect");
+            }
+
+            client_.Join();  
+        }
+
+        void OnConnectResult(Client client, object data)
         {
             try
             {
@@ -508,10 +524,64 @@ namespace OrderEntryAsyncSample
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
+
+                client_.DisconnectAsync("Client disconnect");
             }
         }
 
         void OnConnectError(Client client, object data, string text)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnDisconnectResult(Client orderEntryClient, object data, string text)
+        {
+            try
+            {
+                Console.WriteLine("Disconnected : {0}", text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnDisconnect(Client orderEntryClient, string text)
+        {
+            try
+            {
+                Console.WriteLine("Disconnected : {0}", text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnReconnect(Client client)
+        {
+            try
+            {
+                Console.WriteLine("Connected");
+
+                client_.LoginAsync(this, login_, password_, "", "", "");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+
+                client_.DisconnectAsync("Client disconnect");
+            }
+        }
+
+        void OnReconnectError(Client client, string text)
         {
             try
             {
@@ -540,22 +610,12 @@ namespace OrderEntryAsyncSample
             try
             {
                 Console.WriteLine("Error : " + message);
+
+                client_.DisconnectAsync(this, "Client disconnect");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void Disconnect()
-        {
-            try
-            {
-                client_.LogoutAsync(this, "Client logout");
-            }
-            catch
-            {
-                client_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -564,6 +624,22 @@ namespace OrderEntryAsyncSample
             try
             {
                 Console.WriteLine("Logout : {0}", info.Message);
+
+                client_.DisconnectAsync(this, "Client disconnect");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnLogout(Client orderEntryClient, LogoutInfo info)
+        {
+            try
+            {
+                Console.WriteLine("Logout : {0}", info.Message);
+
+                client_.DisconnectAsync(this, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -893,30 +969,6 @@ namespace OrderEntryAsyncSample
             try
             {
                 Console.WriteLine("Error : {0}, {1}, {2}, {3}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.RejectReason, executionReport.Text);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLogout(Client orderEntryClient, LogoutInfo info)
-        {
-            try
-            {
-                Console.WriteLine("Logout : {0}", info.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnDisconnect(Client orderEntryClient, object data, string text)
-        {
-            try
-            {
-                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

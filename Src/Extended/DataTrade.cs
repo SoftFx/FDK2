@@ -104,9 +104,12 @@
             synchronizer_ = new object();
 
             orderEntryClient_ = new OrderEntry.Client(name_ + ".OrderEntry", logMessages, orderEntryPort, 1, -1, 10000, 10000, logDirectory);
-            orderEntryClient_.ConnectEvent += new OrderEntry.Client.ConnectDelegate(this.OnConnect);
+            orderEntryClient_.ConnectResultEvent += new OrderEntry.Client.ConnectResultDelegate(this.OnConnectResult);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.Client.ConnectErrorDelegate(this.OnConnectError);
+            orderEntryClient_.DisconnectResultEvent += new OrderEntry.Client.DisconnectResultDelegate(this.OnDisconnectResult);
             orderEntryClient_.DisconnectEvent += new OrderEntry.Client.DisconnectDelegate(this.OnDisconnect);
+            orderEntryClient_.ReconnectEvent += new OrderEntry.Client.ReconnectDelegate(this.OnReconnect);
+            orderEntryClient_.ReconnectErrorEvent += new OrderEntry.Client.ReconnectErrorDelegate(this.OnReconnectError);
             orderEntryClient_.TwoFactorLoginRequestEvent += new OrderEntry.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
             orderEntryClient_.TwoFactorLoginResultEvent += new OrderEntry.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
             orderEntryClient_.TwoFactorLoginErrorEvent += new OrderEntry.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
@@ -143,9 +146,12 @@
             orderEntryClient_.NotificationEvent += new OrderEntry.Client.NotificationDelegate(this.OnNotification);
 
             tradeCaptureClient_ = new TradeCapture.Client(name_ + ".TradeCapture", logMessages, tradeCapturePort, 1, -1, 10000, 10000, logDirectory);
-            tradeCaptureClient_.ConnectEvent += new TradeCapture.Client.ConnectDelegate(this.OnConnect);
+            tradeCaptureClient_.ConnectResultEvent += new TradeCapture.Client.ConnectResultDelegate(this.OnConnectResult);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.Client.ConnectErrorDelegate(this.OnConnectError);
+            tradeCaptureClient_.DisconnectResultEvent += new TradeCapture.Client.DisconnectResultDelegate(this.OnDisconnectResult);
             tradeCaptureClient_.DisconnectEvent += new TradeCapture.Client.DisconnectDelegate(this.OnDisconnect);
+            tradeCaptureClient_.ReconnectEvent += new TradeCapture.Client.ReconnectDelegate(this.OnReconnect);
+            tradeCaptureClient_.ReconnectErrorEvent += new TradeCapture.Client.ReconnectErrorDelegate(this.OnReconnectError);
             tradeCaptureClient_.TwoFactorLoginRequestEvent += new TradeCapture.Client.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
             tradeCaptureClient_.TwoFactorLoginResultEvent += new TradeCapture.Client.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
             tradeCaptureClient_.TwoFactorLoginErrorEvent += new TradeCapture.Client.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
@@ -513,7 +519,7 @@
 
         #region Private
 
-        void OnConnect(OrderEntry.Client client, object data)
+        void OnConnectResult(OrderEntry.Client client, object data)
         {
             try
             {
@@ -553,7 +559,34 @@
             }
         }
 
-        void OnDisconnect(OrderEntry.Client client, object data, string text)
+        void OnDisconnectResult(OrderEntry.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~(InitFlags.TradeServerInfo | InitFlags.AccountInfo | InitFlags.SessionInfo | InitFlags.TradeRecords | InitFlags.Positions);
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(OrderEntry.Client client, string text)
         {
             try
             {
@@ -574,6 +607,30 @@
                         loginEvent_.Set();
                     }
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReconnect(OrderEntry.Client client)
+        {
+            try
+            {
+                orderEntryClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
+            }
+            catch
+            {
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+            }
+        }
+
+        void OnReconnectError(OrderEntry.Client client, string text)
+        {
+            try
+            {
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
             }
             catch
             {
@@ -1015,6 +1072,8 @@
             {
                 lock (synchronizer_)
                 {
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (!logout_)
                     {
                         logout_ = true;
@@ -1037,6 +1096,8 @@
             {
                 lock (synchronizer_)
                 {
+                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;
@@ -1368,7 +1429,7 @@
             }
         }
 
-        void OnConnect(TradeCapture.Client client, object data)
+        void OnConnectResult(TradeCapture.Client client, object data)
         {
             try
             {
@@ -1408,7 +1469,34 @@
             }
         }
 
-        void OnDisconnect(TradeCapture.Client client, object data, string text)
+        void OnDisconnectResult(TradeCapture.Client client, object data, string text)
+        {
+            try
+            {
+                lock (synchronizer_)
+                {
+                    initFlags_ &= ~InitFlags.TradeCaptureLogin;
+
+                    if (! logout_)
+                    {
+                        logout_ = true;
+
+                        LogoutEventArgs args = new LogoutEventArgs();
+                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Text = text;
+                        eventQueue_.PushEvent(args);
+
+                        loginException_ = new LogoutException(text);
+                        loginEvent_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnDisconnect(TradeCapture.Client client, string text)
         {
             try
             {
@@ -1429,6 +1517,30 @@
                         loginEvent_.Set();
                     }
                 }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnReconnect(TradeCapture.Client client)
+        {
+            try
+            {
+                tradeCaptureClient_.LoginAsync(null, login_, password_, deviceId_, appId_, appSessionId_);
+            }
+            catch
+            {
+                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+            }
+        }
+
+        void OnReconnectError(TradeCapture.Client client, string text)
+        {
+            try
+            {
+                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
             }
             catch
             {
@@ -1561,6 +1673,8 @@
             {
                 lock (synchronizer_)
                 {
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;
@@ -1583,6 +1697,8 @@
             {
                 lock (synchronizer_)
                 {
+                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+
                     if (! logout_)
                     {
                         logout_ = true;

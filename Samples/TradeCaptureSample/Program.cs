@@ -194,25 +194,39 @@ namespace TradeCaptureSample
         {
             client_.Connect(address_, Timeout);
 
-            Console.WriteLine("Connected");
+            try
+            {
+                Console.WriteLine("Connected");
 
-            client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "", "", "", Timeout);
 
-            Console.WriteLine("Login succeeded");
+                Console.WriteLine("Login succeeded");
+            }
+            catch
+            {
+                client_.Disconnect("Client disconnect");
+
+                Console.WriteLine("Disconnected");
+
+                throw;
+            }
         }
 
         void Disconnect()
         {
             try
             {
-                client_.Logout("Client logout", Timeout);
-
-                Console.WriteLine("Logout : Client logout");
+                client_.Logout("Client logout", Timeout);                
             }
             catch
-            {
-                client_.Disconnect("Client disconnect");
+            {                
             }
+
+            Console.WriteLine("Logout");
+
+            client_.Disconnect("Client disconnect");
+
+            Console.WriteLine("Disconnected");
         }
 
         void PrintCommands()
@@ -300,7 +314,7 @@ namespace TradeCaptureSample
             }
         }
 
-        void OnDisconnect(Client client, object data, string text)
+        void OnDisconnect(Client client, string text)
         {
             try
             {
