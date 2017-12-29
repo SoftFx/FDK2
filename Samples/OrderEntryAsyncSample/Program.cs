@@ -545,7 +545,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected");
             }
             catch (Exception exception)
             {
