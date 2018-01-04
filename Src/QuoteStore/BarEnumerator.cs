@@ -74,7 +74,8 @@ namespace TickTrader.FDK.QuoteStore
                 if (exception_ != null)
                 {
                     TaskCompletionSource<Bar> taskCompletionSource = new TaskCompletionSource<Bar>();
-                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
+                    Exception exception = exception_;
+                    Task.Run(() => { taskCompletionSource.SetException(exception); });
 
                     return taskCompletionSource.Task;
                 }
@@ -132,7 +133,8 @@ namespace TickTrader.FDK.QuoteStore
                 if (exception_ != null)
                 {
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
+                    Exception exception = exception_;
+                    Task.Run(() => { taskCompletionSource.SetException(exception); });
 
                     return taskCompletionSource.Task;
                 }
@@ -227,7 +229,8 @@ namespace TickTrader.FDK.QuoteStore
                             if (arrayBarCount_ == arrayBars_.Length)
                             {
                                 TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayBarCount_); });
+                                int arrayBarCount = arrayBarCount_;
+                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayBarCount); });
                                 arrayTaskCompletionSource_ = null;
                                 arrayBars_ = null;
                             }
@@ -235,7 +238,8 @@ namespace TickTrader.FDK.QuoteStore
                         else if (arrayBarCount_ > 0)
                         {
                             TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayBarCount_); });
+                            int arrayBarCount = arrayBarCount_;
+                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayBarCount); });
                             arrayTaskCompletionSource_ = null;
                             arrayBars_ = null;
                         }

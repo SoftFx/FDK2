@@ -56,7 +56,8 @@ namespace TickTrader.FDK.TradeCapture
                 if (exception_ != null)
                 {
                     TaskCompletionSource<TradeTransactionReport> taskCompletionSource = new TaskCompletionSource<TradeTransactionReport>();
-                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
+                    Exception exception = exception_;
+                    Task.Run(() => { taskCompletionSource.SetException(exception); });
 
                     return taskCompletionSource.Task;
                 }
@@ -114,7 +115,8 @@ namespace TickTrader.FDK.TradeCapture
                 if (exception_ != null)
                 {
                     TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Task.Run(() => { taskCompletionSource.SetException(exception_); });
+                    Exception exception = exception_;
+                    Task.Run(() => { taskCompletionSource.SetException(exception); });
 
                     return taskCompletionSource.Task;
                 }
@@ -201,7 +203,8 @@ namespace TickTrader.FDK.TradeCapture
                             if (arrayTradeTransactionReportCount_ == arrayTradeTransactionReports_.Length)
                             {
                                 TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount_); });
+                                int arrayTradeTransactionReportCount = arrayTradeTransactionReportCount_;
+                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount); });
                                 arrayTaskCompletionSource_ = null;
                                 arrayTradeTransactionReports_ = null;
                             }
@@ -209,7 +212,8 @@ namespace TickTrader.FDK.TradeCapture
                         else if (arrayTradeTransactionReportCount_ > 0)
                         {
                             TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount_); });
+                            int arrayTradeTransactionReportCount = arrayTradeTransactionReportCount_;
+                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayTradeTransactionReportCount); });
                             arrayTaskCompletionSource_ = null;
                             arrayTradeTransactionReports_ = null;
                         }
