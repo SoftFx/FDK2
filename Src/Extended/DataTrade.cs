@@ -545,7 +545,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.NetworkError;
+                        args.Reason = LogoutReason.Unknown; 
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 
@@ -599,7 +599,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.NetworkError;
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 
@@ -1455,7 +1455,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.NetworkError;
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 
@@ -1482,7 +1482,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 
@@ -1509,7 +1509,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.NetworkError;
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 

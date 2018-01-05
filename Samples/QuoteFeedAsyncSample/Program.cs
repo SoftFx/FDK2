@@ -265,7 +265,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected");
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {
