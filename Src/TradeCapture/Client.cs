@@ -918,9 +918,9 @@ namespace TickTrader.FDK.TradeCapture
 
                 try
                 {
-                    TickTrader.FDK.Common.LoginRejectReason reason = Convert(message.Reason);
+                    TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
 
-                    LoginRejectException exception = new LoginRejectException(reason, message.Text);
+                    LoginException exception = new LoginException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
                     {
@@ -2007,39 +2007,24 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.LoginRejectReason Convert(SoftFX.Net.TradeCapture.LoginRejectReason reason)
+            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LoginRejectReason reason)
             {
                 switch (reason)
                 {
                     case SoftFX.Net.TradeCapture.LoginRejectReason.IncorrectCredentials:
-                        return TickTrader.FDK.Common.LoginRejectReason.InvalidCredentials;
+                        return TickTrader.FDK.Common.LogoutReason.InvalidCredentials;
 
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.AccountIsBlocked:
-                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.ThrottlingLimits:
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
 
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.AccountIsBlockedByAccessList:
-                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.InvalidSessionId:
-                        return TickTrader.FDK.Common.LoginRejectReason.Other;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.InvalidSpec:
-                        return TickTrader.FDK.Common.LoginRejectReason.Other;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.NotEnoughRights:
-                        return TickTrader.FDK.Common.LoginRejectReason.Other;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.TimeoutLogin:
-                        return TickTrader.FDK.Common.LoginRejectReason.Other;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.WebApiDisabled:
-                        return TickTrader.FDK.Common.LoginRejectReason.Other;
-
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.Throttling:
-                        return TickTrader.FDK.Common.LoginRejectReason.Throttling;
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.BlockedLogin:
+                        return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
                     case SoftFX.Net.TradeCapture.LoginRejectReason.InternalServerError:
-                        return TickTrader.FDK.Common.LoginRejectReason.InternalServerError;
+                        return TickTrader.FDK.Common.LogoutReason.ServerError;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.Other:
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
 
                     default:
                         throw new Exception("Invalid login reject reason : " + reason);
@@ -2056,9 +2041,6 @@ namespace TickTrader.FDK.TradeCapture
                     case SoftFX.Net.TradeCapture.LogoutReason.ServerLogout:
                         return TickTrader.FDK.Common.LogoutReason.ServerLogout;
 
-                    case SoftFX.Net.TradeCapture.LogoutReason.SlowConnection:
-                        return TickTrader.FDK.Common.LogoutReason.SlowConnection;
-
                     case SoftFX.Net.TradeCapture.LogoutReason.DeletedLogin:
                         return TickTrader.FDK.Common.LogoutReason.LoginDeleted;
 
@@ -2067,6 +2049,9 @@ namespace TickTrader.FDK.TradeCapture
 
                     case SoftFX.Net.TradeCapture.LogoutReason.BlockedLogin:
                         return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
+
+                    case SoftFX.Net.TradeCapture.LogoutReason.Other:
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
 
                     default:
                         throw new Exception("Invalid logout reason : " + reason);

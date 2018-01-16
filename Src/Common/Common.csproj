@@ -54,8 +54,7 @@
     <Compile Include="ExecutionReport.cs" />
     <Compile Include="ExecutionType.cs" />
     <Compile Include="Library.cs" />
-    <Compile Include="LoginRejectException.cs" />
-    <Compile Include="LoginRejectReason.cs" />
+    <Compile Include="LoginException.cs" />
     <Compile Include="LogoutInfo.cs" />
     <Compile Include="LogoutReason.cs" />
     <Compile Include="MarginCalcMode.cs" />

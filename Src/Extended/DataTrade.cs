@@ -572,7 +572,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.ClientInitiated;
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = text;
                         eventQueue_.PushEvent(args);
 
@@ -734,7 +734,15 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.InvalidCredentials;
+
+                        LoginException loginException = exception as LoginException;
+                        if (loginException != null)
+                        {
+                            args.Reason = loginException.LogoutReason;
+                        }
+                        else
+                            args.Reason = LogoutReason.Unknown;
+
                         args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
@@ -1728,7 +1736,15 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.InvalidCredentials;
+
+                        LoginException loginException = exception as LoginException;
+                        if (loginException != null)
+                        {
+                            args.Reason = loginException.LogoutReason;
+                        }
+                        else
+                            args.Reason = LogoutReason.Unknown;
+
                         args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
