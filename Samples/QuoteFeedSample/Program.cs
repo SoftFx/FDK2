@@ -82,6 +82,8 @@ namespace QuoteFeedSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         string GetNextWord(string line, ref int index)
@@ -104,7 +106,7 @@ namespace QuoteFeedSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -226,13 +228,13 @@ namespace QuoteFeedSample
         {
             try
             {
-                client_.Logout("Client logout", Timeout);
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
+
+                Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {
-            }
-
-            Console.WriteLine("Logout");
+            }            
 
             client_.Disconnect("Client disconnect");
 
@@ -329,11 +331,11 @@ namespace QuoteFeedSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        public void OnLogout(Client client, LogoutInfo info)
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Logout : " + info.Message);
             }
             catch (Exception exception)
             {
@@ -341,11 +343,11 @@ namespace QuoteFeedSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
+        void OnDisconnect(Client client, string text)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {

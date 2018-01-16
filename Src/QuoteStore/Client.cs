@@ -3,7 +3,7 @@ using System.IO;
 using System.Text;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
-using System.Threading.Tasks;
+using System.Threading;
 using SoftFX.Net.QuoteStore;
 using ICSharpCode.SharpZipLib;
 using ICSharpCode.SharpZipLib.Zip;
@@ -68,11 +68,11 @@ namespace TickTrader.FDK.QuoteStore
         #region Connect / disconnect
 
         public delegate void ConnectResultDelegate(Client client, object data);
-        public delegate void ConnectErrorDelegate(Client client, object data, string text);
+        public delegate void ConnectErrorDelegate(Client client, object data, Exception exception);
         public delegate void DisconnectResultDelegate(Client client, object data, string text);
         public delegate void DisconnectDelegate(Client client, string text);
         public delegate void ReconnectDelegate(Client client);
-        public delegate void ReconnectErrorDelegate(Client client, string text);
+        public delegate void ReconnectErrorDelegate(Client client, Exception exception);
 
         public event ConnectResultDelegate ConnectResultEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
@@ -83,35 +83,27 @@ namespace TickTrader.FDK.QuoteStore
 
         public void Connect(string address, int timeout)
         {
-            try
-            {
-                ConvertToSync(ConnectAsync(address), timeout);
-            }
-            catch (TimeoutException)
-            {
-                DisconnectAsync(this, "Connect timeout");
-                Join();
+            ConnectAsyncContext context = new ConnectAsyncContext(true);
 
-                throw;
+            ConnectInternal(context, address);
+
+            if (! context.Wait(timeout))
+            {
+                DisconnectInternal(null, "Connect timeout");
+
+                throw new Common.TimeoutException("Method call timed out");
             }
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void ConnectAsync(object data, string address)
         {
-            ConnectAsyncContext context = new ConnectAsyncContext();
+            ConnectAsyncContext context = new ConnectAsyncContext(false);
             context.Data = data;
 
             ConnectInternal(context, address);
-        }
-
-        public Task ConnectAsync(string address)
-        {
-            ConnectAsyncContext context = new ConnectAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            ConnectInternal(context, address);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void ConnectInternal(ConnectAsyncContext context, string address)
@@ -121,26 +113,28 @@ namespace TickTrader.FDK.QuoteStore
 
         public bool Disconnect(string text)
         {
-            return ConvertToSync(DisconnectAsync(text), -1);
+            bool result;
+
+            DisconnectAsyncContext context = new DisconnectAsyncContext(true);
+
+            if (DisconnectInternal(context, text))
+            {
+                context.Wait(-1);
+
+                result = true;
+            }
+            else
+                result = false;
+
+            return result;
         }
 
         public bool DisconnectAsync(object data, string text)
         {
-            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            DisconnectAsyncContext context = new DisconnectAsyncContext(false);
             context.Data = data;
 
             return DisconnectInternal(context, text);
-        }
-
-        public Task<bool> DisconnectAsync(string text)
-        {
-            DisconnectAsyncContext context = new DisconnectAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<bool>();
-
-            if (! DisconnectInternal(context, text))
-                Task.Run(() => { context.taskCompletionSource_.SetResult(false); });
-
-            return context.taskCompletionSource_.Task;
         }
 
         bool DisconnectInternal(DisconnectAsyncContext context, string text)
@@ -158,38 +152,36 @@ namespace TickTrader.FDK.QuoteStore
         #region Login / logout
 
         public delegate void LoginResultDelegate(Client client, object data);
-        public delegate void LoginErrorDelegate(Client client, object data, string message);
+        public delegate void LoginErrorDelegate(Client client, object data, Exception exception);
         public delegate void LogoutResultDelegate(Client client, object data, LogoutInfo logoutInfo);
+        public delegate void LogoutErrorDelegate(Client client, object data, Exception exception);
         public delegate void LogoutDelegate(Client client, LogoutInfo logoutInfo);
-        
+
         public event LoginResultDelegate LoginResultEvent;
         public event LoginErrorDelegate LoginErrorEvent;
         public event LogoutResultDelegate LogoutResultEvent;
+        public event LogoutErrorDelegate LogoutErrorEvent;
         public event LogoutDelegate LogoutEvent;
 
         public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(username, password, deviceId, appId, sessionId), timeout);
+            LoginAsyncContext context = new LoginAsyncContext(true);
+
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
-            // Create a new async context
-            var context = new LoginAsyncContext();
+            LoginAsyncContext context = new LoginAsyncContext(false);
             context.Data = data;
 
             LoginInternal(context, username, password, deviceId, appId, sessionId);
-        }
-
-        public Task LoginAsync(string username, string password, string deviceId, string appId, string sessionId)
-        {
-            // Create a new async context
-            var context = new LoginAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            LoginInternal(context, username, password, deviceId, appId, sessionId);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
@@ -197,56 +189,46 @@ namespace TickTrader.FDK.QuoteStore
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
-            // Create a request
-            var request = new LoginRequest(0)
-            {
-                Username = username,
-                Password = password,
-                DeviceId = deviceId,
-                AppId = appId,
-                SessionId = sessionId
-            };
+            LoginRequest request = new LoginRequest(0);
+            request.Username = username;
+            request.Password = password;
+            request.DeviceId = deviceId;
+            request.AppId = appId;
+            request.SessionId = sessionId;
 
-            // Send request to the server
             session_.SendLoginRequest(context, request);
         }
 
         public LogoutInfo Logout(string message, int timeout)
         {
-            return ConvertToSync(LogoutAsync(message), timeout);
+            LogoutAsyncContext context = new LogoutAsyncContext(true);
+
+            LogoutInternal(context, message);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.logoutInfo_;
         }
 
         public void LogoutAsync(object data, string message)
         {
-            // Create a new async context
-            var context = new LogoutAsyncContext();
+            LogoutAsyncContext context = new LogoutAsyncContext(false);
             context.Data = data;
 
             LogoutInternal(context, message);
-        }
-
-        public Task<LogoutInfo> LogoutAsync(string message)
-        {
-            // Create a new async context
-            var context = new LogoutAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
-
-            LogoutInternal(context, message);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void LogoutInternal(LogoutAsyncContext context, string message)
         {
             session_.Reconnect = false;
 
-            // Create a request
-            var request = new Logout(0)
-            {
-                Text = message
-            };
+            Logout request = new Logout(0);
+            request.Text = message;
 
-            // Send request to the server
             session_.SendLogout(context, request);
         }
 
@@ -255,21 +237,22 @@ namespace TickTrader.FDK.QuoteStore
         #region Quote Store
 
         public delegate void SymbolListResultDelegate(Client client, object data, string[] symbols);
-        public delegate void SymbolListErrorDelegate(Client client, object data, string message);
+        public delegate void SymbolListErrorDelegate(Client client, object data, Exception exception);
         public delegate void PeriodicityListResultDelegate(Client client, object data, BarPeriod[] barPeriods);
-        public delegate void PeriodicityListErrorDelegate(Client client, object data, string message);
+        public delegate void PeriodicityListErrorDelegate(Client client, object data, Exception exception);
         public delegate void BarListResultDelegate(Client client, object data, TickTrader.FDK.Common.Bar[] bars);
-        public delegate void BarListErrorDelegate(Client client, object data, string message);
+        public delegate void BarListErrorDelegate(Client client, object data, Exception exception);
         public delegate void QuoteListResultDelegate(Client client, object data, Quote[] bars);
-        public delegate void QuoteListErrorDelegate(Client client, object data, string message);
+        public delegate void QuoteListErrorDelegate(Client client, object data, Exception exception);
+
         public delegate void BarDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
         public delegate void BarDownloadResultDelegate(Client client, object data, string downloadId, TickTrader.FDK.Common.Bar bar);
         public delegate void BarDownloadResultEndDelegate(Client client, object data, string downloadId);
-        public delegate void BarDownloadErrorDelegate(Client client, object data, string downloadId, string message);
+        public delegate void BarDownloadErrorDelegate(Client client, object data, string downloadId, Exception exception);
         public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
         public delegate void QuoteDownloadResultDelegate(Client client, object data, string downloadId, Quote quote);
         public delegate void QuoteDownloadResultEndDelegate(Client client, object data, string downloadId);
-        public delegate void QuoteDownloadErrorDelegate(Client client, object data, string downloadId, string message);
+        public delegate void QuoteDownloadErrorDelegate(Client client, object data, string downloadId, Exception exception);
         public delegate void NotificationDelegate(Client client, Common.Notification notification);
 
         public event SymbolListResultDelegate SymbolListResultEvent;
@@ -292,105 +275,94 @@ namespace TickTrader.FDK.QuoteStore
 
         public string[] GetSymbolList(int timeout)
         {
-            return ConvertToSync(GetSymbolListAsync(), timeout);
+            SymbolListAsyncContext context = new SymbolListAsyncContext(true);
+
+            GetSymbolListInternal(context);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.symbols_;
         }
 
         public void GetSymbolListAsync(object data)
         {
-            // Create a new async context
-            SymbolListAsyncContext context = new SymbolListAsyncContext();
+            SymbolListAsyncContext context = new SymbolListAsyncContext(false);
             context.Data = data;
 
             GetSymbolListInternal(context);
         }
 
-        public Task<string[]> GetSymbolListAsync()
-        {
-            // Create a new async context
-            SymbolListAsyncContext context = new SymbolListAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<string[]>();
-
-            GetSymbolListInternal(context);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void GetSymbolListInternal(SymbolListAsyncContext context)
         {
-            // Create a request
             SymbolListRequest request = new SymbolListRequest(0);
             request.Id = Guid.NewGuid().ToString();
 
-            // Send request to the server
             session_.SendSymbolListRequest(context, request);
         }
 
         public BarPeriod[] GetPeriodicityList(string symbol, int timeout)
         {
-            return ConvertToSync(GetPeriodicityListAsync(symbol), timeout);
+            PeriodictityListAsyncContext context = new PeriodictityListAsyncContext(true);
+
+            GetPeriodicityListInternal(context, symbol);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.barPeriods_;
         }
 
         public void GetPeriodicityListAsync(object data, string symbol)
         {
-            // Create a new async context
-            PeriodictityListAsyncContext context = new PeriodictityListAsyncContext();
+            PeriodictityListAsyncContext context = new PeriodictityListAsyncContext(false);
             context.Data = data;
 
             GetPeriodicityListInternal(context, symbol);
         }
 
-        public Task<BarPeriod[]> GetPeriodicityListAsync(string symbol)
-        {
-            // Create a new async context
-            PeriodictityListAsyncContext context = new PeriodictityListAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<BarPeriod[]>();
-
-            GetPeriodicityListInternal(context, symbol);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void GetPeriodicityListInternal(PeriodictityListAsyncContext context, string symbol)
         {
-            // Create a request
             PeriodicityListRequest request = new PeriodicityListRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.SymbolId = symbol;
 
-            // Send request to the server
             session_.SendPeriodicityListRequest(context, request);
         }
 
         public TickTrader.FDK.Common.Bar[] GetBarList(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count, int timeout)
         {
-            return ConvertToSync(GetBarListAsync(symbol, priceType, barPeriod, from, count), timeout);
+            BarListAsyncContext context = new BarListAsyncContext(true);
+
+            GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.bars_;
         }
 
         public void GetBarListAsync(object data, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
         {
-            // Create a new async context
-            BarListAsyncContext context = new BarListAsyncContext();
+            BarListAsyncContext context = new BarListAsyncContext(false);
             context.Data = data;
 
             GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
-        }
-
-        public Task<TickTrader.FDK.Common.Bar[]> GetBarListAsync(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
-        {
-            // Create a new async context
-            BarListAsyncContext context = new BarListAsyncContext();            
-            context.taskCompletionSource_ = new TaskCompletionSource<Common.Bar[]>();            
-
-            GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void GetBarListInternal(BarListAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
         {
             context.barPeriod_ = barPeriod;
 
-            // Create a request
             BarListRequest request = new BarListRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.SymbolId = symbol;
@@ -399,38 +371,34 @@ namespace TickTrader.FDK.QuoteStore
             request.From = from;
             request.Count = count;
 
-            // Send request to the server
             session_.SendBarListRequest(context, request);
         }
 
         public Quote[] GetQuoteList(string symbol, QuoteDepth depth, DateTime from, int count, int timeout)
         {
-            return ConvertToSync(GetQuoteListAsync(symbol, depth, from, count), timeout);
+            QuoteListAsyncContext context = new QuoteListAsyncContext(true);
+
+            GetQuoteListInternal(context, symbol, depth, from, count);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.quotes_;
         }
 
         public void GetQuoteListAsync(object data, string symbol, QuoteDepth depth, DateTime from, int count)
         {
-            // Create a new async context
-            QuoteListAsyncContext context = new QuoteListAsyncContext();
+            QuoteListAsyncContext context = new QuoteListAsyncContext(false);
             context.Data = data;
 
             GetQuoteListInternal(context, symbol, depth, from, count);
         }
 
-        public Task<Quote[]> GetQuoteListAsync(string symbol, QuoteDepth depth, DateTime from, int count)
-        {
-            // Create a new async context
-            QuoteListAsyncContext context = new QuoteListAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<Quote[]>();
-
-            GetQuoteListInternal(context, symbol, depth, from, count);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void GetQuoteListInternal(QuoteListAsyncContext context, string symbol, QuoteDepth depth, DateTime from, int count)
         {
-            // Create a request
             TickListRequest request = new TickListRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.SymbolId = symbol;
@@ -438,43 +406,41 @@ namespace TickTrader.FDK.QuoteStore
             request.From = from;
             request.Count = count;
 
-            // Send request to the server
             session_.SendTickListRequest(context, request);
         }
 
         public BarEnumerator DownloadBars(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
         {
-            return ConvertToSync(DownloadBarsAsync(downloadId, symbol, priceType, barPeriod, from, to), timeout);
+            BarDownloadAsyncContext context = new BarDownloadAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);
+
+            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
+
+            if (! context.event_.WaitOne(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.barEnumerator_;
         }
 
         public void DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
-            // Create a new async context
-            BarDownloadAsyncContext context = new BarDownloadAsyncContext();
+            BarDownloadAsyncContext context = new BarDownloadAsyncContext(false);
             context.Data = data;
 
             DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
         }
 
-        public Task<BarEnumerator> DownloadBarsAsync(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
-        {
-            // Create a new async context
-            BarDownloadAsyncContext context = new BarDownloadAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<BarEnumerator>();
-
-            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void DownloadBarsInternal(BarDownloadAsyncContext context, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
+            context.downloadId_ = downloadId;
             context.priceType_ = priceType;
             context.barPeriod_ = barPeriod;
             context.from_ = from;
             context.to_ = to;
 
-            // Create a request
             BarDownloadRequest request = new BarDownloadRequest(0);
             request.Id = downloadId;
             request.SymbolId = symbol;
@@ -483,42 +449,40 @@ namespace TickTrader.FDK.QuoteStore
             request.From = from;
             request.To = to;
 
-            // Send request to the server
             session_.SendDownloadRequest(context, request);
         }
 
         public QuoteEnumerator DownloadQuotes(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
         {
-            return ConvertToSync(DownloadQuotesAsync(downloadId, symbol, depth, from, to), timeout);
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);
+
+            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
+
+            if (! context.event_.WaitOne(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.quoteEnumerator_;
         }
 
         public void DownloadQuotesAsync(object data, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            // Create a new async context
-            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext();
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(false);
             context.Data = data;
 
             DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
         }
 
-        public Task<QuoteEnumerator> DownloadQuotesAsync(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
-        {
-            // Create a new async context
-            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<QuoteEnumerator>();
-
-            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void DownloadQuotesInternal(QuoteDownloadAsyncContext context, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
+            context.downloadId_ = downloadId;
             context.quoteDepth_ = depth;
             context.from_ = from;
             context.to_ = to;
 
-            // Create a request
             TickDownloadRequest request = new TickDownloadRequest(0);
             request.Id = downloadId;
             request.SymbolId = symbol;
@@ -526,17 +490,14 @@ namespace TickTrader.FDK.QuoteStore
             request.From = from;
             request.To = to;
 
-            // Send request to the server
             session_.SendDownloadRequest(context, request);
         }
 
         public void SendDownloadCancel(string downloadId)
         {
-            // Create a message
             DownloadCancel downloadCancel = new DownloadCancel(0);
             downloadCancel.Id = downloadId;
 
-            // Send message to the server
             session_.SendDownloadCancel(null, downloadCancel);
         }
 
@@ -576,175 +537,318 @@ namespace TickTrader.FDK.QuoteStore
 
         interface IAsyncContext
         {
-            void SetDisconnectError(Exception exception);
+            void ProcessDisconnect(Client client, string text);
         }
 
         class ConnectAsyncContext : ConnectClientContext
         {
-            public ConnectAsyncContext() : base(false)
+            public ConnectAsyncContext(bool waitbale) : base(waitbale)
             {
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class DisconnectAsyncContext : DisconnectClientContext
         {
-            public DisconnectAsyncContext() : base(false)
+            public DisconnectAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public TaskCompletionSource<bool> taskCompletionSource_;
+            public string text_;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
         {
-            public LoginAsyncContext() : base(false)
+            public LoginAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LoginErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LoginErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class LogoutAsyncContext : LogoutClientContext, IAsyncContext
         {
-            public LogoutAsyncContext() : base(false)
+            public LogoutAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LogoutErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LogoutErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<LogoutInfo> taskCompletionSource_;
+            public Exception exception_;
+            public LogoutInfo logoutInfo_;
         }
 
         class SymbolListAsyncContext : SymbolListRequestClientContext, IAsyncContext
         {
-            public SymbolListAsyncContext() : base(false)
+            public SymbolListAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.SymbolListErrorEvent != null)
+                {
+                    try
+                    {
+                        client.SymbolListErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<string[]> taskCompletionSource_;
+            public Exception exception_;
+            public string[] symbols_;
         }
 
         class PeriodictityListAsyncContext : PeriodicityListRequestClientContext, IAsyncContext
         {
-            public PeriodictityListAsyncContext() : base(false)
+            public PeriodictityListAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.PeriodicityListErrorEvent != null)
+                {
+                    try
+                    {
+                        client.PeriodicityListErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<BarPeriod[]> taskCompletionSource_;
+            public Exception exception_;
+            public BarPeriod[] barPeriods_;
         }
 
         class BarListAsyncContext : BarListRequestClientContext, IAsyncContext
         {
-            public BarListAsyncContext() : base(false)
+            public BarListAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.BarListErrorEvent != null)
+                {
+                    try
+                    {
+                        client.BarListErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
             public BarPeriod barPeriod_;
-            public TaskCompletionSource<TickTrader.FDK.Common.Bar[]> taskCompletionSource_;
+            public Exception exception_;            
+            public TickTrader.FDK.Common.Bar[] bars_;
         }
 
         class QuoteListAsyncContext : TickListRequestClientContext, IAsyncContext
         {
-            public QuoteListAsyncContext() : base(false)
+            public QuoteListAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.QuoteListErrorEvent != null)
+                {
+                    try
+                    {
+                        client.QuoteListErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<Quote[]> taskCompletionSource_;
+            public Exception exception_;
+            public Quote[] quotes_;
         }
 
         class BarDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
         {
-            public BarDownloadAsyncContext() : base(false)
+            public BarDownloadAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            ~BarDownloadAsyncContext()
             {
-                if (taskCompletionSource_ != null)
+                if (event_ != null)
+                    event_.Close();
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.BarDownloadErrorEvent != null)
+                {
+                    try
+                    {
+                        client.BarDownloadErrorEvent(client, Data, downloadId_, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
                 {
                     if (barEnumerator_ != null)
                     {
                         barEnumerator_.SetError(exception);
                     }
                     else
-                        Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                    {
+                        exception_ = exception;
+                        event_.Set();
+                    }
                 }
             }
-                        
+
+            public string downloadId_;
             public TickTrader.FDK.Common.PriceType priceType_;
             public BarPeriod barPeriod_;
             public DateTime from_;
             public DateTime to_;            
             public byte[] fileData_;
             public int fileSize_;
-            public TaskCompletionSource<BarEnumerator> taskCompletionSource_;
+            public TickTrader.FDK.Common.Bar bar_;
+            public AutoResetEvent event_;
+            public Exception exception_;
             public BarEnumerator barEnumerator_;
-            public TickTrader.FDK.Common.Bar bar_;            
         }
 
         class QuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
         {
-            public QuoteDownloadAsyncContext() : base(false)
+            public QuoteDownloadAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            ~QuoteDownloadAsyncContext()
             {
-                if (taskCompletionSource_ != null)
+                if (event_ != null)
+                    event_.Close();
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.QuoteDownloadErrorEvent != null)
+                {
+                    try
+                    {
+                        client.QuoteDownloadErrorEvent(client, Data, downloadId_, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
                 {
                     if (quoteEnumerator_ != null)
                     {
                         quoteEnumerator_.SetError(exception);
                     }
                     else
-                        Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                    {
+                        exception_ = exception;
+                        event_.Set();
+                    }
                 }
             }
                         
+            public string downloadId_;
             public QuoteDepth quoteDepth_;
             public DateTime from_;
             public DateTime to_;
             public byte[] fileData_;
             public int fileSize_;
-            public TaskCompletionSource<QuoteEnumerator> taskCompletionSource_;
-            public QuoteEnumerator quoteEnumerator_;
-            public Quote quote_;            
+            public Quote quote_;
+            public AutoResetEvent event_;
+            public Exception exception_;
+            public QuoteEnumerator quoteEnumerator_;            
         }       
 
         class ClientSessionListener : SoftFX.Net.QuoteStore.ClientSessionListener
@@ -770,9 +874,6 @@ namespace TickTrader.FDK.QuoteStore
                         {
                         }
                     }
-
-                    if (connectAsyncContext.taskCompletionSource_ != null)
-                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetResult(null); });
                 }
                 catch
                 {
@@ -805,21 +906,22 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
+                    Exception exception = new Exception(text);
+
                     if (client_.ConnectErrorEvent != null)
                     {
                         try
                         {
-                            client_.ConnectErrorEvent(client_, connectAsyncContext.Data, text);
+                            client_.ConnectErrorEvent(client_, connectAsyncContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (connectAsyncContext.taskCompletionSource_ != null)
+                    if (connectAsyncContext.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetException(exception); });
+                        connectAsyncContext.exception_ = exception;
                     }
                 }
                 catch
@@ -831,11 +933,13 @@ namespace TickTrader.FDK.QuoteStore
             {                
                 try
                 {
+                    Exception exception = new Exception(text);
+
                     if (client_.ReconnectErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReconnectErrorEvent(client_, text);
+                            client_.ReconnectErrorEvent(client_, exception);
                         }
                         catch
                         {
@@ -853,6 +957,17 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
 
+                    foreach (ClientContext context in contexts)
+                    {
+                        try
+                        {
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     if (client_.DisconnectResultEvent != null)
                     {
                         try
@@ -864,16 +979,10 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (contexts.Length > 0)
+                    if (disconnectAsyncContext.Waitable)
                     {
-                        Exception exception = new Exception(text);
-
-                        foreach (ClientContext context in contexts)
-                            ((IAsyncContext)context).SetDisconnectError(exception);
+                        disconnectAsyncContext.text_ = text;
                     }
-
-                    if (disconnectAsyncContext.taskCompletionSource_ != null)
-                        Task.Run(() => { disconnectAsyncContext.taskCompletionSource_.SetResult(true); });
                 }
                 catch
                 {
@@ -884,6 +993,17 @@ namespace TickTrader.FDK.QuoteStore
             {
                 try
                 {
+                    foreach (ClientContext context in contexts)
+                    {
+                        try
+                        {
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     if (client_.DisconnectEvent != null)
                     {
                         try
@@ -894,14 +1014,6 @@ namespace TickTrader.FDK.QuoteStore
                         {
                         }
                     }
-
-                    if (contexts.Length > 0)
-                    {
-                        Exception exception = new Exception(text);
-
-                        foreach (ClientContext context in contexts)
-                            ((IAsyncContext)context).SetDisconnectError(exception);
-                    }
                 }
                 catch
                 {
@@ -910,7 +1022,7 @@ namespace TickTrader.FDK.QuoteStore
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
                 try
                 {
@@ -924,9 +1036,6 @@ namespace TickTrader.FDK.QuoteStore
                         {
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(null); });
                 }
                 catch (Exception exception)
                 {
@@ -934,41 +1043,44 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.LoginRejectReason reason = Convert(message.Reason);
+
+                    LoginRejectException exception = new LoginRejectException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, text);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -977,25 +1089,27 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
             {
-                var context = (LogoutAsyncContext) LogoutClientContext ;
+                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
                 try
                 {
-                    var result = new LogoutInfo();
+                    LogoutInfo result = new LogoutInfo();
                     result.Reason = Convert(message.Reason);
                     result.Message = message.Text;
 
@@ -1010,35 +1124,34 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
+                    if (context.Waitable)
+                    {
+                        context.logoutInfo_ = result;
+                    }
                 }
-                catch
+                catch (Exception exception)
                 {
-                    // on logout we don't throw
-
-                    var result = new LogoutInfo();
-                    result.Reason = TickTrader.FDK.Common.LogoutReason.Unknown;
-
-                    if (client_.LogoutResultEvent != null)
+                    if (client_.LogoutErrorEvent != null)
                     {
                         try
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            client_.LogoutErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnSymbolListReport(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, SymbolListReport message)
             {
-                var context = (SymbolListAsyncContext)SymbolListRequestClientContext;
+                SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
                 try
                 {
@@ -1062,8 +1175,10 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultSymbols); });
+                    if (context.Waitable)
+                    {
+                        context.symbols_ = resultSymbols;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -1071,15 +1186,17 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception.Message);
+                            client_.SymbolListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1089,23 +1206,22 @@ namespace TickTrader.FDK.QuoteStore
 
                 try
                 {
-                    string text = message.Text;
+                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
                     {
                         try
                         {
-                            client_.SymbolListErrorEvent(client_, context.Data, text);
+                            client_.SymbolListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -1114,15 +1230,17 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception.Message);
+                            client_.SymbolListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1155,8 +1273,10 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultPeriodicities); });
+                    if (context.Waitable)
+                    {
+                        context.barPeriods_ = resultPeriodicities;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -1164,41 +1284,42 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.PeriodicityListErrorEvent(client_, context.Data, exception.Message);
+                            client_.PeriodicityListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnPeriodicityListReject(ClientSession session, PeriodicityListRequestClientContext PeriodicityListRequestClientContext, Reject message)
             {
-                var context = (PeriodictityListAsyncContext) PeriodicityListRequestClientContext;
+                PeriodictityListAsyncContext context = (PeriodictityListAsyncContext) PeriodicityListRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.PeriodicityListErrorEvent != null)
                     {
                         try
                         {
-                            client_.PeriodicityListErrorEvent(client_, context.Data, text);
+                            client_.PeriodicityListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -1207,15 +1328,17 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.PeriodicityListErrorEvent(client_, context.Data, exception.Message);
+                            client_.PeriodicityListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1256,8 +1379,10 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultBars); });
+                    if (context.Waitable)
+                    {
+                        context.bars_ = resultBars;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -1265,41 +1390,42 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.BarListErrorEvent(client_, context.Data, exception.Message);
+                            client_.BarListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnBarListReject(ClientSession session, BarListRequestClientContext BarListRequestClientContext, Reject message)
             {
-                var context = (BarListAsyncContext) BarListRequestClientContext;
+                BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.BarListErrorEvent != null)
                     {
                         try
                         {
-                            client_.BarListErrorEvent(client_, context.Data, text);
+                            client_.BarListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -1308,15 +1434,17 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.BarListErrorEvent(client_, context.Data, exception.Message);
+                            client_.BarListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1395,8 +1523,10 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(resultQuotes); });
+                    if (context.Waitable)
+                    {
+                        context.quotes_ = resultQuotes;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -1404,41 +1534,42 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.QuoteListErrorEvent(client_, context.Data, exception.Message);
+                            client_.QuoteListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnTickListReject(ClientSession session, TickListRequestClientContext TickListRequestClientContext, Reject message)
             {
-                var context = (QuoteListAsyncContext) TickListRequestClientContext;
+                QuoteListAsyncContext context = (QuoteListAsyncContext) TickListRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.QuoteListErrorEvent != null)
                     {
                         try
                         {
-                            client_.QuoteListErrorEvent(client_, context.Data, text);
+                            client_.QuoteListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -1447,15 +1578,17 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         try
                         {
-                            client_.QuoteListErrorEvent(client_, context.Data, exception.Message);
+                            client_.QuoteListErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1470,7 +1603,7 @@ namespace TickTrader.FDK.QuoteStore
                         ulong maxFileSize = 0;
 
                         FileInfoArray files = message.Files;
-                        int count = files.Length;                        
+                        int count = files.Length;
                         for (int index = 0; index < count; ++ index)
                         {
                             SoftFX.Net.QuoteStore.FileInfo file = files[index];
@@ -1498,10 +1631,10 @@ namespace TickTrader.FDK.QuoteStore
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
-                            Task.Run(() => { context.taskCompletionSource_.SetResult(context.barEnumerator_); });
+                            context.event_.Set();
                         }
                     }
                     catch (Exception exception)
@@ -1510,15 +1643,18 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
                 else
@@ -1558,10 +1694,10 @@ namespace TickTrader.FDK.QuoteStore
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
-                            Task.Run(() => { context.taskCompletionSource_.SetResult(context.quoteEnumerator_); });
+                            context.event_.Set();
                         }
                     }
                     catch (Exception exception)
@@ -1570,15 +1706,18 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
             }
@@ -1586,7 +1725,7 @@ namespace TickTrader.FDK.QuoteStore
             public override void OnDownloadDataReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadDataReport message)
             {
                 if (DownloadRequestClientContext is BarDownloadAsyncContext)
-                {
+                {                    
                     BarDownloadAsyncContext context = (BarDownloadAsyncContext) DownloadRequestClientContext;
 
                     try
@@ -1608,15 +1747,17 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.barEnumerator_.SetError(exception);
+                        }
                     }
                 }
                 else
@@ -1642,15 +1783,17 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent (client_, context.Data, message.RequestId, exception.Message);
+                                client_.QuoteDownloadErrorEvent (client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.quoteEnumerator_.SetError(exception);
+                        }
                     }
                 }
             }
@@ -1698,16 +1841,13 @@ namespace TickTrader.FDK.QuoteStore
                                         }
                                     }
 
-                                    if (context.taskCompletionSource_ != null)
+                                    if (context.Waitable)
                                     {
                                         TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
 
                                         context.barEnumerator_.SetResult(bar);
                                     }
                                 }                                    
-
-                                if (context.taskCompletionSource_ != null)
-                                    context.barEnumerator_.SetResult(null);
                             }
                         }
                     }
@@ -1739,16 +1879,13 @@ namespace TickTrader.FDK.QuoteStore
                                 }
                             }
 
-                            if (context.taskCompletionSource_ != null)
+                            if (context.Waitable)
                             {
                                 TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
 
                                 context.barEnumerator_.SetResult(bar);
                             }
                         }
-
-                        if (context.taskCompletionSource_ != null)
-                            context.barEnumerator_.SetResult(null);
                     }
                 }
             }
@@ -1796,7 +1933,7 @@ namespace TickTrader.FDK.QuoteStore
                                         }
                                     }
 
-                                    if (context.taskCompletionSource_ != null)
+                                    if (context.Waitable)
                                     {
                                         Quote quote = context.quote_.Clone();
 
@@ -1804,9 +1941,6 @@ namespace TickTrader.FDK.QuoteStore
                                     }
                                 }
                             }
-
-                            if (context.taskCompletionSource_ != null)
-                                context.quoteEnumerator_.SetResult(null);
                         }
                     }
                 }
@@ -1837,16 +1971,13 @@ namespace TickTrader.FDK.QuoteStore
                                 }
                             }
 
-                            if (context.taskCompletionSource_ != null)
+                            if (context.Waitable)
                             {
                                 Quote quote = context.quote_.Clone();
 
                                 context.quoteEnumerator_.SetResult(quote);
                             }
                         }                                    
-
-                        if (context.taskCompletionSource_ != null)
-                            context.quoteEnumerator_.SetResult(null);
                     }
                 }
             }
@@ -1870,8 +2001,10 @@ namespace TickTrader.FDK.QuoteStore
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.barEnumerator_.SetEnd();
+                        }
                     }
                     catch (Exception exception)
                     {
@@ -1879,15 +2012,17 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.barEnumerator_.SetError(exception);
+                        }
                     }
                 }
                 else
@@ -1907,8 +2042,10 @@ namespace TickTrader.FDK.QuoteStore
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.quoteEnumerator_.SetEnd();
+                        }
                     }
                     catch (Exception exception)
                     {
@@ -1916,15 +2053,17 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.quoteEnumerator_.SetError(exception);
+                        }
                     }
                 }
             }
@@ -1937,29 +2076,30 @@ namespace TickTrader.FDK.QuoteStore
 
                     try
                     {
-                        string text = message.Text;
+                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                         if (client_.BarDownloadErrorEvent != null)
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, text);
+                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
-                            Exception exception = new Exception(text);
-
                             if (context.barEnumerator_ != null)
                             {
                                 context.barEnumerator_.SetError(exception);
                             }
                             else
-                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
                     catch (Exception exception)
@@ -1968,21 +2108,24 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             if (context.barEnumerator_ != null)
                             {
                                 context.barEnumerator_.SetError(exception);
                             }
                             else
-                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
                 }
@@ -1992,29 +2135,30 @@ namespace TickTrader.FDK.QuoteStore
 
                     try
                     {
-                        string text = message.Text;
+                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                         if (client_.QuoteDownloadErrorEvent != null)
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, text);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
-                            Exception exception = new Exception(text);
-
                             if (context.quoteEnumerator_ != null)
                             {
                                 context.quoteEnumerator_.SetError(exception);
                             }
                             else
-                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
                     catch (Exception exception)
@@ -2023,21 +2167,24 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception.Message);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             if (context.quoteEnumerator_ != null)
                             {
                                 context.quoteEnumerator_.SetError(exception);
                             }
                             else
-                                Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
                 }
@@ -2090,6 +2237,45 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch
                 {
+                }
+            }
+
+            TickTrader.FDK.Common.LoginRejectReason Convert(SoftFX.Net.QuoteStore.LoginRejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.IncorrectCredentials:
+                        return TickTrader.FDK.Common.LoginRejectReason.InvalidCredentials;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.AccountIsBlocked:
+                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.AccountIsBlockedByAccessList:
+                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.InvalidSessionId:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.InvalidSpec:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.NotEnoughRights:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.TimeoutLogin:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.WebApiDisabled:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.Throttling:
+                        return TickTrader.FDK.Common.LoginRejectReason.Throttling;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.InternalServerError:
+                        return TickTrader.FDK.Common.LoginRejectReason.InternalServerError;
+
+                    default:
+                        throw new Exception("Invalid login reject reason : " + reason);
                 }
             }
 
@@ -2149,39 +2335,8 @@ namespace TickTrader.FDK.QuoteStore
                         throw new Exception("Invalid notification severity : " + severity);
                 }
             }
-
             
             Client client_;            
-        }
-
-        internal static void ConvertToSync(Task task, int timeout)
-        {
-            try
-            {
-                if (!task.Wait(timeout))
-                    throw new TimeoutException("Method call timeout");
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-            }
-        }
-
-        internal static TResult ConvertToSync<TResult>(Task<TResult> task, int timeout)
-        {
-            try
-            {
-                if (!task.Wait(timeout))
-                    throw new TimeoutException("Method call timeout");
-
-                return task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-                // Unreacheble code...
-                return default(TResult);
-            }
         }
 
         #endregion

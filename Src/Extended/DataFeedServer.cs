@@ -2,7 +2,7 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.Threading.Tasks;
+    using System.Threading;
     using System.Runtime.ExceptionServices;
     using Common;
 
@@ -221,81 +221,32 @@
         /// <returns></returns>
         public PairBar[] GetBarsEx(string symbol, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
         {
-            try
-            {
-                Task<Bar[]> bidTask = dataFeed_.quoteStoreClient_.GetBarListAsync(symbol, PriceType.Bid, period, startTime, count);
-                Task<Bar[]> askTask = dataFeed_.quoteStoreClient_.GetBarListAsync(symbol, PriceType.Ask, period, startTime, count);
+            DataFeed.PairBarListContext pairBarListContext = new DataFeed.PairBarListContext();
+            pairBarListContext.count_ = count;
+            pairBarListContext.bidBars_ = null;
+            pairBarListContext.askBars_ = null;
+            pairBarListContext.exception_ = null;
+            pairBarListContext.pairBars_ = null;
+            pairBarListContext.event_ = new AutoResetEvent(false);
 
-                if (!bidTask.Wait(timeoutInMilliseconds))
-                    throw new TimeoutException("Methof call timed out");
+            DataFeed.BarListContext bidBarListContext = new DataFeed.BarListContext();
+            bidBarListContext.priceType_ = PriceType.Bid;
+            bidBarListContext.pairContext_ = pairBarListContext;
 
-                if (!askTask.Wait(timeoutInMilliseconds))
-                    throw new TimeoutException("Methof call timed out");
+            DataFeed.BarListContext askBarListContext = new DataFeed.BarListContext();
+            askBarListContext.priceType_ = PriceType.Ask;
+            askBarListContext.pairContext_ = pairBarListContext;
 
-                Bar[] bidBars = bidTask.Result;
-                Bar[] askBars = askTask.Result;
+            dataFeed_.quoteStoreClient_.GetBarListAsync(bidBarListContext, symbol, PriceType.Bid, period, startTime, count);
+            dataFeed_.quoteStoreClient_.GetBarListAsync(askBarListContext, symbol, PriceType.Ask, period, startTime, count);
 
-                int absCount = Math.Abs(count);
-                List<PairBar> pairBars = new List<PairBar>(absCount);
+            if (! pairBarListContext.event_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
 
-                int bidIndex = 0;
-                int askIndex = 0;
+            if (pairBarListContext.exception_ != null)
+                throw pairBarListContext.exception_;
 
-                while (pairBars.Count < absCount)
-                {
-                    Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
-                    Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
-
-                    PairBar pairBar;
-
-                    if (bidBar != null)
-                    {
-                        if (askBar != null)
-                        {
-                            int i = DateTime.Compare(bidBar.From, askBar.From);
-
-                            if (i < 0)
-                            {
-                                pairBar = new PairBar(bidBar, null);
-                                ++bidIndex;
-                            }
-                            else if (i > 0)
-                            {
-                                pairBar = new PairBar(null, askBar);
-                                ++askIndex;
-                            }
-                            else
-                            {
-                                pairBar = new PairBar(bidBar, askBar);
-                                ++bidIndex;
-                                ++askIndex;
-                            }
-                        }
-                        else
-                        {
-                            pairBar = new PairBar(bidBar, null);
-                            ++bidIndex;
-                        }
-                    }
-                    else if (askBar != null)
-                    {
-                        pairBar = new PairBar(null, askBar);
-                        ++askIndex;
-                    }
-                    else
-                        break;
-
-                    pairBars.Add(pairBar);
-                }
-
-                return pairBars.ToArray();
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-                // Unreacheble code...
-                return null;
-            }
+            return pairBarListContext.pairBars_;
         }
 
         /// <summary>

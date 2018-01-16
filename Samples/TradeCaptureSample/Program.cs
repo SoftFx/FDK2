@@ -77,6 +77,8 @@ namespace TradeCaptureSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         string GetNextWord(string line, ref int index)
@@ -216,13 +218,13 @@ namespace TradeCaptureSample
         {
             try
             {
-                client_.Logout("Client logout", Timeout);                
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);                
+
+                Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {                
-            }
-
-            Console.WriteLine("Logout");
+            }            
 
             client_.Disconnect("Client disconnect");
 
@@ -241,11 +243,15 @@ namespace TradeCaptureSample
         void SubscribeTrades()
         {
             client_.SubscribeTrades(false, -1);
+
+            Console.WriteLine("Subscribed");
         }
 
         void UnsubscribeTrades()
         {
             client_.UnsubscribeTrades(-1);
+
+            Console.WriteLine("Unsubscribed");
         }
 
         void DownloadTrades(TimeDirection timeDirection, DateTime from, DateTime to)
@@ -306,7 +312,7 @@ namespace TradeCaptureSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
             }
             catch (Exception exception)
             {
@@ -318,7 +324,7 @@ namespace TradeCaptureSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {

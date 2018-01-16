@@ -72,6 +72,7 @@ namespace QuoteStoreAsyncSample
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
             client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
@@ -96,6 +97,8 @@ namespace QuoteStoreAsyncSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         string GetNextWord(string line, ref int index)
@@ -262,18 +265,18 @@ namespace QuoteStoreAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(this, address_);
+            client_.ConnectAsync(null, address_);
         }
 
         void Disconnect()
         {
             try
             {
-                client_.LogoutAsync(this, "Client logout");
+                client_.LogoutAsync(null, "Client logout");
             }
             catch
             {
-                client_.DisconnectAsync(this, "Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
 
             client_.Join();
@@ -285,21 +288,21 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(this, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnConnectError(Client client, object data, string text)
+        void OnConnectError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -311,7 +314,7 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -323,7 +326,7 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -343,15 +346,15 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnReconnectError(Client client, string text)
+        void OnReconnectError(Client client, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -371,13 +374,13 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, string message)
+        void OnLoginError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -389,9 +392,21 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnLogoutError(Client client, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -403,9 +418,9 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -426,7 +441,7 @@ namespace QuoteStoreAsyncSample
 
         void GetSymbolList()
         {
-            client_.GetSymbolListAsync(this);
+            client_.GetSymbolListAsync(null);
         }
 
         void OnSymbolListResult(Client client, object data, string[] symbols)
@@ -447,11 +462,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnSymbolListError(Client client, object data, string message)
+        void OnSymbolListError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -482,11 +497,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnPeriodicityListError(Client client, object data, string message)
+        void OnPeriodicityListError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -545,11 +560,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadError(Client client, object data, string downloadId, string message)
+        void OnBarDownloadError(Client client, object data, string downloadId, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
 
                 lock (downloadIds_)
                 {
@@ -625,11 +640,11 @@ namespace QuoteStoreAsyncSample
             }            
         }
 
-        void OnQuoteDownloadError(Client client, object data, string downloadId, string message)
+        void OnQuoteDownloadError(Client client, object data, string downloadId, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
 
                 lock (downloadIds_)
                 {

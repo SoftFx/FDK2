@@ -3,7 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Threading.Tasks;
+    using System.Threading;
     using System.Runtime.ExceptionServices;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.QuoteStore;
@@ -66,45 +66,51 @@
         /// <returns></returns>
         public PairBarsEnumerator GetEnumerator()
         {
-            try
-            {
-                Task<BarEnumerator> bidTask = datafeed_.quoteStoreClient_.DownloadBarsAsync
-                (
-                    Guid.NewGuid().ToString(),
-                    symbol_,
-                    PriceType.Bid,
-                    period_,
-                    startTime_,
-                    endTime_
-                );
+            DataFeed.PairBarDownloadContext pairBarDownloadContext = new DataFeed.PairBarDownloadContext();
+            pairBarDownloadContext.pairBars_ = this;
+            pairBarDownloadContext.bidBarEnumerator_ = null;
+            pairBarDownloadContext.askBarEnumerator_ = null;
+            pairBarDownloadContext.exception_ = null;
+            pairBarDownloadContext.pairBarsEnumerator_ = null;
+            pairBarDownloadContext.event_ = new AutoResetEvent(false);
 
-                Task<BarEnumerator> askTask = datafeed_.quoteStoreClient_.DownloadBarsAsync
-                (
-                    Guid.NewGuid().ToString(),
-                    symbol_,
-                    PriceType.Ask,
-                    period_,
-                    startTime_,
-                    endTime_
-                );
+            DataFeed.BarDownloadContext bidBarDownloadContext = new DataFeed.BarDownloadContext();
+            bidBarDownloadContext.priceType_ = PriceType.Bid;
+            bidBarDownloadContext.pairContext_ = pairBarDownloadContext;
 
-                if (!bidTask.Wait(timeout_))
-                    throw new TimeoutException("Method call timed out");
+            DataFeed.BarDownloadContext askBarDownloadContext = new DataFeed.BarDownloadContext();
+            askBarDownloadContext.priceType_ = PriceType.Ask;
+            askBarDownloadContext.pairContext_ = pairBarDownloadContext;
 
-                if (!askTask.Wait(timeout_))
-                    throw new TimeoutException("Method call timed out");
+            datafeed_.quoteStoreClient_.DownloadBarsAsync
+            (
+                bidBarDownloadContext,
+                Guid.NewGuid().ToString(),
+                symbol_,
+                PriceType.Bid,
+                period_,
+                startTime_,
+                endTime_
+            );
 
-                BarEnumerator bidBarEnumerator = bidTask.Result;
-                BarEnumerator askBarEnumerator = askTask.Result;
+            datafeed_.quoteStoreClient_.DownloadBarsAsync
+            (
+                askBarDownloadContext,
+                Guid.NewGuid().ToString(),
+                symbol_,
+                PriceType.Ask,
+                period_,
+                startTime_,
+                endTime_
+            );
 
-                return new PairBarsEnumerator(this, bidBarEnumerator, askBarEnumerator);
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-                // Unreacheble code...
-                return null;
-            }
+            if (!pairBarDownloadContext.event_.WaitOne(timeout_))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (pairBarDownloadContext.exception_ != null)
+                throw pairBarDownloadContext.exception_;
+
+            return pairBarDownloadContext.pairBarsEnumerator_;
         }
 
         /// <summary>

@@ -76,6 +76,8 @@ namespace QuoteStoreSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         string GetNextWord(string line, ref int index)
@@ -262,13 +264,13 @@ namespace QuoteStoreSample
         {
             try
             {
-                client_.Logout("Client logout", Timeout);                
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
+                
+                Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {
-            }
-
-            Console.WriteLine("Logout");
+            }            
 
             client_.Disconnect("Client disconnect");
 
@@ -367,7 +369,7 @@ namespace QuoteStoreSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -379,7 +381,7 @@ namespace QuoteStoreSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
             }
             catch (Exception exception)
             {

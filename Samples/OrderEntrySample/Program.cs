@@ -81,6 +81,8 @@ namespace OrderEntrySample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
         
         string GetNextWord(string line, ref int index)
@@ -460,20 +462,6 @@ namespace OrderEntrySample
                         else
                             throw new Exception(string.Format("Invalid command : {0}", command));
                     }
-                    catch (ExecutionException executionException)
-                    {
-                        foreach (ExecutionReport executionReport in executionException.Reports)
-                        {
-                            if (executionReport.OrigClientOrderId == null)
-                            {
-                                Console.WriteLine("Execution report  : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
-                            }
-                            else
-                                Console.WriteLine("Execution report  : {0}, {1}, {2}, {3}, {4}, {5}, {6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
-                        }
-
-                        Console.WriteLine("Error : " + executionException.Message);
-                    }
                     catch (Exception exception)
                     {
                         Console.WriteLine("Error : " + exception.Message);
@@ -512,13 +500,13 @@ namespace OrderEntrySample
         {
             try
             {
-                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);                
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
+
+                Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {
-            }
-
-            Console.WriteLine("Logout");
+            }            
 
             client_.Disconnect("Client disconnect");
 

@@ -2,6 +2,7 @@
 {
     using System;
     using System.Threading;
+    using System.Collections.Generic;
     using Common;
     using QuoteFeed;
     using QuoteStore;
@@ -121,7 +122,7 @@
             quoteFeedClient_.CurrencyListResultEvent += new QuoteFeed.Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
             quoteFeedClient_.CurrencyListErrorEvent += new QuoteFeed.Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
             quoteFeedClient_.SymbolListResultEvent += new QuoteFeed.Client.SymbolListResultDelegate(this.OnSymbolListResult);
-            quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.Client.SymbolListErrorDelegate(this.OnSymbolListError);
+            quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.Client.SymbolListErrorDelegate(this.OnSymbolListError);          
             quoteFeedClient_.SessionInfoUpdateEvent += new QuoteFeed.Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             quoteFeedClient_.SubscribeQuotesResultEvent += new QuoteFeed.Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
             quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.Client.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
@@ -138,6 +139,13 @@
             quoteStoreClient_.LoginResultEvent += new QuoteStore.Client.LoginResultDelegate(this.OnLoginResult);
             quoteStoreClient_.LoginErrorEvent += new QuoteStore.Client.LoginErrorDelegate(this.OnLoginError);
             quoteStoreClient_.LogoutResultEvent += new QuoteStore.Client.LogoutResultDelegate(this.OnLogoutResult);
+            quoteStoreClient_.BarListResultEvent += new QuoteStore.Client.BarListResultDelegate(this.OnBarListResult);
+            quoteStoreClient_.BarListErrorEvent += new QuoteStore.Client.BarListErrorDelegate(this.OnBarListError);
+            quoteStoreClient_.BarDownloadResultBeginEvent += new QuoteStore.Client.BarDownloadResultBeginDelegate(this.OnBarDownloadResultBegin);
+            quoteStoreClient_.BarDownloadResultEvent += new QuoteStore.Client.BarDownloadResultDelegate(this.OnBarDownloadResult);
+            quoteStoreClient_.BarDownloadResultEndEvent += new QuoteStore.Client.BarDownloadResultEndDelegate(this.OnBarDownloadEnd);
+            quoteStoreClient_.BarDownloadErrorEvent += new QuoteStore.Client.BarDownloadErrorDelegate(this.OnBarDownloadError);
+
             quoteStoreClient_.LogoutEvent += new QuoteStore.Client.LogoutDelegate(this.OnLogout);
             quoteStoreClient_.NotificationEvent += new QuoteStore.Client.NotificationDelegate(this.OnNotification);
 
@@ -507,7 +515,7 @@
             }
         }
 
-        void OnConnectError(QuoteFeed.Client client, object data, string text)
+        void OnConnectError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
@@ -521,10 +529,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.Unknown;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -601,7 +609,7 @@
             }
         }
 
-        void OnReconnectError(QuoteFeed.Client client, string text)
+        void OnReconnectError(QuoteFeed.Client client, Exception exception)
         {
             try
             {
@@ -643,14 +651,14 @@
             }
         }
 
-        void OnTwoFactorLoginError(QuoteFeed.Client client, object data, string text)
+        void OnTwoFactorLoginError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                 twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Text = exception.Message;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -690,7 +698,7 @@
             }
         }
 
-        void OnLoginError(QuoteFeed.Client client, object data, string text)
+        void OnLoginError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
@@ -704,10 +712,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.InvalidCredentials;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -760,7 +768,7 @@
             }
         }
 
-        void OnCurrencyListError(QuoteFeed.Client client, object data, string message)
+        void OnCurrencyListError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
@@ -818,7 +826,7 @@
             }
         }
 
-        void OnSymbolListError(QuoteFeed.Client client, object data, string message)
+        void OnSymbolListError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
@@ -876,7 +884,7 @@
             }
         }
 
-        void OnSessionInfoError(QuoteFeed.Client client, object data, string message)
+        void OnSessionInfoError(QuoteFeed.Client client, object data, Exception exception)
         {
             try
             {
@@ -1072,7 +1080,7 @@
             }
         }
 
-        void OnConnectError(QuoteStore.Client client, object data, string text)
+        void OnConnectError(QuoteStore.Client client, object data, Exception exception)
         {
             try
             {
@@ -1086,10 +1094,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.NetworkError;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -1166,7 +1174,7 @@
             }
         }
 
-        void OnReconnectError(QuoteStore.Client client, string text)
+        void OnReconnectError(QuoteStore.Client client, Exception exception)
         {
             try
             {
@@ -1205,7 +1213,7 @@
             }
         }
 
-        void OnLoginError(QuoteStore.Client client, object data, string text)
+        void OnLoginError(QuoteStore.Client client, object data, Exception exception)
         {
             try
             {
@@ -1219,10 +1227,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.InvalidCredentials;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -1248,6 +1256,340 @@
                         args.Reason = logoutInfo.Reason;
                         args.Text = logoutInfo.Message;
                         eventQueue_.PushEvent(args);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        internal class PairBarListContext
+        {
+            ~PairBarListContext()
+            {
+                if (event_ != null)
+                    event_.Close();
+            }
+            
+            public int count_;            
+            public TickTrader.FDK.Common.Bar[] bidBars_;
+            public TickTrader.FDK.Common.Bar[] askBars_;
+            public Exception exception_;
+            public TickTrader.FDK.Common.PairBar[] pairBars_;
+            public AutoResetEvent event_;
+        };
+
+        internal class BarListContext
+        {
+            public PriceType priceType_;
+            public PairBarListContext pairContext_;
+        }
+
+        void OnBarListResult(QuoteStore.Client client, object data, Bar[] bars)
+        {
+            try
+            {
+                BarListContext barListContext = data as BarListContext;
+
+                if (barListContext != null)
+                {
+                    PairBarListContext pairBarListContext = barListContext.pairContext_;
+
+                    try
+                    {
+                        if (pairBarListContext.exception_ == null)
+                        {
+                            if (barListContext.priceType_ == PriceType.Bid)
+                            {
+                                pairBarListContext.bidBars_ = bars;
+                            }
+                            else
+                                pairBarListContext.askBars_ = bars;
+
+                            if (pairBarListContext.bidBars_ != null && 
+                                pairBarListContext.askBars_ != null)
+                            {
+                                pairBarListContext.pairBars_ = GetPairBarList
+                                (
+                                    pairBarListContext.bidBars_, 
+                                    pairBarListContext.askBars_, 
+                                    pairBarListContext.count_
+                                );
+
+                                pairBarListContext.event_.Set();
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (pairBarListContext.exception_ == null)
+                        {
+                            pairBarListContext.exception_ = exception;
+                            pairBarListContext.event_.Set();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnBarListError(QuoteStore.Client client, object data, Exception exception)
+        {
+            try
+            {
+                BarListContext barListContext = data as BarListContext;
+
+                if (barListContext != null)
+                {
+                    PairBarListContext pairBarListContext = barListContext.pairContext_;
+
+                    if (pairBarListContext.exception_ == null)
+                    {
+                        pairBarListContext.exception_ = exception;
+                        pairBarListContext.event_.Set();
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        TickTrader.FDK.Common.PairBar[] GetPairBarList(TickTrader.FDK.Common.Bar[] bidBars, TickTrader.FDK.Common.Bar[] askBars, int count)
+        {
+            int absCount = Math.Abs(count);
+            List<PairBar> pairBars = new List<PairBar>(absCount);
+                
+            int bidIndex = 0;
+            int askIndex = 0;
+
+            while (pairBars.Count < absCount)
+            {
+                TickTrader.FDK.Common.Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
+                TickTrader.FDK.Common.Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
+
+                PairBar pairBar;
+
+                if (bidBar != null)
+                {
+                    if (askBar != null)
+                    {
+                        int i = DateTime.Compare(bidBar.From, askBar.From);
+
+                        if (i < 0)
+                        {
+                            pairBar = new PairBar(bidBar, null);
+                            ++bidIndex;
+                        }
+                        else if (i > 0)
+                        {
+                            pairBar = new PairBar(null, askBar);
+                            ++askIndex;
+                        }
+                        else
+                        {
+                            pairBar = new PairBar(bidBar, askBar);
+                            ++bidIndex;
+                            ++askIndex;
+                        }
+                    }
+                    else
+                    {
+                        pairBar = new PairBar(bidBar, null);
+                        ++bidIndex;
+                    }
+                }
+                else if (askBar != null)
+                {
+                    pairBar = new PairBar(null, askBar);
+                    ++askIndex;
+                }
+                else
+                    break;
+
+                pairBars.Add(pairBar);
+            }
+
+            return pairBars.ToArray();
+        }
+
+        internal class PairBarDownloadContext
+        {
+            ~PairBarDownloadContext()
+            {
+                if (bidBarEnumerator_ != null)
+                    bidBarEnumerator_.Close();
+
+                if (askBarEnumerator_ != null)
+                    askBarEnumerator_.Close();
+
+                if (event_ != null)
+                    event_.Close();
+            }
+            
+            public PairBars pairBars_;
+            public BarEnumerator bidBarEnumerator_;
+            public BarEnumerator askBarEnumerator_;
+            public Exception exception_;
+            public PairBarsEnumerator pairBarsEnumerator_;
+            public AutoResetEvent event_;
+        };
+
+        internal class BarDownloadContext
+        {
+            public PriceType priceType_;
+            public PairBarDownloadContext pairContext_;
+        }
+
+        void OnBarDownloadResultBegin(QuoteStore.Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
+        {
+            try
+            {
+                BarDownloadContext barDownloadContext = data as BarDownloadContext;
+
+                if (barDownloadContext != null)
+                {
+                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
+
+                    try
+                    {
+                        if (pairBarDownloadContext.exception_ == null)
+                        {
+                            if (barDownloadContext.priceType_ == PriceType.Bid)
+                            {
+                                pairBarDownloadContext.bidBarEnumerator_ = new BarEnumerator(client, downloadId, availFrom, availTo);
+                            }
+                            else
+                                pairBarDownloadContext.askBarEnumerator_ = new BarEnumerator(client, downloadId, availFrom, availTo);
+
+                            if (pairBarDownloadContext.bidBarEnumerator_ != null && 
+                                pairBarDownloadContext.askBarEnumerator_ != null)
+                            {
+                                pairBarDownloadContext.pairBarsEnumerator_ = new PairBarsEnumerator
+                                (
+                                    pairBarDownloadContext.pairBars_, 
+                                    pairBarDownloadContext.bidBarEnumerator_, 
+                                    pairBarDownloadContext.askBarEnumerator_
+                                );
+
+                                pairBarDownloadContext.event_.Set();
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (pairBarDownloadContext.exception_ == null)
+                        {
+                            pairBarDownloadContext.exception_ = exception;
+                            pairBarDownloadContext.event_.Set();
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnBarDownloadResult(QuoteStore.Client client, object data, string downloadId, Bar bar)
+        {
+            try
+            {
+                BarDownloadContext barDownloadContext = data as BarDownloadContext;
+
+                if (barDownloadContext != null)
+                {
+                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
+
+                    try
+                    {
+                        if (barDownloadContext.priceType_ == PriceType.Bid)
+                        {
+                            pairBarDownloadContext.bidBarEnumerator_.SetResult(bar);
+                        }
+                        else
+                            pairBarDownloadContext.askBarEnumerator_.SetResult(bar);
+                    }
+                    catch (Exception exception)
+                    {
+                        if (barDownloadContext.priceType_ == PriceType.Bid)
+                        {
+                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
+                        }
+                        else
+                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnBarDownloadEnd(QuoteStore.Client client, object data, string downloadId)
+        {
+            try
+            {
+                BarDownloadContext barDownloadContext = data as BarDownloadContext;
+
+                if (barDownloadContext != null)
+                {
+                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
+
+                    try
+                    {
+                        if (barDownloadContext.priceType_ == PriceType.Bid)
+                        {
+                            pairBarDownloadContext.bidBarEnumerator_.SetEnd();
+                        }
+                        else
+                            pairBarDownloadContext.askBarEnumerator_.SetEnd();
+                    }
+                    catch (Exception exception)
+                    {
+                        if (barDownloadContext.priceType_ == PriceType.Bid)
+                        {
+                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
+                        }
+                        else
+                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnBarDownloadError(QuoteStore.Client client, object data, string downloadId, Exception exception)
+        {
+            try
+            {
+                BarDownloadContext barDownloadContext = data as BarDownloadContext;
+
+                if (barDownloadContext != null)
+                {
+                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
+                    
+                    if (pairBarDownloadContext.pairBarsEnumerator_ == null)
+                    {
+                        if (pairBarDownloadContext.exception_ == null)
+                        {
+                            pairBarDownloadContext.exception_ = exception;
+                            pairBarDownloadContext.event_.Set();
+                        }
+                    }
+                    else
+                    {
+                        if (barDownloadContext.priceType_ == PriceType.Bid)
+                        {
+                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
+                        }
+                        else
+                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
                     }
                 }
             }

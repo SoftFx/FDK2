@@ -532,7 +532,7 @@
             }
         }
 
-        void OnConnectError(OrderEntry.Client client, object data, string text)
+        void OnConnectError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -546,10 +546,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.Unknown; 
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -626,7 +626,7 @@
             }
         }
 
-        void OnReconnectError(OrderEntry.Client client, string text)
+        void OnReconnectError(OrderEntry.Client client, Exception exception)
         {
             try
             {
@@ -673,14 +673,14 @@
             }
         }
 
-        void OnTwoFactorLoginError(OrderEntry.Client client, object data, string text)
+        void OnTwoFactorLoginError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                 twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Text = exception.Message;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -721,7 +721,7 @@
             }
         }
 
-        void OnLoginError(OrderEntry.Client client, object data, string text)
+        void OnLoginError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -735,10 +735,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.InvalidCredentials;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -791,7 +791,7 @@
             }
         }
 
-        void OnTradeServerInfoError(OrderEntry.Client client, object data, string message)
+        void OnTradeServerInfoError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -867,7 +867,7 @@
             }
         }
 
-        void OnAccountInfoError(OrderEntry.Client client, object data, string message)
+        void OnAccountInfoError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -925,7 +925,7 @@
             }
         }
 
-        void OnSessionInfoError(OrderEntry.Client client, object data, string message)
+        void OnSessionInfoError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -986,7 +986,7 @@
             }
         }
 
-        void OnPositionsError(OrderEntry.Client client, object data, string message)
+        void OnPositionsError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -1051,7 +1051,7 @@
             }
         }
 
-        void OnOrdersError(OrderEntry.Client client, object data, string message)
+        void OnOrdersError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
@@ -1132,18 +1132,33 @@
             }
         }
 
-        void OnNewOrderError(OrderEntry.Client client, object data, ExecutionReport report)
+        void OnNewOrderError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
-                lock (cache_.mutex_)
+                if (exception is ExecutionException)
                 {
-                    UpdateCacheData(report);
-                }
+                    ExecutionException executionException = (ExecutionException)exception;
 
-                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
-                args.Report = report;
-                eventQueue_.PushEvent(args);
+                    lock (cache_.mutex_)
+                    {
+                        UpdateCacheData(executionException.Report);
+                    }
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionException.Report;
+                    eventQueue_.PushEvent(args);
+                }
+                else
+                {
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.RejectReason = Common.RejectReason.Other;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
             }
             catch
             {
@@ -1168,18 +1183,33 @@
             }
         }
 
-        void OnReplaceOrderError(OrderEntry.Client client, object data, ExecutionReport report)
+        void OnReplaceOrderError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
-                lock (cache_.mutex_)
+                if (exception is ExecutionException)
                 {
-                    UpdateCacheData(report);
-                }
+                    ExecutionException executionException = (ExecutionException)exception;
 
-                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
-                args.Report = report;
-                eventQueue_.PushEvent(args);
+                    lock (cache_.mutex_)
+                    {
+                        UpdateCacheData(executionException.Report);
+                    }
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionException.Report;
+                    eventQueue_.PushEvent(args);
+                }
+                else
+                {
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.RejectReason = Common.RejectReason.Other;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
             }
             catch
             {
@@ -1204,18 +1234,33 @@
             }
         }
 
-        void OnCancelOrderError(OrderEntry.Client client, object data, ExecutionReport report)
+        void OnCancelOrderError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
-                lock (cache_.mutex_)
+                if (exception is ExecutionException)
                 {
-                    UpdateCacheData(report);
-                }
+                    ExecutionException executionException = (ExecutionException)exception;
 
-                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
-                args.Report = report;
-                eventQueue_.PushEvent(args);
+                    lock (cache_.mutex_)
+                    {
+                        UpdateCacheData(executionException.Report);
+                    }
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionException.Report;
+                    eventQueue_.PushEvent(args);
+                }
+                else
+                {
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.RejectReason = Common.RejectReason.Other;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
             }
             catch
             {
@@ -1240,18 +1285,33 @@
             }
         }
 
-        void OnClosePositionError(OrderEntry.Client client, object data, ExecutionReport report)
+        void OnClosePositionError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
-                lock (cache_.mutex_)
+                if (exception is ExecutionException)
                 {
-                    UpdateCacheData(report);
-                }
+                    ExecutionException executionException = (ExecutionException)exception;
 
-                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
-                args.Report = report;
-                eventQueue_.PushEvent(args);
+                    lock (cache_.mutex_)
+                    {
+                        UpdateCacheData(executionException.Report);
+                    }
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionException.Report;
+                    eventQueue_.PushEvent(args);
+                }
+                else
+                {
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.RejectReason = Common.RejectReason.Other;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
             }
             catch
             {
@@ -1276,18 +1336,33 @@
             }
         }
 
-        void OnClosePositionByError(OrderEntry.Client client, object data, ExecutionReport report)
+        void OnClosePositionByError(OrderEntry.Client client, object data, Exception exception)
         {
             try
             {
-                lock (cache_.mutex_)
+                if (exception is ExecutionException)
                 {
-                    UpdateCacheData(report);
-                }
+                    ExecutionException executionException = (ExecutionException)exception;
 
-                ExecutionReportEventArgs args = new ExecutionReportEventArgs();
-                args.Report = report;
-                eventQueue_.PushEvent(args);
+                    lock (cache_.mutex_)
+                    {
+                        UpdateCacheData(executionException.Report);
+                    }
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionException.Report;
+                    eventQueue_.PushEvent(args);
+                }
+                else
+                {
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.RejectReason = Common.RejectReason.Other;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
             }
             catch
             {
@@ -1442,7 +1517,7 @@
             }
         }
 
-        void OnConnectError(TradeCapture.Client client, object data, string text)
+        void OnConnectError(TradeCapture.Client client, object data, Exception exception)
         {
             try
             {
@@ -1456,10 +1531,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.Unknown;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }
@@ -1536,7 +1611,7 @@
             }
         }
 
-        void OnReconnectError(TradeCapture.Client client, string text)
+        void OnReconnectError(TradeCapture.Client client, Exception exception)
         {
             try
             {
@@ -1583,14 +1658,14 @@
             }
         }
 
-        void OnTwoFactorLoginError(TradeCapture.Client client, object data, string text)
+        void OnTwoFactorLoginError(TradeCapture.Client client, object data, Exception exception)
         {
             try
             {
                 TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
                 TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                 twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = text;
+                twoFactorAuth.Text = exception.Message;
                 args.TwoFactorAuth = twoFactorAuth;
                 eventQueue_.PushEvent(args);
             }
@@ -1640,7 +1715,7 @@
             }
         }
 
-        void OnLoginError(TradeCapture.Client client, object data, string text)
+        void OnLoginError(TradeCapture.Client client, object data, Exception exception)
         {
             try
             {
@@ -1654,10 +1729,10 @@
 
                         LogoutEventArgs args = new LogoutEventArgs();
                         args.Reason = LogoutReason.InvalidCredentials;
-                        args.Text = text;
+                        args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
-                        loginException_ = new LogoutException(text);
+                        loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
                 }

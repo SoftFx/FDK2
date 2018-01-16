@@ -3,7 +3,7 @@
     using System;
     using System.Collections;
     using System.Collections.Generic;
-    using System.Threading.Tasks;
+    using System.Threading;
     using System.Runtime.ExceptionServices;
     using TickTrader.FDK.Common;
     using TickTrader.FDK.QuoteStore;
@@ -48,49 +48,60 @@
 
         public void Reset()
         {
-            try
-            {
-                this.bidEnumerator.Dispose();
-                this.askEnumerator.Dispose();
+            this.bidEnumerator.Dispose();
+            this.askEnumerator.Dispose();
 
-                Task<BarEnumerator> bidTask = pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
-                (
-                    Guid.NewGuid().ToString(),
-                    pairBars.symbol_,
-                    PriceType.Bid,
-                    pairBars.period_,
-                    pairBars.startTime_,
-                    pairBars.endTime_
-                );
+            DataFeed.PairBarDownloadContext pairBarDownloadContext = new DataFeed.PairBarDownloadContext();
+            pairBarDownloadContext.pairBars_ = pairBars;
+            pairBarDownloadContext.bidBarEnumerator_ = null;
+            pairBarDownloadContext.askBarEnumerator_ = null;
+            pairBarDownloadContext.exception_ = null;
+            pairBarDownloadContext.pairBarsEnumerator_ = null;
+            pairBarDownloadContext.event_ = new AutoResetEvent(false);
 
-                Task<BarEnumerator> askTask = pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
-                (
-                    Guid.NewGuid().ToString(),
-                    pairBars.symbol_,
-                    PriceType.Ask,
-                    pairBars.period_,
-                    pairBars.startTime_,
-                    pairBars.endTime_
-                );
+            DataFeed.BarDownloadContext bidBarDownloadContext = new DataFeed.BarDownloadContext();
+            bidBarDownloadContext.priceType_ = PriceType.Bid;
+            bidBarDownloadContext.pairContext_ = pairBarDownloadContext;
 
-                if (!bidTask.Wait(pairBars.timeout_))
-                    throw new TimeoutException("Method call timed out");
+            DataFeed.BarDownloadContext askBarDownloadContext = new DataFeed.BarDownloadContext();
+            askBarDownloadContext.priceType_ = PriceType.Ask;
+            askBarDownloadContext.pairContext_ = pairBarDownloadContext;
 
-                if (!askTask.Wait(pairBars.timeout_))
-                    throw new TimeoutException("Method call timed out");
+            pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
+            (
+                bidBarDownloadContext,
+                Guid.NewGuid().ToString(),
+                pairBars.symbol_,
+                PriceType.Bid,
+                pairBars.period_,
+                pairBars.startTime_,
+                pairBars.endTime_
+            );
 
-                this.bidEnumerator = bidTask.Result;
-                this.askEnumerator = askTask.Result;
+            pairBars.datafeed_.quoteStoreClient_.DownloadBarsAsync
+            (
+                askBarDownloadContext,
+                Guid.NewGuid().ToString(),
+                pairBars.symbol_,
+                PriceType.Ask,
+                pairBars.period_,
+                pairBars.startTime_,
+                pairBars.endTime_
+            );
 
-                this.bid = null;
-                this.ask = null;
+            if (!pairBarDownloadContext.event_.WaitOne(pairBars.timeout_))
+                throw new Common.TimeoutException("Method call timed out");
 
-                this.current = new PairBar();
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-            }
+            if (pairBarDownloadContext.exception_ != null)
+                throw pairBarDownloadContext.exception_;
+
+            bidEnumerator = pairBarDownloadContext.bidBarEnumerator_;
+            askEnumerator = pairBarDownloadContext.askBarEnumerator_;
+
+            this.bid = null;
+            this.ask = null;
+
+            this.current = new PairBar();
         }
 
         public void Dispose()
@@ -127,39 +138,11 @@
 
         void Move()
         {
-            try
-            {
-                Task<Bar> bidTask = null;
-                Task<Bar> askTask = null;
+            if (this.bid == null)
+                this.bid = this.bidEnumerator.Next(pairBars.timeout_);
 
-                if (this.bid == null)
-                    bidTask = this.bidEnumerator.NextAsync();
-
-                if (this.ask == null)
-                    askTask = this.askEnumerator.NextAsync();
-
-                if (bidTask != null)
-                {
-                    if (!bidTask.Wait(pairBars.timeout_))
-                        throw new TimeoutException("Method call timed out");
-                }
-
-                if (askTask != null)
-                {
-                    if (!askTask.Wait(pairBars.timeout_))
-                        throw new TimeoutException("Method call timed out");
-                }
-
-                if (bidTask != null)
-                    this.bid = bidTask.Result;
-
-                if (askTask != null)
-                    this.ask = askTask.Result;
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-            }
+            if (this.ask == null)
+                this.ask = this.askEnumerator.Next(pairBars.timeout_);
         }
 
         bool UpdateCurrent()

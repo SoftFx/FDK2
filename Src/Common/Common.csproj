@@ -50,9 +50,12 @@
     <Compile Include="CommissionType.cs" />
     <Compile Include="CurrencyInfo.cs" />
     <Compile Include="DeviceIdGenerator.cs" />
+    <Compile Include="DisconnectException.cs" />
     <Compile Include="ExecutionReport.cs" />
     <Compile Include="ExecutionType.cs" />
     <Compile Include="Library.cs" />
+    <Compile Include="LoginRejectException.cs" />
+    <Compile Include="LoginRejectReason.cs" />
     <Compile Include="LogoutInfo.cs" />
     <Compile Include="LogoutReason.cs" />
     <Compile Include="MarginCalcMode.cs" />
@@ -70,6 +73,7 @@
     <Compile Include="QuoteDepth.cs" />
     <Compile Include="QuoteEntry.cs" />
     <Compile Include="ExecutionException.cs" />
+    <Compile Include="RejectException.cs" />
     <Compile Include="RejectReason.cs" />
     <Compile Include="SessionInfo.cs" />
     <Compile Include="SessionStatus.cs" />
@@ -79,6 +83,7 @@
     <Compile Include="SwapType.cs" />
     <Compile Include="SymbolInfo.cs" />
     <Compile Include="TimeDirection.cs" />
+    <Compile Include="TimeoutException.cs" />
     <Compile Include="TradeServerInfo.cs" />
     <Compile Include="TradeTransactionReason.cs" />
     <Compile Include="TradeTransactionReport.cs" />

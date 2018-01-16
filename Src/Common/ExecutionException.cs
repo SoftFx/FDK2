@@ -9,37 +9,24 @@ namespace TickTrader.FDK.Common
     {
         public ExecutionException()
         {
-            reports_ = null;
+            report_ = null;
         }
 
-        public ExecutionException(ExecutionReport[] reports)
+        public ExecutionException(ExecutionReport report)
         {
-            reports_ = reports;
+            report_ = report;
         }
 
-        public ExecutionReport[] Reports
+        public ExecutionReport Report
         {
-            get
-            {
-                return reports_;
-            }
+            get { return report_; }
         }
 
         public override string Message
         {
-            get
-            {
-                if (reports_ != null && reports_.Length > 0)
-                {
-                    ExecutionReport lastReport = reports_[reports_.Length - 1];
-
-                    return lastReport.Text;
-                }
-
-                return null;
-            }
+            get { return report_ != null ? report_.Text : ""; }
         }
 
-        ExecutionReport[] reports_;
+        ExecutionReport report_;
     }
 }

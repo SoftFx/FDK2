@@ -72,6 +72,7 @@ namespace OrderEntryAsyncSample
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);            
             client_.AccountInfoResultEvent += new Client.AccountInfoResultDelegate(this.OnAccountInfoResult);
             client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
@@ -103,6 +104,8 @@ namespace OrderEntryAsyncSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
         
         string GetNextWord(string line, ref int index)
@@ -496,18 +499,18 @@ namespace OrderEntryAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(this, address_);
+            client_.ConnectAsync(null, address_);
         }
 
         void Disconnect()
         {
             try
             {
-                client_.LogoutAsync(this, "Client logout");
+                client_.LogoutAsync(null, "Client logout");
             }
             catch
             {
-                client_.DisconnectAsync(this, "Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
 
             client_.Join();  
@@ -519,21 +522,21 @@ namespace OrderEntryAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(this, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnConnectError(Client client, object data, string text)
+        void OnConnectError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -545,7 +548,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -557,7 +560,7 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -571,21 +574,21 @@ namespace OrderEntryAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(this, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnReconnectError(Client client, string text)
+        void OnReconnectError(Client client, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -605,13 +608,13 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, string message)
+        void OnLoginError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
 
-                client_.DisconnectAsync(this, "Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -619,13 +622,13 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo info)
+        void OnLogoutResult(Client client, object data, LogoutInfo logoutInfo)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + logoutInfo.Message);
 
-                client_.DisconnectAsync(this, "Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -633,13 +636,25 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnLogout(Client orderEntryClient, LogoutInfo info)
+        void OnLogoutError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
 
-                client_.DisconnectAsync(this, "Client disconnect");
+        void OnLogout(Client orderEntryClient, LogoutInfo logoutInfo)
+        {
+            try
+            {
+                Console.WriteLine("Logout : " + logoutInfo.Message);
+
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -693,11 +708,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnAccountInfoError(Client client, object data, string message)
+        void OnAccountInfoError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -732,11 +747,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnSessionInfoError(Client client, object data, string message)
+        void OnSessionInfoError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -779,11 +794,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnOrdersError(Client client, object data, string message)
+        void OnOrdersError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -818,11 +833,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnPositionsError(Client client, object data, string message)
+        void OnPositionsError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -832,22 +847,22 @@ namespace OrderEntryAsyncSample
 
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
         }
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
         }
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(this, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
         }
 
         void OnNewOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -862,11 +877,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnNewOrderError(Client client, object data, ExecutionReport executionReport)
+        void OnNewOrderError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -876,17 +891,17 @@ namespace OrderEntryAsyncSample
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(this, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void OnReplaceOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -901,11 +916,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnReplaceOrderError(Client client, object data, ExecutionReport executionReport)
+        void OnReplaceOrderError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}, {5}, {6}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderType, executionReport.OrderStatus, executionReport.RejectReason, executionReport.Text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -915,7 +930,7 @@ namespace OrderEntryAsyncSample
 
         void CancelOrder(string orderId)
         {
-            client_.CancelOrderAsync(this, Guid.NewGuid().ToString(), orderId, null);
+            client_.CancelOrderAsync(null, Guid.NewGuid().ToString(), orderId, null);
         }
 
         void OnCancelOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -930,11 +945,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnCancelOrderError(Client client, object data, ExecutionReport executionReport)
+        void OnCancelOrderError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.RejectReason, executionReport.Text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -944,7 +959,7 @@ namespace OrderEntryAsyncSample
 
         void ClosePosition(string orderId, double qty)
         {
-            client_.ClosePositionAsync(this, Guid.NewGuid().ToString(), orderId, qty);
+            client_.ClosePositionAsync(null, Guid.NewGuid().ToString(), orderId, qty);
         }
 
         void OnClosePositionResult(Client client, object data, ExecutionReport executionReport)
@@ -964,11 +979,11 @@ namespace OrderEntryAsyncSample
             }
         }
 
-        void OnClosePositionError(Client client, object data, ExecutionReport executionReport)
+        void OnClosePositionError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : {0}, {1}, {2}, {3}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.RejectReason, executionReport.Text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {

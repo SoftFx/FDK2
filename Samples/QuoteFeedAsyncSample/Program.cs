@@ -72,6 +72,7 @@ namespace QuoteFeedAsyncSample
             client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.CurrencyListResultEvent += new Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
             client_.CurrencyListErrorEvent += new Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
@@ -96,6 +97,8 @@ namespace QuoteFeedAsyncSample
         public void Dispose()
         {
             client_.Dispose();
+
+            GC.SuppressFinalize(this);
         }
 
         string GetNextWord(string line, ref int index)
@@ -216,18 +219,18 @@ namespace QuoteFeedAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(this, address_);
+            client_.ConnectAsync(null, address_);
         }
 
         void Disconnect()
         {
             try
             {
-                client_.LogoutAsync(this, "Client logout");
+                client_.LogoutAsync(null, "Client logout");
             }
             catch
             {
-                client_.DisconnectAsync(this, "Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
 
             client_.Join();
@@ -239,21 +242,21 @@ namespace QuoteFeedAsyncSample
             {
                 Console.WriteLine("Connected");
 
-                client_.LoginAsync(this, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "", "", "");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnConnectError(Client client, object data, string text)
+        void OnConnectError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -265,7 +268,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -277,7 +280,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : {0}", text);
+                Console.WriteLine("Disconnected : " + text);
             }
             catch (Exception exception)
             {
@@ -297,15 +300,15 @@ namespace QuoteFeedAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
         }
 
-        void OnReconnectError(Client client, string text)
+        void OnReconnectError(Client client, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + text);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -325,13 +328,13 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, string message)
+        void OnLoginError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -343,9 +346,21 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnLogoutError(Client client, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -357,9 +372,9 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : {0}", info.Message);
+                Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync("Client disconnect");
+                client_.DisconnectAsync(null, "Client disconnect");
             }
             catch (Exception exception)
             {
@@ -381,7 +396,7 @@ namespace QuoteFeedAsyncSample
 
         void GetCurrencyList()
         {
-            client_.GetCurrencyListAsync(this);
+            client_.GetCurrencyListAsync(null);
         }
 
         void OnCurrencyListResult(Client client, object data, CurrencyInfo[] currencies)
@@ -402,11 +417,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnCurrencyListError(Client client, object data, string message)
+        void OnCurrencyListError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -416,7 +431,7 @@ namespace QuoteFeedAsyncSample
 
         void GetSymbolList()
         {
-            client_.GetSymbolListAsync(this);
+            client_.GetSymbolListAsync(null);
         }
 
         void OnSymbolListResult(Client client, object data, SymbolInfo[] symbols)
@@ -437,11 +452,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSymbolListError(Client client, object data, string message)
+        void OnSymbolListError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -451,7 +466,7 @@ namespace QuoteFeedAsyncSample
 
         void GetSessionInfo()
         {
-            client_.GetSessionInfoAsync(this);
+            client_.GetSessionInfoAsync(null);
         }
                 
         void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
@@ -476,11 +491,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSessionInfoError(Client client, object data, string message)
+        void OnSessionInfoError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -490,7 +505,7 @@ namespace QuoteFeedAsyncSample
 
         void SubscribeQuotes(List<string> symbolIds)
         {
-            client_.SubscribeQuotesAsync(this, symbolIds.ToArray(), 5);
+            client_.SubscribeQuotesAsync(null, symbolIds.ToArray(), 5);
         }
 
         void OnSubscribeQuotesResult(Client client, object data, Quote[] quotes)
@@ -522,11 +537,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSubscribeQuotesError(Client client, object data, string message)
+        void OnSubscribeQuotesError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -536,7 +551,7 @@ namespace QuoteFeedAsyncSample
 
         void UnsubscribeQuotes(List<string> symbolIds)
         {
-            client_.UnsubscribeQuotesAsync(this, symbolIds.ToArray());
+            client_.UnsubscribeQuotesAsync(null, symbolIds.ToArray());
         }
 
         void OnUnsubscribeQuotesResult(Client client, object data, string[] symbolIds)
@@ -549,11 +564,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnUnsubscribeQuotesError(Client client, object data, string message)
+        void OnUnsubscribeQuotesError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {
@@ -563,7 +578,7 @@ namespace QuoteFeedAsyncSample
 
         void GetQuotes(List<string> symbolIds)
         {
-            client_.GetQuotesAsync(this, symbolIds.ToArray(), 5);
+            client_.GetQuotesAsync(null, symbolIds.ToArray(), 5);
         }
 
         void OnQuotesResult(Client client, object data, Quote[] quotes)
@@ -596,11 +611,11 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnQuotesError(Client client, object data, string message)
+        void OnQuotesError(Client client, object data, Exception error)
         {
             try
             {
-                Console.WriteLine("Error : " + message);
+                Console.WriteLine("Error : " + error.Message);
             }
             catch (Exception exception)
             {

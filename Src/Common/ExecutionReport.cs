@@ -204,6 +204,11 @@
         /// </summary>
         public double? BalanceTradeAmount { get; set; }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        public bool Last { get; set; }
+
         public override string ToString()
         {
             return string.Format("ExecutionType = {0}; ClientOrderId = {1}; OrderId = {2}; OrderType = {3}; Symbol = {4}; OrderSide = {5}; InitialVolume = {6}; Price = {7}; OrderStatus = {8}; LeavesVolume = {9}; TradeAmount = {10}; TradePrice = {11}", ExecutionType, ClientOrderId, OrderId, OrderType, Symbol, OrderSide, InitialVolume, Price, OrderStatus, LeavesVolume, TradeAmount, TradePrice);

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading;
-using System.Threading.Tasks;
 using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.QuoteStore
@@ -17,13 +16,12 @@ namespace TickTrader.FDK.QuoteStore
 
             mutex_ = new object();
             completed_ = false;
-            taskCompletionSource_ = null;
-            arrayTaskCompletionSource_ = null;
             quotes_ = new Quote[GrowSize];
             quoteCount_ = 0;
             beginIndex_ = 0;
             endIndex_ = 0;
             exception_ = null;
+            event_ = new AutoResetEvent(false);
         }
 
         public string DownloadId
@@ -43,115 +41,29 @@ namespace TickTrader.FDK.QuoteStore
 
         public Quote Next(int timeout)
         {
-            return Client.ConvertToSync(NextAsync(), timeout);
-        }
-
-        public int Next(Quote[] quotes, int timeout)
-        {
-            return Client.ConvertToSync(NextAsync(quotes), timeout);
-        }
-
-        public Task<Quote> NextAsync()
-        {
-            lock (mutex_)
+            while (true)
             {
-                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
-                    throw new Exception("Invalid enumerator call");
-
-                if (quoteCount_ > 0)
+                lock (mutex_)
                 {
-                    Quote quote = quotes_[beginIndex_];
-                    quotes_[beginIndex_] = null;       // !
-                    beginIndex_ = (beginIndex_ + 1) % quotes_.Length;
-                    -- quoteCount_;
-
-                    TaskCompletionSource<Quote> taskCompletionSource = new TaskCompletionSource<Quote>();
-                    Task.Run(() => { taskCompletionSource.SetResult(quote); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                if (exception_ != null)
-                {
-                    TaskCompletionSource<Quote> taskCompletionSource = new TaskCompletionSource<Quote>();
-                    Exception exception = exception_;
-                    Task.Run(() => { taskCompletionSource.SetException(exception); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                if (completed_)
-                {
-                    TaskCompletionSource<Quote> taskCompletionSource = new TaskCompletionSource<Quote>();
-                    Task.Run(() => { taskCompletionSource.SetResult(null); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                taskCompletionSource_ = new TaskCompletionSource<Quote>();
-
-                return taskCompletionSource_.Task;
-            }            
-        }
-
-        public Task<int> NextAsync(Quote[] quotes)
-        {
-            lock (mutex_)
-            {
-                if (taskCompletionSource_ != null || arrayTaskCompletionSource_ != null)
-                    throw new Exception("Invalid enumerator call");
-
-                if (quotes.Length == 0)
-                {
-                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Task.Run(() => { taskCompletionSource.SetResult(0); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                if (quoteCount_ > 0)
-                {
-                    int count = 0;
-                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % quotes_.Length)
+                    if (quoteCount_ > 0)
                     {
-                        quotes[count ++] = quotes_[index];
-                        quotes_[index] = null;         // !
+                        Quote quote = quotes_[beginIndex_];
+                        quotes_[beginIndex_] = null;       // !
+                        beginIndex_ = (beginIndex_ + 1) % quotes_.Length;
+                        --quoteCount_;
 
-                        if (count == quotes.Length)
-                            break;
+                        return quote;
                     }
 
-                    beginIndex_ = (beginIndex_ + count) % quotes_.Length;
-                    quoteCount_ -= count;
+                    if (exception_ != null)
+                        throw exception_;
 
-                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Task.Run(() => { taskCompletionSource.SetResult(count); });
-
-                    return taskCompletionSource.Task;
+                    if (completed_)
+                        return null;
                 }
 
-                if (exception_ != null)
-                {
-                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Exception exception = exception_;
-                    Task.Run(() => { taskCompletionSource.SetException(exception); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                if (completed_)
-                {
-                    TaskCompletionSource<int> taskCompletionSource = new TaskCompletionSource<int>();
-                    Task.Run(() => { taskCompletionSource.SetResult(0); });
-
-                    return taskCompletionSource.Task;
-                }
-
-                arrayTaskCompletionSource_ = new TaskCompletionSource<int>();
-                arrayQuotes_ = quotes;
-                arrayQuoteCount_ = 0;
-
-                return arrayTaskCompletionSource_.Task;
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
             }            
         }
 
@@ -159,7 +71,7 @@ namespace TickTrader.FDK.QuoteStore
         {
             lock (mutex_)
             {
-                if (!completed_)
+                if (! completed_)
                 {
                     completed_ = true;
 
@@ -169,20 +81,6 @@ namespace TickTrader.FDK.QuoteStore
                     }
                     catch
                     {
-                    }
-
-                    if (taskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<Quote> taskCompletionSource = taskCompletionSource_;
-                        Task.Run(() => { taskCompletionSource.SetResult(null); });
-                        taskCompletionSource_ = null;
-                    }
-                    else if (arrayTaskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                        Task.Run(() => { arrayTaskCompletionSource.SetResult(0); });
-                        arrayTaskCompletionSource_ = null;
-                        arrayQuotes_ = null;
                     }
                 }
 
@@ -195,6 +93,8 @@ namespace TickTrader.FDK.QuoteStore
                     beginIndex_ = 0;
                     endIndex_ = 0;
                 }
+
+                event_.Close();
             }
         }
 
@@ -211,68 +111,31 @@ namespace TickTrader.FDK.QuoteStore
             {
                 if (! completed_)
                 {
-                    if (taskCompletionSource_ != null)
+                    if (quoteCount_ == quotes_.Length)
                     {
-                        if (quote != null)
+                        Quote[] quotes = new Quote[quotes_.Length + GrowSize];
+
+                        if (endIndex_ > beginIndex_)
                         {
-                            TaskCompletionSource<Quote> taskCompletionSource = taskCompletionSource_;
-                            Task.Run(() => { taskCompletionSource.SetResult(quote); });
-                            taskCompletionSource_ = null;
+                            Array.Copy(quotes_, beginIndex_, quotes, 0, quoteCount_);
                         }
+                        else
+                        {
+                            int count = quotes_.Length - beginIndex_;
+                            Array.Copy(quotes_, beginIndex_, quotes, 0, count);
+                            Array.Copy(quotes_, 0, quotes, count, endIndex_);
+                        }
+
+                        quotes_ = quotes;
+                        beginIndex_ = 0;
+                        endIndex_ = quoteCount_;
                     }
-                    else if (arrayTaskCompletionSource_ != null)
-                    {
-                        if (quote != null)
-                        {
-                            arrayQuotes_[arrayQuoteCount_++] = quote;
 
-                            if (arrayQuoteCount_ == arrayQuotes_.Length)
-                            {
-                                TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                                int arrayQuoteCount = arrayQuoteCount_;
-                                Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayQuoteCount); });
-                                arrayTaskCompletionSource_ = null;
-                                arrayQuotes_ = null;
-                            }
-                        }
-                        else if (arrayQuoteCount_ > 0)
-                        {
-                            TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                            int arrayQuoteCount = arrayQuoteCount_;
-                            Task.Run(() => { arrayTaskCompletionSource.SetResult(arrayQuoteCount); });
-                            arrayTaskCompletionSource_ = null;
-                            arrayQuotes_ = null;
-                        }
-                    }
-                    else
-                    {
-                        if (quote != null)
-                        {
-                            if (quoteCount_ == quotes_.Length)
-                            {
-                                Quote[] quotes = new Quote[quotes_.Length + GrowSize];
+                    quotes_[endIndex_] = quote;
+                    endIndex_ = (endIndex_ + 1) % quotes_.Length;
+                    ++quoteCount_;
 
-                                if (endIndex_ > beginIndex_)
-                                {
-                                    Array.Copy(quotes_, beginIndex_, quotes, 0, quoteCount_);
-                                }
-                                else
-                                {
-                                    int count = quotes_.Length - beginIndex_;
-                                    Array.Copy(quotes_, beginIndex_, quotes, 0, count);
-                                    Array.Copy(quotes_, 0, quotes, count, endIndex_);
-                                }
-
-                                quotes_ = quotes;
-                                beginIndex_ = 0;
-                                endIndex_ = quoteCount_;
-                            }
-
-                            quotes_[endIndex_] = quote;
-                            endIndex_ = (endIndex_ + 1) % quotes_.Length;
-                            ++quoteCount_;
-                        }
-                    }
+                    event_.Set();
                 }
             }
         }
@@ -285,19 +148,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     completed_ = true;
 
-                    if (taskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<Quote> taskCompletionSource = taskCompletionSource_;
-                        Task.Run(() => { taskCompletionSource.SetResult(null); });
-                        taskCompletionSource_ = null;
-                    }
-                    else if (arrayTaskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                        Task.Run(() => { arrayTaskCompletionSource.SetResult(0); });
-                        arrayTaskCompletionSource_ = null;
-                        arrayQuotes_ = null;
-                    }
+                    event_.Set();
                 }
             }
         }
@@ -308,22 +159,10 @@ namespace TickTrader.FDK.QuoteStore
             {
                 if (! completed_)
                 {
+                    exception_ = exception;
                     completed_ = true;
-                    exception_ = exception;                        
 
-                    if (taskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<Quote> taskCompletionSource = taskCompletionSource_;
-                        Task.Run(() => { taskCompletionSource.SetException(exception); });
-                        taskCompletionSource_ = null;
-                    }                        
-                    else if (arrayTaskCompletionSource_ != null)
-                    {
-                        TaskCompletionSource<int> arrayTaskCompletionSource = arrayTaskCompletionSource_;
-                        Task.Run(() => { arrayTaskCompletionSource.SetException(exception); });
-                        arrayTaskCompletionSource_ = null;
-                        arrayQuotes_ = null;
-                    }
+                    event_.Set();
                 }
             }
         }
@@ -338,15 +177,11 @@ namespace TickTrader.FDK.QuoteStore
         object mutex_;
         bool completed_;
 
-        TaskCompletionSource<Quote> taskCompletionSource_;
-        TaskCompletionSource<int> arrayTaskCompletionSource_;
-        Quote[] arrayQuotes_;
-        int arrayQuoteCount_;
-
         Quote[] quotes_;
         int quoteCount_;
         int beginIndex_;
         int endIndex_;
         Exception exception_;
+        AutoResetEvent event_;
     }
 }

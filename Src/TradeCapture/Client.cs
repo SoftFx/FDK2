@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
-using System.Threading.Tasks;
+using System.Threading;
 using SoftFX.Net.TradeCapture;
 using TickTrader.FDK.Common;
 
@@ -65,11 +65,11 @@ namespace TickTrader.FDK.TradeCapture
         #region Connect / disconnect
 
         public delegate void ConnectResultDelegate(Client client, object data);
-        public delegate void ConnectErrorDelegate(Client client, object data, string text);
+        public delegate void ConnectErrorDelegate(Client client, object data, Exception exception);
         public delegate void DisconnectResultDelegate(Client client, object data, string text);
         public delegate void DisconnectDelegate(Client client, string text);
         public delegate void ReconnectDelegate(Client client);
-        public delegate void ReconnectErrorDelegate(Client client, string text);
+        public delegate void ReconnectErrorDelegate(Client client, Exception exception);
 
         public event ConnectResultDelegate ConnectResultEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
@@ -80,35 +80,27 @@ namespace TickTrader.FDK.TradeCapture
 
         public void Connect(string address, int timeout)
         {
-            try
-            {
-                ConvertToSync(ConnectAsync(address), timeout);
-            }
-            catch (TimeoutException)
-            {
-                DisconnectAsync(this, "Connect timeout");
-                Join();
+            ConnectAsyncContext context = new ConnectAsyncContext(true);
 
-                throw;
+            ConnectInternal(context, address);
+
+            if (! context.Wait(timeout))
+            {
+                DisconnectInternal(null, "Connect timeout");
+
+                throw new Common.TimeoutException("Method call timed out");
             }
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void ConnectAsync(object data, string address)
         {
-            ConnectAsyncContext context = new ConnectAsyncContext();
+            ConnectAsyncContext context = new ConnectAsyncContext(false);
             context.Data = data;
 
             ConnectInternal(context, address);
-        }
-
-        public Task ConnectAsync(string address)
-        {
-            ConnectAsyncContext context = new ConnectAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            ConnectInternal(context, address);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void ConnectInternal(ConnectAsyncContext context, string address)
@@ -118,26 +110,28 @@ namespace TickTrader.FDK.TradeCapture
 
         public bool Disconnect(string text)
         {
-            return ConvertToSync(DisconnectAsync(text), -1);
+            bool result;
+
+            DisconnectAsyncContext context = new DisconnectAsyncContext(true);
+
+            if (DisconnectInternal(context, text))
+            {
+                context.Wait(-1);
+
+                result = true;
+            }
+            else
+                result = false;
+        
+            return result;
         }
 
         public bool DisconnectAsync(object data, string text)
         {
-            DisconnectAsyncContext context = new DisconnectAsyncContext();
+            DisconnectAsyncContext context = new DisconnectAsyncContext(false);
             context.Data = data;
 
             return DisconnectInternal(context, text);
-        }
-
-        public Task<bool> DisconnectAsync(string text)
-        {
-            DisconnectAsyncContext context = new DisconnectAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<bool>();
-
-            if (! DisconnectInternal(context, text))
-                Task.Run(() => { context.taskCompletionSource_.SetResult(false); });
-
-            return context.taskCompletionSource_.Task;
         }
 
         bool DisconnectInternal(DisconnectAsyncContext context, string text)
@@ -155,12 +149,13 @@ namespace TickTrader.FDK.TradeCapture
         #region Login / logout
 
         public delegate void LoginResultDelegate(Client client, object data);
-        public delegate void LoginErrorDelegate(Client client, object data, string text);
+        public delegate void LoginErrorDelegate(Client client, object data, Exception exception);
         public delegate void TwoFactorLoginRequestDelegate(Client client, string message);
         public delegate void TwoFactorLoginResultDelegate(Client client, object data, DateTime expireTime);
-        public delegate void TwoFactorLoginErrorDelegate(Client client, object data, string message);
+        public delegate void TwoFactorLoginErrorDelegate(Client client, object data, Exception exception);
         public delegate void TwoFactorLoginResumeDelegate(Client client, object data, DateTime expireTime);
         public delegate void LogoutResultDelegate(Client client, object data, LogoutInfo logoutInfo);
+        public delegate void LogoutErrorDelegate(Client client, object data, Exception exception);
         public delegate void LogoutDelegate(Client client, LogoutInfo logoutInfo);
 
         public event LoginResultDelegate LoginResultEvent;
@@ -170,31 +165,28 @@ namespace TickTrader.FDK.TradeCapture
         public event TwoFactorLoginErrorDelegate TwoFactorLoginErrorEvent;
         public event TwoFactorLoginResumeDelegate TwoFactorLoginResumeEvent;
         public event LogoutResultDelegate LogoutResultEvent;
+        public event LogoutErrorDelegate LogoutErrorEvent;
         public event LogoutDelegate LogoutEvent;
 
         public void Login(string username, string password, string deviceId, string appId, string sessionId, int timeout)
         {
-            ConvertToSync(LoginAsync(username, password, deviceId, appId, sessionId), timeout);
+            LoginAsyncContext context = new LoginAsyncContext(true);
+
+            LoginInternal(context, username, password, deviceId, appId, sessionId);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
         {
-            // Create a new async context
-            var context = new LoginAsyncContext();
+            LoginAsyncContext context = new LoginAsyncContext(false);
             context.Data = data;
 
             LoginInternal(context, username, password, deviceId, appId, sessionId);
-        }
-
-        public Task LoginAsync(string username, string password, string deviceId, string appId, string sessionId)
-        {
-            // Create a new async context
-            var context = new LoginAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            LoginInternal(context, username, password, deviceId, appId, sessionId);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
@@ -202,131 +194,109 @@ namespace TickTrader.FDK.TradeCapture
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
-            // Create a request
-            var request = new LoginRequest(0)
-            {
-                Username = username,
-                Password = password,
-                DeviceId = deviceId,
-                AppId = appId,
-                SessionId = sessionId
-            };
+            LoginRequest request = new LoginRequest(0);
+            request.Username = username;
+            request.Password = password;
+            request.DeviceId = deviceId;
+            request.AppId = appId;
+            request.SessionId = sessionId;
 
-            // Send request to the server
             session_.SendLoginRequest(context, request);
         }
 
         public DateTime TwoFactorLoginResponse(string oneTimePassword, int timeout)
         {
-            return ConvertToSync(TwoFactorLoginResponseAsync(oneTimePassword), timeout);
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext(true);
+
+            TwoFactorLoginResponseInternal(context, oneTimePassword);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.dateTime_;
         }
 
         public void TwoFactorLoginResponseAsync(object data, string oneTimePassword)
         {
-            // Create a new async context
-            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
+            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext(false);
             context.Data = data;
 
             TwoFactorLoginResponseInternal(context, oneTimePassword);
         }
 
-        public Task<DateTime> TwoFactorLoginResponseAsync(string oneTimePassword)
-        {
-            // Create a new async context
-            TwoFactorLoginResponseAsyncContext context = new TwoFactorLoginResponseAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
-
-            TwoFactorLoginResponseInternal(context, oneTimePassword);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void TwoFactorLoginResponseInternal(TwoFactorLoginResponseAsyncContext context, string oneTimePassword)
         {
-            // Create a message
-            var message = new TwoFactorLogin(0)
-            {
-                Reason = TwoFactorReason.ClientResponse,
-                OneTimePassword = oneTimePassword
-            };
+            TwoFactorLogin message = new TwoFactorLogin(0);
+            message.Reason = TwoFactorReason.ClientResponse;
+            message.OneTimePassword = oneTimePassword;
 
-            // Send message to the server
             session_.SendTwoFactorLoginResponse(context, message);
         }
 
         public DateTime TwoFactorLoginResume(int timeout)
         {
-            return ConvertToSync(TwoFactorLoginResumeAsync(), timeout);
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext(true);
+
+            TwoFactorLoginResumeInternal(context);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.dateTime_;
         }
 
         public void TwoFactorLoginResumeAsync(object data)
         {
-            // Create a new async context
-            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
+            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext(false);
             context.Data = data;
 
             TwoFactorLoginResumeInternal(context);
         }
 
-        public Task<DateTime> TwoFactorLoginResumeAsync()
-        {
-            // Create a new async context
-            TwoFactorLoginResumeAsyncContext context = new TwoFactorLoginResumeAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<DateTime>();
-
-            TwoFactorLoginResumeInternal(context);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void TwoFactorLoginResumeInternal(TwoFactorLoginResumeAsyncContext context)
         {
-            // Create a message
-            var message = new TwoFactorLogin(0)
-            {
-                Reason = TwoFactorReason.ClientResume
-            };
+            TwoFactorLogin message = new TwoFactorLogin(0);
+            message.Reason = TwoFactorReason.ClientResume;
 
-            // Send message to the server
             session_.SendTwoFactorLoginResume(context, message);
         }
 
         public LogoutInfo Logout(string message, int timeout)
         {
-            return ConvertToSync(LogoutAsync(message), timeout);
+            LogoutAsyncContext context = new LogoutAsyncContext(true);
+
+            LogoutInternal(context, message);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.logoutInfo_;
         }
 
         public void LogoutAsync(object data, string message)
         {
-            // Create a new async context
-            var context = new LogoutAsyncContext();
+            LogoutAsyncContext context = new LogoutAsyncContext(false);
             context.Data = data;
 
             LogoutInternal(context, message);
-        }
-
-        public Task<LogoutInfo> LogoutAsync(string message)
-        {
-            // Create a new async context
-            var context = new LogoutAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<LogoutInfo>();
-
-            LogoutInternal(context, message);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void LogoutInternal(LogoutAsyncContext context, string message)
         {
             session_.Reconnect = false;
 
-            // Create a request
-            var request = new Logout(0)
-            {
-                Text = message
-            };
+            Logout request = new Logout(0);
+            request.Text = message;
 
-            // Send request to the server
             session_.SendLogout(context, request);
         }
 
@@ -335,13 +305,13 @@ namespace TickTrader.FDK.TradeCapture
         #region Trade Capture
         
         public delegate void SubscribeTradesResultDelegate(Client client, object data);
-        public delegate void SubscribeTradesErrorDelegate(Client client, object data, string message);
+        public delegate void SubscribeTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void UnsubscribeTradesResultDelegate(Client client, object data);
-        public delegate void UnsubscribeTradesErrorDelegate(Client client, object data, string message);
+        public delegate void UnsubscribeTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void TradeDownloadResultBeginDelegate(Client client, object data);
         public delegate void TradeDownloadResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void TradeDownloadResultEndDelegate(Client client, object data);
-        public delegate void TradeDownloadErrorDelegate(Client client, object data, string message);
+        public delegate void TradeDownloadErrorDelegate(Client client, object data, Exception exception);
         public delegate void TradeUpdateDelegate(Client client, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void NotificationDelegate(Client client, TickTrader.FDK.Common.Notification notification);
         
@@ -358,100 +328,87 @@ namespace TickTrader.FDK.TradeCapture
 
         public void SubscribeTrades(bool skipCancel, int timeout)
         {
-            ConvertToSync(SubscribeTradesAsync(skipCancel), timeout);
+            SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(true);
+
+            SubscribeTradesInternal(context, skipCancel);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void SubscribeTradesAsync(object data, bool skipCancel)
         {
-            // Create a new async context
-            var context = new SubscribeTradesAsyncContext();
+            SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(false);
             context.Data = data;
 
             SubscribeTradesInternal(context, skipCancel);
         }
 
-        public Task SubscribeTradesAsync(bool skipCancel)
-        {
-            // Create a new async context
-            var context = new SubscribeTradesAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            SubscribeTradesInternal(context, skipCancel);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void SubscribeTradesInternal(SubscribeTradesAsyncContext context, bool skipCancel)
         {
-            // Create a request
-            var request = new TradeCaptureRequest(0);
+            TradeCaptureRequest request = new TradeCaptureRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.Type = TradeCaptureRequestType.Subscribe;
             request.SkipCancel = skipCancel;
 
-            // Send request to the server
             session_.SendTradeCaptureRequest(context, request);
         }
 
         public void UnsubscribeTrades(int timeout)
         {
-            ConvertToSync(UnsubscribeTradesAsync(), timeout);
+            UnsubscribeTradesAsyncContext context = new UnsubscribeTradesAsyncContext(true);
+
+            UnsubscribeTradesInternal(context);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
         }
 
         public void UnsubscribeTradesAsync(object data)
         {
-            // Create a new async context
-            var context = new UnsubscribeTradesAsyncContext();
+            UnsubscribeTradesAsyncContext context = new UnsubscribeTradesAsyncContext(false);
             context.Data = data;
 
             UnsubscribeTradesInternal(context);
         }
 
-        public Task UnsubscribeTradesAsync()
-        {
-            // Create a new async context
-            var context = new UnsubscribeTradesAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<object>();
-
-            UnsubscribeTradesInternal(context);
-
-            return context.taskCompletionSource_.Task;
-        }
-
         void UnsubscribeTradesInternal(UnsubscribeTradesAsyncContext context)
         {
-            // Create a request
-            var request = new TradeCaptureRequest(0);
+            TradeCaptureRequest request = new TradeCaptureRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.Type = TradeCaptureRequestType.Unsubscribe;
 
-            // Send request to the server
             session_.SendTradeCaptureRequest(context, request);
         }
 
         public TradeTransactionReportEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
         {
-            return ConvertToSync(DownloadTradesAsync(timeDirection, from, to, skipCancel), timeout);
+            TradeDownloadAsyncContext context = new TradeDownloadAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);
+
+            DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
+
+            if (! context.event_.WaitOne(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.tradeTransactionReportEnumerator_;
         }
 
         public void DownloadTradesAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
         {
-            // Create a new async context
-            var context = new TradeDownloadAsyncContext();
+            TradeDownloadAsyncContext context = new TradeDownloadAsyncContext(false);
             context.Data = data;
 
             DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
-        }
-
-        public Task<TradeTransactionReportEnumerator> DownloadTradesAsync(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
-        {
-            // Create a new async context
-            var context = new TradeDownloadAsyncContext();
-            context.taskCompletionSource_ = new TaskCompletionSource<TradeTransactionReportEnumerator>();
-
-            DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
-
-            return context.taskCompletionSource_.Task;
         }
 
         void DownloadTradesInternal(TradeDownloadAsyncContext context, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
@@ -462,7 +419,6 @@ namespace TickTrader.FDK.TradeCapture
             context.skipCancel_ = skipCancel;
             context.reportId_ = null;
 
-            // Create a request
             TradeDownloadRequest request = new TradeDownloadRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.Direction = Convert(timeDirection);
@@ -470,7 +426,6 @@ namespace TickTrader.FDK.TradeCapture
             request.To = to;
             request.SkipCancel = skipCancel;
 
-            // Send request to the server
             session_.SendTradeDownloadRequest(context, request);
         }
 
@@ -495,133 +450,248 @@ namespace TickTrader.FDK.TradeCapture
 
         interface IAsyncContext
         {
-            void SetDisconnectError(Exception exception);
+            void ProcessDisconnect(Client client, string text);
         }
 
         class ConnectAsyncContext : ConnectClientContext
         {
-            public ConnectAsyncContext() : base(false)
+            public ConnectAsyncContext(bool waitbale) : base(waitbale)
             {
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class DisconnectAsyncContext : DisconnectClientContext
         {
-            public DisconnectAsyncContext() : base(false)
+            public DisconnectAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public TaskCompletionSource<bool> taskCompletionSource_;
+            public string text_;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
         {
-            public LoginAsyncContext() : base(false)
+            public LoginAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LoginErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LoginErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class TwoFactorLoginResponseAsyncContext : TwoFactorLoginResponseClientContext, IAsyncContext
         {
-            public TwoFactorLoginResponseAsyncContext() : base(false)
+            public TwoFactorLoginResponseAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LoginErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LoginErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<DateTime> taskCompletionSource_;
+            public Exception exception_;
+            public DateTime dateTime_;
         }
 
         class TwoFactorLoginResumeAsyncContext : TwoFactorLoginResumeClientContext, IAsyncContext
         {
-            public TwoFactorLoginResumeAsyncContext() : base(false)
+            public TwoFactorLoginResumeAsyncContext(bool waitbale) : base(waitbale)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LoginErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LoginErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<DateTime> taskCompletionSource_;
+            public Exception exception_;
+            public DateTime dateTime_;
         }
 
         class LogoutAsyncContext : LogoutClientContext, IAsyncContext
         {
-            public LogoutAsyncContext() : base(false)
+            public LogoutAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.LogoutErrorEvent != null)
+                {
+                    try
+                    {
+                        client.LogoutErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<LogoutInfo> taskCompletionSource_;
+            public Exception exception_;
+            public LogoutInfo logoutInfo_;
         }
 
         class SubscribeTradesAsyncContext : TradeCaptureRequestClientContext, IAsyncContext
         {
-            public SubscribeTradesAsyncContext() : base(false)
+            public SubscribeTradesAsyncContext(bool waitbale) : base(waitbale)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.SubscribeTradesErrorEvent != null)
+                {
+                    try
+                    {
+                        client.SubscribeTradesErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class UnsubscribeTradesAsyncContext : TradeCaptureRequestClientContext, IAsyncContext
         {
-            public UnsubscribeTradesAsyncContext() : base(false)
+            public UnsubscribeTradesAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            public void ProcessDisconnect(Client client, string text)
             {
-                if (taskCompletionSource_ != null)
-                    Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.UnsubscribeTradesErrorEvent != null)
+                {
+                    try
+                    {
+                        client.UnsubscribeTradesErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
             }
 
-            public TaskCompletionSource<object> taskCompletionSource_;
+            public Exception exception_;
         }
 
         class TradeDownloadAsyncContext : TradeDownloadRequestClientContext, IAsyncContext
         {
-            public TradeDownloadAsyncContext() : base(false)
+            public TradeDownloadAsyncContext(bool waitable) : base(waitable)
             {
             }
 
-            public void SetDisconnectError(Exception exception)
+            ~TradeDownloadAsyncContext()
             {
-                if (taskCompletionSource_ != null)
+                if (event_ != null)
+                    event_.Close();
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.TradeDownloadErrorEvent != null)
+                {
+                    try
+                    {
+                        client.TradeDownloadErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
                 {
                     if (tradeTransactionReportEnumerator_ != null)
                     {
                         tradeTransactionReportEnumerator_.SetError(exception);
                     }
                     else
-                        Task.Run(() => { taskCompletionSource_.SetException(exception); });
+                    {
+                        exception_ = exception;
+                        event_.Set();
+                    }
                 }
             }
 
@@ -629,10 +699,11 @@ namespace TickTrader.FDK.TradeCapture
             public DateTime? from_;
             public DateTime? to_;
             public bool skipCancel_;
-            public string reportId_;
-            public TaskCompletionSource<TradeTransactionReportEnumerator> taskCompletionSource_;
-            public TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;
-            public TradeTransactionReport tradeTransactionReport_;            
+            public string reportId_;            
+            public TradeTransactionReport tradeTransactionReport_;
+            public AutoResetEvent event_;
+            public Exception exception_;
+            public TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;            
         }
 
         class ClientSessionListener : SoftFX.Net.TradeCapture.ClientSessionListener
@@ -640,7 +711,6 @@ namespace TickTrader.FDK.TradeCapture
             public ClientSessionListener(Client client)
             {
                 client_ = client;
-                tradeTransactionReport_ = new TradeTransactionReport();
             }
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
@@ -659,9 +729,6 @@ namespace TickTrader.FDK.TradeCapture
                         {
                         }
                     }
-
-                    if (connectAsyncContext.taskCompletionSource_ != null)
-                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetResult(null); });
                 }
                 catch
                 {
@@ -694,21 +761,22 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
+                    Exception exception = new Exception(text);
+
                     if (client_.ConnectErrorEvent != null)
                     {
                         try
                         {
-                            client_.ConnectErrorEvent(client_, connectAsyncContext.Data, text);
+                            client_.ConnectErrorEvent(client_, connectAsyncContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (connectAsyncContext.taskCompletionSource_ != null)
+                    if (connectAsyncContext.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { connectAsyncContext.taskCompletionSource_.SetException(exception); });
+                        connectAsyncContext.exception_ = exception;
                     }
                 }
                 catch
@@ -720,11 +788,13 @@ namespace TickTrader.FDK.TradeCapture
             {                
                 try
                 {
+                    Exception exception = new Exception(text);
+
                     if (client_.ReconnectErrorEvent != null)
                     {
                         try
                         {
-                            client_.ReconnectErrorEvent(client_, text);
+                            client_.ReconnectErrorEvent(client_, exception);
                         }
                         catch
                         {
@@ -742,6 +812,17 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
 
+                    foreach (ClientContext context in contexts)
+                    {
+                        try
+                        {
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     if (client_.DisconnectResultEvent != null)
                     {
                         try
@@ -753,16 +834,10 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
 
-                    if (contexts.Length > 0)
+                    if (disconnectAsyncContext.Waitable)
                     {
-                        Exception exception = new Exception(text);
-
-                        foreach (ClientContext context in contexts)
-                            ((IAsyncContext)context).SetDisconnectError(exception);
+                        disconnectAsyncContext.text_ = text;
                     }
-
-                    if (disconnectAsyncContext.taskCompletionSource_ != null)
-                        Task.Run(() => { disconnectAsyncContext.taskCompletionSource_.SetResult(true); });
                 }
                 catch
                 {
@@ -773,6 +848,17 @@ namespace TickTrader.FDK.TradeCapture
             {
                 try
                 {
+                    foreach (ClientContext context in contexts)
+                    {
+                        try
+                        {
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     if (client_.DisconnectEvent != null)
                     {
                         try
@@ -783,14 +869,6 @@ namespace TickTrader.FDK.TradeCapture
                         {
                         }
                     }
-
-                    if (contexts.Length > 0)
-                    {
-                        Exception exception = new Exception(text);
-
-                        foreach (ClientContext context in contexts)
-                            ((IAsyncContext)context).SetDisconnectError(exception);
-                    }
                 }
                 catch
                 {
@@ -799,7 +877,7 @@ namespace TickTrader.FDK.TradeCapture
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                var context = (LoginAsyncContext)LoginRequestClientContext;
+                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
                 try
                 {
@@ -813,9 +891,6 @@ namespace TickTrader.FDK.TradeCapture
                         {
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(null); });
                 }
                 catch (Exception exception)
                 {
@@ -823,41 +898,44 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                var context = (LoginAsyncContext)LoginRequestClientContext;
+                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TickTrader.FDK.Common.LoginRejectReason reason = Convert(message.Reason);
+
+                    LoginRejectException exception = new LoginRejectException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, text);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        var exception = new Exception(text);
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -866,21 +944,23 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnTwoFactorLoginRequest(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
             {
-                var context = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
@@ -903,25 +983,27 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
-                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
 
                     try
                     {
@@ -938,8 +1020,10 @@ namespace TickTrader.FDK.TradeCapture
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetResult(expireTime); });
+                        if (responseContext.Waitable)
+                        {
+                            responseContext.dateTime_ = expireTime;
+                        }
                     }
                     catch (Exception exception)
                     {
@@ -947,15 +1031,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetException(exception); });
+                        if (responseContext.Waitable)
+                        {
+                            responseContext.exception_ = exception;
+                        }
 
                         throw;
                     }
@@ -970,9 +1056,6 @@ namespace TickTrader.FDK.TradeCapture
                         {
                         }
                     }
-
-                    if (loginContext.taskCompletionSource_ != null)
-                        Task.Run(() => { loginContext.taskCompletionSource_.SetResult(null); });
                 }
                 catch (Exception exception)
                 {
@@ -980,45 +1063,46 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, LoginRequestClientContext.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.taskCompletionSource_ != null)
-                        Task.Run(() => { loginContext.taskCompletionSource_.SetException(exception); });
+                    if (loginContext.Waitable)
+                    {
+                        loginContext.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
             {
-                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
-
-                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
 
                     try
                     {
+                        Exception exception = new Exception(message.Text);
+
                         if (client_.TwoFactorLoginErrorEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
+                        if (responseContext.Waitable)
                         {
-                            Exception exception = new Exception(text);
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetException(exception); });
+                            responseContext.exception_ = exception;
                         }
                     }
                     catch (Exception exception)
@@ -1027,15 +1111,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetException(exception); });
+                        if (responseContext.Waitable)
+                        {
+                            responseContext.exception_ = exception;
+                        }
 
                         // the login procedure continues..
                     }
@@ -1048,27 +1134,29 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.taskCompletionSource_ != null)
-                        Task.Run(() => { loginContext.taskCompletionSource_.SetException(exception); });
+                    if (loginContext.Waitable)
+                    {
+                        loginContext.exception_ = exception;
+                    }
                 }
             }
 
             public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                var loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
 
                 try
                 {
-                    string text = message.Text;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;                                       
 
-                    var responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    Exception exception1 = new Exception(message.Text);
 
                     try
                     {
@@ -1076,76 +1164,78 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, text);
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception1);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
+                        if (responseContext.Waitable)
                         {
-                            Exception exception = new Exception(text);
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetException(exception); });
+                            responseContext.exception_ = exception1;
                         }
                     }
-                    catch (Exception exception)
+                    catch (Exception exception2)
                     {
                         if (client_.TwoFactorLoginErrorEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception.Message);
+                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception2);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.taskCompletionSource_ != null)
-                            Task.Run(() => { responseContext.taskCompletionSource_.SetException(exception); });
+                        if (responseContext.Waitable)
+                        {
+                            responseContext.exception_ = exception2;
+                        }
 
                         throw;
-                    }
+                    }                    
 
                     if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, text);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception1);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.taskCompletionSource_ != null)
+                    if (loginContext.Waitable)
                     {
-                        Exception exception = new Exception(text);
-                        Task.Run(() => { loginContext.taskCompletionSource_.SetException(exception); });
+                        loginContext.exception_ = exception1;
                     }
                 }
-                catch (Exception exception)
+                catch (Exception exception2)
                 {
                     if (client_.LoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception.Message);
+                            client_.LoginErrorEvent(client_, loginContext.Data, exception2);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.taskCompletionSource_ != null)
-                        Task.Run(() => { loginContext.taskCompletionSource_.SetException(exception); });
+                    if (loginContext.Waitable)
+                    {
+                        loginContext.exception_ = exception2;
+                    }
                 }
             }
 
             public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                var context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
+                TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
                 try
                 {
@@ -1162,8 +1252,10 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(expireTime); });
+                    if (context.Waitable)
+                    {
+                        context.dateTime_ = expireTime;
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -1171,15 +1263,63 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception.Message);
+                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+            }
+
+            public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
+            {
+                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
+
+                try
+                {
+                    LogoutInfo result = new LogoutInfo();
+                    result.Reason = Convert(message.Reason);
+                    result.Message = message.Text;
+
+                    if (client_.LogoutResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.LogoutResultEvent(client_, context.Data, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.logoutInfo_ = result;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    if (client_.LogoutErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.LogoutErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
                 }
             }
 
@@ -1203,9 +1343,6 @@ namespace TickTrader.FDK.TradeCapture
                             {
                             }
                         }
-
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetResult(null); });
                     }
                     catch (Exception exception)
                     {
@@ -1213,15 +1350,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception.Message);
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 else
@@ -1242,9 +1381,6 @@ namespace TickTrader.FDK.TradeCapture
                             {
                             }
                         }
-
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetResult(null); });
                     }
                     catch (Exception exception)
                     {
@@ -1252,15 +1388,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception.Message);
+                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
             }            
@@ -1275,21 +1413,22 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
+                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+
                         if (client_.SubscribeTradesErrorEvent != null)
                         {
                             try
                             {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, message.Text);
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
-                            Exception exception = new Exception(message.Text);
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            context.exception_ = exception;
                         }
                     }
                     catch (Exception exception)
@@ -1298,15 +1437,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception.Message);
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 else
@@ -1317,21 +1458,22 @@ namespace TickTrader.FDK.TradeCapture
                                         
                     try
                     {
+                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+
                         if (client_.UnsubscribeTradesErrorEvent != null)
                         {
                             try
                             {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, message.Text);
+                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
-                            Exception exception = new Exception(message.Text);
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                            context.exception_ = exception;
                         }
                     }
                     catch (Exception exception)
@@ -1340,15 +1482,17 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception.Message);
+                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
             }
@@ -1374,10 +1518,10 @@ namespace TickTrader.FDK.TradeCapture
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_);
-                            Task.Run(() => { context.taskCompletionSource_.SetResult(context.tradeTransactionReportEnumerator_); });
+                            context.event_.Set();
                         }
                     }
 
@@ -1387,7 +1531,7 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         // Sending the next request ahead of current response processing
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             lock (context.tradeTransactionReportEnumerator_.mutex_)
                             {
@@ -1439,16 +1583,13 @@ namespace TickTrader.FDK.TradeCapture
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
                         {
                             TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
 
                             context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        context.tradeTransactionReportEnumerator_.SetResult(null);
 
                     if (message.Last)
                     {
@@ -1463,8 +1604,10 @@ namespace TickTrader.FDK.TradeCapture
                             }
                         }
 
-                        if (context.taskCompletionSource_ != null)
+                        if (context.Waitable)
+                        {
                             context.tradeTransactionReportEnumerator_.SetEnd();
+                        }
                     }
                 }
                 catch (Exception exception)
@@ -1473,21 +1616,24 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, exception.Message);
+                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
                             context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
             }
@@ -1498,29 +1644,30 @@ namespace TickTrader.FDK.TradeCapture
 
                 try
                 {
-                    string text = message.Text;
+                    RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                     if (client_.TradeDownloadErrorEvent != null)
                     {
                         try
                         {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, text);
+                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
-                        Exception exception = new Exception(text);
-
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
                             context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
                 catch (Exception exception)
@@ -1529,69 +1676,49 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         try
                         {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, exception.Message);
+                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (context.taskCompletionSource_ != null)
+                    if (context.Waitable)
                     {
                         if (context.tradeTransactionReportEnumerator_ != null)
                         {
                             context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                         else
-                            Task.Run(() => { context.taskCompletionSource_.SetException(exception); });
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
             }
 
-            public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
+            public override void OnLogout(ClientSession session, Logout message)
             {
-                var context = (LogoutAsyncContext)LogoutClientContext;
-
                 try
                 {
-                    var result = new LogoutInfo();
+                    LogoutInfo result = new LogoutInfo();
                     result.Reason = Convert(message.Reason);
                     result.Message = message.Text;
 
-                    if (client_.LogoutResultEvent != null)
+                    if (client_.LogoutEvent != null)
                     {
                         try
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            client_.LogoutEvent(client_, result);
                         }
                         catch
                         {
                         }
                     }
-
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
                 }
                 catch
                 {
-                    // on logout we don't throw
-
-                    var result = new LogoutInfo();
-                    result.Reason = TickTrader.FDK.Common.LogoutReason.Unknown;
-
-                    if (client_.LogoutResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutResultEvent(client_, context.Data, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.taskCompletionSource_ != null)
-                        Task.Run(() => { context.taskCompletionSource_.SetResult(result); });
                 }
             }
 
@@ -1601,13 +1728,14 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     SoftFX.Net.TradeCapture.Trade trade = message.Trade;
 
-                    Convert(tradeTransactionReport_, trade);
+                    TradeTransactionReport tradeTransactionReport = new TradeTransactionReport();
+                    Convert(tradeTransactionReport, trade);
 
                     if (client_.TradeUpdateEvent != null)
                     {
                         try
                         {
-                            client_.TradeUpdateEvent(client_, tradeTransactionReport_);
+                            client_.TradeUpdateEvent(client_, tradeTransactionReport);
                         }
                         catch
                         {
@@ -1634,30 +1762,6 @@ namespace TickTrader.FDK.TradeCapture
                         try
                         {
                             client_.NotificationEvent(client_, result);
-                        }
-                        catch
-                        {
-                        }
-                    }
-                }
-                catch
-                {
-                }
-            }
-
-            public override void OnLogout(ClientSession session, Logout message)
-            {
-                try
-                {
-                    var result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
-                    result.Message = message.Text;
-
-                    if (client_.LogoutEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutEvent(client_, result);
                         }
                         catch
                         {
@@ -1903,6 +2007,45 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
+            TickTrader.FDK.Common.LoginRejectReason Convert(SoftFX.Net.TradeCapture.LoginRejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.IncorrectCredentials:
+                        return TickTrader.FDK.Common.LoginRejectReason.InvalidCredentials;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.AccountIsBlocked:
+                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.AccountIsBlockedByAccessList:
+                        return TickTrader.FDK.Common.LoginRejectReason.BlockedAccount;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.InvalidSessionId:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.InvalidSpec:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.NotEnoughRights:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.TimeoutLogin:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.WebApiDisabled:
+                        return TickTrader.FDK.Common.LoginRejectReason.Other;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.Throttling:
+                        return TickTrader.FDK.Common.LoginRejectReason.Throttling;
+
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.InternalServerError:
+                        return TickTrader.FDK.Common.LoginRejectReason.InternalServerError;
+
+                    default:
+                        throw new Exception("Invalid login reject reason : " + reason);
+                }
+            }
+
             TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LogoutReason reason)
             {
                 switch (reason)
@@ -2097,37 +2240,6 @@ namespace TickTrader.FDK.TradeCapture
             }
 
             Client client_;
-            TradeTransactionReport tradeTransactionReport_;
-        }
-
-        internal static void ConvertToSync(Task task, int timeout)
-        {
-            try
-            {
-                if (!task.Wait(timeout))
-                    throw new TimeoutException("Method call timeout");
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-            }
-        }
-
-        internal static TResult ConvertToSync<TResult>(Task<TResult> task, int timeout)
-        {
-            try
-            {
-                if (!task.Wait(timeout))
-                    throw new TimeoutException("Method call timeout");
-
-                return task.Result;
-            }
-            catch (AggregateException ex)
-            {
-                ExceptionDispatchInfo.Capture(ex.Flatten().InnerExceptions[0]).Throw();
-                // Unreacheble code...
-                return default(TResult);
-            }
         }
 
         #endregion

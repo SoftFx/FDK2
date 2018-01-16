@@ -91,10 +91,10 @@
                 try
                 {
                     if (! this.Trade.WaitForLogon())
-                        throw new TimeoutException("Timeout of data trade logon waiting has been reached");
+                        throw new TickTrader.FDK.Common.TimeoutException("Timeout of data trade logon waiting has been reached");
 
                     if (! this.Feed.WaitForLogon())
-                        throw new TimeoutException("Timeout of data feed logon waiting has been reached");
+                        throw new TickTrader.FDK.Common.TimeoutException("Timeout of data feed logon waiting has been reached");
 
                     this.RunExample();
                 }
