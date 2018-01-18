@@ -730,8 +730,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -750,16 +751,17 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {                
+            {               
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
                     Exception exception = new Exception(text);
 
@@ -779,8 +781,9 @@ namespace TickTrader.FDK.TradeCapture
                         connectAsyncContext.exception_ = exception;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -801,8 +804,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -839,8 +843,9 @@ namespace TickTrader.FDK.TradeCapture
                         disconnectAsyncContext.text_ = text;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -870,54 +875,62 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
-
                 try
                 {
-                    if (client_.LoginResultEvent != null)
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
                     {
-                        try
+                        if (client_.LoginResultEvent != null)
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            try
+                            {
+                                client_.LoginResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
                     TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
 
                     LoginException exception = new LoginException(reason, message.Text);
@@ -940,196 +953,201 @@ namespace TickTrader.FDK.TradeCapture
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginRequest(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    string text = message.Text;
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    if (client_.TwoFactorLoginRequestEvent != null)
+                    try
                     {
-                        try
+                        string text = message.Text;
+
+                        if (client_.TwoFactorLoginRequestEvent != null)
                         {
-                            client_.TwoFactorLoginRequestEvent(client_, text);
+                            try
+                            {
+                                client_.TwoFactorLoginRequestEvent(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
 
                     try
                     {
-                        DateTime expireTime = message.ExpireTime.Value;
+                        TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
 
-                        if (client_.TwoFactorLoginResultEvent != null)
+                        try
+                        {
+                            DateTime expireTime = message.ExpireTime.Value;
+
+                            if (client_.TwoFactorLoginResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.dateTime_ = expireTime;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.TwoFactorLoginErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.exception_ = exception;
+                            }
+
+                            throw;
+                        }
+
+                        if (client_.LoginResultEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                client_.LoginResultEvent(client_, loginContext.Data);
                             }
                             catch
                             {
                             }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.dateTime_ = expireTime;
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TwoFactorLoginErrorEvent != null)
+                        if (client_.LoginErrorEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                client_.LoginErrorEvent(client_, loginContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.Waitable)
+                        if (loginContext.Waitable)
                         {
-                            responseContext.exception_ = exception;
-                        }
-
-                        throw;
-                    }
-
-                    if (client_.LoginResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginResultEvent(client_, loginContext.Data);
-                        }
-                        catch
-                        {
+                            loginContext.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception);
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.Waitable)
+                    if (responseContext.Waitable)
                     {
-                        loginContext.exception_ = exception;
-                    }
-                }
-            }
-
-            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
-                {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
-
-                    try
-                    {
-                        Exception exception = new Exception(message.Text);
-
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-
-                        // the login procedure continues..
+                        responseContext.exception_ = exception;
                     }
 
                     // the login procedure continues..
                 }
                 catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (responseContext.Waitable)
+                    {
+                        responseContext.exception_ = exception;
+                    }
+
                     if (client_.LoginErrorEvent != null)
                     {
                         try
@@ -1146,504 +1164,416 @@ namespace TickTrader.FDK.TradeCapture
                         loginContext.exception_ = exception;
                     }
                 }
-            }
-
-            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
+                catch (Exception exception)
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;                                       
-
-                    Exception exception1 = new Exception(message.Text);
-
-                    try
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception1);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception1;
-                        }
-                    }
-                    catch (Exception exception2)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception2);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception2;
-                        }
-
-                        throw;
-                    }                    
-
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception1);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception1;
-                    }
-                }
-                catch (Exception exception2)
-                {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception2);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception2;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
-
                 try
                 {
-                    DateTime expireTime = message.ExpireTime.Value;
+                    TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
-                    if (client_.TwoFactorLoginResumeEvent != null)
+                    try
                     {
-                        try
+                        DateTime expireTime = message.ExpireTime.Value;
+
+                        if (client_.TwoFactorLoginResumeEvent != null)
                         {
-                            client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            try
+                            {
+                                client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.dateTime_ = expireTime;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.dateTime_ = expireTime;
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TwoFactorLoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
             {
-                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
-
                 try
                 {
-                    LogoutInfo result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
-                    result.Message = message.Text;
+                    LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
-                    if (client_.LogoutResultEvent != null)
+                    try
                     {
-                        try
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = Convert(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.logoutInfo_ = result;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.logoutInfo_ = result;
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LogoutErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradeCaptureReport(ClientSession session, TradeCaptureRequestClientContext TradeCaptureRequestClientContext, TradeCaptureReport message)
             {
-                if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
-                {
-                    // SubscribeTrades
-
-                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext) TradeCaptureRequestClientContext;
-
-                    try
-                    {
-                        if (client_.SubscribeTradesResultEvent != null)
-                        {
-                            try
-                            {
-                                client_.SubscribeTradesResultEvent(client_, context.Data);
-                            }
-                            catch
-                            {
-                            }
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.SubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-                else
-                {
-                    // UnsubscribeTrades
-
-                    UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext) TradeCaptureRequestClientContext;
-                                        
-                    try
-                    {
-                        if (client_.UnsubscribeTradesResultEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeTradesResultEvent(client_, context.Data);
-                            }
-                            catch
-                            {
-                            }
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.UnsubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-            }            
-
-            public override void OnTradeCaptureReject(ClientSession session, TradeCaptureRequestClientContext TradeCaptureRequestClientContext, Reject message)
-            {
-                if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
-                {
-                    // SubscribeTrades
-
-                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext) TradeCaptureRequestClientContext;
-
-                    try
-                    {
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
-
-                        if (client_.SubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.SubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-                else
-                {
-                    // UnsubscribeTrades
-
-                    UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext) TradeCaptureRequestClientContext;
-                                        
-                    try
-                    {
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
-
-                        if (client_.UnsubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.UnsubscribeTradesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-            }
-
-            public override void OnTradeDownloadReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadReport message)
-            {
-                TradeDownloadAsyncContext context = (TradeDownloadAsyncContext) TradeDownloadRequestClientContext;
-
                 try
                 {
-                    if (context.reportId_ == null)
+                    if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
                     {
-                        context.tradeTransactionReport_ = new TradeTransactionReport();
+                        // SubscribeTrades
 
-                        if (client_.TradeDownloadResultBeginEvent != null)
+                        SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
+
+                        try
                         {
-                            try
+                            if (client_.SubscribeTradesResultEvent != null)
                             {
-                                client_.TradeDownloadResultBeginEvent(client_, context.Data);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_);
-                            context.event_.Set();
-                        }
-                    }
-
-                    context.reportId_ = message.Id;
-
-                    if (! message.Last)
-                    {
-                        // Sending the next request ahead of current response processing
-
-                        if (context.Waitable)
-                        {
-                            lock (context.tradeTransactionReportEnumerator_.mutex_)
-                            {
-                                if (! context.tradeTransactionReportEnumerator_.completed_)
+                                try
                                 {
-                                    TradeDownloadRequest request = new TradeDownloadRequest(0);
-                                    request.Id = Guid.NewGuid().ToString();
-                                    request.Direction = client_.Convert(context.timeDirection_);
-                                    request.From = context.from_;
-                                    request.To = context.to_;
-                                    request.SkipCancel = context.skipCancel_;
-                                    request.ReportId = context.reportId_;
-
-                                    client_.session_.SendTradeDownloadRequest(context, request);
+                                    client_.SubscribeTradesResultEvent(client_, context.Data);
+                                }
+                                catch
+                                {
                                 }
                             }
                         }
-                        else
+                        catch (Exception exception)
                         {
-                            TradeDownloadRequest request = new TradeDownloadRequest(0);
-                            request.Id = Guid.NewGuid().ToString();
-                            request.Direction = client_.Convert(context.timeDirection_);
-                            request.From = context.from_;
-                            request.To = context.to_;
-                            request.SkipCancel = context.skipCancel_;
-                            request.ReportId = context.reportId_;
+                            if (client_.SubscribeTradesErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
 
-                            client_.session_.SendTradeDownloadRequest(context, request);
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
                         }
                     }
-
-                    TradeArray trades = message.Trades;
-                    int count = trades.Length;
-
-                    for (int index = 0; index < count; ++index)
+                    else
                     {
-                        Trade trade = trades[index];
+                        // UnsubscribeTrades
 
-                        Convert(context.tradeTransactionReport_, trade);
+                        UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
 
-                        if (client_.TradeDownloadResultEvent != null)
+                        try
                         {
-                            try
+                            if (client_.UnsubscribeTradesResultEvent != null)
                             {
-                                client_.TradeDownloadResultEvent(client_, context.Data, context.tradeTransactionReport_);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
-
-                            context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
-                        }
-                    }
-
-                    if (message.Last)
-                    {
-                        if (client_.TradeDownloadResultEndEvent != null)
-                        {
-                            try
-                            {
-                                client_.TradeDownloadResultEndEvent(client_, context.Data);
-                            }
-                            catch
-                            {
+                                try
+                                {
+                                    client_.UnsubscribeTradesResultEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.tradeTransactionReportEnumerator_.SetEnd();
+                            if (client_.UnsubscribeTradesErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TradeDownloadErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
+                }
+            }            
 
-                    if (context.Waitable)
+            public override void OnTradeCaptureReject(ClientSession session, TradeCaptureRequestClientContext TradeCaptureRequestClientContext, Reject message)
+            {
+                try
+                {
+                    if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
                     {
-                        if (context.tradeTransactionReportEnumerator_ != null)
+                        // SubscribeTrades
+
+                        SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
+
+                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+
+                        if (client_.SubscribeTradesErrorEvent != null)
                         {
-                            context.tradeTransactionReportEnumerator_.SetError(exception);
+                            try
+                            {
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        else
+
+                        if (context.Waitable)
                         {
                             context.exception_ = exception;
-                            context.event_.Set();
                         }
                     }
+                    else
+                    {
+                        // UnsubscribeTrades
+
+                        UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
+
+                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+
+                        if (client_.UnsubscribeTradesErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTradeDownloadReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadReport message)
+            {
+                try
+                {
+                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext)TradeDownloadRequestClientContext;
+
+                    try
+                    {
+                        if (context.reportId_ == null)
+                        {
+                            context.tradeTransactionReport_ = new TradeTransactionReport();
+
+                            if (client_.TradeDownloadResultBeginEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TradeDownloadResultBeginEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_);
+                                context.event_.Set();
+                            }
+                        }
+
+                        context.reportId_ = message.Id;
+
+                        if (!message.Last)
+                        {
+                            // Sending the next request ahead of current response processing
+
+                            if (context.Waitable)
+                            {
+                                lock (context.tradeTransactionReportEnumerator_.mutex_)
+                                {
+                                    if (!context.tradeTransactionReportEnumerator_.completed_)
+                                    {
+                                        TradeDownloadRequest request = new TradeDownloadRequest(0);
+                                        request.Id = Guid.NewGuid().ToString();
+                                        request.Direction = client_.Convert(context.timeDirection_);
+                                        request.From = context.from_;
+                                        request.To = context.to_;
+                                        request.SkipCancel = context.skipCancel_;
+                                        request.ReportId = context.reportId_;
+
+                                        client_.session_.SendTradeDownloadRequest(context, request);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                TradeDownloadRequest request = new TradeDownloadRequest(0);
+                                request.Id = Guid.NewGuid().ToString();
+                                request.Direction = client_.Convert(context.timeDirection_);
+                                request.From = context.from_;
+                                request.To = context.to_;
+                                request.SkipCancel = context.skipCancel_;
+                                request.ReportId = context.reportId_;
+
+                                client_.session_.SendTradeDownloadRequest(context, request);
+                            }
+                        }
+
+                        TradeArray trades = message.Trades;
+                        int count = trades.Length;
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            Trade trade = trades[index];
+
+                            Convert(context.tradeTransactionReport_, trade);
+
+                            if (client_.TradeDownloadResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TradeDownloadResultEvent(client_, context.Data, context.tradeTransactionReport_);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
+
+                                context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
+                            }
+                        }
+
+                        if (message.Last)
+                        {
+                            if (client_.TradeDownloadResultEndEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TradeDownloadResultEndEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.tradeTransactionReportEnumerator_.SetEnd();
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TradeDownloadErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            if (context.tradeTransactionReportEnumerator_ != null)
+                            {
+                                context.tradeTransactionReportEnumerator_.SetError(exception);
+                            }
+                            else
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradeDownloadReject(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, Reject message)
             {
-                TradeDownloadAsyncContext context = (TradeDownloadAsyncContext) TradeDownloadRequestClientContext;
-
                 try
                 {
+                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext)TradeDownloadRequestClientContext;
+
                     RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                     if (client_.TradeDownloadErrorEvent != null)
@@ -1672,29 +1602,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TradeDownloadErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        if (context.tradeTransactionReportEnumerator_ != null)
-                        {
-                            context.tradeTransactionReportEnumerator_.SetError(exception);
-                        }
-                        else
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1717,8 +1625,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1742,8 +1651,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1768,8 +1678,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 

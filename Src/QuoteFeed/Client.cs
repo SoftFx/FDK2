@@ -909,8 +909,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -929,16 +930,17 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {                
+            {               
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
                     Exception exception = new Exception(text);
 
@@ -958,8 +960,9 @@ namespace TickTrader.FDK.QuoteFeed
                         connectAsyncContext.exception_ = exception;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -980,8 +983,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1018,8 +1022,9 @@ namespace TickTrader.FDK.QuoteFeed
                         disconnectAsyncContext.text_ = text;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1049,54 +1054,62 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
-
                 try
                 {
-                    if (client_.LoginResultEvent != null)
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
                     {
-                        try
+                        if (client_.LoginResultEvent != null)
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            try
+                            {
+                                client_.LoginResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
                     TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
 
                     LoginException exception = new LoginException(reason, message.Text);
@@ -1119,196 +1132,201 @@ namespace TickTrader.FDK.QuoteFeed
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginRequest(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    string text = message.Text;
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    if (client_.TwoFactorLoginRequestEvent != null)
+                    try
                     {
-                        try
+                        string text = message.Text;
+
+                        if (client_.TwoFactorLoginRequestEvent != null)
                         {
-                            client_.TwoFactorLoginRequestEvent(client_, text);
+                            try
+                            {
+                                client_.TwoFactorLoginRequestEvent(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
 
                     try
                     {
-                        DateTime expireTime = message.ExpireTime.Value;
+                        TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
 
-                        if (client_.TwoFactorLoginResultEvent != null)
+                        try
+                        {
+                            DateTime expireTime = message.ExpireTime.Value;
+
+                            if (client_.TwoFactorLoginResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.dateTime_ = expireTime;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.TwoFactorLoginErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.exception_ = exception;
+                            }
+
+                            throw;
+                        }
+
+                        if (client_.LoginResultEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                client_.LoginResultEvent(client_, loginContext.Data);
                             }
                             catch
                             {
                             }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.dateTime_ = expireTime;
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TwoFactorLoginErrorEvent != null)
+                        if (client_.LoginErrorEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                client_.LoginErrorEvent(client_, loginContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.Waitable)
+                        if (loginContext.Waitable)
                         {
-                            responseContext.exception_ = exception;
-                        }
-
-                        throw;
-                    }
-
-                    if (client_.LoginResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginResultEvent(client_, loginContext.Data);
-                        }
-                        catch
-                        {
+                            loginContext.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception);
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.Waitable)
+                    if (responseContext.Waitable)
                     {
-                        loginContext.exception_ = exception;
-                    }
-                }
-            }
-
-            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
-                {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
-
-                    try
-                    {
-                        Exception exception = new Exception(message.Text);
-
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-
-                        // the login procedure continues..
+                        responseContext.exception_ = exception;
                     }
 
                     // the login procedure continues..
                 }
                 catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (responseContext.Waitable)
+                    {
+                        responseContext.exception_ = exception;
+                    }
+
                     if (client_.LoginErrorEvent != null)
                     {
                         try
@@ -1325,248 +1343,188 @@ namespace TickTrader.FDK.QuoteFeed
                         loginContext.exception_ = exception;
                     }
                 }
-            }
-
-            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
+                catch (Exception exception)
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;                                       
-
-                    Exception exception1 = new Exception(message.Text);
-
-                    try
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception1);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception1;
-                        }
-                    }
-                    catch (Exception exception2)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception2);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception2;
-                        }
-
-                        throw;
-                    }                    
-
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception1);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception1;
-                    }
-                }
-                catch (Exception exception2)
-                {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception2);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception2;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
-
                 try
                 {
-                    DateTime expireTime = message.ExpireTime.Value;
+                    TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
-                    if (client_.TwoFactorLoginResumeEvent != null)
+                    try
                     {
-                        try
+                        DateTime expireTime = message.ExpireTime.Value;
+
+                        if (client_.TwoFactorLoginResumeEvent != null)
                         {
-                            client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            try
+                            {
+                                client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.dateTime_ = expireTime;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.dateTime_ = expireTime;
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TwoFactorLoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
             {
-                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
-
                 try
                 {
-                    LogoutInfo result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
-                    result.Message = message.Text;
+                    LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
-                    if (client_.LogoutResultEvent != null)
+                    try
                     {
-                        try
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = Convert(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.logoutInfo_ = result;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.logoutInfo_ = result;
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LogoutErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnCurrencyListReport(ClientSession session, CurrencyListRequestClientContext CurrencyListRequestClientContext, CurrencyListReport message)
             {
-                CurrencyListAsyncContext context = (CurrencyListAsyncContext) CurrencyListRequestClientContext;
-
                 try
                 {
-                    CurrencyArray reportCurrencies = message.Currencies;
-                    int count = reportCurrencies.Length;
-                    TickTrader.FDK.Common.CurrencyInfo[] resultCurrencies = new TickTrader.FDK.Common.CurrencyInfo[count];
+                    CurrencyListAsyncContext context = (CurrencyListAsyncContext)CurrencyListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        Currency reportCurrency = reportCurrencies[index];
-                        TickTrader.FDK.Common.CurrencyInfo resultCurrency = new TickTrader.FDK.Common.CurrencyInfo();
+                        CurrencyArray reportCurrencies = message.Currencies;
+                        int count = reportCurrencies.Length;
+                        TickTrader.FDK.Common.CurrencyInfo[] resultCurrencies = new TickTrader.FDK.Common.CurrencyInfo[count];
 
-                        resultCurrency.Name = reportCurrency.Id;
-                        resultCurrency.Description = reportCurrency.Description;
-                        resultCurrency.Precision = reportCurrency.Precision;
-                        resultCurrency.SortOrder = reportCurrency.SortOrder;
-
-                        resultCurrencies[index] = resultCurrency;
-                    }
-
-                    if (client_.CurrencyListResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.CurrencyListResultEvent(client_, context.Data, resultCurrencies);
+                            Currency reportCurrency = reportCurrencies[index];
+                            TickTrader.FDK.Common.CurrencyInfo resultCurrency = new TickTrader.FDK.Common.CurrencyInfo();
+
+                            resultCurrency.Name = reportCurrency.Id;
+                            resultCurrency.Description = reportCurrency.Description;
+                            resultCurrency.Precision = reportCurrency.Precision;
+                            resultCurrency.SortOrder = reportCurrency.SortOrder;
+
+                            resultCurrencies[index] = resultCurrency;
                         }
-                        catch
+
+                        if (client_.CurrencyListResultEvent != null)
                         {
+                            try
+                            {
+                                client_.CurrencyListResultEvent(client_, context.Data, resultCurrencies);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.currencyInfos_ = resultCurrencies;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.currencyInfos_ = resultCurrencies;
+                        if (client_.CurrencyListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CurrencyListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.CurrencyListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.CurrencyListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnCurrencyListReject(ClientSession session, CurrencyListRequestClientContext CurrencyListRequestClientContext, Reject message)
             {
-                CurrencyListAsyncContext context = (CurrencyListAsyncContext) CurrencyListRequestClientContext;
-
                 try
                 {
+                    CurrencyListAsyncContext context = (CurrencyListAsyncContext)CurrencyListRequestClientContext;
+
                     RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                     if (client_.CurrencyListErrorEvent != null)
@@ -1587,124 +1545,117 @@ namespace TickTrader.FDK.QuoteFeed
                 }
                 catch (Exception exception)
                 {
-                    if (client_.CurrencyListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.CurrencyListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnSymbolListReport(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, SymbolListReport message)
             {
-                SymbolListAsyncContext context = (SymbolListAsyncContext) SymbolListRequestClientContext;
-
                 try
                 {
-                    SymbolArray reportSymbols = message.Symbols;
-                    int count = reportSymbols.Length;
-                    TickTrader.FDK.Common.SymbolInfo[] resultSymbols = new TickTrader.FDK.Common.SymbolInfo[count];
+                    SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        Symbol reportSymbol = reportSymbols[index];
-                        TickTrader.FDK.Common.SymbolInfo resultSymbol = new TickTrader.FDK.Common.SymbolInfo();
+                        SymbolArray reportSymbols = message.Symbols;
+                        int count = reportSymbols.Length;
+                        TickTrader.FDK.Common.SymbolInfo[] resultSymbols = new TickTrader.FDK.Common.SymbolInfo[count];
 
-                        resultSymbol.Name = reportSymbol.Id;
-                        resultSymbol.Currency = reportSymbol.MarginCurrId;
-                        resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrId;
-                        resultSymbol.Description = reportSymbol.Description;
-                        resultSymbol.Precision = reportSymbol.Precision;
-                        resultSymbol.RoundLot = reportSymbol.RoundLot;
-                        resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;
-                        resultSymbol.MaxTradeVolume = reportSymbol.MaxTradeVol;
-                        resultSymbol.TradeVolumeStep = reportSymbol.TradeVolStep;
-                        resultSymbol.ProfitCalcMode = Convert(reportSymbol.ProfitCalcMode);
-                        resultSymbol.MarginCalcMode = Convert(reportSymbol.MarginCalcMode); 
-                        resultSymbol.MarginHedge = reportSymbol.MarginHedge;
-                        resultSymbol.MarginFactorFractional = reportSymbol.MarginFactor;
-                        resultSymbol.ContractMultiplier = reportSymbol.ContractMultiplier;
-                        resultSymbol.Color = (int) reportSymbol.Color;
-                        resultSymbol.CommissionType = Convert(reportSymbol.CommissionType);
-                        resultSymbol.CommissionChargeType = Convert(reportSymbol.CommissionChargeType);
-                        resultSymbol.CommissionChargeMethod = Convert(reportSymbol.CommissionChargeMethod);
-                        resultSymbol.LimitsCommission = reportSymbol.LimitsCommission;
-                        resultSymbol.Commission = reportSymbol.Commission;
-                        resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
-                        resultSymbol.MinCommission = reportSymbol.MinCommission;
-                        resultSymbol.SwapType = Convert(reportSymbol.SwapType);
-                        resultSymbol.TripleSwapDay = reportSymbol.TripleSwapDay;
-                        resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
-                        resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
-                        resultSymbol.DefaultSlippage = reportSymbol.DefaultSlippage;
-                        resultSymbol.IsTradeEnabled = reportSymbol.TradeEnabled;
-                        resultSymbol.GroupSortOrder = reportSymbol.SecuritySortOrder;
-                        resultSymbol.SortOrder = reportSymbol.SortOrder;
-                        resultSymbol.CurrencySortOrder = reportSymbol.MarginCurrSortOrder;
-                        resultSymbol.SettlementCurrencySortOrder = reportSymbol.ProfitCurrSortOrder;
-                        resultSymbol.CurrencyPrecision = reportSymbol.MarginCurrPrecision;
-                        resultSymbol.SettlementCurrencyPrecision = reportSymbol.ProfitCurrPrecision;
-                        resultSymbol.StatusGroupId = reportSymbol.StatusGroupId;
-                        resultSymbol.SecurityName = reportSymbol.SecurityId;
-                        resultSymbol.SecurityDescription = reportSymbol.SecurityDescription;
-                        resultSymbol.StopOrderMarginReduction = reportSymbol.StopOrderMarginReduction;
-                        resultSymbol.HiddenLimitOrderMarginReduction = reportSymbol.HiddenLimitOrderMarginReduction;
-
-                        resultSymbols[index] = resultSymbol;
-                    }
-
-                    if (client_.SymbolListResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.SymbolListResultEvent(client_, context.Data, resultSymbols);
+                            Symbol reportSymbol = reportSymbols[index];
+                            TickTrader.FDK.Common.SymbolInfo resultSymbol = new TickTrader.FDK.Common.SymbolInfo();
+
+                            resultSymbol.Name = reportSymbol.Id;
+                            resultSymbol.Currency = reportSymbol.MarginCurrId;
+                            resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrId;
+                            resultSymbol.Description = reportSymbol.Description;
+                            resultSymbol.Precision = reportSymbol.Precision;
+                            resultSymbol.RoundLot = reportSymbol.RoundLot;
+                            resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;
+                            resultSymbol.MaxTradeVolume = reportSymbol.MaxTradeVol;
+                            resultSymbol.TradeVolumeStep = reportSymbol.TradeVolStep;
+                            resultSymbol.ProfitCalcMode = Convert(reportSymbol.ProfitCalcMode);
+                            resultSymbol.MarginCalcMode = Convert(reportSymbol.MarginCalcMode);
+                            resultSymbol.MarginHedge = reportSymbol.MarginHedge;
+                            resultSymbol.MarginFactorFractional = reportSymbol.MarginFactor;
+                            resultSymbol.ContractMultiplier = reportSymbol.ContractMultiplier;
+                            resultSymbol.Color = (int)reportSymbol.Color;
+                            resultSymbol.CommissionType = Convert(reportSymbol.CommissionType);
+                            resultSymbol.CommissionChargeType = Convert(reportSymbol.CommissionChargeType);
+                            resultSymbol.CommissionChargeMethod = Convert(reportSymbol.CommissionChargeMethod);
+                            resultSymbol.LimitsCommission = reportSymbol.LimitsCommission;
+                            resultSymbol.Commission = reportSymbol.Commission;
+                            resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
+                            resultSymbol.MinCommission = reportSymbol.MinCommission;
+                            resultSymbol.SwapType = Convert(reportSymbol.SwapType);
+                            resultSymbol.TripleSwapDay = reportSymbol.TripleSwapDay;
+                            resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
+                            resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
+                            resultSymbol.DefaultSlippage = reportSymbol.DefaultSlippage;
+                            resultSymbol.IsTradeEnabled = reportSymbol.TradeEnabled;
+                            resultSymbol.GroupSortOrder = reportSymbol.SecuritySortOrder;
+                            resultSymbol.SortOrder = reportSymbol.SortOrder;
+                            resultSymbol.CurrencySortOrder = reportSymbol.MarginCurrSortOrder;
+                            resultSymbol.SettlementCurrencySortOrder = reportSymbol.ProfitCurrSortOrder;
+                            resultSymbol.CurrencyPrecision = reportSymbol.MarginCurrPrecision;
+                            resultSymbol.SettlementCurrencyPrecision = reportSymbol.ProfitCurrPrecision;
+                            resultSymbol.StatusGroupId = reportSymbol.StatusGroupId;
+                            resultSymbol.SecurityName = reportSymbol.SecurityId;
+                            resultSymbol.SecurityDescription = reportSymbol.SecurityDescription;
+                            resultSymbol.StopOrderMarginReduction = reportSymbol.StopOrderMarginReduction;
+                            resultSymbol.HiddenLimitOrderMarginReduction = reportSymbol.HiddenLimitOrderMarginReduction;
+
+                            resultSymbols[index] = resultSymbol;
                         }
-                        catch
+
+                        if (client_.SymbolListResultEvent != null)
                         {
+                            try
+                            {
+                                client_.SymbolListResultEvent(client_, context.Data, resultSymbols);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.symbolInfos_ = resultSymbols;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.symbolInfos_ = resultSymbols;
+                        if (client_.SymbolListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SymbolListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SymbolListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnSymbolListReject(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, Reject message)
             {
-                SymbolListAsyncContext context = (SymbolListAsyncContext) SymbolListRequestClientContext;
-
                 try
                 {
+                    SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
+
                     RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
@@ -1725,102 +1676,95 @@ namespace TickTrader.FDK.QuoteFeed
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SymbolListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradingSessionStatusReport(ClientSession session, TradingSessionStatusRequestClientContext TradingSessionStatusRequestClientContext, TradingSessionStatusReport message)
             {
-                SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
-                    SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
+                    SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
 
-                    resultStatusInfo.Status = Convert(reportStatusInfo.Status);
-                    resultStatusInfo.StartTime = reportStatusInfo.StartTime;
-                    resultStatusInfo.EndTime = reportStatusInfo.EndTime;
-                    resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
-                    resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
-
-                    TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
-                    int count = reportGroups.Length;
-                    TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
-
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        TradingSessionStatusGroup reportGroup = reportGroups[index];
-                        TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
+                        TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
+                        SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
-                        resultGroup.StatusGroupId = reportGroup.Id;
-                        resultGroup.Status = Convert(reportGroup.Status);
-                        resultGroup.StartTime = reportGroup.StartTime;
-                        resultGroup.EndTime = reportGroup.EndTime;
-                        resultGroup.OpenTime = reportGroup.OpenTime;
-                        resultGroup.CloseTime = reportGroup.CloseTime;
+                        resultStatusInfo.Status = Convert(reportStatusInfo.Status);
+                        resultStatusInfo.StartTime = reportStatusInfo.StartTime;
+                        resultStatusInfo.EndTime = reportStatusInfo.EndTime;
+                        resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
+                        resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
-                        resultGroups[index] = resultGroup;
-                    }
+                        TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
+                        int count = reportGroups.Length;
+                        TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
 
-                    resultStatusInfo.StatusGroups = resultGroups;
-
-                    if (client_.SessionInfoResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.SessionInfoResultEvent(client_, context.Data, resultStatusInfo);
+                            TradingSessionStatusGroup reportGroup = reportGroups[index];
+                            TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
+
+                            resultGroup.StatusGroupId = reportGroup.Id;
+                            resultGroup.Status = Convert(reportGroup.Status);
+                            resultGroup.StartTime = reportGroup.StartTime;
+                            resultGroup.EndTime = reportGroup.EndTime;
+                            resultGroup.OpenTime = reportGroup.OpenTime;
+                            resultGroup.CloseTime = reportGroup.CloseTime;
+
+                            resultGroups[index] = resultGroup;
                         }
-                        catch
+
+                        resultStatusInfo.StatusGroups = resultGroups;
+
+                        if (client_.SessionInfoResultEvent != null)
                         {
+                            try
+                            {
+                                client_.SessionInfoResultEvent(client_, context.Data, resultStatusInfo);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.sessionInfo_ = resultStatusInfo;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.sessionInfo_ = resultStatusInfo;
-                    }                        
+                        if (client_.SessionInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SessionInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SessionInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SessionInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradingSessionStatusReject(ClientSession session, TradingSessionStatusRequestClientContext TradingSessionStatusRequestClientContext, Reject message)
             {
-                SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
-
                 try
                 {
+                    SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
+
                     RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                     if (client_.SessionInfoErrorEvent != null)
@@ -1841,237 +1785,230 @@ namespace TickTrader.FDK.QuoteFeed
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SessionInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SessionInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnMarketDataReport(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, MarketDataReport message)
             {
-                if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
+                try
                 {
-                    // SubscribeQuotes
-
-                    SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
+                    if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
                     {
-                        MarketDataSnapshotArray reportSnapshots = message.Snapshots;
-                        int count = reportSnapshots.Length;
-                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+                        // SubscribeQuotes
 
-                        for (int index = 0; index < count; ++index)
+                        SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
+
+                        try
                         {
-                            MarketDataSnapshot reportSnapshot = reportSnapshots[index];
+                            MarketDataSnapshotArray reportSnapshots = message.Snapshots;
+                            int count = reportSnapshots.Length;
+                            TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
 
-                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
-                            resultQuote.Symbol = reportSnapshot.SymbolId;
-                            resultQuote.Id = reportSnapshot.Id;
-                            resultQuote.CreatingTime = reportSnapshot.OrigTime;
-
-                            MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
-                            int count2 = reportSnapshotEntries.Length;
-
-                            resultQuote.Bids.Clear();
-                            resultQuote.Asks.Clear();
-
-                            for (int index2 = 0; index2 < count2; ++ index2)
+                            for (int index = 0; index < count; ++index)
                             {
-                                MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
+                                MarketDataSnapshot reportSnapshot = reportSnapshots[index];
 
-                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
-                                quoteEntry.Volume = reportSnapshotEntry.Size;
-                                quoteEntry.Price = reportSnapshotEntry.Price;
+                                TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+                                resultQuote.Symbol = reportSnapshot.SymbolId;
+                                resultQuote.Id = reportSnapshot.Id;
+                                resultQuote.CreatingTime = reportSnapshot.OrigTime;
 
-                                if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
+                                MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
+                                int count2 = reportSnapshotEntries.Length;
+
+                                resultQuote.Bids.Clear();
+                                resultQuote.Asks.Clear();
+
+                                for (int index2 = 0; index2 < count2; ++index2)
                                 {
-                                    resultQuote.Bids.Add(quoteEntry);
+                                    MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
+
+                                    TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
+                                    quoteEntry.Volume = reportSnapshotEntry.Size;
+                                    quoteEntry.Price = reportSnapshotEntry.Price;
+
+                                    if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
+                                    {
+                                        resultQuote.Bids.Add(quoteEntry);
+                                    }
+                                    else
+                                        resultQuote.Asks.Add(quoteEntry);
                                 }
-                                else
-                                    resultQuote.Asks.Add(quoteEntry);
+
+                                resultQuote.Bids.Reverse();
+
+                                resultQuotes[index] = resultQuote;
                             }
 
-                            resultQuote.Bids.Reverse();
-
-                            resultQuotes[index] = resultQuote;
+                            if (client_.SubscribeQuotesResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.SubscribeQuotesResultEvent(client_, context.Data, resultQuotes);
+                                }
+                                catch
+                                {
+                                }
+                            }
                         }
-
-                        if (client_.SubscribeQuotesResultEvent != null)
+                        catch (Exception exception)
                         {
-                            try
+                            if (client_.SubscribeQuotesErrorEvent != null)
                             {
-                                client_.SubscribeQuotesResultEvent(client_, context.Data, resultQuotes);
+                                try
+                                {
+                                    client_.SubscribeQuotesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
                             }
-                            catch
+
+                            if (context.Waitable)
                             {
+                                context.exception_ = exception;
                             }
                         }
                     }
-                    catch (Exception exception)
+                    else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
                     {
-                        if (client_.SubscribeQuotesErrorEvent != null)
+                        // UnsubscribeQuotes
+
+                        UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
+
+                        try
                         {
-                            try
+                            if (client_.UnsubscribeQuotesResultEvent != null)
                             {
-                                client_.SubscribeQuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
+                                try
+                                {
+                                    client_.UnsubscribeQuotesResultEvent(client_, context.Data, context.SymbolIds);
+                                }
+                                catch
+                                {
+                                }
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.exception_ = exception;
+                            if (client_.UnsubscribeQuotesErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.UnsubscribeQuotesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // GetQuotes
+
+                        GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
+
+                        try
+                        {
+                            MarketDataSnapshotArray reportSnapshots = message.Snapshots;
+                            int count = reportSnapshots.Length;
+                            TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+
+                            for (int index = 0; index < count; ++index)
+                            {
+                                MarketDataSnapshot reportSnapshot = reportSnapshots[index];
+
+                                TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+                                resultQuote.Symbol = reportSnapshot.SymbolId;
+                                resultQuote.Id = reportSnapshot.Id;
+                                resultQuote.CreatingTime = reportSnapshot.OrigTime;
+
+                                MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
+                                int count2 = reportSnapshotEntries.Length;
+
+                                resultQuote.Bids.Clear();
+                                resultQuote.Asks.Clear();
+
+                                for (int index2 = 0; index2 < count2; ++index2)
+                                {
+                                    MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
+                                    TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
+
+                                    quoteEntry.Volume = reportSnapshotEntry.Size;
+                                    quoteEntry.Price = reportSnapshotEntry.Price;
+
+                                    if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
+                                    {
+                                        resultQuote.Bids.Add(quoteEntry);
+                                    }
+                                    else
+                                        resultQuote.Asks.Add(quoteEntry);
+                                }
+
+                                resultQuote.Bids.Reverse();
+
+                                resultQuotes[index] = resultQuote;
+                            }
+
+                            if (client_.QuotesResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuotesResultEvent(client_, context.Data, resultQuotes);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.quotes_ = resultQuotes;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.QuotesErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuotesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
                         }
                     }
                 }
-                else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
+                catch (Exception exception)
                 {
-                    // UnsubscribeQuotes
-
-                    UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
-                    {
-                        if (client_.UnsubscribeQuotesResultEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeQuotesResultEvent(client_, context.Data, context.SymbolIds);
-                            }
-                            catch
-                            {
-                            }
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.UnsubscribeQuotesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeQuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-                else
-                {
-                    // GetQuotes
-
-                    GetQuotesAsyncContext context = (GetQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
-                    {
-                        MarketDataSnapshotArray reportSnapshots = message.Snapshots;
-                        int count = reportSnapshots.Length;
-                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
-
-                        for (int index = 0; index < count; ++ index)
-                        {
-                            MarketDataSnapshot reportSnapshot = reportSnapshots[index];
-
-                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
-                            resultQuote.Symbol = reportSnapshot.SymbolId;
-                            resultQuote.Id = reportSnapshot.Id;
-                            resultQuote.CreatingTime = reportSnapshot.OrigTime;
-
-                            MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
-                            int count2 = reportSnapshotEntries.Length;
-
-                            resultQuote.Bids.Clear();
-                            resultQuote.Asks.Clear();
-
-                            for (int index2 = 0; index2 < count2; ++ index2)
-                            {
-                                MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
-
-                                quoteEntry.Volume = reportSnapshotEntry.Size;
-                                quoteEntry.Price = reportSnapshotEntry.Price;
-
-                                if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
-                                {
-                                    resultQuote.Bids.Add(quoteEntry);
-                                }
-                                else
-                                    resultQuote.Asks.Add(quoteEntry);
-                            }
-
-                            resultQuote.Bids.Reverse();
-
-                            resultQuotes[index] = resultQuote;
-                        }
-
-                        if (client_.QuotesResultEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuotesResultEvent(client_, context.Data, resultQuotes);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.quotes_ = resultQuotes;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuotesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnMarketDataReject(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, Reject message)
             {
-                if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
+                try
                 {
-                    // SubscribeQuotes
-
-                    SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
+                    if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
                     {
+                        // SubscribeQuotes
+
+                        SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
+
                         RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                         if (client_.SubscribeQuotesErrorEvent != null)
@@ -2090,33 +2027,12 @@ namespace TickTrader.FDK.QuoteFeed
                             context.exception_ = exception;
                         }
                     }
-                    catch (Exception exception)
+                    else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
                     {
-                        if (client_.SubscribeQuotesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.SubscribeQuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
+                        // UnsubscribeQuotes
 
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-                else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
-                {
-                    // UnsubscribeQuotes
+                        UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
 
-                    UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
-                    {
                         RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                         if (client_.UnsubscribeQuotesErrorEvent != null)
@@ -2135,33 +2051,12 @@ namespace TickTrader.FDK.QuoteFeed
                             context.exception_ = exception;
                         }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        if (client_.UnsubscribeQuotesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.UnsubscribeQuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
+                        // GetQuotes
 
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
-                }
-                else
-                {
-                    // GetQuotes
+                        GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
 
-                    GetQuotesAsyncContext context = (GetQuotesAsyncContext) MarketDataRequestClientContext;
-
-                    try
-                    {
                         RejectException exception = new RejectException(RejectReason.None, message.Text);
 
                         if (client_.QuotesErrorEvent != null)
@@ -2180,24 +2075,10 @@ namespace TickTrader.FDK.QuoteFeed
                             context.exception_ = exception;
                         }
                     }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuotesErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuotesErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                        }
-                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2220,8 +2101,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2270,8 +2152,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2320,8 +2203,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2346,8 +2230,9 @@ namespace TickTrader.FDK.QuoteFeed
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 

@@ -1463,10 +1463,10 @@ namespace TickTrader.FDK.OrderEntry
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
             {
-                ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
-
                 try
                 {
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+
                     if (client_.ConnectResultEvent != null)
                     {
                         try
@@ -1478,8 +1478,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1498,17 +1499,18 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {                
-                ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
-
+            {               
                 try
                 {
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
+
                     Exception exception = new Exception(text);
 
                     if (client_.ConnectErrorEvent != null)
@@ -1527,8 +1529,9 @@ namespace TickTrader.FDK.OrderEntry
                         connectAsyncContext.exception_ = exception;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1549,17 +1552,17 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
             {
-                DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
-
                 try
-                {                    
+                {
+                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
 
                     foreach (ClientContext context in contexts)
                     {
@@ -1588,8 +1591,9 @@ namespace TickTrader.FDK.OrderEntry
                         disconnectAsyncContext.text_ = text;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1619,54 +1623,62 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
-
                 try
                 {
-                    if (client_.LoginResultEvent != null)
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
                     {
-                        try
+                        if (client_.LoginResultEvent != null)
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            try
+                            {
+                                client_.LoginResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
                     TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
 
                     LoginException exception = new LoginException(reason, message.Text);
@@ -1689,196 +1701,201 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginRequest(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    string text = message.Text;
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    if (client_.TwoFactorLoginRequestEvent != null)
+                    try
                     {
-                        try
+                        string text = message.Text;
+
+                        if (client_.TwoFactorLoginRequestEvent != null)
                         {
-                            client_.TwoFactorLoginRequestEvent(client_, text);
+                            try
+                            {
+                                client_.TwoFactorLoginRequestEvent(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginSuccess(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
             {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
 
                     try
                     {
-                        DateTime expireTime = message.ExpireTime.Value;
+                        TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
 
-                        if (client_.TwoFactorLoginResultEvent != null)
+                        try
+                        {
+                            DateTime expireTime = message.ExpireTime.Value;
+
+                            if (client_.TwoFactorLoginResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.dateTime_ = expireTime;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.TwoFactorLoginErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (responseContext.Waitable)
+                            {
+                                responseContext.exception_ = exception;
+                            }
+
+                            throw;
+                        }
+
+                        if (client_.LoginResultEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginResultEvent(client_, responseContext.Data, expireTime);
+                                client_.LoginResultEvent(client_, loginContext.Data);
                             }
                             catch
                             {
                             }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.dateTime_ = expireTime;
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TwoFactorLoginErrorEvent != null)
+                        if (client_.LoginErrorEvent != null)
                         {
                             try
                             {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                                client_.LoginErrorEvent(client_, loginContext.Data, exception);
                             }
                             catch
                             {
                             }
                         }
 
-                        if (responseContext.Waitable)
+                        if (loginContext.Waitable)
                         {
-                            responseContext.exception_ = exception;
-                        }
-
-                        throw;
-                    }
-
-                    if (client_.LoginResultEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginResultEvent(client_, loginContext.Data);
-                        }
-                        catch
-                        {
+                            loginContext.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
                     {
                         try
                         {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception);
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
                         }
                         catch
                         {
                         }
                     }
 
-                    if (loginContext.Waitable)
+                    if (responseContext.Waitable)
                     {
-                        loginContext.exception_ = exception;
-                    }
-                }
-            }
-
-            public override void OnTwoFactorLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorReject message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
-                {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;
-
-                    try
-                    {
-                        Exception exception = new Exception(message.Text);
-
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception;
-                        }
-
-                        // the login procedure continues..
+                        responseContext.exception_ = exception;
                     }
 
                     // the login procedure continues..
                 }
                 catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
+                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
+
+                    Exception exception = new Exception(message.Text);
+
+                    if (client_.TwoFactorLoginErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (responseContext.Waitable)
+                    {
+                        responseContext.exception_ = exception;
+                    }
+
                     if (client_.LoginErrorEvent != null)
                     {
                         try
@@ -1895,244 +1912,184 @@ namespace TickTrader.FDK.OrderEntry
                         loginContext.exception_ = exception;
                     }
                 }
-            }
-
-            public override void OnTwoFactorLoginError(ClientSession session, LoginRequestClientContext LoginRequestClientContext, TwoFactorLoginResponseClientContext TwoFactorLoginResponseClientContext, TwoFactorLogin message)
-            {
-                LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
-
-                try
+                catch (Exception exception)
                 {
-                    TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext) TwoFactorLoginResponseClientContext;                                       
-
-                    Exception exception1 = new Exception(message.Text);
-
-                    try
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception1);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception1;
-                        }
-                    }
-                    catch (Exception exception2)
-                    {
-                        if (client_.TwoFactorLoginErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.TwoFactorLoginErrorEvent(client_, responseContext.Data, exception2);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (responseContext.Waitable)
-                        {
-                            responseContext.exception_ = exception2;
-                        }
-
-                        throw;
-                    }                    
-
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception1);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception1;
-                    }
-                }
-                catch (Exception exception2)
-                {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, loginContext.Data, exception2);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (loginContext.Waitable)
-                    {
-                        loginContext.exception_ = exception2;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTwoFactorLoginResume(ClientSession session, TwoFactorLoginResumeClientContext TwoFactorLoginResumeClientContext, TwoFactorLogin message)
             {
-                TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
-
                 try
                 {
-                    DateTime expireTime = message.ExpireTime.Value;
+                    TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
 
-                    if (client_.TwoFactorLoginResumeEvent != null)
+                    try
                     {
-                        try
+                        DateTime expireTime = message.ExpireTime.Value;
+
+                        if (client_.TwoFactorLoginResumeEvent != null)
                         {
-                            client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            try
+                            {
+                                client_.TwoFactorLoginResumeEvent(client_, context.Data, expireTime);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.dateTime_ = expireTime;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.dateTime_ = expireTime;
+                        if (client_.TwoFactorLoginErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TwoFactorLoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TwoFactorLoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
             {
-                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
-
                 try
                 {
-                    LogoutInfo result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
-                    result.Message = message.Text;
+                    LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
-                    if (client_.LogoutResultEvent != null)
+                    try
                     {
-                        try
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = Convert(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.logoutInfo_ = result;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.logoutInfo_ = result;
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LogoutErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradeServerInfoReport(ClientSession session, TradeServerInfoRequestClientContext TradeServerInfoRequestClientContext, TradeServerInfoReport message)
             {
-                TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext) TradeServerInfoRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.TradeServerInfo resultTradeServerInfo = new TickTrader.FDK.Common.TradeServerInfo();
-                    resultTradeServerInfo.CompanyName = message.CompanyName;
-                    resultTradeServerInfo.CompanyFullName = message.CompanyFullName;
-                    resultTradeServerInfo.CompanyDescription = message.CompanyDescription;
-                    resultTradeServerInfo.CompanyAddress = message.CompanyAddress;                    
-                    resultTradeServerInfo.CompanyEmail = message.CompanyEmail;
-                    resultTradeServerInfo.CompanyPhone = message.CompanyPhone;
-                    resultTradeServerInfo.CompanyWebSite = message.CompanyWebSite;
-                    resultTradeServerInfo.ServerAddress = message.ServerAddress;
-                    resultTradeServerInfo.ServerFullName = message.ServerFullName;
-                    resultTradeServerInfo.ServerDescription = message.ServerDescription;
-                    resultTradeServerInfo.ServerAddress = message.ServerAddress;
+                    TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext) TradeServerInfoRequestClientContext;
 
-                    if (client_.TradeServerInfoResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.TradeServerInfo resultTradeServerInfo = new TickTrader.FDK.Common.TradeServerInfo();
+                        resultTradeServerInfo.CompanyName = message.CompanyName;
+                        resultTradeServerInfo.CompanyFullName = message.CompanyFullName;
+                        resultTradeServerInfo.CompanyDescription = message.CompanyDescription;
+                        resultTradeServerInfo.CompanyAddress = message.CompanyAddress;
+                        resultTradeServerInfo.CompanyEmail = message.CompanyEmail;
+                        resultTradeServerInfo.CompanyPhone = message.CompanyPhone;
+                        resultTradeServerInfo.CompanyWebSite = message.CompanyWebSite;
+                        resultTradeServerInfo.ServerAddress = message.ServerAddress;
+                        resultTradeServerInfo.ServerFullName = message.ServerFullName;
+                        resultTradeServerInfo.ServerDescription = message.ServerDescription;
+                        resultTradeServerInfo.ServerAddress = message.ServerAddress;
+
+                        if (client_.TradeServerInfoResultEvent != null)
                         {
-                            client_.TradeServerInfoResultEvent(client_, context.Data, resultTradeServerInfo);
+                            try
+                            {
+                                client_.TradeServerInfoResultEvent(client_, context.Data, resultTradeServerInfo);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.tradeServerInfo_ = resultTradeServerInfo;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.tradeServerInfo_ = resultTradeServerInfo;
+                        if (client_.TradeServerInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TradeServerInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TradeServerInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TradeServerInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradeServerInfoReject(ClientSession session, TradeServerInfoRequestClientContext TradeServerInfoRequestClientContext, Reject message)
             {
-                TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext) TradeServerInfoRequestClientContext;
-
                 try
                 {
+                    TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext)TradeServerInfoRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.TradeServerInfoErrorEvent != null)
@@ -2153,127 +2110,120 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.TradeServerInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.TradeServerInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnAccountInfoReport(ClientSession session, AccountInfoRequestClientContext AccountInfoRequestClientContext, AccountInfoReport message)
             {
-                AccountInfoAsyncContext context = (AccountInfoAsyncContext) AccountInfoRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
-                    SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
-                    resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
-                    resultAccountInfo.Type = Convert(reportAccountInfo.Type);
-                    resultAccountInfo.Name = reportAccountInfo.Name;
-                    resultAccountInfo.Email = reportAccountInfo.Email;
-                    resultAccountInfo.Comment = reportAccountInfo.Description;                    
-                    resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
-                    resultAccountInfo.Leverage = reportAccountInfo.Leverage;
+                    AccountInfoAsyncContext context = (AccountInfoAsyncContext)AccountInfoRequestClientContext;
 
-                    BalanceNull reportBalance = reportAccountInfo.Balance;
-
-                    if (reportBalance.HasValue)
+                    try
                     {
-                        resultAccountInfo.Currency = reportBalance.CurrId;   
-                        resultAccountInfo.Balance = reportBalance.Total;
-                    }
-                    else
-                    {
-                        resultAccountInfo.Currency = "";     // TODO: something in the client calculator crashes if null
-                        resultAccountInfo.Balance = 0;
-                    }
-                    
-                    resultAccountInfo.Margin = reportAccountInfo.Margin;
-                    resultAccountInfo.Equity = reportAccountInfo.Equity;
-                    resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
-                    resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
+                        TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
+                        SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
+                        resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();
+                        resultAccountInfo.Type = Convert(reportAccountInfo.Type);
+                        resultAccountInfo.Name = reportAccountInfo.Name;
+                        resultAccountInfo.Email = reportAccountInfo.Email;
+                        resultAccountInfo.Comment = reportAccountInfo.Description;
+                        resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
+                        resultAccountInfo.Leverage = reportAccountInfo.Leverage;
 
-                    AccountFlags flags = reportAccountInfo.Flags;
-                    if ((flags & AccountFlags.Valid) != 0)
-                        resultAccountInfo.IsValid = true;
-                    if ((flags & AccountFlags.Blocked) != 0)
-                        resultAccountInfo.IsBlocked = true;
-                    if ((flags & AccountFlags.Investor) != 0)
-                        resultAccountInfo.IsReadOnly = true;
+                        BalanceNull reportBalance = reportAccountInfo.Balance;
 
-                    AssetArray reportAssets = reportAccountInfo.Assets;                   
-
-                    int count = reportAssets.Length;
-                    AssetInfo[] resultAssets = new AssetInfo[count];
-
-                    for (int index = 0; index < count; ++index)
-                    {
-                        Asset reportAsset = reportAssets[index];
-
-                        AssetInfo resultAsset = new AssetInfo();
-                        resultAsset.Currency = reportAsset.CurrId;
-                        resultAsset.LockedAmount = reportAsset.Locked;
-                        resultAsset.Balance = reportAsset.Total;                        
-
-                        resultAssets[index] = resultAsset;
-                    }
-
-                    resultAccountInfo.Assets = resultAssets;
-
-                    if (client_.AccountInfoResultEvent != null)
-                    {
-                        try
+                        if (reportBalance.HasValue)
                         {
-                            client_.AccountInfoResultEvent(client_, context.Data, resultAccountInfo);
+                            resultAccountInfo.Currency = reportBalance.CurrId;
+                            resultAccountInfo.Balance = reportBalance.Total;
                         }
-                        catch
+                        else
                         {
+                            resultAccountInfo.Currency = "";     // TODO: something in the client calculator crashes if null
+                            resultAccountInfo.Balance = 0;
+                        }
+
+                        resultAccountInfo.Margin = reportAccountInfo.Margin;
+                        resultAccountInfo.Equity = reportAccountInfo.Equity;
+                        resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
+                        resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
+
+                        AccountFlags flags = reportAccountInfo.Flags;
+                        if ((flags & AccountFlags.Valid) != 0)
+                            resultAccountInfo.IsValid = true;
+                        if ((flags & AccountFlags.Blocked) != 0)
+                            resultAccountInfo.IsBlocked = true;
+                        if ((flags & AccountFlags.Investor) != 0)
+                            resultAccountInfo.IsReadOnly = true;
+
+                        AssetArray reportAssets = reportAccountInfo.Assets;
+
+                        int count = reportAssets.Length;
+                        AssetInfo[] resultAssets = new AssetInfo[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            Asset reportAsset = reportAssets[index];
+
+                            AssetInfo resultAsset = new AssetInfo();
+                            resultAsset.Currency = reportAsset.CurrId;
+                            resultAsset.LockedAmount = reportAsset.Locked;
+                            resultAsset.Balance = reportAsset.Total;
+
+                            resultAssets[index] = resultAsset;
+                        }
+
+                        resultAccountInfo.Assets = resultAssets;
+
+                        if (client_.AccountInfoResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.AccountInfoResultEvent(client_, context.Data, resultAccountInfo);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.accountInfo_ = resultAccountInfo;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.accountInfo_ = resultAccountInfo;
+                        if (client_.AccountInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.AccountInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.AccountInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.AccountInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnAccountInfoReject(ClientSession session, AccountInfoRequestClientContext AccountInfoRequestClientContext, Reject message)
             {
-                AccountInfoAsyncContext context = (AccountInfoAsyncContext) AccountInfoRequestClientContext;
-
                 try
                 {
+                    AccountInfoAsyncContext context = (AccountInfoAsyncContext) AccountInfoRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.AccountInfoErrorEvent != null)
@@ -2294,102 +2244,95 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.AccountInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.AccountInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradingSessionStatusReport(ClientSession session, TradingSessionStatusRequestClientContext TradingSessionStatusRequestClientContext, TradingSessionStatusReport message)
             {
-                SessionInfoAsyncContext context = (SessionInfoAsyncContext) TradingSessionStatusRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
-                    SoftFX.Net.OrderEntry.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
+                    SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
 
-                    resultStatusInfo.Status = Convert(reportStatusInfo.Status);
-                    resultStatusInfo.StartTime = reportStatusInfo.StartTime;
-                    resultStatusInfo.EndTime = reportStatusInfo.EndTime;
-                    resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
-                    resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
-
-                    TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
-                    int count = reportGroups.Length;
-                    StatusGroupInfo[] resultGroups = new StatusGroupInfo[count];
-
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        TradingSessionStatusGroup reportGroup = reportGroups[index];
+                        TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
+                        SoftFX.Net.OrderEntry.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
-                        StatusGroupInfo resultGroup = new StatusGroupInfo();
-                        resultGroup.StatusGroupId = reportGroup.Id;
-                        resultGroup.Status = Convert(reportGroup.Status);
-                        resultGroup.StartTime = reportGroup.StartTime;
-                        resultGroup.EndTime = reportGroup.EndTime;
-                        resultGroup.OpenTime = reportGroup.OpenTime;
-                        resultGroup.CloseTime = reportGroup.CloseTime;
+                        resultStatusInfo.Status = Convert(reportStatusInfo.Status);
+                        resultStatusInfo.StartTime = reportStatusInfo.StartTime;
+                        resultStatusInfo.EndTime = reportStatusInfo.EndTime;
+                        resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
+                        resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
-                        resultGroups[index] = resultGroup;
-                    }
+                        TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
+                        int count = reportGroups.Length;
+                        StatusGroupInfo[] resultGroups = new StatusGroupInfo[count];
 
-                    resultStatusInfo.StatusGroups = resultGroups;
-
-                    if (client_.SessionInfoResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.SessionInfoResultEvent(client_, context.Data, resultStatusInfo);
+                            TradingSessionStatusGroup reportGroup = reportGroups[index];
+
+                            StatusGroupInfo resultGroup = new StatusGroupInfo();
+                            resultGroup.StatusGroupId = reportGroup.Id;
+                            resultGroup.Status = Convert(reportGroup.Status);
+                            resultGroup.StartTime = reportGroup.StartTime;
+                            resultGroup.EndTime = reportGroup.EndTime;
+                            resultGroup.OpenTime = reportGroup.OpenTime;
+                            resultGroup.CloseTime = reportGroup.CloseTime;
+
+                            resultGroups[index] = resultGroup;
                         }
-                        catch
+
+                        resultStatusInfo.StatusGroups = resultGroups;
+
+                        if (client_.SessionInfoResultEvent != null)
                         {
+                            try
+                            {
+                                client_.SessionInfoResultEvent(client_, context.Data, resultStatusInfo);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.sessionInfo_ = resultStatusInfo;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.sessionInfo_ = resultStatusInfo;
+                        if (client_.SessionInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SessionInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SessionInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SessionInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTradingSessionStatusReject(ClientSession session, TradingSessionStatusRequestClientContext TradingSessionStatusRequestClientContext, Reject message)
             {
-                SessionInfoAsyncContext context = (SessionInfoAsyncContext) TradingSessionStatusRequestClientContext;
-
                 try
                 {
+                    SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.SessionInfoErrorEvent != null)
@@ -2410,123 +2353,116 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SessionInfoErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SessionInfoErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderMassStatusReport(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, OrderMassStatusReport message)
             {
-                OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
-
                 try
                 {
-                    SoftFX.Net.OrderEntry.OrderMassStatusEntryArray reportEntries = message.Entries;
-                    int count = reportEntries.Length;
-                    TickTrader.FDK.Common.ExecutionReport[] resultExecutionReports = new TickTrader.FDK.Common.ExecutionReport[count];
+                    OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        SoftFX.Net.OrderEntry.OrderMassStatusEntry reportEntry = reportEntries[index];
-                        SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = reportEntry.Attributes;
-                        SoftFX.Net.OrderEntry.OrderState reportEntryState = reportEntry.State;
+                        SoftFX.Net.OrderEntry.OrderMassStatusEntryArray reportEntries = message.Entries;
+                        int count = reportEntries.Length;
+                        TickTrader.FDK.Common.ExecutionReport[] resultExecutionReports = new TickTrader.FDK.Common.ExecutionReport[count];
 
-                        TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
-                        resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
-                        resultExecutionReport.OrigClientOrderId = reportEntry.OrigClOrdId;
-                        resultExecutionReport.OrderId = reportEntry.OrderId.ToString();
-                        resultExecutionReport.Symbol = reportEntryAttributes.SymbolId;
-                        resultExecutionReport.OrderSide = Convert(reportEntryAttributes.Side);
-                        resultExecutionReport.OrderType = Convert(reportEntryAttributes.Type);                       
-
-                        if (reportEntryAttributes.TimeInForce.HasValue)
+                        for (int index = 0; index < count; ++index)
                         {
-                            resultExecutionReport.OrderTimeInForce = Convert(reportEntryAttributes.TimeInForce.Value);
-                        }
-                        else
-                            resultExecutionReport.OrderTimeInForce = null;
+                            SoftFX.Net.OrderEntry.OrderMassStatusEntry reportEntry = reportEntries[index];
+                            SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = reportEntry.Attributes;
+                            SoftFX.Net.OrderEntry.OrderState reportEntryState = reportEntry.State;
 
-                        resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
-                        resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
-                        resultExecutionReport.Price = reportEntryAttributes.Price;
-                        resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
-                        resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
-                        resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
-                        resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
-                        resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
-                        resultExecutionReport.OrderStatus = Convert(reportEntryState.Status); 
-                        resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
-                        resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
-                        resultExecutionReport.TradeAmount = reportEntryState.LastQty;
-                        resultExecutionReport.TradePrice = reportEntryState.LastPrice;
-                        resultExecutionReport.Commission = reportEntry.Commission;
-                        resultExecutionReport.AgentCommission = reportEntry.AgentCommission;
-                        resultExecutionReport.Swap = reportEntry.Swap;
-                        resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;                        
-                        resultExecutionReport.Created = reportEntryState.Created;
-                        resultExecutionReport.Modified = reportEntryState.Modified;
-                        resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
-                        resultExecutionReport.Comment = reportEntryAttributes.Comment;
-                        resultExecutionReport.Tag = reportEntryAttributes.Tag;
-                        resultExecutionReport.Magic = reportEntryAttributes.Magic;
-                        resultExecutionReports[index] = resultExecutionReport;
+                            TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
+                            resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
+                            resultExecutionReport.OrigClientOrderId = reportEntry.OrigClOrdId;
+                            resultExecutionReport.OrderId = reportEntry.OrderId.ToString();
+                            resultExecutionReport.Symbol = reportEntryAttributes.SymbolId;
+                            resultExecutionReport.OrderSide = Convert(reportEntryAttributes.Side);
+                            resultExecutionReport.OrderType = Convert(reportEntryAttributes.Type);
+
+                            if (reportEntryAttributes.TimeInForce.HasValue)
+                            {
+                                resultExecutionReport.OrderTimeInForce = Convert(reportEntryAttributes.TimeInForce.Value);
+                            }
+                            else
+                                resultExecutionReport.OrderTimeInForce = null;
+
+                            resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
+                            resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
+                            resultExecutionReport.Price = reportEntryAttributes.Price;
+                            resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
+                            resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
+                            resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
+                            resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
+                            resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
+                            resultExecutionReport.OrderStatus = Convert(reportEntryState.Status);
+                            resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
+                            resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
+                            resultExecutionReport.TradeAmount = reportEntryState.LastQty;
+                            resultExecutionReport.TradePrice = reportEntryState.LastPrice;
+                            resultExecutionReport.Commission = reportEntry.Commission;
+                            resultExecutionReport.AgentCommission = reportEntry.AgentCommission;
+                            resultExecutionReport.Swap = reportEntry.Swap;
+                            resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;
+                            resultExecutionReport.Created = reportEntryState.Created;
+                            resultExecutionReport.Modified = reportEntryState.Modified;
+                            resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
+                            resultExecutionReport.Comment = reportEntryAttributes.Comment;
+                            resultExecutionReport.Tag = reportEntryAttributes.Tag;
+                            resultExecutionReport.Magic = reportEntryAttributes.Magic;
+                            resultExecutionReports[index] = resultExecutionReport;
+                        }
+
+                        if (client_.OrdersResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.OrdersResultEvent(client_, context.Data, resultExecutionReports);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReports_ = resultExecutionReports;
+                        }
                     }
-
-                    if (client_.OrdersResultEvent != null)
+                    catch (Exception exception)
                     {
-                        try
+                        if (client_.OrdersErrorEvent != null)
                         {
-                            client_.OrdersResultEvent(client_, context.Data, resultExecutionReports);
+                            try
+                            {
+                                client_.OrdersErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
-                    if (context.Waitable)
-                    {
-                        context.executionReports_ = resultExecutionReports;
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.OrdersErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.OrdersErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderMassStatusReject(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, Reject message)
             {
-                OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
-
                 try
                 {
+                    OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.OrdersErrorEvent != null)
@@ -2547,116 +2483,109 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.OrdersErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.OrdersErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnPositionListReport(ClientSession session, PositionListRequestClientContext PositionListRequestClientContext, PositionListReport message)
             {
-                PositionsAsyncContext context = (PositionsAsyncContext) PositionListRequestClientContext;
-
                 try
                 {
-                    SoftFX.Net.OrderEntry.PositionArray reportPositions = message.Positions;
-                    int count = reportPositions.Length;
-                    TickTrader.FDK.Common.Position[] resultPositions = new TickTrader.FDK.Common.Position[count];
+                    PositionsAsyncContext context = (PositionsAsyncContext)PositionListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        SoftFX.Net.OrderEntry.Position reportPosition = reportPositions[index];
+                        SoftFX.Net.OrderEntry.PositionArray reportPositions = message.Positions;
+                        int count = reportPositions.Length;
+                        TickTrader.FDK.Common.Position[] resultPositions = new TickTrader.FDK.Common.Position[count];
 
-                        TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
-                        resultPosition.Symbol = reportPosition.SymbolId;
-                        resultPosition.SettlementPrice = reportPosition.SettltPrice;
-                        resultPosition.Commission = reportPosition.Commission;
-                        resultPosition.AgentCommission = reportPosition.AgentCommission;
-                        resultPosition.Swap = reportPosition.Swap;
-                        
-                        PosType reportPosType = reportPosition.Type;
-
-                        if (reportPosType == PosType.Long)
+                        for (int index = 0; index < count; ++index)
                         {
-                            resultPosition.BuyAmount = reportPosition.Qty;
-                            resultPosition.BuyPrice = reportPosition.Price;
-                            resultPosition.SellAmount = 0;
-                            resultPosition.SellPrice = 0;
-                        }
-                        else if (reportPosType == PosType.Short)
-                        {
-                            resultPosition.BuyAmount = 0;
-                            resultPosition.BuyPrice = 0;
-                            resultPosition.SellAmount = reportPosition.Qty;
-                            resultPosition.SellPrice = reportPosition.Price;
-                        }
-                        else
-                            throw new Exception("Invalid position type : " + reportPosType);
+                            SoftFX.Net.OrderEntry.Position reportPosition = reportPositions[index];
 
-                        resultPositions[index] = resultPosition;
+                            TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
+                            resultPosition.Symbol = reportPosition.SymbolId;
+                            resultPosition.SettlementPrice = reportPosition.SettltPrice;
+                            resultPosition.Commission = reportPosition.Commission;
+                            resultPosition.AgentCommission = reportPosition.AgentCommission;
+                            resultPosition.Swap = reportPosition.Swap;
+
+                            PosType reportPosType = reportPosition.Type;
+
+                            if (reportPosType == PosType.Long)
+                            {
+                                resultPosition.BuyAmount = reportPosition.Qty;
+                                resultPosition.BuyPrice = reportPosition.Price;
+                                resultPosition.SellAmount = 0;
+                                resultPosition.SellPrice = 0;
+                            }
+                            else if (reportPosType == PosType.Short)
+                            {
+                                resultPosition.BuyAmount = 0;
+                                resultPosition.BuyPrice = 0;
+                                resultPosition.SellAmount = reportPosition.Qty;
+                                resultPosition.SellPrice = reportPosition.Price;
+                            }
+                            else
+                                throw new Exception("Invalid position type : " + reportPosType);
+
+                            resultPositions[index] = resultPosition;
+                        }
+
+                        if (client_.PositionsResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.PositionsResultEvent(client_, context.Data, resultPositions);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.positions_ = resultPositions;
+                        }
                     }
-
-                    if (client_.PositionsResultEvent != null)
+                    catch (Exception exception)
                     {
-                        try
+                        if (client_.PositionsErrorEvent != null)
                         {
-                            client_.PositionsResultEvent(client_, context.Data, resultPositions);
+                            try
+                            {
+                                client_.PositionsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
-                    if (context.Waitable)
-                    {
-                        context.positions_ = resultPositions;
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.PositionsErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.PositionsErrorEvent (client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnPositionListReject(ClientSession session, PositionListRequestClientContext PositionListRequestClientContext, Reject message)
             {
-                PositionsAsyncContext context = (PositionsAsyncContext) PositionListRequestClientContext;
-
                 try
                 {
+                    PositionsAsyncContext context = (PositionsAsyncContext)PositionListRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.PositionsErrorEvent != null)
                     {
                         try
                         {
-                            client_.PositionsErrorEvent (client_, context.Data, exception);
+                            client_.PositionsErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
@@ -2670,255 +2599,276 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.PositionsErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.PositionsErrorEvent (client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnNewOrderSingleMarketNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
-                    if (client_.NewOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.NewOrderResultEvent != null)
                         {
-                            client_.NewOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnNewOrderSingleMarketFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
-                    if (client_.NewOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.NewOrderResultEvent != null)
                         {
-                            client_.NewOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnNewOrderSingleMarketPartialFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
-                    if (client_.NewOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.NewOrderResultEvent != null)
                         {
-                            client_.NewOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
-                    }                       
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                       
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnNewOrderSingleNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
-                    if (client_.NewOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.NewOrderResultEvent != null)
                         {
-                            client_.NewOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
-                }                
+                    client_.session_.LogError(exception.Message);
+                }
             }
 
             public override void OnNewOrderSingleCalculatedReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
 
-                    if (client_.NewOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.NewOrderResultEvent != null)
                         {
-                            client_.NewOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnNewOrderSingleRejectReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
-
                 try
                 {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = true;
 
@@ -2935,126 +2885,127 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
 
-                    if (context.Waitable)                        
+                    if (context.Waitable)
                     {
                         context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.NewOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.NewOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)                        
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderCancelReplacePendingReplaceReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext)OrderCancelReplaceRequestClientContext;
 
-                    if (client_.ReplaceOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.ReplaceOrderResultEvent != null)
                         {
-                            client_.ReplaceOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ReplaceOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
-                    }                        
+                        if (client_.ReplaceOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ReplaceOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
+
             public override void OnOrderCancelReplaceReplacedReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext)OrderCancelReplaceRequestClientContext;
 
-                    if (client_.ReplaceOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.ReplaceOrderResultEvent != null)
                         {
-                            client_.ReplaceOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ReplaceOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.ReplaceOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ReplaceOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderCancelReplaceRejectReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext) OrderCancelReplaceRequestClientContext;
-
                 try
                 {
+                    ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext)OrderCancelReplaceRequestClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = true;
 
@@ -3078,120 +3029,120 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ReplaceOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderCancelPendingCancelReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                CancelOrderAsyncContext context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    CancelOrderAsyncContext context = (CancelOrderAsyncContext)OrderCancelRequestClientContext;
 
-                    if (client_.CancelOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.CancelOrderResultEvent != null)
                         {
-                            client_.CancelOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.CancelOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.CancelOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.CancelOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderCancelCancelledReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                CancelOrderAsyncContext context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    CancelOrderAsyncContext context = (CancelOrderAsyncContext)OrderCancelRequestClientContext;
 
-                    if (client_.CancelOrderResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.CancelOrderResultEvent != null)
                         {
-                            client_.CancelOrderResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.CancelOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.CancelOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.CancelOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnOrderCancelRejectReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                CancelOrderAsyncContext context = (CancelOrderAsyncContext) OrderCancelRequestClientContext;
-
                 try
                 {
+                    CancelOrderAsyncContext context = (CancelOrderAsyncContext)OrderCancelRequestClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = true;
 
@@ -3215,120 +3166,120 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.CancelOrderErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.CancelOrderErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionPendingCloseReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionAsyncContext context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    ClosePositionAsyncContext context = (ClosePositionAsyncContext)ClosePositionRequestClientContext;
 
-                    if (client_.ClosePositionResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.ClosePositionResultEvent != null)
                         {
-                            client_.ClosePositionResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ClosePositionResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.ClosePositionErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ClosePositionErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionFillReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionAsyncContext context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    ClosePositionAsyncContext context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
 
-                    if (client_.ClosePositionResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.ClosePositionResultEvent != null)
                         {
-                            client_.ClosePositionResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ClosePositionResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.ClosePositionErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ClosePositionErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionRejectReport(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionAsyncContext context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
-
                 try
                 {
+                    ClosePositionAsyncContext context = (ClosePositionAsyncContext)ClosePositionRequestClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = true;
 
@@ -3352,120 +3303,120 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionByFillReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = false;
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext)ClosePositionByRequestClientContext;
 
-                    if (client_.ClosePositionByResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = false;
+
+                        if (client_.ClosePositionByResultEvent != null)
                         {
-                            client_.ClosePositionByResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ClosePositionByResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.ClosePositionByErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ClosePositionByErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionByFillReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
                 try
                 {
-                    TickTrader.FDK.Common.ExecutionReport result = Convert(message);
-                    result.Last = true;
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext)ClosePositionByRequestClientContext;
 
-                    if (client_.ClosePositionByResultEvent != null)
+                    try
                     {
-                        try
+                        TickTrader.FDK.Common.ExecutionReport result = Convert(message);
+                        result.Last = true;
+
+                        if (client_.ClosePositionByResultEvent != null)
                         {
-                            client_.ClosePositionByResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.ClosePositionByResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.executionReportList_.Add(result);
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.executionReportList_.Add(result);
+                        if (client_.ClosePositionByErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.ClosePositionByErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }                        
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionByRejectReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
                 try
                 {
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext)ClosePositionByRequestClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = false;
 
@@ -3489,30 +3440,16 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnClosePositionByRejectReport2(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
-                ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
-
                 try
                 {
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
+
                     TickTrader.FDK.Common.ExecutionReport result = Convert(message);
                     result.Last = true;
 
@@ -3536,21 +3473,7 @@ namespace TickTrader.FDK.OrderEntry
                 }
                 catch (Exception exception)
                 {
-                    if (client_.ClosePositionByErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.ClosePositionByErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3571,8 +3494,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3619,8 +3543,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3694,8 +3619,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3744,8 +3670,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3771,8 +3698,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3797,8 +3725,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -3821,8 +3750,9 @@ namespace TickTrader.FDK.OrderEntry
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 

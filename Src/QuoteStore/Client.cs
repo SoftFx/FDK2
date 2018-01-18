@@ -875,8 +875,9 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -895,16 +896,17 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {                
+            {               
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
                     Exception exception = new Exception(text);
 
@@ -924,8 +926,9 @@ namespace TickTrader.FDK.QuoteStore
                         connectAsyncContext.exception_ = exception;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -946,8 +949,9 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -984,8 +988,9 @@ namespace TickTrader.FDK.QuoteStore
                         disconnectAsyncContext.text_ = text;
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1015,54 +1020,62 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReport(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReport message)
             {
-                LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
-
                 try
                 {
-                    if (client_.LoginResultEvent != null)
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
                     {
-                        try
+                        if (client_.LoginResultEvent != null)
                         {
-                            client_.LoginResultEvent(client_, context.Data);
+                            try
+                            {
+                                client_.LoginResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LoginErrorEvent != null)
                         {
+                            try
+                            {
+                                client_.LoginErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLoginReject(ClientSession session, LoginRequestClientContext LoginRequestClientContext, LoginReject message)
             {
-                LoginAsyncContext context = (LoginAsyncContext) LoginRequestClientContext;
-
                 try
                 {
+                    LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
+
                     TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
 
                     LoginException exception = new LoginException(reason, message.Text);
@@ -1085,127 +1098,127 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LoginErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LoginErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnLogout(ClientSession session, LogoutClientContext LogoutClientContext, Logout message)
             {
-                LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
-
                 try
                 {
-                    LogoutInfo result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
-                    result.Message = message.Text;
+                    LogoutAsyncContext context = (LogoutAsyncContext) LogoutClientContext;
 
-                    if (client_.LogoutResultEvent != null)
+                    try
                     {
-                        try
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = Convert(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
                         {
-                            client_.LogoutResultEvent(client_, context.Data, result);
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (context.Waitable)
                         {
+                            context.logoutInfo_ = result;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.logoutInfo_ = result;
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.LogoutErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.LogoutErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnSymbolListReport(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, SymbolListReport message)
             {
-                SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
-
                 try
                 {
-                    StringArray reportSymbolIds = message.SymbolIds;
-                    int count = reportSymbolIds.Length;
-                    string[] resultSymbols = new string[count];
+                    SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        resultSymbols[index] = reportSymbolIds[index];
-                    }
+                        StringArray reportSymbolIds = message.SymbolIds;
+                        int count = reportSymbolIds.Length;
+                        string[] resultSymbols = new string[count];
 
-                    if (client_.SymbolListResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.SymbolListResultEvent(client_, context.Data, resultSymbols);
+                            resultSymbols[index] = reportSymbolIds[index];
                         }
-                        catch
+
+                        if (client_.SymbolListResultEvent != null)
                         {
+                            try
+                            {
+                                client_.SymbolListResultEvent(client_, context.Data, resultSymbols);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.symbols_ = resultSymbols;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.symbols_ = resultSymbols;
+                        if (client_.SymbolListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SymbolListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SymbolListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnSymbolListReject(ClientSession session, SymbolListRequestClientContext SymbolListRequestClientContext, Reject message)
             {
-                var context = (SymbolListAsyncContext) SymbolListRequestClientContext;
-
                 try
                 {
+                    var context = (SymbolListAsyncContext)SymbolListRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
@@ -1226,84 +1239,77 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.SymbolListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.SymbolListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnPeriodicityListReport(ClientSession session, PeriodicityListRequestClientContext PeriodicityListRequestClientContext, PeriodicityListReport message)
             {
-                PeriodictityListAsyncContext context = (PeriodictityListAsyncContext) PeriodicityListRequestClientContext;
-
                 try
                 {
-                    StringArray reportPeriodicities = message.Periodicities;
-                    int count = reportPeriodicities.Length;
-                    BarPeriod[] resultPeriodicities = new BarPeriod[count];
+                    PeriodictityListAsyncContext context = (PeriodictityListAsyncContext)PeriodicityListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        string reportPeriodicity = reportPeriodicities[index];
-                        BarPeriod resultPeriodicity = new BarPeriod(reportPeriodicity); 
+                        StringArray reportPeriodicities = message.Periodicities;
+                        int count = reportPeriodicities.Length;
+                        BarPeriod[] resultPeriodicities = new BarPeriod[count];
 
-                        resultPeriodicities[index] = resultPeriodicity;
-                    }
-
-                    if (client_.PeriodicityListResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.PeriodicityListResultEvent(client_, context.Data, resultPeriodicities);
+                            string reportPeriodicity = reportPeriodicities[index];
+                            BarPeriod resultPeriodicity = new BarPeriod(reportPeriodicity);
+
+                            resultPeriodicities[index] = resultPeriodicity;
                         }
-                        catch
+
+                        if (client_.PeriodicityListResultEvent != null)
                         {
+                            try
+                            {
+                                client_.PeriodicityListResultEvent(client_, context.Data, resultPeriodicities);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.barPeriods_ = resultPeriodicities;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.barPeriods_ = resultPeriodicities;
+                        if (client_.PeriodicityListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.PeriodicityListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.PeriodicityListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.PeriodicityListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnPeriodicityListReject(ClientSession session, PeriodicityListRequestClientContext PeriodicityListRequestClientContext, Reject message)
             {
-                PeriodictityListAsyncContext context = (PeriodictityListAsyncContext) PeriodicityListRequestClientContext;
-
                 try
                 {
+                    PeriodictityListAsyncContext context = (PeriodictityListAsyncContext)PeriodicityListRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.PeriodicityListErrorEvent != null)
@@ -1324,92 +1330,85 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.PeriodicityListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.PeriodicityListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnBarListReport(ClientSession session, BarListRequestClientContext BarListRequestClientContext, BarListReport message)
             {
-                BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
-
                 try
                 {
-                    SoftFX.Net.QuoteStore.BarArray reportBars = message.Bars;
-                    int count = reportBars.Length;
-                    TickTrader.FDK.Common.Bar[] resultBars = new TickTrader.FDK.Common.Bar[count];
+                    BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        SoftFX.Net.QuoteStore.Bar reportBar = reportBars[index];
-                        TickTrader.FDK.Common.Bar resultBar = new TickTrader.FDK.Common.Bar();
+                        SoftFX.Net.QuoteStore.BarArray reportBars = message.Bars;
+                        int count = reportBars.Length;
+                        TickTrader.FDK.Common.Bar[] resultBars = new TickTrader.FDK.Common.Bar[count];
 
-                        resultBar.From = reportBar.Time;
-                        resultBar.To = reportBar.Time + context.barPeriod_;
-                        resultBar.Open = reportBar.Open;
-                        resultBar.Close = reportBar.Close;
-                        resultBar.High = reportBar.High;
-                        resultBar.Low = reportBar.Low;
-                        resultBar.Volume = reportBar.Volume;
-
-                        resultBars[index] = resultBar;
-                    }
-
-                    if (client_.BarListResultEvent != null)
-                    {
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            client_.BarListResultEvent(client_, context.Data, resultBars);
+                            SoftFX.Net.QuoteStore.Bar reportBar = reportBars[index];
+                            TickTrader.FDK.Common.Bar resultBar = new TickTrader.FDK.Common.Bar();
+
+                            resultBar.From = reportBar.Time;
+                            resultBar.To = reportBar.Time + context.barPeriod_;
+                            resultBar.Open = reportBar.Open;
+                            resultBar.Close = reportBar.Close;
+                            resultBar.High = reportBar.High;
+                            resultBar.Low = reportBar.Low;
+                            resultBar.Volume = reportBar.Volume;
+
+                            resultBars[index] = resultBar;
                         }
-                        catch
+
+                        if (client_.BarListResultEvent != null)
                         {
+                            try
+                            {
+                                client_.BarListResultEvent(client_, context.Data, resultBars);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.bars_ = resultBars;
                         }
                     }
-
-                    if (context.Waitable)
+                    catch (Exception exception)
                     {
-                        context.bars_ = resultBars;
+                        if (client_.BarListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.BarListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.BarListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.BarListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnBarListReject(ClientSession session, BarListRequestClientContext BarListRequestClientContext, Reject message)
             {
-                BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
-
                 try
                 {
+                    BarListAsyncContext context = (BarListAsyncContext)BarListRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.BarListErrorEvent != null)
@@ -1430,130 +1429,123 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.BarListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.BarListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTickListReport(ClientSession session, TickListRequestClientContext TickListRequestClientContext, TickListReport message)
             {
-                QuoteListAsyncContext context = (QuoteListAsyncContext) TickListRequestClientContext;
-
                 try
                 {
-                    SoftFX.Net.QuoteStore.TickArray reportTicks = message.Ticks;
-                    int count = reportTicks.Length;
-                    TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+                    QuoteListAsyncContext context = (QuoteListAsyncContext)TickListRequestClientContext;
 
-                    for (int index = 0; index < count; ++index)
+                    try
                     {
-                        SoftFX.Net.QuoteStore.Tick reportTick = reportTicks[index];
-                        TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+                        SoftFX.Net.QuoteStore.TickArray reportTicks = message.Ticks;
+                        int count = reportTicks.Length;
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
 
-                        DateTime time = reportTick.Time;
-
-                        if (reportTick.Index != 0)
+                        for (int index = 0; index < count; ++index)
                         {
-                            resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
+                            SoftFX.Net.QuoteStore.Tick reportTick = reportTicks[index];
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+
+                            DateTime time = reportTick.Time;
+
+                            if (reportTick.Index != 0)
+                            {
+                                resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
+                            }
+                            else
+                                resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
+
+                            resultQuote.CreatingTime = time;
+
+                            SoftFX.Net.QuoteStore.PriceLevelArray reportBids = reportTick.Bids;
+                            int bidCount = reportBids.Length;
+                            List<QuoteEntry> resultBids = new List<QuoteEntry>(bidCount);
+
+                            QuoteEntry resultBid = new QuoteEntry();
+
+                            for (int bidIndex = 0; bidIndex < bidCount; ++bidIndex)
+                            {
+                                SoftFX.Net.QuoteStore.PriceLevel reportBid = reportBids[bidIndex];
+
+                                resultBid.Price = reportBid.Price;
+                                resultBid.Volume = reportBid.Size;
+
+                                resultBids.Add(resultBid);
+                            }
+
+                            SoftFX.Net.QuoteStore.PriceLevelArray reportAsks = reportTick.Asks;
+                            int askCount = reportAsks.Length;
+                            List<QuoteEntry> resultAsks = new List<QuoteEntry>(askCount);
+
+                            QuoteEntry resultAsk = new QuoteEntry();
+
+                            for (int askIndex = 0; askIndex < askCount; ++askIndex)
+                            {
+                                SoftFX.Net.QuoteStore.PriceLevel reportAsk = reportAsks[askIndex];
+
+                                resultAsk.Price = reportAsk.Price;
+                                resultAsk.Volume = reportAsk.Size;
+
+                                resultAsks.Add(resultAsk);
+                            }
+
+                            resultQuote.Bids = resultBids;
+                            resultQuote.Asks = resultAsks;
+
+                            resultQuotes[index] = resultQuote;
                         }
-                        else
-                            resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
 
-                        resultQuote.CreatingTime = time;                        
-
-                        SoftFX.Net.QuoteStore.PriceLevelArray reportBids = reportTick.Bids;
-                        int bidCount = reportBids.Length;
-                        List<QuoteEntry> resultBids = new List<QuoteEntry>(bidCount);
-
-                        QuoteEntry resultBid = new QuoteEntry();
-
-                        for (int bidIndex = 0; bidIndex < bidCount; ++bidIndex)
+                        if (client_.QuoteListResultEvent != null)
                         {
-                            SoftFX.Net.QuoteStore.PriceLevel reportBid = reportBids[bidIndex];
-
-                            resultBid.Price = reportBid.Price;
-                            resultBid.Volume = reportBid.Size;
-
-                            resultBids.Add(resultBid);
+                            try
+                            {
+                                client_.QuoteListResultEvent(client_, context.Data, resultQuotes);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        
-                        SoftFX.Net.QuoteStore.PriceLevelArray reportAsks = reportTick.Asks;
-                        int askCount = reportAsks.Length;
-                        List<QuoteEntry> resultAsks = new List<QuoteEntry>(askCount);
 
-                        QuoteEntry resultAsk = new QuoteEntry();
-
-                        for (int askIndex = 0; askIndex < askCount; ++askIndex)
+                        if (context.Waitable)
                         {
-                            SoftFX.Net.QuoteStore.PriceLevel reportAsk = reportAsks[askIndex];
-
-                            resultAsk.Price = reportAsk.Price;
-                            resultAsk.Volume = reportAsk.Size;
-
-                            resultAsks.Add(resultAsk);
+                            context.quotes_ = resultQuotes;
                         }
-
-                        resultQuote.Bids = resultBids;
-                        resultQuote.Asks = resultAsks;
-
-                        resultQuotes[index] = resultQuote;
                     }
-
-                    if (client_.QuoteListResultEvent != null)
+                    catch (Exception exception)
                     {
-                        try
+                        if (client_.QuoteListErrorEvent != null)
                         {
-                            client_.QuoteListResultEvent(client_, context.Data, resultQuotes);
+                            try
+                            {
+                                client_.QuoteListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
-                    if (context.Waitable)
-                    {
-                        context.quotes_ = resultQuotes;
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    if (client_.QuoteListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.QuoteListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnTickListReject(ClientSession session, TickListRequestClientContext TickListRequestClientContext, Reject message)
             {
-                QuoteListAsyncContext context = (QuoteListAsyncContext) TickListRequestClientContext;
-
                 try
                 {
+                    QuoteListAsyncContext context = (QuoteListAsyncContext)TickListRequestClientContext;
+
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.QuoteListErrorEvent != null)
@@ -1574,227 +1566,227 @@ namespace TickTrader.FDK.QuoteStore
                 }
                 catch (Exception exception)
                 {
-                    if (client_.QuoteListErrorEvent != null)
-                    {
-                        try
-                        {
-                            client_.QuoteListErrorEvent(client_, context.Data, exception);
-                        }
-                        catch
-                        {
-                        }
-                    }
-
-                    if (context.Waitable)
-                    {
-                        context.exception_ = exception;
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnDownloadBeginReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadBeginReport message)
             {
-                if (DownloadRequestClientContext is BarDownloadAsyncContext)
+                try
                 {
-                    BarDownloadAsyncContext context = (BarDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
+                    if (DownloadRequestClientContext is BarDownloadAsyncContext)
                     {
-                        ulong maxFileSize = 0;
+                        BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
 
-                        FileInfoArray files = message.Files;
-                        int count = files.Length;
-                        for (int index = 0; index < count; ++ index)
+                        try
                         {
-                            SoftFX.Net.QuoteStore.FileInfo file = files[index];
+                            ulong maxFileSize = 0;
 
-                            if (file.Size > maxFileSize)
-                                maxFileSize = file.Size;
-                        }
-
-                        context.fileData_ = new byte[maxFileSize];
-                        context.fileSize_ = 0;
-                        context.bar_ = new TickTrader.FDK.Common.Bar();
-
-                        string requestId = message.RequestId;
-                        DateTime availFrom = message.AvailFrom;
-                        DateTime availTo = message.AvailTo;
-
-                        if (client_.BarDownloadResultBeginEvent != null)
-                        {
-                            try
+                            FileInfoArray files = message.Files;
+                            int count = files.Length;
+                            for (int index = 0; index < count; ++index)
                             {
-                                client_.BarDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
+                                SoftFX.Net.QuoteStore.FileInfo file = files[index];
+
+                                if (file.Size > maxFileSize)
+                                    maxFileSize = file.Size;
                             }
-                            catch
+
+                            context.fileData_ = new byte[maxFileSize];
+                            context.fileSize_ = 0;
+                            context.bar_ = new TickTrader.FDK.Common.Bar();
+
+                            string requestId = message.RequestId;
+                            DateTime availFrom = message.AvailFrom;
+                            DateTime availTo = message.AvailTo;
+
+                            if (client_.BarDownloadResultBeginEvent != null)
                             {
+                                try
+                                {
+                                    client_.BarDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
+                                context.event_.Set();
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
-                            context.event_.Set();
+                            if (client_.BarDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        if (client_.BarDownloadErrorEvent != null)
+                        QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
                         {
-                            try
+                            ulong maxFileSize = 0;
+
+                            FileInfoArray files = message.Files;
+                            int count = files.Length;
+                            for (int index = 0; index < count; ++index)
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                SoftFX.Net.QuoteStore.FileInfo file = files[index];
+
+                                if (file.Size > maxFileSize)
+                                    maxFileSize = file.Size;
                             }
-                            catch
+
+                            context.fileData_ = new byte[maxFileSize];
+                            context.fileSize_ = 0;
+                            context.quote_ = new Quote();
+
+                            string requestId = message.RequestId;
+                            DateTime availFrom = message.AvailFrom;
+                            DateTime availTo = message.AvailTo;
+
+                            if (client_.QuoteDownloadResultBeginEvent != null)
                             {
+                                try
+                                {
+                                    client_.QuoteDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
+                                context.event_.Set();
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.exception_ = exception;
-                            context.event_.Set();
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
                         }
                     }
                 }
-                else
+                catch (Exception exception)
                 {
-                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
-                    {
-                        ulong maxFileSize = 0;
-
-                        FileInfoArray files = message.Files;
-                        int count = files.Length;                        
-                        for (int index = 0; index < count; ++ index)
-                        {
-                            SoftFX.Net.QuoteStore.FileInfo file = files[index];
-
-                            if (file.Size > maxFileSize)
-                                maxFileSize = file.Size;
-                        }
-
-                        context.fileData_ = new byte[maxFileSize];
-                        context.fileSize_ = 0;
-                        context.quote_ = new Quote();
-
-                        string requestId = message.RequestId;
-                        DateTime availFrom = message.AvailFrom;
-                        DateTime availTo = message.AvailTo;
-
-                        if (client_.QuoteDownloadResultBeginEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
-                            context.event_.Set();
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuoteDownloadErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnDownloadDataReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadDataReport message)
             {
-                if (DownloadRequestClientContext is BarDownloadAsyncContext)
-                {                    
-                    BarDownloadAsyncContext context = (BarDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
+                try
+                {
+                    if (DownloadRequestClientContext is BarDownloadAsyncContext)
                     {
-                        int chunkSize = message.GetChunkSize();
-                        message.GetChunk(context.fileData_, context.fileSize_);
-                        context.fileSize_ += chunkSize;
+                        BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
 
-                        if (message.Last)
+                        try
                         {
-                            ProcessBarDownloadFile(context, message.RequestId);
+                            int chunkSize = message.GetChunkSize();
+                            message.GetChunk(context.fileData_, context.fileSize_);
+                            context.fileSize_ += chunkSize;
 
-                            context.fileSize_ = 0;
+                            if (message.Last)
+                            {
+                                ProcessBarDownloadFile(context, message.RequestId);
+
+                                context.fileSize_ = 0;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.BarDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.barEnumerator_.SetError(exception);
+                            }
                         }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        if (client_.BarDownloadErrorEvent != null)
+                        QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
                         {
-                            try
+                            int chunkSize = message.GetChunkSize();
+                            message.GetChunk(context.fileData_, context.fileSize_);
+                            context.fileSize_ += chunkSize;
+
+                            if (message.Last)
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
+                                ProcessQuoteDownloadFile(context, message.RequestId);
+
+                                context.fileSize_ = 0;
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.barEnumerator_.SetError(exception);
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.quoteEnumerator_.SetError(exception);
+                            }
                         }
                     }
                 }
-                else
+                catch (Exception exception)
                 {
-                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
-                    {
-                        int chunkSize = message.GetChunkSize();
-                        message.GetChunk(context.fileData_, context.fileSize_);
-                        context.fileSize_ += chunkSize;
-
-                        if (message.Last)
-                        {
-                            ProcessQuoteDownloadFile(context, message.RequestId);
-
-                            context.fileSize_ = 0;
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuoteDownloadErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadErrorEvent (client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.quoteEnumerator_.SetError(exception);
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1984,98 +1976,105 @@ namespace TickTrader.FDK.QuoteStore
 
             public override void OnDownloadEndReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadEndReport message)
             {
-                if (DownloadRequestClientContext is BarDownloadAsyncContext)
+                try
                 {
-                    BarDownloadAsyncContext context = (BarDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
+                    if (DownloadRequestClientContext is BarDownloadAsyncContext)
                     {
-                        if (client_.BarDownloadResultEndEvent != null)
+                        BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
                         {
-                            try
+                            if (client_.BarDownloadResultEndEvent != null)
                             {
-                                client_.BarDownloadResultEndEvent(client_, context.Data, message.RequestId);
+                                try
+                                {
+                                    client_.BarDownloadResultEndEvent(client_, context.Data, message.RequestId);
+                                }
+                                catch
+                                {
+                                }
                             }
-                            catch
+
+                            if (context.Waitable)
                             {
+                                context.barEnumerator_.SetEnd();
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.barEnumerator_.SetEnd();
+                            if (client_.BarDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.barEnumerator_.SetError(exception);
+                            }
                         }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        if (client_.BarDownloadErrorEvent != null)
+                        QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
                         {
-                            try
+                            if (client_.QuoteDownloadResultEndEvent != null)
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                try
+                                {
+                                    client_.QuoteDownloadResultEndEvent(client_, context.Data, message.RequestId);
+                                }
+                                catch
+                                {
+                                }
                             }
-                            catch
+
+                            if (context.Waitable)
                             {
+                                context.quoteEnumerator_.SetEnd();
                             }
                         }
-
-                        if (context.Waitable)
+                        catch (Exception exception)
                         {
-                            context.barEnumerator_.SetError(exception);
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.quoteEnumerator_.SetError(exception);
+                            }
                         }
                     }
                 }
-                else
+                catch (Exception exception)
                 {
-                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
-                    {
-                        if (client_.QuoteDownloadResultEndEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadResultEndEvent(client_, context.Data, message.RequestId);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.quoteEnumerator_.SetEnd();
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuoteDownloadErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.quoteEnumerator_.SetError(exception);
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
             public override void OnDownloadReject(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, Reject message)
             {
-                if (DownloadRequestClientContext is BarDownloadAsyncContext)
+                try
                 {
-                    BarDownloadAsyncContext context = (BarDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
+                    if (DownloadRequestClientContext is BarDownloadAsyncContext)
                     {
+                        BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
+
                         RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                         if (client_.BarDownloadErrorEvent != null)
@@ -2102,13 +2101,17 @@ namespace TickTrader.FDK.QuoteStore
                             }
                         }
                     }
-                    catch (Exception exception)
+                    else
                     {
-                        if (client_.BarDownloadErrorEvent != null)
+                        QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+
+                        if (client_.QuoteDownloadErrorEvent != null)
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
                             }
                             catch
                             {
@@ -2117,9 +2120,9 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.Waitable)
                         {
-                            if (context.barEnumerator_ != null)
+                            if (context.quoteEnumerator_ != null)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.quoteEnumerator_.SetError(exception);
                             }
                             else
                             {
@@ -2129,64 +2132,9 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                else
+                catch (Exception exception)
                 {
-                    QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext) DownloadRequestClientContext;
-
-                    try
-                    {
-                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
-
-                        if (client_.QuoteDownloadErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            if (context.quoteEnumerator_ != null)
-                            {
-                                context.quoteEnumerator_.SetError(exception);
-                            }
-                            else
-                            {
-                                context.exception_ = exception;
-                                context.event_.Set();
-                            }
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (client_.QuoteDownloadErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            if (context.quoteEnumerator_ != null)
-                            {
-                                context.quoteEnumerator_.SetError(exception);
-                            }
-                            else
-                            {
-                                context.exception_ = exception;
-                                context.event_.Set();
-                            }
-                        }
-                    }
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2209,8 +2157,9 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2235,8 +2184,9 @@ namespace TickTrader.FDK.QuoteStore
                         }
                     }
                 }
-                catch
+                catch (Exception exception)
                 {
+                    client_.session_.LogError(exception.Message);
                 }
             }
 
