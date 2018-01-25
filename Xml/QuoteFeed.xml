@@ -349,6 +349,7 @@
             <subProcessors>
                 <subProcessor name="ClientTwoFactorLogin"/>
                 <subProcessor name="ClientRequest"/>
+                <subProcessor name="ClientUpdate"/>
             </subProcessors>
             <states>
                 <state label="329_13">
@@ -371,7 +372,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="LoginReport" next="361_13">
+                        <recv name="LoginReport" next="363_13">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -432,7 +433,7 @@
                 </state>
                 <state label="339_33">
                     <operations>
-                        <recv name="TwoFactorLoginSuccess" next="361_13">
+                        <recv name="TwoFactorLoginSuccess" next="363_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -442,6 +443,11 @@
                                         </equal>
                                     </expression>
                                 </message>
+                            </messages>
+                        </recv>
+                        <recv name="TwoFactorLoginReject" next="335_25">
+                            <messages>
+                                <message name="TwoFactorReject"/>
                             </messages>
                         </recv>
                         <recv name="TwoFactorLoginError" next="329_13">
@@ -456,20 +462,15 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="TwoFactorLoginReject" next="335_25">
-                            <messages>
-                                <message name="TwoFactorReject"/>
-                            </messages>
-                        </recv>
                     </operations>
                     <contexts>
                         <context name="LoginRequest"/>
                         <context name="TwoFactorLoginResponse"/>
                     </contexts>
                 </state>
-                <state label="361_13">
+                <state label="363_13">
                     <operations>
-                        <send next="361_13">
+                        <send next="363_13">
                             <messages>
                                 <message name="Request"/>
                                 <message name="TwoFactorLogin">
@@ -482,7 +483,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <recv next="361_13">
+                        <recv next="363_13">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -493,24 +494,12 @@
                                         </equal>
                                     </expression>
                                 </message>
-                            </messages>
-                        </recv>
-                        <recv name="TradingSessionStatusUpdate" next="361_13">
-                            <messages>
                                 <message name="TradingSessionStatusUpdate"/>
-                            </messages>
-                        </recv>
-                        <recv name="MarketDataRefresh" next="361_13">
-                            <messages>
                                 <message name="MarketDataSnapshotRefresh"/>
-                            </messages>
-                        </recv>
-                        <recv name="Notification" next="361_13">
-                            <messages>
                                 <message name="Notification"/>
                             </messages>
                         </recv>
-                        <send name="Logout" next="383_17">
+                        <send name="Logout" next="373_17">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -522,9 +511,9 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="383_17">
+                <state label="373_17">
                     <operations>
-                        <recv next="383_17">
+                        <recv next="373_17">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -552,7 +541,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientTwoFactorLogin" superProcessor="Client" head="404_14">
+        <processor name="ClientTwoFactorLogin" superProcessor="Client" head="396_13">
             <messages>
                 <message name="TwoFactorLogin"/>
                     <expression>
@@ -570,9 +559,9 @@
                 </message>
             </messages>
             <states>
-                <state label="404_14">
+                <state label="396_13">
                     <operations>
-                        <send name="TwoFactorLoginResume" next="406_13">
+                        <send name="TwoFactorLoginResume" next="398_17">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -586,9 +575,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="406_13">
+                <state label="398_17">
                     <operations>
-                        <recv name="TwoFactorLoginResume" next="404_14">
+                        <recv name="TwoFactorLoginResume" next="396_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -607,37 +596,37 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientRequest" type="string" superProcessor="Client" head="416_9">
+        <processor name="ClientRequest" type="string" superProcessor="Client" head="409_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="416_9">
+                <state label="409_9">
                     <operations>
-                        <send name="CurrencyListRequest" next="418_13">
+                        <send name="CurrencyListRequest" next="411_13">
                             <messages>
                                 <message name="CurrencyListRequest"/>
                             </messages>
                         </send>
-                        <send name="SymbolListRequest" next="425_13">
+                        <send name="SymbolListRequest" next="418_13">
                             <messages>
                                 <message name="SymbolListRequest"/>
                             </messages>
                         </send>
-                        <send name="TradingSessionStatusRequest" next="432_13">
+                        <send name="TradingSessionStatusRequest" next="425_13">
                             <messages>
                                 <message name="TradingSessionStatusRequest"/>
                             </messages>
                         </send>
-                        <send name="MarketDataRequest" next="439_13">
+                        <send name="MarketDataRequest" next="432_13">
                             <messages>
                                 <message name="MarketDataRequest"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="418_13">
+                <state label="411_13">
                     <operations>
                         <recv name="CurrencyListReport">
                             <messages>
@@ -654,7 +643,7 @@
                         <context name="CurrencyListRequest"/>
                     </contexts>
                 </state>
-                <state label="425_13">
+                <state label="418_13">
                     <operations>
                         <recv name="SymbolListReport">
                             <messages>
@@ -671,7 +660,7 @@
                         <context name="SymbolListRequest"/>
                     </contexts>
                 </state>
-                <state label="432_13">
+                <state label="425_13">
                     <operations>
                         <recv name="TradingSessionStatusReport">
                             <messages>
@@ -688,7 +677,7 @@
                         <context name="TradingSessionStatusRequest"/>
                     </contexts>
                 </state>
-                <state label="439_13">
+                <state label="432_13">
                     <operations>
                         <recv name="MarketDataReport">
                             <messages>
@@ -707,24 +696,53 @@
                 </state>
             </states>
         </processor>
-        <processor name="Server" head="450_13">
+        <processor name="ClientUpdate" superProcessor="Client" head="446_9">
+            <messages>
+                <message name="TradingSessionStatusUpdate"//>
+                <message name="MarketDataSnapshotRefresh"//>
+                <message name="Notification"//>
+            </messages>
+            <states>
+                <state label="446_9">
+                    <operations>
+                        <recv name="TradingSessionStatusUpdate" next="446_9">
+                            <messages>
+                                <message name="TradingSessionStatusUpdate"/>
+                            </messages>
+                        </recv>
+                        <recv name="MarketDataRefresh" next="446_9">
+                            <messages>
+                                <message name="MarketDataSnapshotRefresh"/>
+                            </messages>
+                        </recv>
+                        <recv name="Notification" next="446_9">
+                            <messages>
+                                <message name="Notification"/>
+                            </messages>
+                        </recv>
+                    </operations>
+                </state>
+            </states>
+        </processor>
+        <processor name="Server" head="464_13">
             <subProcessors>
                 <subProcessor name="ServerTwoFactorLogin"/>
                 <subProcessor name="ServerRequest"/>
+                <subProcessor name="ServerUpdate"/>
             </subProcessors>
             <states>
-                <state label="450_13">
+                <state label="464_13">
                     <operations>
-                        <recv name="LoginRequest" next="452_17">
+                        <recv name="LoginRequest" next="466_17">
                             <messages>
                                 <message name="LoginRequest"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="452_17">
+                <state label="466_17">
                     <operations>
-                        <send next="456_25">
+                        <send next="470_25">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -733,7 +751,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="482_13">
+                        <send next="498_13">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -744,16 +762,16 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="450_13">
+                        <send next="464_13">
                             <messages>
                                 <message name="LoginReject"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="456_25">
+                <state label="470_25">
                     <operations>
-                        <send name="TwoFactorLoginRequest" next="458_29">
+                        <send name="TwoFactorLoginRequest" next="472_29">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -767,9 +785,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="458_29">
+                <state label="472_29">
                     <operations>
-                        <recv name="TwoFactorLoginResponse" next="460_33">
+                        <recv name="TwoFactorLoginResponse" next="474_33">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -786,9 +804,9 @@
                         <context name="TwoFactorLoginRequest"/>
                     </contexts>
                 </state>
-                <state label="460_33">
+                <state label="474_33">
                     <operations>
-                        <send next="482_13">
+                        <send next="498_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -800,7 +818,12 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="450_13">
+                        <send next="470_25">
+                            <messages>
+                                <message name="TwoFactorReject"/>
+                            </messages>
+                        </send>
+                        <send next="464_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -812,19 +835,14 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="456_25">
-                            <messages>
-                                <message name="TwoFactorReject"/>
-                            </messages>
-                        </send>
                     </operations>
                     <contexts>
                         <context name="TwoFactorLoginRequest"/>
                     </contexts>
                 </state>
-                <state label="482_13">
+                <state label="498_13">
                     <operations>
-                        <recv next="482_13">
+                        <recv next="498_13">
                             <messages>
                                 <message name="Request"/>
                                 <message name="TwoFactorLogin">
@@ -837,7 +855,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <send next="482_13">
+                        <send next="498_13">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -848,38 +866,26 @@
                                         </equal>
                                     </expression>
                                 </message>
-                            </messages>
-                        </send>
-                        <send next="482_13">
-                            <messages>
                                 <message name="TradingSessionStatusUpdate"/>
-                            </messages>
-                        </send>
-                        <send next="482_13">
-                            <messages>
                                 <message name="MarketDataSnapshotRefresh"/>
-                            </messages>
-                        </send>
-                        <send next="482_13">
-                            <messages>
                                 <message name="Notification"/>
                             </messages>
                         </send>
-                        <recv name="Logout" next="504_17">
+                        <recv name="Logout" next="508_17">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </recv>
-                        <send next="450_13">
+                        <send next="464_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="504_17">
+                <state label="508_17">
                     <operations>
-                        <send next="504_17">
+                        <send next="508_17">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -895,7 +901,7 @@
                                 <message name="Notification"/>
                             </messages>
                         </send>
-                        <send next="450_13">
+                        <send next="464_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -904,7 +910,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerTwoFactorLogin" superProcessor="Server" head="525_14">
+        <processor name="ServerTwoFactorLogin" superProcessor="Server" head="531_13">
             <messages>
                 <message name="TwoFactorLogin"/>
                     <expression>
@@ -922,9 +928,9 @@
                 </message>
             </messages>
             <states>
-                <state label="525_14">
+                <state label="531_13">
                     <operations>
-                        <recv name="TwoFactorLoginResume" next="527_13">
+                        <recv name="TwoFactorLoginResume" next="533_17">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -938,9 +944,9 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="527_13">
+                <state label="533_17">
                     <operations>
-                        <send next="525_14">
+                        <send next="531_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -956,37 +962,37 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerRequest" type="string" superProcessor="Server" head="537_9">
+        <processor name="ServerRequest" type="string" superProcessor="Server" head="544_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="537_9">
+                <state label="544_9">
                     <operations>
-                        <recv name="CurrencyListRequest" next="539_13">
+                        <recv name="CurrencyListRequest" next="546_13">
                             <messages>
                                 <message name="CurrencyListRequest"/>
                             </messages>
                         </recv>
-                        <recv name="SymbolListRequest" next="546_13">
+                        <recv name="SymbolListRequest" next="553_13">
                             <messages>
                                 <message name="SymbolListRequest"/>
                             </messages>
                         </recv>
-                        <recv name="TradingSessionStatusRequest" next="553_13">
+                        <recv name="TradingSessionStatusRequest" next="560_13">
                             <messages>
                                 <message name="TradingSessionStatusRequest"/>
                             </messages>
                         </recv>
-                        <recv name="MarketDataRequest" next="560_13">
+                        <recv name="MarketDataRequest" next="567_13">
                             <messages>
                                 <message name="MarketDataRequest"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="539_13">
+                <state label="546_13">
                     <operations>
                         <send>
                             <messages>
@@ -1000,7 +1006,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="546_13">
+                <state label="553_13">
                     <operations>
                         <send>
                             <messages>
@@ -1014,7 +1020,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="553_13">
+                <state label="560_13">
                     <operations>
                         <send>
                             <messages>
@@ -1028,7 +1034,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="560_13">
+                <state label="567_13">
                     <operations>
                         <send>
                             <messages>
@@ -1038,6 +1044,34 @@
                         <send>
                             <messages>
                                 <message name="Reject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+            </states>
+        </processor>
+        <processor name="ServerUpdate" superProcessor="Server" head="581_9">
+            <messages>
+                <message name="TradingSessionStatusUpdate"//>
+                <message name="MarketDataSnapshotRefresh"//>
+                <message name="Notification"//>
+            </messages>
+            <states>
+                <state label="581_9">
+                    <operations>
+                        <send next="581_9">
+                            <messages>
+                                <message name="TradingSessionStatusUpdate"/>
+                            </messages>
+                        </send>
+                        <send next="581_9">
+                            <messages>
+                                <message name="MarketDataSnapshotRefresh"/>
+                            </messages>
+                        </send>
+                        <send next="581_9">
+                            <messages>
+                                <message name="Notification"/>
                             </messages>
                         </send>
                     </operations>
