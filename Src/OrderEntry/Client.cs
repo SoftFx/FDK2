@@ -309,7 +309,9 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void AccountInfoErrorDelegate(Client client, object data, Exception exception);
         public delegate void SessionInfoResultDelegate(Client client, object data, TickTrader.FDK.Common.SessionInfo sessionInfo);
         public delegate void SessionInfoErrorDelegate(Client client, object data, Exception exception);
-        public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport[] executionReports);
+        public delegate void OrdersBeginResultDelegate(Client client, object data, int orderCount);
+        public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
+        public delegate void OrdersEndResultDelegate(Client client, object data);
         public delegate void OrdersErrorDelegate(Client client, object data, Exception exception);
         public delegate void PositionsResultDelegate(Client client, object data, TickTrader.FDK.Common.Position[] positions);
         public delegate void PositionsErrorDelegate(Client client, object data, Exception exception);
@@ -336,8 +338,10 @@ namespace TickTrader.FDK.OrderEntry
         public event AccountInfoErrorDelegate AccountInfoErrorEvent;
         public event SessionInfoResultDelegate SessionInfoResultEvent;
         public event SessionInfoErrorDelegate SessionInfoErrorEvent;
+        public event OrdersBeginResultDelegate OrdersBeginResultEvent;
         public event OrdersResultDelegate OrdersResultEvent;
-        public event OrdersErrorDelegate OrdersErrorEvent;        
+        public event OrdersEndResultDelegate OrdersEndResultEvent;
+        public event OrdersErrorDelegate OrdersErrorEvent;
         public event PositionsResultDelegate PositionsResultEvent;
         public event PositionsErrorDelegate PositionsErrorEvent;
         public event NewOrderResultDelegate NewOrderResultEvent;
@@ -1266,6 +1270,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public Exception exception_;
             public TickTrader.FDK.Common.ExecutionReport[] executionReports_;
+            public int executionReportIndex_;
         }
 
         class PositionsAsyncContext : PositionListRequestClientContext, IAsyncContext
@@ -2357,97 +2362,118 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            public override void OnOrderMassStatusReport(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, OrderMassStatusReport message)
+            public override void OnOrderMassStatusBeginReport(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, OrderMassStatusBeginReport message)
             {
                 try
                 {
                     OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
 
-                    try
+                    if (client_.OrdersBeginResultEvent != null)
                     {
-                        SoftFX.Net.OrderEntry.OrderMassStatusEntryArray reportEntries = message.Entries;
-                        int count = reportEntries.Length;
-                        TickTrader.FDK.Common.ExecutionReport[] resultExecutionReports = new TickTrader.FDK.Common.ExecutionReport[count];
-
-                        for (int index = 0; index < count; ++index)
+                        try
                         {
-                            SoftFX.Net.OrderEntry.OrderMassStatusEntry reportEntry = reportEntries[index];
-                            SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = reportEntry.Attributes;
-                            SoftFX.Net.OrderEntry.OrderState reportEntryState = reportEntry.State;
-
-                            TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
-                            resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
-                            resultExecutionReport.OrigClientOrderId = reportEntry.OrigClOrdId;
-                            resultExecutionReport.OrderId = reportEntry.OrderId.ToString();
-                            resultExecutionReport.Symbol = reportEntryAttributes.SymbolId;
-                            resultExecutionReport.OrderSide = Convert(reportEntryAttributes.Side);
-                            resultExecutionReport.OrderType = Convert(reportEntryAttributes.Type);
-
-                            if (reportEntryAttributes.TimeInForce.HasValue)
-                            {
-                                resultExecutionReport.OrderTimeInForce = Convert(reportEntryAttributes.TimeInForce.Value);
-                            }
-                            else
-                                resultExecutionReport.OrderTimeInForce = null;
-
-                            resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
-                            resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
-                            resultExecutionReport.Price = reportEntryAttributes.Price;
-                            resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
-                            resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
-                            resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
-                            resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
-                            resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
-                            resultExecutionReport.OrderStatus = Convert(reportEntryState.Status);
-                            resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
-                            resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
-                            resultExecutionReport.TradeAmount = reportEntryState.LastQty;
-                            resultExecutionReport.TradePrice = reportEntryState.LastPrice;
-                            resultExecutionReport.Commission = reportEntry.Commission;
-                            resultExecutionReport.AgentCommission = reportEntry.AgentCommission;
-                            resultExecutionReport.Swap = reportEntry.Swap;
-                            resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;
-                            resultExecutionReport.Created = reportEntryState.Created;
-                            resultExecutionReport.Modified = reportEntryState.Modified;
-                            resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
-                            resultExecutionReport.Comment = reportEntryAttributes.Comment;
-                            resultExecutionReport.Tag = reportEntryAttributes.Tag;
-                            resultExecutionReport.Magic = reportEntryAttributes.Magic;
-                            resultExecutionReports[index] = resultExecutionReport;
+                            client_.OrdersBeginResultEvent(client_, context.Data, message.OrderCount);
                         }
-
-                        if (client_.OrdersResultEvent != null)
+                        catch
                         {
-                            try
-                            {
-                                client_.OrdersResultEvent(client_, context.Data, resultExecutionReports);
-                            }
-                            catch
-                            {
-                            }
-                        }
-
-                        if (context.Waitable)
-                        {
-                            context.executionReports_ = resultExecutionReports;
                         }
                     }
-                    catch (Exception exception)
-                    {
-                        if (client_.OrdersErrorEvent != null)
-                        {
-                            try
-                            {
-                                client_.OrdersErrorEvent(client_, context.Data, exception);
-                            }
-                            catch
-                            {
-                            }
-                        }
 
-                        if (context.Waitable)
+                    if (context.Waitable)
+                    {
+                        context.executionReports_ = new Common.ExecutionReport[message.OrderCount];
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnOrderMassStatusReport(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, OrderMassStatusReport message)
+            {
+                try
+                {
+                    OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
+
+                    SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = message.Attributes;
+                    SoftFX.Net.OrderEntry.OrderState reportEntryState = message.State;
+
+                    TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
+                    resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
+                    resultExecutionReport.OrigClientOrderId = message.OrigClOrdId;
+                    resultExecutionReport.OrderId = message.OrderId.ToString();
+                    resultExecutionReport.Symbol = reportEntryAttributes.SymbolId;
+                    resultExecutionReport.OrderSide = Convert(reportEntryAttributes.Side);
+                    resultExecutionReport.OrderType = Convert(reportEntryAttributes.Type);
+
+                    if (reportEntryAttributes.TimeInForce.HasValue)
+                    {
+                        resultExecutionReport.OrderTimeInForce = Convert(reportEntryAttributes.TimeInForce.Value);
+                    }
+                    else
+                        resultExecutionReport.OrderTimeInForce = null;
+
+                    resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
+                    resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
+                    resultExecutionReport.Price = reportEntryAttributes.Price;
+                    resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
+                    resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
+                    resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
+                    resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
+                    resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
+                    resultExecutionReport.OrderStatus = Convert(reportEntryState.Status);
+                    resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
+                    resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
+                    resultExecutionReport.TradeAmount = reportEntryState.LastQty;
+                    resultExecutionReport.TradePrice = reportEntryState.LastPrice;
+                    resultExecutionReport.Commission = message.Commission;
+                    resultExecutionReport.AgentCommission = message.AgentCommission;
+                    resultExecutionReport.Swap = message.Swap;
+                    resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;
+                    resultExecutionReport.Created = reportEntryState.Created;
+                    resultExecutionReport.Modified = reportEntryState.Modified;
+                    resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
+                    resultExecutionReport.Comment = reportEntryAttributes.Comment;
+                    resultExecutionReport.Tag = reportEntryAttributes.Tag;
+                    resultExecutionReport.Magic = reportEntryAttributes.Magic;
+
+                    if (client_.OrdersResultEvent != null)
+                    {
+                        try
                         {
-                            context.exception_ = exception;
+                            client_.OrdersResultEvent(client_, context.Data, resultExecutionReport);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.executionReports_[context.executionReportIndex_ ++] = resultExecutionReport;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnOrderMassStatusEndReport(ClientSession session, OrderMassStatusRequestClientContext OrderMassStatusRequestClientContext, OrderMassStatusEndReport message)
+            {
+                try
+                {
+                    OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
+
+                    if (client_.OrdersEndResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.OrdersEndResultEvent(client_, context.Data);
+                        }
+                        catch
+                        {
                         }
                     }
                 }

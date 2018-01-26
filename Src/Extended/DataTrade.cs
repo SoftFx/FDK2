@@ -126,7 +126,9 @@
             orderEntryClient_.AccountInfoErrorEvent += new OrderEntry.Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
             orderEntryClient_.PositionsResultEvent += new OrderEntry.Client.PositionsResultDelegate(this.OnPositionsResult);
             orderEntryClient_.PositionsErrorEvent += new OrderEntry.Client.PositionsErrorDelegate(this.OnPositionsError);
+            orderEntryClient_.OrdersBeginResultEvent += new OrderEntry.Client.OrdersBeginResultDelegate(this.OnOrdersBeginResult);
             orderEntryClient_.OrdersResultEvent += new OrderEntry.Client.OrdersResultDelegate(this.OnOrdersResult);
+            orderEntryClient_.OrdersEndResultEvent += new OrderEntry.Client.OrdersEndResultDelegate(this.OnOrdersEndResult);
             orderEntryClient_.OrdersErrorEvent += new OrderEntry.Client.OrdersErrorDelegate(this.OnOrdersError);
             orderEntryClient_.NewOrderResultEvent += new OrderEntry.Client.NewOrderResultDelegate(this.OnNewOrderResult);
             orderEntryClient_.NewOrderErrorEvent += new OrderEntry.Client.NewOrderErrorDelegate(this.OnNewOrderError);
@@ -1009,7 +1011,43 @@
             }
         }
 
-        void OnOrdersResult(OrderEntry.Client client, object data, ExecutionReport[] executionReports)
+        void OnOrdersBeginResult(OrderEntry.Client client, object data, int orderCount)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    lock (cache_.mutex_)
+                    {
+                        cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(orderCount);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOrdersResult(OrderEntry.Client client, object data, ExecutionReport executionReport)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    TradeRecord tradeRecord = GetTradeRecord(executionReport);
+
+                    lock (cache_.mutex_)
+                    {
+                        cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnOrdersEndResult(OrderEntry.Client client, object data)
         {
             try
             {
@@ -1017,18 +1055,6 @@
                 {
                     lock (synchronizer_)
                     {
-                        lock (cache_.mutex_)
-                        {
-                            cache_.tradeRecords_ = new Dictionary<string, TradeRecord>(executionReports.Length);
-
-                            foreach (ExecutionReport executionReport in executionReports)
-                            {
-                                TradeRecord tradeRecord = GetTradeRecord(executionReport);
-
-                                cache_.tradeRecords_.Add(tradeRecord.OrderId, tradeRecord);
-                            }
-                        }
-
                         if (initFlags_ != InitFlags.All)
                         {
                             initFlags_ |= InitFlags.TradeRecords;

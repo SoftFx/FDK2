@@ -78,6 +78,7 @@ namespace OrderEntryAsyncSample
             client_.AccountInfoErrorEvent += new Client.AccountInfoErrorDelegate(this.OnAccountInfoError);
             client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
             client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            client_.OrdersBeginResultEvent += new Client.OrdersBeginResultDelegate(this.OnOrdersBeginResult);
             client_.OrdersResultEvent += new Client.OrdersResultDelegate(this.OnOrdersResult);
             client_.OrdersErrorEvent += new Client.OrdersErrorDelegate(this.OnOrdersError);
             client_.PositionsResultEvent += new Client.PositionsResultDelegate(this.OnPositionsResult);
@@ -764,29 +765,32 @@ namespace OrderEntryAsyncSample
             client_.GetOrdersAsync(this);
         }
 
-        void OnOrdersResult(Client client, object data, ExecutionReport[] executionReports)
+        void OnOrdersBeginResult(Client client, object data, int orderCount)
         {
             try
             {
-                int count = executionReports.Length;
+                Console.Error.WriteLine("Total orders : {0}", orderCount);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
 
-                Console.Error.WriteLine("Total orders : {0}", count);
-
-                for (int index = 0; index < count; ++ index)
+        void OnOrdersResult(Client client, object data, ExecutionReport executionReport)
+        {
+            try
+            {
+                if (executionReport.OrderType == OrderType.Stop)
                 {
-                    ExecutionReport executionReport = executionReports[index];
-
-                    if (executionReport.OrderType == OrderType.Stop)
-                    {
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
-                    }
-                    else if (executionReport.OrderType == OrderType.StopLimit)
-                    {
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
-                    }
-                    else
-                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                 }
+                else if (executionReport.OrderType == OrderType.StopLimit)
+                {
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                }
+                else
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
             }
             catch (Exception exception)
             {
