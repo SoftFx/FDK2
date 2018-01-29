@@ -1371,7 +1371,8 @@ namespace TickTrader.FDK.TradeCapture
 
                         SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
 
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.SubscribeTradesErrorEvent != null)
                         {
@@ -1395,7 +1396,8 @@ namespace TickTrader.FDK.TradeCapture
 
                         UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
 
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.UnsubscribeTradesErrorEvent != null)
                         {
@@ -1574,7 +1576,8 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     TradeDownloadAsyncContext context = (TradeDownloadAsyncContext)TradeDownloadRequestClientContext;
 
-                    RejectException exception = new RejectException(RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.TradeDownloadErrorEvent != null)
                     {
@@ -1681,6 +1684,24 @@ namespace TickTrader.FDK.TradeCapture
                 catch (Exception exception)
                 {
                     client_.session_.LogError(exception.Message);
+                }
+            }
+
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.TradeCapture.RejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.TradeCapture.RejectReason.ThrottlingLimits:
+                        return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.TradeCapture.RejectReason.InternalServerError:
+                        return Common.RejectReason.InternalServerError;
+
+                    case SoftFX.Net.TradeCapture.RejectReason.Other:
+                        return Common.RejectReason.Other;
+
+                    default:
+                        throw new Exception("Invalid reject reason : " + reason);
                 }
             }
 

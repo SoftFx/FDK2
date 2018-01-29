@@ -61,6 +61,16 @@
         TradeNotAllowed = 14,
 
         /// <summary>
+        /// 
+        /// </summary>
+        ThrottlingLimits = 15,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        InternalServerError = 16,
+
+        /// <summary>
         /// Unknown error.
         /// </summary>
         Other = 99

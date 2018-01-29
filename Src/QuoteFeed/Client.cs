@@ -1525,7 +1525,8 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     CurrencyListAsyncContext context = (CurrencyListAsyncContext)CurrencyListRequestClientContext;
 
-                    RejectException exception = new RejectException(RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.CurrencyListErrorEvent != null)
                     {
@@ -1656,7 +1657,8 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
-                    RejectException exception = new RejectException(RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
                     {
@@ -1765,7 +1767,8 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
 
-                    RejectException exception = new RejectException(RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SessionInfoErrorEvent != null)
                     {
@@ -2009,7 +2012,8 @@ namespace TickTrader.FDK.QuoteFeed
 
                         SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.SubscribeQuotesErrorEvent != null)
                         {
@@ -2033,7 +2037,8 @@ namespace TickTrader.FDK.QuoteFeed
 
                         UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.UnsubscribeQuotesErrorEvent != null)
                         {
@@ -2057,7 +2062,8 @@ namespace TickTrader.FDK.QuoteFeed
 
                         GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        RejectException exception = new RejectException(RejectReason.None, message.Text);
+                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.QuotesErrorEvent != null)
                         {
@@ -2233,6 +2239,24 @@ namespace TickTrader.FDK.QuoteFeed
                 catch (Exception exception)
                 {
                     client_.session_.LogError(exception.Message);
+                }
+            }
+
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.QuoteFeed.RejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.QuoteFeed.RejectReason.ThrottlingLimits:
+                        return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.QuoteFeed.RejectReason.InternalServerError:
+                        return Common.RejectReason.InternalServerError;
+
+                    case SoftFX.Net.QuoteFeed.RejectReason.Other:
+                        return Common.RejectReason.Other;
+
+                    default:
+                        throw new Exception("Invalid reject reason : " + reason);
                 }
             }
 

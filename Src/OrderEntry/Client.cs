@@ -455,7 +455,7 @@ namespace TickTrader.FDK.OrderEntry
             session_.SendTradingSessionStatusRequest(context, request);
         }
 
-        public TickTrader.FDK.Common.ExecutionReport[] GetOrders(int timeout)
+        public OrderEnumerator GetOrders(int timeout)
         {
             OrdersAsyncContext context = new OrdersAsyncContext(true);
 
@@ -467,7 +467,7 @@ namespace TickTrader.FDK.OrderEntry
             if (context.exception_ != null)
                 throw context.exception_;
 
-            return context.executionReports_;
+            return context.orderEnumerator_;
         }
 
         public void GetOrdersAsync(object data)
@@ -1269,8 +1269,7 @@ namespace TickTrader.FDK.OrderEntry
             }
 
             public Exception exception_;
-            public TickTrader.FDK.Common.ExecutionReport[] executionReports_;
-            public int executionReportIndex_;
+            public OrderEnumerator orderEnumerator_;
         }
 
         class PositionsAsyncContext : PositionListRequestClientContext, IAsyncContext
@@ -2095,7 +2094,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext)TradeServerInfoRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.TradeServerInfoErrorEvent != null)
                     {
@@ -2229,7 +2229,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     AccountInfoAsyncContext context = (AccountInfoAsyncContext) AccountInfoRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.AccountInfoErrorEvent != null)
                     {
@@ -2338,7 +2339,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SessionInfoErrorEvent != null)
                     {
@@ -2381,7 +2383,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.executionReports_ = new Common.ExecutionReport[message.OrderCount];
+                        context.orderEnumerator_ = new OrderEnumerator(client_, message.RequestId, message.OrderCount);
                     }
                 }
                 catch (Exception exception)
@@ -2451,7 +2453,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.executionReports_[context.executionReportIndex_ ++] = resultExecutionReport;
+                        context.orderEnumerator_.SetResult(resultExecutionReport);
                     }
                 }
                 catch (Exception exception)
@@ -2476,6 +2478,11 @@ namespace TickTrader.FDK.OrderEntry
                         {
                         }
                     }
+
+                    if (context.Waitable)
+                    {
+                        context.orderEnumerator_.SetEnd();
+                    }
                 }
                 catch (Exception exception)
                 {
@@ -2489,7 +2496,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.OrdersErrorEvent != null)
                     {
@@ -2504,7 +2512,12 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.exception_ = exception;
+                        if (context.orderEnumerator_ == null)
+                        {
+                            context.exception_ = exception;
+                        }
+                        else
+                            context.orderEnumerator_.SetError(exception);
                     }
                 }
                 catch (Exception exception)
@@ -2605,7 +2618,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     PositionsAsyncContext context = (PositionsAsyncContext)PositionListRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.PositionsErrorEvent != null)
                     {
@@ -3942,6 +3956,24 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.RejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.OrderEntry.RejectReason.ThrottlingLimits:
+                        return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.OrderEntry.RejectReason.InternalServerError:
+                        return Common.RejectReason.InternalServerError;
+
+                    case SoftFX.Net.OrderEntry.RejectReason.Other:
+                        return Common.RejectReason.Other;
+
+                    default:
+                        throw new Exception("Invalid reject reason : " + reason);
+                }
+            }
+
             TickTrader.FDK.Common.AccountType Convert(SoftFX.Net.OrderEntry.AccountType type)
             {
                 switch (type)
@@ -4116,44 +4148,44 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.RejectReason reason)
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.OrderEntry.ExecutionRejectReason reason)
             {
                 switch (reason)
                 {
-                    case SoftFX.Net.OrderEntry.RejectReason.Dealer:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.Dealer:
                         return TickTrader.FDK.Common.RejectReason.DealerReject;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.DealerTimeout:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.DealerTimeout:
                         return TickTrader.FDK.Common.RejectReason.DealerReject;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.UnknownSymbol:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.UnknownSymbol:
                         return TickTrader.FDK.Common.RejectReason.UnknownSymbol;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.LimitsExceeded:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.LimitsExceeded:
                         return TickTrader.FDK.Common.RejectReason.OrderExceedsLImit;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.OffQuotes:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.OffQuotes:
                         return TickTrader.FDK.Common.RejectReason.OffQuotes;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.UnknownOrder:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.UnknownOrder:
                         return TickTrader.FDK.Common.RejectReason.UnknownOrder;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.DuplicateOrder:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.DuplicateOrder:
                         return TickTrader.FDK.Common.RejectReason.DuplicateClientOrderId;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.IncorrectCharacteristics:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.IncorrectCharacteristics:
                         return TickTrader.FDK.Common.RejectReason.InvalidTradeRecordParameters;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.IncorrectQty:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.IncorrectQty:
                         return TickTrader.FDK.Common.RejectReason.IncorrectQuantity;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.TooLate:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.TooLate:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.InternalServerError:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.Other:
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.Other:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
                     default:

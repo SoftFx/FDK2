@@ -568,16 +568,12 @@ namespace OrderEntrySample
         
         void GetOrders()
         {
-            ExecutionReport[] executionReports = client_.GetOrders(Timeout);
+            OrderEnumerator orderEnumerator = client_.GetOrders(Timeout);
 
-            int count = executionReports.Length;
+            Console.Error.WriteLine("Total orders : {0}", orderEnumerator.OrderCount);
 
-            Console.Error.WriteLine("Total orders : {0}", count);
-
-            for (int index = 0; index < count; ++ index)
+            for (ExecutionReport executionReport = orderEnumerator.Next(Timeout); executionReport != null; executionReport = orderEnumerator.Next(Timeout))
             {
-                ExecutionReport executionReport = executionReports[index];
-
                 if (executionReport.OrderType == OrderType.Stop)
                 {
                     Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);

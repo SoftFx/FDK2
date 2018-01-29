@@ -1,0 +1,164 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Threading;
+using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.OrderEntry
+{
+    public class OrderEnumerator : IDisposable
+    {
+        internal OrderEnumerator(Client client, string requestId, int orderCount)
+        {
+            client_ = client;
+            requestId_ = requestId;
+            orderCount_ = orderCount;
+
+            mutex_ = new object();
+            completed_ = false;
+            orders_ = new ExecutionReport[GrowSize];
+            count_ = 0;
+            beginIndex_ = 0;
+            endIndex_ = 0;
+            exception_ = null;
+            event_ = new AutoResetEvent(false);
+        }
+
+        public int OrderCount
+        {
+            get { return orderCount_; }
+        }
+
+        public ExecutionReport Next(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (count_ > 0)
+                    {
+                        ExecutionReport order = orders_[beginIndex_];
+                        orders_[beginIndex_] = null;       // !
+                        beginIndex_ = (beginIndex_ + 1) % orders_.Length;
+                        --count_;
+
+                        return order;
+                    }
+
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (completed_)
+                        return null;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }            
+        }
+
+        public void Close()
+        {
+            lock (mutex_)
+            {
+                completed_ = true;
+
+                if (count_ > 0)
+                {
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % orders_.Length)
+                        orders_[index] = null;
+
+                    count_ = 0;
+                    beginIndex_ = 0;
+                    endIndex_ = 0;
+                }
+
+                event_.Close();
+            }
+        }
+
+        public void Dispose()
+        {
+            Close();
+
+            GC.SuppressFinalize(this);
+        }
+
+        internal void SetResult(ExecutionReport order)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    if (count_ == orders_.Length)
+                    {
+                        ExecutionReport[] orders = new ExecutionReport[orders_.Length + GrowSize];
+
+                        if (endIndex_ > beginIndex_)
+                        {
+                            Array.Copy(orders_, beginIndex_, orders, 0, count_);
+                        }
+                        else
+                        {
+                            int count = orders_.Length - beginIndex_;
+                            Array.Copy(orders_, beginIndex_, orders, 0, count);
+                            Array.Copy(orders_, 0, orders, count, endIndex_);
+                        }
+
+                        orders_ = orders;
+                        beginIndex_ = 0;
+                        endIndex_ = count_;
+                    }
+
+                    orders_[endIndex_] = order;
+                    endIndex_ = (endIndex_ + 1) % orders_.Length;
+                    ++ count_;
+
+                    event_.Set();
+                }
+            }
+        }
+
+        internal void SetEnd()
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    completed_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
+        internal void SetError(Exception exception)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    exception_ = exception;
+                    completed_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
+        const int GrowSize = 1000;
+
+        Client client_;
+        string requestId_;
+        int orderCount_;
+
+        object mutex_;
+        bool completed_;
+
+        ExecutionReport[] orders_;
+        int count_;
+        int beginIndex_;
+        int endIndex_;
+        Exception exception_;
+        AutoResetEvent event_;
+    }
+}

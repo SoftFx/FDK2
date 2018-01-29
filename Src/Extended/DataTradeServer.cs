@@ -1,8 +1,9 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
-    using System.Collections.Generic;
+    using System.Collections.Generic;    
     using Common;
+    using OrderEntry;
 
     /// <summary>
     /// The class contains methods, which are executed in server side.
@@ -119,12 +120,23 @@
         /// <returns>can not be null</returns>
         public TradeRecord[] GetTradeRecordsEx(int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds);
+            OrderEnumerator orderEnumerator = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds);
 
-            TradeRecord[] tradeRecords = new TradeRecord[executionReports.Length];
+            TradeRecord[] tradeRecords = new TradeRecord[orderEnumerator.OrderCount];
+            int index = 0;
 
-            for (int index = 0; index < executionReports.Length; ++index)
-                tradeRecords[index] = dataTrade_.GetTradeRecord(executionReports[index]);
+            for 
+            (
+                ExecutionReport executionReport = orderEnumerator.Next(timeoutInMilliseconds); 
+                executionReport != null; 
+                executionReport = orderEnumerator.Next(timeoutInMilliseconds)
+            )
+            {
+                TradeRecord tradeRecord = dataTrade_.GetTradeRecord(executionReport);
+                tradeRecords[index] = tradeRecord;
+
+                ++index;
+            }                
 
             return tradeRecords;
         }
