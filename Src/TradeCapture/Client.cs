@@ -699,7 +699,8 @@ namespace TickTrader.FDK.TradeCapture
             public DateTime? from_;
             public DateTime? to_;
             public bool skipCancel_;
-            public string reportId_;            
+            public string reportId_;
+            public bool last_;
             public TradeTransactionReport tradeTransactionReport_;
             public AutoResetEvent event_;
             public Exception exception_;
@@ -1422,11 +1423,11 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeDownloadReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadReport message)
+            public override void OnTradeDownloadBeginReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadBeginReport message)
             {
                 try
                 {
-                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext)TradeDownloadRequestClientContext;
+                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext) TradeDownloadRequestClientContext;
 
                     try
                     {
@@ -1453,8 +1454,9 @@ namespace TickTrader.FDK.TradeCapture
                         }
 
                         context.reportId_ = message.Id;
+                        context.last_ = message.Last;
 
-                        if (!message.Last)
+                        if (! context.last_)
                         {
                             // Sending the next request ahead of current response processing
 
@@ -1489,36 +1491,104 @@ namespace TickTrader.FDK.TradeCapture
                                 client_.session_.SendTradeDownloadRequest(context, request);
                             }
                         }
-
-                        TradeArray trades = message.Trades;
-                        int count = trades.Length;
-
-                        for (int index = 0; index < count; ++index)
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TradeDownloadErrorEvent != null)
                         {
-                            Trade trade = trades[index];
-
-                            Convert(context.tradeTransactionReport_, trade);
-
-                            if (client_.TradeDownloadResultEvent != null)
+                            try
                             {
-                                try
-                                {
-                                    client_.TradeDownloadResultEvent(client_, context.Data, context.tradeTransactionReport_);
-                                }
-                                catch
-                                {
-                                }
+                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
                             }
-
-                            if (context.Waitable)
+                            catch
                             {
-                                TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
-
-                                context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
                             }
                         }
 
-                        if (message.Last)
+                        if (context.Waitable)
+                        {
+                            if (context.tradeTransactionReportEnumerator_ != null)
+                            {
+                                context.tradeTransactionReportEnumerator_.SetError(exception);
+                            }
+                            else
+                            {
+                                context.exception_ = exception;
+                                context.event_.Set();
+                            }
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTradeDownloadReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadReport message)
+            {
+                try
+                {
+                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext) TradeDownloadRequestClientContext;
+
+                    try
+                    {
+                        Trade trade = message.Trade;
+
+                        Convert(context.tradeTransactionReport_, trade);
+
+                        if (client_.TradeDownloadResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.TradeDownloadResultEvent(client_, context.Data, context.tradeTransactionReport_);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
+
+                            context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.TradeDownloadErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.tradeTransactionReportEnumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTradeDownloadEndReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadEndReport message)
+            {
+                try
+                {
+                    TradeDownloadAsyncContext context = (TradeDownloadAsyncContext) TradeDownloadRequestClientContext;
+
+                    try
+                    {
+                        if (context.last_)
                         {
                             if (client_.TradeDownloadResultEndEvent != null)
                             {
@@ -1552,15 +1622,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            if (context.tradeTransactionReportEnumerator_ != null)
-                            {
-                                context.tradeTransactionReportEnumerator_.SetError(exception);
-                            }
-                            else
-                            {
-                                context.exception_ = exception;
-                                context.event_.Set();
-                            }
+                            context.tradeTransactionReportEnumerator_.SetError(exception);
                         }
                     }
                 }
