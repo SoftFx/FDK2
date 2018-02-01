@@ -60,7 +60,18 @@ namespace TickTrader.FDK.OrderEntry
         {
             lock (mutex_)
             {
-                completed_ = true;
+                if (! completed_)
+                {
+                    completed_ = true;
+
+                    try
+                    {
+                        client_.CancelOrdersAsync(requestId_);
+                    }
+                    catch
+                    {
+                    }
+                }
 
                 if (count_ > 0)
                 {

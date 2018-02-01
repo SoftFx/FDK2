@@ -1,4 +1,4 @@
-<protocol name="OrderEntry" majorVer="5" minorVer="0">
+<protocol name="OrderEntry" majorVer="6" minorVer="0">
     <members>
         <message name="LoginRequest" id="0" size="48">
             <fields>
@@ -74,6 +74,7 @@
                 <subMessage name="AccountInfoRequest"/>
                 <subMessage name="TradingSessionStatusRequest"/>
                 <subMessage name="OrderMassStatusRequest"/>
+                <subMessage name="OrderMassStatusCancel"/>
                 <subMessage name="PositionListRequest"/>
             </subMessages>
             <fields>
@@ -98,8 +99,9 @@
         <enum name="RejectReason" size="4">
             <members>
                 <member name="ThrottlingLimits" value="0"/>
-                <member name="InternalServerError" value="1"/>
-                <member name="Other" value="2"/>
+                <member name="DownloadCancelled" value="1"/>
+                <member name="InternalServerError" value="2"/>
+                <member name="Other" value="3"/>
             </members>
         </enum>
         <message name="Reject" id="8" superMessage="Response" size="28">
@@ -238,6 +240,11 @@
                 <field name="Type" offset="16" type="OrderMassStatusRequestType" optional="N" repeatable="N"/>
             </fields>
         </message>
+        <message name="OrderMassStatusCancel" id="16" superMessage="Request" size="16">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
         <enum name="OrderType" size="4">
             <members>
                 <member name="Market" value="0"/>
@@ -318,13 +325,13 @@
                 <field name="Filled" offset="60" type="timestamp" optional="Y" repeatable="N"/>
             </fields>
         </group>
-        <message name="OrderMassStatusBeginReport" id="16" superMessage="Response" size="20">
+        <message name="OrderMassStatusBeginReport" id="17" superMessage="Response" size="20">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="OrderCount" offset="16" type="int32" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="OrderMassStatusReport" id="17" superMessage="Response" size="260">
+        <message name="OrderMassStatusReport" id="18" superMessage="Response" size="260">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="OrigClOrdId" offset="16" type="string" optional="Y" repeatable="N"/>
@@ -341,7 +348,7 @@
                 <field name="MarginRateInitial" offset="252" type="double" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="OrderMassStatusEndReport" id="18" superMessage="Response" size="16">
+        <message name="OrderMassStatusEndReport" id="19" superMessage="Response" size="16">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
             </fields>
@@ -351,7 +358,7 @@
                 <member name="All" value="0"/>
             </members>
         </enum>
-        <message name="PositionListRequest" id="19" superMessage="Request" size="20">
+        <message name="PositionListRequest" id="20" superMessage="Request" size="20">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Type" offset="16" type="PositionListRequestType" optional="N" repeatable="N"/>
@@ -378,20 +385,20 @@
                 <field name="Swap" offset="76" type="double" optional="N" repeatable="N"/>
             </fields>
         </group>
-        <message name="PositionListReport" id="20" superMessage="Response" size="32">
+        <message name="PositionListReport" id="21" superMessage="Response" size="32">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="ClearingBusinessDate" offset="16" type="timestamp" optional="N" repeatable="N"/>
                 <field name="Positions" offset="24" type="Position" optional="N" repeatable="Y"/>
             </fields>
         </message>
-        <message name="NewOrderSingle" id="21" size="116">
+        <message name="NewOrderSingle" id="22" size="116">
             <fields>
                 <field name="ClOrdId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Attributes" offset="16" type="OrderAttributes" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="OrderCancelReplaceRequest" id="22" size="132">
+        <message name="OrderCancelReplaceRequest" id="23" size="132">
             <fields>
                 <field name="ClOrdId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="OrigClOrdId" offset="16" type="string" optional="Y" repeatable="N"/>
@@ -399,7 +406,7 @@
                 <field name="Attributes" offset="32" type="OrderAttributes" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="OrderCancelRequest" id="23" size="32">
+        <message name="OrderCancelRequest" id="24" size="32">
             <fields>
                 <field name="ClOrdId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="OrigClOrdId" offset="16" type="string" optional="Y" repeatable="N"/>
@@ -412,7 +419,7 @@
                 <member name="CloseBy" value="1"/>
             </members>
         </enum>
-        <message name="ClosePositionRequest" id="24" size="44">
+        <message name="ClosePositionRequest" id="25" size="44">
             <fields>
                 <field name="Type" offset="8" type="ClosePositionRequestType" optional="N" repeatable="N"/>
                 <field name="ClOrdId" offset="12" type="string" optional="N" repeatable="N"/>
@@ -452,7 +459,7 @@
                 <member name="Other" value="11"/>
             </members>
         </enum>
-        <message name="ExecutionReport" id="25" size="380">
+        <message name="ExecutionReport" id="26" size="380">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Type" offset="16" type="ExecType" optional="N" repeatable="N"/>
@@ -486,7 +493,7 @@
                 <member name="Rollover" value="4"/>
             </members>
         </enum>
-        <message name="PositionReport" id="26" size="112">
+        <message name="PositionReport" id="27" size="112">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Type" offset="16" type="PositionReportType" optional="N" repeatable="N"/>
@@ -494,17 +501,17 @@
                 <field name="Position" offset="28" type="Position" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="AccountInfoUpdate" id="27" size="132">
+        <message name="AccountInfoUpdate" id="28" size="132">
             <fields>
                 <field name="AccountInfo" offset="8" type="AccountInfo" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="TradingSessionStatusUpdate" id="28" size="56">
+        <message name="TradingSessionStatusUpdate" id="29" size="56">
             <fields>
                 <field name="StatusInfo" offset="8" type="TradingSessionStatusInfo" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="BalanceUpdate" id="29" size="32">
+        <message name="BalanceUpdate" id="30" size="32">
             <fields>
                 <field name="Balance" offset="8" type="Balance" optional="N" repeatable="N"/>
             </fields>
@@ -524,7 +531,7 @@
                 <member name="Error" value="2"/>
             </members>
         </enum>
-        <message name="Notification" id="30" size="32">
+        <message name="Notification" id="31" size="32">
             <fields>
                 <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Type" offset="16" type="NotificationType" optional="N" repeatable="N"/>
@@ -532,7 +539,7 @@
                 <field name="Text" offset="24" type="string" optional="Y" repeatable="N"/>
             </fields>
         </message>
-        <processor name="Client" head="503_13">
+        <processor name="Client" head="506_13">
             <subProcessors>
                 <subProcessor name="ClientTwoFactorLogin"/>
                 <subProcessor name="ClientRequest"/>
@@ -540,18 +547,18 @@
                 <subProcessor name="ClientUpdate"/>
             </subProcessors>
             <states>
-                <state label="503_13">
+                <state label="506_13">
                     <operations>
-                        <send name="LoginRequest" next="505_17">
+                        <send name="LoginRequest" next="508_17">
                             <messages>
                                 <message name="LoginRequest"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="505_17">
+                <state label="508_17">
                     <operations>
-                        <recv next="509_25">
+                        <recv next="512_25">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -560,7 +567,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="LoginReport" next="537_13">
+                        <recv name="LoginReport" next="540_13">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -571,7 +578,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="LoginReject" next="503_13">
+                        <recv name="LoginReject" next="506_13">
                             <messages>
                                 <message name="LoginReject"/>
                             </messages>
@@ -581,9 +588,9 @@
                         <context name="LoginRequest"/>
                     </contexts>
                 </state>
-                <state label="509_25">
+                <state label="512_25">
                     <operations>
-                        <recv name="TwoFactorLoginRequest" next="511_29">
+                        <recv name="TwoFactorLoginRequest" next="514_29">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -600,9 +607,9 @@
                         <context name="LoginRequest"/>
                     </contexts>
                 </state>
-                <state label="511_29">
+                <state label="514_29">
                     <operations>
-                        <send name="TwoFactorLoginResponse" next="513_33">
+                        <send name="TwoFactorLoginResponse" next="516_33">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -619,9 +626,9 @@
                         <context name="LoginRequest"/>
                     </contexts>
                 </state>
-                <state label="513_33">
+                <state label="516_33">
                     <operations>
-                        <recv name="TwoFactorLoginSuccess" next="537_13">
+                        <recv name="TwoFactorLoginSuccess" next="540_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -633,12 +640,12 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="TwoFactorLoginReject" next="509_25">
+                        <recv name="TwoFactorLoginReject" next="512_25">
                             <messages>
                                 <message name="TwoFactorReject"/>
                             </messages>
                         </recv>
-                        <recv name="TwoFactorLoginError" next="503_13">
+                        <recv name="TwoFactorLoginError" next="506_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -656,9 +663,9 @@
                         <context name="TwoFactorLoginResponse"/>
                     </contexts>
                 </state>
-                <state label="537_13">
+                <state label="540_13">
                     <operations>
-                        <send next="537_13">
+                        <send next="540_13">
                             <messages>
                                 <message name="Request"/>
                                 <message name="TwoFactorLogin">
@@ -675,7 +682,7 @@
                                 <message name="ClosePositionRequest"/>
                             </messages>
                         </send>
-                        <recv next="537_13">
+                        <recv next="540_13">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -694,21 +701,21 @@
                                 <message name="Notification"/>
                             </messages>
                         </recv>
-                        <send name="Logout" next="547_17">
+                        <send name="Logout" next="550_17">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </send>
-                        <recv name="Logout" next="503_13">
+                        <recv name="Logout" next="506_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="547_17">
+                <state label="550_17">
                     <operations>
-                        <recv next="547_17">
+                        <recv next="550_17">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -727,7 +734,7 @@
                                 <message name="Notification"/>
                             </messages>
                         </recv>
-                        <recv name="Logout" next="503_13">
+                        <recv name="Logout" next="506_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -739,7 +746,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientTwoFactorLogin" superProcessor="Client" head="570_13">
+        <processor name="ClientTwoFactorLogin" superProcessor="Client" head="573_13">
             <messages>
                 <message name="TwoFactorLogin"/>
                     <expression>
@@ -757,9 +764,9 @@
                 </message>
             </messages>
             <states>
-                <state label="570_13">
+                <state label="573_13">
                     <operations>
-                        <send name="TwoFactorLoginResume" next="572_17">
+                        <send name="TwoFactorLoginResume" next="575_17">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -773,9 +780,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="572_17">
+                <state label="575_17">
                     <operations>
-                        <recv name="TwoFactorLoginResume" next="570_13">
+                        <recv name="TwoFactorLoginResume" next="573_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -794,42 +801,42 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientRequest" type="string" superProcessor="Client" head="583_9">
+        <processor name="ClientRequest" type="string" superProcessor="Client" head="586_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="583_9">
+                <state label="586_9">
                     <operations>
-                        <send name="TradeServerInfoRequest" next="585_13">
+                        <send name="TradeServerInfoRequest" next="588_13">
                             <messages>
                                 <message name="TradeServerInfoRequest"/>
                             </messages>
                         </send>
-                        <send name="AccountInfoRequest" next="592_13">
+                        <send name="AccountInfoRequest" next="595_13">
                             <messages>
                                 <message name="AccountInfoRequest"/>
                             </messages>
                         </send>
-                        <send name="TradingSessionStatusRequest" next="599_13">
+                        <send name="TradingSessionStatusRequest" next="602_13">
                             <messages>
                                 <message name="TradingSessionStatusRequest"/>
                             </messages>
                         </send>
-                        <send name="OrderMassStatusRequest" next="606_13">
+                        <send name="OrderMassStatusRequest" next="609_13">
                             <messages>
                                 <message name="OrderMassStatusRequest"/>
                             </messages>
                         </send>
-                        <send name="PositionListRequest" next="621_13">
+                        <send name="PositionListRequest" next="628_13">
                             <messages>
                                 <message name="PositionListRequest"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="585_13">
+                <state label="588_13">
                     <operations>
                         <recv name="TradeServerInfoReport">
                             <messages>
@@ -846,7 +853,7 @@
                         <context name="TradeServerInfoRequest"/>
                     </contexts>
                 </state>
-                <state label="592_13">
+                <state label="595_13">
                     <operations>
                         <recv name="AccountInfoReport">
                             <messages>
@@ -863,7 +870,7 @@
                         <context name="AccountInfoRequest"/>
                     </contexts>
                 </state>
-                <state label="599_13">
+                <state label="602_13">
                     <operations>
                         <recv name="TradingSessionStatusReport">
                             <messages>
@@ -880,9 +887,9 @@
                         <context name="TradingSessionStatusRequest"/>
                     </contexts>
                 </state>
-                <state label="606_13">
+                <state label="609_13">
                     <operations>
-                        <recv name="OrderMassStatusBeginReport" next="608_17">
+                        <recv name="OrderMassStatusBeginReport" next="611_17">
                             <messages>
                                 <message name="OrderMassStatusBeginReport"/>
                             </messages>
@@ -897,9 +904,14 @@
                         <context name="OrderMassStatusRequest"/>
                     </contexts>
                 </state>
-                <state label="608_17">
+                <state label="611_17">
                     <operations>
-                        <recv name="OrderMassStatusReport" next="608_17">
+                        <send next="611_17">
+                            <messages>
+                                <message name="OrderMassStatusCancel"/>
+                            </messages>
+                        </send>
+                        <recv name="OrderMassStatusReport" next="611_17">
                             <messages>
                                 <message name="OrderMassStatusReport"/>
                             </messages>
@@ -919,7 +931,7 @@
                         <context name="OrderMassStatusRequest"/>
                     </contexts>
                 </state>
-                <state label="621_13">
+                <state label="628_13">
                     <operations>
                         <recv name="PositionListReport">
                             <messages>
@@ -938,7 +950,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientOrder" type="string" superProcessor="Client" head="637_9">
+        <processor name="ClientOrder" type="string" superProcessor="Client" head="644_9">
             <fields>
                 <field name="NewOrderSingle.ClOrdId"/>
                 <field name="OrderCancelReplaceRequest.ClOrdId"/>
@@ -954,24 +966,24 @@
                 </field>
             </fields>
             <states>
-                <state label="637_9">
+                <state label="644_9">
                     <operations>
-                        <send name="NewOrderSingle" next="639_13">
+                        <send name="NewOrderSingle" next="646_13">
                             <messages>
                                 <message name="NewOrderSingle"/>
                             </messages>
                         </send>
-                        <send name="OrderCancelReplaceRequest" next="661_13">
+                        <send name="OrderCancelReplaceRequest" next="668_13">
                             <messages>
                                 <message name="OrderCancelReplaceRequest"/>
                             </messages>
                         </send>
-                        <send name="OrderCancelRequest" next="672_13">
+                        <send name="OrderCancelRequest" next="679_13">
                             <messages>
                                 <message name="OrderCancelRequest"/>
                             </messages>
                         </send>
-                        <send name="ClosePositionRequest" next="683_13">
+                        <send name="ClosePositionRequest" next="690_13">
                             <messages>
                                 <message name="ClosePositionRequest">
                                     <expression>
@@ -983,7 +995,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <send name="ClosePositionByRequest" next="694_13">
+                        <send name="ClosePositionByRequest" next="701_13">
                             <messages>
                                 <message name="ClosePositionRequest">
                                     <expression>
@@ -997,9 +1009,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="639_13">
+                <state label="646_13">
                     <operations>
-                        <recv name="NewOrderSingleMarketNewReport" next="641_17">
+                        <recv name="NewOrderSingleMarketNewReport" next="648_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1017,7 +1029,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="NewOrderSingleNewReport" next="652_17">
+                        <recv name="NewOrderSingleNewReport" next="659_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1046,7 +1058,7 @@
                         <context name="NewOrderSingle"/>
                     </contexts>
                 </state>
-                <state label="641_17">
+                <state label="648_17">
                     <operations>
                         <recv name="NewOrderSingleMarketFillReport">
                             <messages>
@@ -1066,7 +1078,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="NewOrderSingleMarketPartialFillReport" next="646_21">
+                        <recv name="NewOrderSingleMarketPartialFillReport" next="653_21">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1107,7 +1119,7 @@
                         <context name="NewOrderSingle"/>
                     </contexts>
                 </state>
-                <state label="646_21">
+                <state label="653_21">
                     <operations>
                         <recv name="NewOrderSingleRejectReport">
                             <messages>
@@ -1132,7 +1144,7 @@
                         <context name="NewOrderSingle"/>
                     </contexts>
                 </state>
-                <state label="652_17">
+                <state label="659_17">
                     <operations>
                         <recv name="NewOrderSingleCalculatedReport">
                             <messages>
@@ -1163,9 +1175,9 @@
                         <context name="NewOrderSingle"/>
                     </contexts>
                 </state>
-                <state label="661_13">
+                <state label="668_13">
                     <operations>
-                        <recv name="OrderCancelReplacePendingReplaceReport" next="663_17">
+                        <recv name="OrderCancelReplacePendingReplaceReport" next="670_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1194,7 +1206,7 @@
                         <context name="OrderCancelReplaceRequest"/>
                     </contexts>
                 </state>
-                <state label="663_17">
+                <state label="670_17">
                     <operations>
                         <recv name="OrderCancelReplaceReplacedReport">
                             <messages>
@@ -1225,9 +1237,9 @@
                         <context name="OrderCancelReplaceRequest"/>
                     </contexts>
                 </state>
-                <state label="672_13">
+                <state label="679_13">
                     <operations>
-                        <recv name="OrderCancelPendingCancelReport" next="674_17">
+                        <recv name="OrderCancelPendingCancelReport" next="681_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1256,7 +1268,7 @@
                         <context name="OrderCancelRequest"/>
                     </contexts>
                 </state>
-                <state label="674_17">
+                <state label="681_17">
                     <operations>
                         <recv name="OrderCancelCancelledReport">
                             <messages>
@@ -1287,9 +1299,9 @@
                         <context name="OrderCancelRequest"/>
                     </contexts>
                 </state>
-                <state label="683_13">
+                <state label="690_13">
                     <operations>
-                        <recv name="ClosePositionPendingCloseReport" next="685_17">
+                        <recv name="ClosePositionPendingCloseReport" next="692_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1318,7 +1330,7 @@
                         <context name="ClosePositionRequest"/>
                     </contexts>
                 </state>
-                <state label="685_17">
+                <state label="692_17">
                     <operations>
                         <recv name="ClosePositionFillReport">
                             <messages>
@@ -1355,9 +1367,9 @@
                         <context name="ClosePositionRequest"/>
                     </contexts>
                 </state>
-                <state label="694_13">
+                <state label="701_13">
                     <operations>
-                        <recv name="ClosePositionByFillReport1" next="696_17">
+                        <recv name="ClosePositionByFillReport1" next="703_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1375,7 +1387,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByRejectReport1" next="700_17">
+                        <recv name="ClosePositionByRejectReport1" next="707_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1392,7 +1404,7 @@
                         <context name="ClosePositionByRequest"/>
                     </contexts>
                 </state>
-                <state label="696_17">
+                <state label="703_17">
                     <operations>
                         <recv name="ClosePositionByFillReport2">
                             <messages>
@@ -1417,7 +1429,7 @@
                         <context name="ClosePositionByRequest"/>
                     </contexts>
                 </state>
-                <state label="700_17">
+                <state label="707_17">
                     <operations>
                         <recv name="ClosePositionByRejectReport2">
                             <messages>
@@ -1438,7 +1450,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ClientUpdate" superProcessor="Client" head="715_9">
+        <processor name="ClientUpdate" superProcessor="Client" head="722_9">
             <messages>
                 <message name="AccountInfoUpdate"//>
                 <message name="TradingSessionStatusUpdate"//>
@@ -1455,34 +1467,34 @@
                 <message name="Notification"//>
             </messages>
             <states>
-                <state label="715_9">
+                <state label="722_9">
                     <operations>
-                        <recv name="AccountInfoUpdate" next="715_9">
+                        <recv name="AccountInfoUpdate" next="722_9">
                             <messages>
                                 <message name="AccountInfoUpdate"/>
                             </messages>
                         </recv>
-                        <recv name="TradingSessionStatusUpdate" next="715_9">
+                        <recv name="TradingSessionStatusUpdate" next="722_9">
                             <messages>
                                 <message name="TradingSessionStatusUpdate"/>
                             </messages>
                         </recv>
-                        <recv name="BalanceUpdate" next="715_9">
+                        <recv name="BalanceUpdate" next="722_9">
                             <messages>
                                 <message name="BalanceUpdate"/>
                             </messages>
                         </recv>
-                        <recv name="ExecutionReport" next="715_9">
+                        <recv name="ExecutionReport" next="722_9">
                             <messages>
                                 <message name="ExecutionReport"/>
                             </messages>
                         </recv>
-                        <recv name="PositionReport" next="715_9">
+                        <recv name="PositionReport" next="722_9">
                             <messages>
                                 <message name="PositionReport"/>
                             </messages>
                         </recv>
-                        <recv name="Notification" next="715_9">
+                        <recv name="Notification" next="722_9">
                             <messages>
                                 <message name="Notification"/>
                             </messages>
@@ -1491,7 +1503,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="Server" head="745_13">
+        <processor name="Server" head="752_13">
             <subProcessors>
                 <subProcessor name="ServerTwoFactorLogin"/>
                 <subProcessor name="ServerRequest"/>
@@ -1499,18 +1511,18 @@
                 <subProcessor name="ServerUpdate"/>
             </subProcessors>
             <states>
-                <state label="745_13">
+                <state label="752_13">
                     <operations>
-                        <recv name="LoginRequest" next="747_17">
+                        <recv name="LoginRequest" next="754_17">
                             <messages>
                                 <message name="LoginRequest"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="747_17">
+                <state label="754_17">
                     <operations>
-                        <send next="751_25">
+                        <send next="758_25">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -1519,7 +1531,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="779_13">
+                        <send next="786_13">
                             <messages>
                                 <message name="LoginReport">
                                     <expression>
@@ -1530,16 +1542,16 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="745_13">
+                        <send next="752_13">
                             <messages>
                                 <message name="LoginReject"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="751_25">
+                <state label="758_25">
                     <operations>
-                        <send name="TwoFactorLoginRequest" next="753_29">
+                        <send name="TwoFactorLoginRequest" next="760_29">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1553,9 +1565,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="753_29">
+                <state label="760_29">
                     <operations>
-                        <recv name="TwoFactorLoginResponse" next="755_33">
+                        <recv name="TwoFactorLoginResponse" next="762_33">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1572,9 +1584,9 @@
                         <context name="TwoFactorLoginRequest"/>
                     </contexts>
                 </state>
-                <state label="755_33">
+                <state label="762_33">
                     <operations>
-                        <send next="779_13">
+                        <send next="786_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1586,12 +1598,12 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="751_25">
+                        <send next="758_25">
                             <messages>
                                 <message name="TwoFactorReject"/>
                             </messages>
                         </send>
-                        <send next="745_13">
+                        <send next="752_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1608,9 +1620,9 @@
                         <context name="TwoFactorLoginRequest"/>
                     </contexts>
                 </state>
-                <state label="779_13">
+                <state label="786_13">
                     <operations>
-                        <recv next="779_13">
+                        <recv next="786_13">
                             <messages>
                                 <message name="Request"/>
                                 <message name="TwoFactorLogin">
@@ -1627,7 +1639,7 @@
                                 <message name="ClosePositionRequest"/>
                             </messages>
                         </recv>
-                        <send next="779_13">
+                        <send next="786_13">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -1646,21 +1658,21 @@
                                 <message name="Notification"/>
                             </messages>
                         </send>
-                        <recv name="Logout" next="789_17">
+                        <recv name="Logout" next="796_17">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </recv>
-                        <send next="745_13">
+                        <send next="752_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
                         </send>
                     </operations>
                 </state>
-                <state label="789_17">
+                <state label="796_17">
                     <operations>
-                        <send next="789_17">
+                        <send next="796_17">
                             <messages>
                                 <message name="Response"/>
                                 <message name="TwoFactorLogin">
@@ -1679,7 +1691,7 @@
                                 <message name="Notification"/>
                             </messages>
                         </send>
-                        <send next="745_13">
+                        <send next="752_13">
                             <messages>
                                 <message name="Logout"/>
                             </messages>
@@ -1688,7 +1700,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerTwoFactorLogin" superProcessor="Server" head="812_13">
+        <processor name="ServerTwoFactorLogin" superProcessor="Server" head="819_13">
             <messages>
                 <message name="TwoFactorLogin"/>
                     <expression>
@@ -1706,9 +1718,9 @@
                 </message>
             </messages>
             <states>
-                <state label="812_13">
+                <state label="819_13">
                     <operations>
-                        <recv name="TwoFactorLoginResume" next="814_17">
+                        <recv name="TwoFactorLoginResume" next="821_17">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1722,9 +1734,9 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="814_17">
+                <state label="821_17">
                     <operations>
-                        <send next="812_13">
+                        <send next="819_13">
                             <messages>
                                 <message name="TwoFactorLogin">
                                     <expression>
@@ -1740,42 +1752,42 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerRequest" type="string" superProcessor="Server" head="825_9">
+        <processor name="ServerRequest" type="string" superProcessor="Server" head="832_9">
             <fields>
                 <field name="Request.Id"/>
                 <field name="Response.RequestId"/>
             </fields>
             <states>
-                <state label="825_9">
+                <state label="832_9">
                     <operations>
-                        <recv name="TradeServerInfoRequest" next="827_13">
+                        <recv name="TradeServerInfoRequest" next="834_13">
                             <messages>
                                 <message name="TradeServerInfoRequest"/>
                             </messages>
                         </recv>
-                        <recv name="AccountInfoRequest" next="834_13">
+                        <recv name="AccountInfoRequest" next="841_13">
                             <messages>
                                 <message name="AccountInfoRequest"/>
                             </messages>
                         </recv>
-                        <recv name="TradingSessionStatusRequest" next="841_13">
+                        <recv name="TradingSessionStatusRequest" next="848_13">
                             <messages>
                                 <message name="TradingSessionStatusRequest"/>
                             </messages>
                         </recv>
-                        <recv name="OrderMassStatusRequest" next="848_13">
+                        <recv name="OrderMassStatusRequest" next="855_13">
                             <messages>
                                 <message name="OrderMassStatusRequest"/>
                             </messages>
                         </recv>
-                        <recv name="PositionListRequest" next="863_13">
+                        <recv name="PositionListRequest" next="874_13">
                             <messages>
                                 <message name="PositionListRequest"/>
                             </messages>
                         </recv>
                     </operations>
                 </state>
-                <state label="827_13">
+                <state label="834_13">
                     <operations>
                         <send>
                             <messages>
@@ -1789,7 +1801,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="834_13">
+                <state label="841_13">
                     <operations>
                         <send>
                             <messages>
@@ -1803,7 +1815,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="841_13">
+                <state label="848_13">
                     <operations>
                         <send>
                             <messages>
@@ -1817,9 +1829,9 @@
                         </send>
                     </operations>
                 </state>
-                <state label="848_13">
+                <state label="855_13">
                     <operations>
-                        <send next="850_17">
+                        <send name="OrderMassStatusBeginReport" next="857_17">
                             <messages>
                                 <message name="OrderMassStatusBeginReport"/>
                             </messages>
@@ -1831,9 +1843,14 @@
                         </send>
                     </operations>
                 </state>
-                <state label="850_17">
+                <state label="857_17">
                     <operations>
-                        <send next="850_17">
+                        <recv name="OrderMassStatusCancel" next="857_17">
+                            <messages>
+                                <message name="OrderMassStatusCancel"/>
+                            </messages>
+                        </recv>
+                        <send next="857_17">
                             <messages>
                                 <message name="OrderMassStatusReport"/>
                             </messages>
@@ -1849,8 +1866,11 @@
                             </messages>
                         </send>
                     </operations>
+                    <contexts>
+                        <context name="OrderMassStatusBeginReport"/>
+                    </contexts>
                 </state>
-                <state label="863_13">
+                <state label="874_13">
                     <operations>
                         <send>
                             <messages>
@@ -1866,7 +1886,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerOrder" type="string" superProcessor="Server" head="879_9">
+        <processor name="ServerOrder" type="string" superProcessor="Server" head="890_9">
             <fields>
                 <field name="NewOrderSingle.ClOrdId"/>
                 <field name="OrderCancelReplaceRequest.ClOrdId"/>
@@ -1882,24 +1902,24 @@
                 </field>
             </fields>
             <states>
-                <state label="879_9">
+                <state label="890_9">
                     <operations>
-                        <recv name="NewOrderSingle" next="881_13">
+                        <recv name="NewOrderSingle" next="892_13">
                             <messages>
                                 <message name="NewOrderSingle"/>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelReplaceRequest" next="903_13">
+                        <recv name="OrderCancelReplaceRequest" next="914_13">
                             <messages>
                                 <message name="OrderCancelReplaceRequest"/>
                             </messages>
                         </recv>
-                        <recv name="OrderCancelRequest" next="914_13">
+                        <recv name="OrderCancelRequest" next="925_13">
                             <messages>
                                 <message name="OrderCancelRequest"/>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionRequest" next="925_13">
+                        <recv name="ClosePositionRequest" next="936_13">
                             <messages>
                                 <message name="ClosePositionRequest">
                                     <expression>
@@ -1911,7 +1931,7 @@
                                 </message>
                             </messages>
                         </recv>
-                        <recv name="ClosePositionByRequest" next="936_13">
+                        <recv name="ClosePositionByRequest" next="947_13">
                             <messages>
                                 <message name="ClosePositionRequest">
                                     <expression>
@@ -1925,9 +1945,9 @@
                         </recv>
                     </operations>
                 </state>
-                <state label="881_13">
+                <state label="892_13">
                     <operations>
-                        <send next="883_17">
+                        <send next="894_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1945,7 +1965,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="894_17">
+                        <send next="905_17">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -1971,7 +1991,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="883_17">
+                <state label="894_17">
                     <operations>
                         <send>
                             <messages>
@@ -1991,7 +2011,7 @@
                                 </message>
                             </messages>
                         </send>
-                        <send next="888_21">
+                        <send next="899_21">
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -2029,7 +2049,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="888_21">
+                <state label="899_21">
                     <operations>
                         <send>
                             <messages>
@@ -2051,7 +2071,7 @@
                         </send>
                     </operations>
                 </state>
-                <state label="894_17">
+                <state label="905_17">
                     <operations>
                         <send>
                             <messages>
@@ -2079,62 +2099,6 @@
                         </send>
                     </operations>
                 </state>
-                <state label="903_13">
-                    <operations>
-                        <send next="905_17">
-                            <messages>
-                                <message name="ExecutionReport">
-                                    <expression>
-                                        <equal>
-                                            <field name="Type"/>
-                                            <enumMember name="ExecType.PendingReplace"/>
-                                        </equal>
-                                    </expression>
-                                </message>
-                            </messages>
-                        </send>
-                        <send>
-                            <messages>
-                                <message name="ExecutionReport">
-                                    <expression>
-                                        <equal>
-                                            <field name="Type"/>
-                                            <enumMember name="ExecType.Rejected"/>
-                                        </equal>
-                                    </expression>
-                                </message>
-                            </messages>
-                        </send>
-                    </operations>
-                </state>
-                <state label="905_17">
-                    <operations>
-                        <send>
-                            <messages>
-                                <message name="ExecutionReport">
-                                    <expression>
-                                        <equal>
-                                            <field name="Type"/>
-                                            <enumMember name="ExecType.Replaced"/>
-                                        </equal>
-                                    </expression>
-                                </message>
-                            </messages>
-                        </send>
-                        <send>
-                            <messages>
-                                <message name="ExecutionReport">
-                                    <expression>
-                                        <equal>
-                                            <field name="Type"/>
-                                            <enumMember name="ExecType.Rejected"/>
-                                        </equal>
-                                    </expression>
-                                </message>
-                            </messages>
-                        </send>
-                    </operations>
-                </state>
                 <state label="914_13">
                     <operations>
                         <send next="916_17">
@@ -2143,7 +2107,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.PendingCancel"/>
+                                            <enumMember name="ExecType.PendingReplace"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2171,7 +2135,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.Cancelled"/>
+                                            <enumMember name="ExecType.Replaced"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2199,7 +2163,7 @@
                                     <expression>
                                         <equal>
                                             <field name="Type"/>
-                                            <enumMember name="ExecType.PendingClose"/>
+                                            <enumMember name="ExecType.PendingCancel"/>
                                         </equal>
                                     </expression>
                                 </message>
@@ -2225,16 +2189,10 @@
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
-                                        <or>
-                                            <equal>
-                                                <field name="Type"/>
-                                                <enumMember name="ExecType.Fill"/>
-                                            </equal>
-                                            <equal>
-                                                <field name="Type"/>
-                                                <enumMember name="ExecType.PartialFill"/>
-                                            </equal>
-                                        </or>
+                                        <equal>
+                                            <field name="Type"/>
+                                            <enumMember name="ExecType.Cancelled"/>
+                                        </equal>
                                     </expression>
                                 </message>
                             </messages>
@@ -2259,21 +2217,15 @@
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
-                                        <or>
-                                            <equal>
-                                                <field name="Type"/>
-                                                <enumMember name="ExecType.Fill"/>
-                                            </equal>
-                                            <equal>
-                                                <field name="Type"/>
-                                                <enumMember name="ExecType.PartialFill"/>
-                                            </equal>
-                                        </or>
+                                        <equal>
+                                            <field name="Type"/>
+                                            <enumMember name="ExecType.PendingClose"/>
+                                        </equal>
                                     </expression>
                                 </message>
                             </messages>
                         </send>
-                        <send next="942_17">
+                        <send>
                             <messages>
                                 <message name="ExecutionReport">
                                     <expression>
@@ -2307,9 +2259,77 @@
                                 </message>
                             </messages>
                         </send>
+                        <send>
+                            <messages>
+                                <message name="ExecutionReport">
+                                    <expression>
+                                        <equal>
+                                            <field name="Type"/>
+                                            <enumMember name="ExecType.Rejected"/>
+                                        </equal>
+                                    </expression>
+                                </message>
+                            </messages>
+                        </send>
                     </operations>
                 </state>
-                <state label="942_17">
+                <state label="947_13">
+                    <operations>
+                        <send next="949_17">
+                            <messages>
+                                <message name="ExecutionReport">
+                                    <expression>
+                                        <or>
+                                            <equal>
+                                                <field name="Type"/>
+                                                <enumMember name="ExecType.Fill"/>
+                                            </equal>
+                                            <equal>
+                                                <field name="Type"/>
+                                                <enumMember name="ExecType.PartialFill"/>
+                                            </equal>
+                                        </or>
+                                    </expression>
+                                </message>
+                            </messages>
+                        </send>
+                        <send next="953_17">
+                            <messages>
+                                <message name="ExecutionReport">
+                                    <expression>
+                                        <equal>
+                                            <field name="Type"/>
+                                            <enumMember name="ExecType.Rejected"/>
+                                        </equal>
+                                    </expression>
+                                </message>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="949_17">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="ExecutionReport">
+                                    <expression>
+                                        <or>
+                                            <equal>
+                                                <field name="Type"/>
+                                                <enumMember name="ExecType.Fill"/>
+                                            </equal>
+                                            <equal>
+                                                <field name="Type"/>
+                                                <enumMember name="ExecType.PartialFill"/>
+                                            </equal>
+                                        </or>
+                                    </expression>
+                                </message>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
+                <state label="953_17">
                     <operations>
                         <send>
                             <messages>
@@ -2327,7 +2347,7 @@
                 </state>
             </states>
         </processor>
-        <processor name="ServerUpdate" superProcessor="Server" head="957_9">
+        <processor name="ServerUpdate" superProcessor="Server" head="968_9">
             <messages>
                 <message name="AccountInfoUpdate"//>
                 <message name="TradingSessionStatusUpdate"//>
@@ -2344,34 +2364,34 @@
                 <message name="Notification"//>
             </messages>
             <states>
-                <state label="957_9">
+                <state label="968_9">
                     <operations>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="AccountInfoUpdate"/>
                             </messages>
                         </send>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="TradingSessionStatusUpdate"/>
                             </messages>
                         </send>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="BalanceUpdate"/>
                             </messages>
                         </send>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="ExecutionReport"/>
                             </messages>
                         </send>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="PositionReport"/>
                             </messages>
                         </send>
-                        <send next="957_9">
+                        <send next="968_9">
                             <messages>
                                 <message name="Notification"/>
                             </messages>

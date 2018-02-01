@@ -1011,7 +1011,7 @@
             }
         }
 
-        void OnOrdersBeginResult(OrderEntry.Client client, object data, int orderCount)
+        void OnOrdersBeginResult(OrderEntry.Client client, object data, string id, int orderCount)
         {
             try
             {

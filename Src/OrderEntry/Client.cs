@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using SoftFX.Net.OrderEntry;
@@ -309,7 +310,7 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void AccountInfoErrorDelegate(Client client, object data, Exception exception);
         public delegate void SessionInfoResultDelegate(Client client, object data, TickTrader.FDK.Common.SessionInfo sessionInfo);
         public delegate void SessionInfoErrorDelegate(Client client, object data, Exception exception);
-        public delegate void OrdersBeginResultDelegate(Client client, object data, int orderCount);
+        public delegate void OrdersBeginResultDelegate(Client client, object data, string id, int orderCount);
         public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
         public delegate void OrdersEndResultDelegate(Client client, object data);
         public delegate void OrdersErrorDelegate(Client client, object data, Exception exception);
@@ -458,10 +459,11 @@ namespace TickTrader.FDK.OrderEntry
         public OrderEnumerator GetOrders(int timeout)
         {
             OrdersAsyncContext context = new OrdersAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);            
 
             GetOrdersInternal(context);
 
-            if (!context.Wait(timeout))
+            if (!context.event_.WaitOne(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -485,6 +487,14 @@ namespace TickTrader.FDK.OrderEntry
             request.Type = OrderMassStatusRequestType.All;
 
             session_.SendOrderMassStatusRequest(context, request);
+        }
+
+        public void CancelOrdersAsync(string id)
+        {
+            OrderMassStatusCancel request = new OrderMassStatusCancel(0);
+            request.Id = id;
+
+            session_.Send(request);
         }
 
         public TickTrader.FDK.Common.Position[] GetPositions(int timeout)
@@ -1270,6 +1280,7 @@ namespace TickTrader.FDK.OrderEntry
 
             public Exception exception_;
             public OrderEnumerator orderEnumerator_;
+            public AutoResetEvent event_;
         }
 
         class PositionsAsyncContext : PositionListRequestClientContext, IAsyncContext
@@ -2374,7 +2385,7 @@ namespace TickTrader.FDK.OrderEntry
                     {
                         try
                         {
-                            client_.OrdersBeginResultEvent(client_, context.Data, message.OrderCount);
+                            client_.OrdersBeginResultEvent(client_, context.Data, message.RequestId, message.OrderCount);
                         }
                         catch
                         {
@@ -2384,6 +2395,7 @@ namespace TickTrader.FDK.OrderEntry
                     if (context.Waitable)
                     {
                         context.orderEnumerator_ = new OrderEnumerator(client_, message.RequestId, message.OrderCount);
+                        context.event_.Set();
                     }
                 }
                 catch (Exception exception)
@@ -2515,9 +2527,10 @@ namespace TickTrader.FDK.OrderEntry
                         if (context.orderEnumerator_ == null)
                         {
                             context.exception_ = exception;
+                            context.event_.Set();
                         }
                         else
-                            context.orderEnumerator_.SetError(exception);
+                            context.orderEnumerator_.SetError(exception);                            
                     }
                 }
                 catch (Exception exception)
@@ -3962,6 +3975,9 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     case SoftFX.Net.OrderEntry.RejectReason.ThrottlingLimits:
                         return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.OrderEntry.RejectReason.DownloadCancelled:
+                        return Common.RejectReason.DownloadCancelled;
 
                     case SoftFX.Net.OrderEntry.RejectReason.InternalServerError:
                         return Common.RejectReason.InternalServerError;

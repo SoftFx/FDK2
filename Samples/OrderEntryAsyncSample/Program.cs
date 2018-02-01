@@ -765,7 +765,7 @@ namespace OrderEntryAsyncSample
             client_.GetOrdersAsync(this);
         }
 
-        void OnOrdersBeginResult(Client client, object data, int orderCount)
+        void OnOrdersBeginResult(Client client, object data, string id, int orderCount)
         {
             try
             {
@@ -856,7 +856,7 @@ namespace OrderEntryAsyncSample
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)

@@ -570,20 +570,27 @@ namespace OrderEntrySample
         {
             OrderEnumerator orderEnumerator = client_.GetOrders(Timeout);
 
-            Console.Error.WriteLine("Total orders : {0}", orderEnumerator.OrderCount);
-
-            for (ExecutionReport executionReport = orderEnumerator.Next(Timeout); executionReport != null; executionReport = orderEnumerator.Next(Timeout))
+            try
             {
-                if (executionReport.OrderType == OrderType.Stop)
+                Console.Error.WriteLine("Total orders : {0}", orderEnumerator.OrderCount);
+
+                for (ExecutionReport executionReport = orderEnumerator.Next(Timeout); executionReport != null; executionReport = orderEnumerator.Next(Timeout))
                 {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    if (executionReport.OrderType == OrderType.Stop)
+                    {
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    }
+                    else if (executionReport.OrderType == OrderType.StopLimit)
+                    {
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    }
+                    else
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                 }
-                else if (executionReport.OrderType == OrderType.StopLimit)
-                {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
-                }
-                else
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+            }
+            finally
+            {
+                orderEnumerator.Close();
             }
         }
 

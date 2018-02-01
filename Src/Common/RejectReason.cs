@@ -68,7 +68,12 @@
         /// <summary>
         /// 
         /// </summary>
-        InternalServerError = 16,
+        DownloadCancelled = 16,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        InternalServerError = 17,
 
         /// <summary>
         /// Unknown error.
