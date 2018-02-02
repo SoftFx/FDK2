@@ -1343,7 +1343,7 @@ namespace TickTrader.FDK.QuoteStore
                     var context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
                     Common.RejectReason rejectReason = Convert(message.Reason);
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
                     {
@@ -1434,7 +1434,8 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     PeriodictityListAsyncContext context = (PeriodictityListAsyncContext)PeriodicityListRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.PeriodicityListErrorEvent != null)
                     {
@@ -1533,7 +1534,8 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     BarListAsyncContext context = (BarListAsyncContext)BarListRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.BarListErrorEvent != null)
                     {
@@ -1670,7 +1672,8 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     QuoteListAsyncContext context = (QuoteListAsyncContext)TickListRequestClientContext;
 
-                    RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.QuoteListErrorEvent != null)
                     {
@@ -2199,7 +2202,8 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
 
-                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.BarDownloadErrorEvent != null)
                         {
@@ -2229,7 +2233,8 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
 
-                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.QuoteDownloadErrorEvent != null)
                         {
@@ -2354,7 +2359,8 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
 
-                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.CancelDownloadBarsErrorEvent != null)
                         {
@@ -2376,7 +2382,8 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
 
-                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.CancelDownloadQuotesErrorEvent != null)
                         {
