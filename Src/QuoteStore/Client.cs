@@ -245,14 +245,18 @@ namespace TickTrader.FDK.QuoteStore
         public delegate void QuoteListResultDelegate(Client client, object data, Quote[] bars);
         public delegate void QuoteListErrorDelegate(Client client, object data, Exception exception);
 
-        public delegate void BarDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
-        public delegate void BarDownloadResultDelegate(Client client, object data, string downloadId, TickTrader.FDK.Common.Bar bar);
-        public delegate void BarDownloadResultEndDelegate(Client client, object data, string downloadId);
-        public delegate void BarDownloadErrorDelegate(Client client, object data, string downloadId, Exception exception);
-        public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo);
-        public delegate void QuoteDownloadResultDelegate(Client client, object data, string downloadId, Quote quote);
-        public delegate void QuoteDownloadResultEndDelegate(Client client, object data, string downloadId);
-        public delegate void QuoteDownloadErrorDelegate(Client client, object data, string downloadId, Exception exception);
+        public delegate void BarDownloadResultBeginDelegate(Client client, object data, string id, DateTime availFrom, DateTime availTo);
+        public delegate void BarDownloadResultDelegate(Client client, object data, TickTrader.FDK.Common.Bar bar);
+        public delegate void BarDownloadResultEndDelegate(Client client, object data);
+        public delegate void BarDownloadErrorDelegate(Client client, object data, Exception exception);
+        public delegate void CancelDownloadBarsResultDelegate(Client client, object data);
+        public delegate void CancelDownloadBarsErrorDelegate(Client client, object data, Exception exception);
+        public delegate void QuoteDownloadResultBeginDelegate(Client client, object data, string id, DateTime availFrom, DateTime availTo);
+        public delegate void QuoteDownloadResultDelegate(Client client, object data, Quote quote);
+        public delegate void QuoteDownloadResultEndDelegate(Client client, object data);
+        public delegate void QuoteDownloadErrorDelegate(Client client, object data, Exception exception);
+        public delegate void CancelDownloadQuotesResultDelegate(Client client, object data);
+        public delegate void CancelDownloadQuotesErrorDelegate(Client client, object data, Exception exception);
         public delegate void NotificationDelegate(Client client, Common.Notification notification);
 
         public event SymbolListResultDelegate SymbolListResultEvent;
@@ -267,10 +271,14 @@ namespace TickTrader.FDK.QuoteStore
         public event BarDownloadResultDelegate BarDownloadResultEvent;
         public event BarDownloadResultEndDelegate BarDownloadResultEndEvent;
         public event BarDownloadErrorDelegate BarDownloadErrorEvent;
+        public event CancelDownloadBarsResultDelegate CancelDownloadBarsResultEvent;
+        public event CancelDownloadBarsErrorDelegate CancelDownloadBarsErrorEvent;
         public event QuoteDownloadResultBeginDelegate QuoteDownloadResultBeginEvent;
         public event QuoteDownloadResultDelegate QuoteDownloadResultEvent;
         public event QuoteDownloadResultEndDelegate QuoteDownloadResultEndEvent;
         public event QuoteDownloadErrorDelegate QuoteDownloadErrorEvent;
+        public event CancelDownloadQuotesResultDelegate CancelDownloadQuotesResultEvent;
+        public event CancelDownloadQuotesErrorDelegate CancelDownloadQuotesErrorEvent;        
         public event NotificationDelegate NotificationEvent;
 
         public string[] GetSymbolList(int timeout)
@@ -409,12 +417,12 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendTickListRequest(context, request);
         }
 
-        public BarEnumerator DownloadBars(string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
+        public BarEnumerator DownloadBars(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
         {
             BarDownloadAsyncContext context = new BarDownloadAsyncContext(true);
             context.event_ = new AutoResetEvent(false);
 
-            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
+            DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
 
             if (! context.event_.WaitOne(timeout))
                 throw new Common.TimeoutException("Method call timed out");
@@ -425,24 +433,26 @@ namespace TickTrader.FDK.QuoteStore
             return context.barEnumerator_;
         }
 
-        public void DownloadBarsAsync(object data, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
+        public void DownloadBarsAsync(object data, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             BarDownloadAsyncContext context = new BarDownloadAsyncContext(false);
             context.Data = data;
 
-            DownloadBarsInternal(context, downloadId, symbol, priceType, barPeriod, from, to);
+            DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
         }
 
-        void DownloadBarsInternal(BarDownloadAsyncContext context, string downloadId, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
+        void DownloadBarsInternal(BarDownloadAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
-            context.downloadId_ = downloadId;
+            string id = Guid.NewGuid().ToString();
+
+            context.downloadId_ = id;
             context.priceType_ = priceType;
             context.barPeriod_ = barPeriod;
             context.from_ = from;
             context.to_ = to;
 
             BarDownloadRequest request = new BarDownloadRequest(0);
-            request.Id = downloadId;
+            request.Id = id;
             request.SymbolId = symbol;
             request.PriceType = Convert(priceType);
             request.Periodicity = barPeriod.ToString();
@@ -452,12 +462,42 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendDownloadRequest(context, request);
         }
 
-        public QuoteEnumerator DownloadQuotes(string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
+        public void CancelDownloadBars(string id, int timeout)
+        {
+            CancelDownloadBarsAsyncContext context = new CancelDownloadBarsAsyncContext(true);
+
+            CancelDownloadBarsInternal(context, id);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void CancelDownloadBarsAsync(object data, string id)
+        {
+            CancelDownloadBarsAsyncContext context = new CancelDownloadBarsAsyncContext(false);
+            context.Data = data;
+
+            CancelDownloadBarsInternal(context, id);
+        }
+
+        void CancelDownloadBarsInternal(CancelDownloadBarsAsyncContext context, string id)
+        {
+            DownloadCancelRequest request = new DownloadCancelRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.RequestId = id;
+
+            session_.SendDownloadCancelRequest(context, request);
+        }
+
+        public QuoteEnumerator DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
         {
             QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(true);
             context.event_ = new AutoResetEvent(false);
 
-            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
+            DownloadQuotesInternal(context, symbol, depth, from, to);
 
             if (! context.event_.WaitOne(timeout))
                 throw new Common.TimeoutException("Method call timed out");
@@ -468,23 +508,25 @@ namespace TickTrader.FDK.QuoteStore
             return context.quoteEnumerator_;
         }
 
-        public void DownloadQuotesAsync(object data, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        public void DownloadQuotesAsync(object data, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(false);
             context.Data = data;
 
-            DownloadQuotesInternal(context, downloadId, symbol, depth, from, to);
+            DownloadQuotesInternal(context, symbol, depth, from, to);
         }
 
-        void DownloadQuotesInternal(QuoteDownloadAsyncContext context, string downloadId, string symbol, QuoteDepth depth, DateTime from, DateTime to)
+        void DownloadQuotesInternal(QuoteDownloadAsyncContext context, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            context.downloadId_ = downloadId;
+            string id = Guid.NewGuid().ToString();
+
+            context.downloadId_ = id;
             context.quoteDepth_ = depth;
             context.from_ = from;
             context.to_ = to;
 
             TickDownloadRequest request = new TickDownloadRequest(0);
-            request.Id = downloadId;
+            request.Id = id;
             request.SymbolId = symbol;
             request.Depth = Convert(depth);
             request.From = from;
@@ -493,12 +535,34 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendDownloadRequest(context, request);
         }
 
-        public void SendDownloadCancel(string downloadId)
+        public void CancelDownloadQuotes(string id, int timeout)
         {
-            DownloadCancel downloadCancel = new DownloadCancel(0);
-            downloadCancel.Id = downloadId;
+            CancelDownloadQuotesAsyncContext context = new CancelDownloadQuotesAsyncContext(true);
 
-            session_.SendDownloadCancel(null, downloadCancel);
+            CancelDownloadQuotesInternal(context, id);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void CancelDownloadQuotesAsync(object data, string id)
+        {
+            CancelDownloadQuotesAsyncContext context = new CancelDownloadQuotesAsyncContext(false);
+            context.Data = data;
+
+            CancelDownloadQuotesInternal(context, id);
+        }
+
+        void CancelDownloadQuotesInternal(CancelDownloadQuotesAsyncContext context, string id)
+        {
+            DownloadCancelRequest request = new DownloadCancelRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.RequestId = id;
+
+            session_.SendDownloadCancelRequest(context, request);
         }
 
         #endregion
@@ -764,7 +828,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     try
                     {
-                        client.BarDownloadErrorEvent(client, Data, downloadId_, exception);
+                        client.BarDownloadErrorEvent(client, Data, exception);
                     }
                     catch
                     {
@@ -798,6 +862,36 @@ namespace TickTrader.FDK.QuoteStore
             public BarEnumerator barEnumerator_;
         }
 
+        class CancelDownloadBarsAsyncContext : DownloadCancelRequestClientContext, IAsyncContext
+        {
+            public CancelDownloadBarsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.CancelDownloadBarsErrorEvent != null)
+                {
+                    try
+                    {
+                        client.CancelDownloadBarsErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+        }
+
         class QuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
         {
             public QuoteDownloadAsyncContext(bool waitable) : base(waitable)
@@ -818,7 +912,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     try
                     {
-                        client.QuoteDownloadErrorEvent(client, Data, downloadId_, exception);
+                        client.QuoteDownloadErrorEvent(client, Data, exception);
                     }
                     catch
                     {
@@ -850,6 +944,36 @@ namespace TickTrader.FDK.QuoteStore
             public Exception exception_;
             public QuoteEnumerator quoteEnumerator_;            
         }       
+
+        class CancelDownloadQuotesAsyncContext : DownloadCancelRequestClientContext, IAsyncContext
+        {
+            public CancelDownloadQuotesAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.CancelDownloadQuotesErrorEvent != null)
+                {
+                    try
+                    {
+                        client.CancelDownloadQuotesErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+        }
 
         class ClientSessionListener : SoftFX.Net.QuoteStore.ClientSessionListener
         {
@@ -1077,7 +1201,6 @@ namespace TickTrader.FDK.QuoteStore
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
                     TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
-
                     LoginException exception = new LoginException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
@@ -1219,6 +1342,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     var context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
+                    Common.RejectReason rejectReason = Convert(message.Reason);
                     RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
@@ -1623,7 +1747,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.BarDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -1686,7 +1810,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -1734,7 +1858,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.BarDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -1770,7 +1894,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -1826,7 +1950,7 @@ namespace TickTrader.FDK.QuoteStore
                                     {
                                         try
                                         {
-                                            client_.BarDownloadResultEvent(client_, context.Data, downloadId, context.bar_);
+                                            client_.BarDownloadResultEvent(client_, context.Data, context.bar_);
                                         }
                                         catch
                                         {
@@ -1864,7 +1988,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.BarDownloadResultEvent(client_, context.Data, downloadId, context.bar_);
+                                    client_.BarDownloadResultEvent(client_, context.Data, context.bar_);
                                 }
                                 catch
                                 {
@@ -1918,7 +2042,7 @@ namespace TickTrader.FDK.QuoteStore
                                     {
                                         try
                                         {
-                                            client_.QuoteDownloadResultEvent(client_, context.Data, downloadId, context.quote_);
+                                            client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
                                         }
                                         catch
                                         {
@@ -1956,7 +2080,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.QuoteDownloadResultEvent(client_, context.Data, downloadId, context.quote_);
+                                    client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
                                 }
                                 catch
                                 {
@@ -1988,7 +2112,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.BarDownloadResultEndEvent(client_, context.Data, message.RequestId);
+                                    client_.BarDownloadResultEndEvent(client_, context.Data);
                                 }
                                 catch
                                 {
@@ -2006,7 +2130,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.BarDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -2029,7 +2153,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.QuoteDownloadResultEndEvent(client_, context.Data, message.RequestId);
+                                    client_.QuoteDownloadResultEndEvent(client_, context.Data);
                                 }
                                 catch
                                 {
@@ -2047,7 +2171,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 try
                                 {
-                                    client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -2081,7 +2205,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.BarDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                client_.BarDownloadErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
@@ -2111,7 +2235,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             try
                             {
-                                client_.QuoteDownloadErrorEvent(client_, context.Data, message.RequestId, exception);
+                                client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
@@ -2129,6 +2253,145 @@ namespace TickTrader.FDK.QuoteStore
                                 context.exception_ = exception;
                                 context.event_.Set();
                             }
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+
+            public override void OnDownloadCancelReport(ClientSession session, DownloadCancelRequestClientContext DownloadCancelRequestClientContext, DownloadCancelReport message)
+            {
+                try
+                {
+                    if (DownloadCancelRequestClientContext is CancelDownloadBarsAsyncContext)
+                    {
+                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
+
+                        try
+                        {
+                            if (client_.CancelDownloadBarsResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.CancelDownloadBarsResultEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.CancelDownloadBarsErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.CancelDownloadBarsErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
+
+                        try
+                        {
+                            if (client_.CancelDownloadQuotesResultEvent != null)
+                            {
+                                try
+                                {
+                                    client_.CancelDownloadQuotesResultEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.CancelDownloadQuotesErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.CancelDownloadQuotesErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.exception_ = exception;
+                            }
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnDownloadCancelReject(ClientSession session, DownloadCancelRequestClientContext DownloadCancelRequestClientContext, Reject message)
+            {
+                try
+                {
+                    if (DownloadCancelRequestClientContext is CancelDownloadBarsAsyncContext)
+                    {
+                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
+
+                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+
+                        if (client_.CancelDownloadBarsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadBarsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                    else
+                    {
+                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
+
+                        RejectException exception = new RejectException(Common.RejectReason.None, message.Text);
+
+                        if (client_.CancelDownloadQuotesErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadQuotesErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
                         }
                     }
                 }
@@ -2238,6 +2501,27 @@ namespace TickTrader.FDK.QuoteStore
 
                     default:
                         throw new Exception("Invalid logout reason : " + reason);
+                }
+            }
+
+            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.QuoteStore.RejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.QuoteStore.RejectReason.ThrottlingLimits:
+                        return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.QuoteStore.RejectReason.DownloadCancelled:
+                        return Common.RejectReason.DownloadCancelled;
+
+                    case SoftFX.Net.QuoteStore.RejectReason.InternalServerError:
+                        return Common.RejectReason.InternalServerError;
+
+                    case SoftFX.Net.QuoteStore.RejectReason.Other:
+                        return Common.RejectReason.Other;
+
+                    default:
+                        throw new Exception("Invalid reject reason : " + reason);
                 }
             }
 

@@ -39,7 +39,6 @@
 
             quoteEnumerator_ = quotesSingleSequence_.DataFeed.quoteStoreClient_.DownloadQuotes
             (
-                Guid.NewGuid().ToString(), 
                 quotesSingleSequence_.Symbol, 
                 quotesSingleSequence_.Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
                 quotesSingleSequence_.StartTime, 

@@ -1510,7 +1510,7 @@
             }
         }
 
-        void OnBarDownloadResult(QuoteStore.Client client, object data, string downloadId, Bar bar)
+        void OnBarDownloadResult(QuoteStore.Client client, object data, Bar bar)
         {
             try
             {
@@ -1545,7 +1545,7 @@
             }
         }
 
-        void OnBarDownloadEnd(QuoteStore.Client client, object data, string downloadId)
+        void OnBarDownloadEnd(QuoteStore.Client client, object data)
         {
             try
             {
@@ -1580,7 +1580,7 @@
             }
         }
 
-        void OnBarDownloadError(QuoteStore.Client client, object data, string downloadId, Exception exception)
+        void OnBarDownloadError(QuoteStore.Client client, object data, Exception exception)
         {
             try
             {

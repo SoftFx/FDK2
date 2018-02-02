@@ -314,6 +314,8 @@ namespace TickTrader.FDK.OrderEntry
         public delegate void OrdersResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
         public delegate void OrdersEndResultDelegate(Client client, object data);
         public delegate void OrdersErrorDelegate(Client client, object data, Exception exception);
+        public delegate void CancelOrdersResultDelegate(Client client, object data);
+        public delegate void CancelOrdersErrorDelegate(Client client, object data, Exception exception);
         public delegate void PositionsResultDelegate(Client client, object data, TickTrader.FDK.Common.Position[] positions);
         public delegate void PositionsErrorDelegate(Client client, object data, Exception exception);
         public delegate void NewOrderResultDelegate(Client client, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
@@ -343,6 +345,8 @@ namespace TickTrader.FDK.OrderEntry
         public event OrdersResultDelegate OrdersResultEvent;
         public event OrdersEndResultDelegate OrdersEndResultEvent;
         public event OrdersErrorDelegate OrdersErrorEvent;
+        public event CancelOrdersResultDelegate CancelOrdersResultEvent;
+        public event CancelOrdersErrorDelegate CancelOrdersErrorEvent;
         public event PositionsResultDelegate PositionsResultEvent;
         public event PositionsErrorDelegate PositionsErrorEvent;
         public event NewOrderResultDelegate NewOrderResultEvent;
@@ -489,12 +493,34 @@ namespace TickTrader.FDK.OrderEntry
             session_.SendOrderMassStatusRequest(context, request);
         }
 
-        public void CancelOrdersAsync(string id)
+        public void CancelOrders(string id, int timeout)
         {
-            OrderMassStatusCancel request = new OrderMassStatusCancel(0);
-            request.Id = id;
+            CancelOrdersAsyncContext context = new CancelOrdersAsyncContext(true);
 
-            session_.Send(request);
+            CancelOrdersInternal(context, id);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void CancelOrdersAsync(object data, string id)
+        {
+            CancelOrdersAsyncContext context = new CancelOrdersAsyncContext(false);
+            context.Data = data;
+
+            CancelOrdersInternal(context, id);
+        }
+
+        void CancelOrdersInternal(CancelOrdersAsyncContext context, string id)
+        {
+            OrderMassStatusCancelRequest request = new OrderMassStatusCancelRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.RequestId = id;
+
+            session_.SendOrderMassStatusCancelRequest(context, request);
         }
 
         public TickTrader.FDK.Common.Position[] GetPositions(int timeout)
@@ -1281,6 +1307,36 @@ namespace TickTrader.FDK.OrderEntry
             public Exception exception_;
             public OrderEnumerator orderEnumerator_;
             public AutoResetEvent event_;
+        }
+
+        class CancelOrdersAsyncContext : OrderMassStatusCancelRequestClientContext, IAsyncContext
+        {
+            public CancelOrdersAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.CancelOrderErrorEvent != null)
+                {
+                    try
+                    {
+                        client.CancelOrderErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
         }
 
         class PositionsAsyncContext : PositionListRequestClientContext, IAsyncContext
@@ -2531,6 +2587,81 @@ namespace TickTrader.FDK.OrderEntry
                         }
                         else
                             context.orderEnumerator_.SetError(exception);                            
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnOrderMassStatusCancelReport(ClientSession session, OrderMassStatusCancelRequestClientContext OrderMassStatusCancelRequestClientContext, OrderMassStatusCancelReport message)
+            {
+                try
+                {
+                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext) OrderMassStatusCancelRequestClientContext;
+
+                    try
+                    {
+                        if (client_.CancelOrdersResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelOrdersResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.CancelOrdersErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelOrdersErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnOrderMassStatusCancelReject(ClientSession session, OrderMassStatusCancelRequestClientContext OrderMassStatusCancelRequestClientContext, Reject message)
+            {
+                try
+                {
+                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext) OrderMassStatusCancelRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);                    
+
+                    if (client_.CancelOrdersErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.CancelOrdersErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)

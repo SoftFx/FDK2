@@ -90,8 +90,6 @@ namespace QuoteStoreAsyncSample
             address_ = address;
             login_ = login;
             password_ = password;
-
-            downloadIds_ = new List<string>();
         }
 
         public void Dispose()
@@ -239,10 +237,6 @@ namespace QuoteStoreAsyncSample
                                 DateTime.Parse(from),
                                 DateTime.Parse(to)
                             );
-                        }
-                        else if (command == "cancel_downloads" || command == "c")
-                        {
-                            CancelDownloads();
                         }
                         else if (command == "exit" || command == "e")
                         {
@@ -511,7 +505,7 @@ namespace QuoteStoreAsyncSample
 
         void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
-            client_.DownloadBarsAsync(this, Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to);
+            client_.DownloadBarsAsync(this, symbol, priceType, periodicity, from, to);
         }
 
         void OnBarDownloadBeginResult(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
@@ -519,11 +513,6 @@ namespace QuoteStoreAsyncSample
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-
-                lock (downloadIds_)
-                {
-                    downloadIds_.Add(downloadId);
-                }
             }
             catch (Exception exception)
             {
@@ -531,7 +520,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadResult(Client client, object data, string downloadId, Bar bar)
+        void OnBarDownloadResult(Client client, object data, Bar bar)
         {
             try
             {
@@ -543,15 +532,10 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadEndResult(Client client, object data, string downloadId)
+        void OnBarDownloadEndResult(Client client, object data)
         {
             try
             {
-                lock (downloadIds_)
-                {
-                    downloadIds_.Remove(downloadId);
-                }
-
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
             }
             catch (Exception exception)
@@ -560,16 +544,11 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadError(Client client, object data, string downloadId, Exception error)
+        void OnBarDownloadError(Client client, object data, Exception error)
         {
             try
             {
                 Console.WriteLine("Error : " + error.Message);
-
-                lock (downloadIds_)
-                {
-                    downloadIds_.Remove(downloadId);
-                }
             }
             catch (Exception exception)
             {
@@ -579,19 +558,14 @@ namespace QuoteStoreAsyncSample
 
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            client_.DownloadQuotesAsync(this, Guid.NewGuid().ToString(), symbol, depth, from, to);
+            client_.DownloadQuotesAsync(this, symbol, depth, from, to);
         }
 
-        void OnQuoteDownloadBeginResult(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
+        void OnQuoteDownloadBeginResult(Client client, object data, string id, DateTime availFrom, DateTime availTo)
         {
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-
-                lock (downloadIds_)
-                {
-                    downloadIds_.Add(downloadId);
-                }
             }
             catch (Exception exception)
             {
@@ -599,7 +573,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnQuoteDownloadResult(Client client, object data, string downloadId, Quote quote)
+        void OnQuoteDownloadResult(Client client, object data, Quote quote)
         {
             try
             {
@@ -623,15 +597,10 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnQuoteDownloadEndResult(Client client, object data, string downloadId)
+        void OnQuoteDownloadEndResult(Client client, object data)
         {
             try
             {
-                lock (downloadIds_)
-                {
-                    downloadIds_.Remove(downloadId);
-                }
-
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
             }
             catch (Exception exception)
@@ -640,41 +609,15 @@ namespace QuoteStoreAsyncSample
             }            
         }
 
-        void OnQuoteDownloadError(Client client, object data, string downloadId, Exception error)
+        void OnQuoteDownloadError(Client client, object data, Exception error)
         {
             try
             {
                 Console.WriteLine("Error : " + error.Message);
-
-                lock (downloadIds_)
-                {
-                    downloadIds_.Remove(downloadId);
-                }
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void CancelDownloads()
-        {
-            string[] downloadIds;
-
-            lock (downloadIds_)
-            {
-                downloadIds = downloadIds_.ToArray();
-            }
-
-            foreach (string downloadId in downloadIds_)
-            {
-                try
-                {
-                    client_.SendDownloadCancel(downloadId);
-                }
-                catch
-                {
-                }
             }
         }
 
@@ -683,8 +626,6 @@ namespace QuoteStoreAsyncSample
         string address_;
         string login_;
         string password_;
-
-        List<string> downloadIds_;
     }
 }
 

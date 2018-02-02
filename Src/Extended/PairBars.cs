@@ -85,7 +85,6 @@
             datafeed_.quoteStoreClient_.DownloadBarsAsync
             (
                 bidBarDownloadContext,
-                Guid.NewGuid().ToString(),
                 symbol_,
                 PriceType.Bid,
                 period_,
@@ -96,7 +95,6 @@
             datafeed_.quoteStoreClient_.DownloadBarsAsync
             (
                 askBarDownloadContext,
-                Guid.NewGuid().ToString(),
                 symbol_,
                 PriceType.Ask,
                 period_,

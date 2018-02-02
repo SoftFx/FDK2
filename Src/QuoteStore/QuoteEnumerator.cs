@@ -24,11 +24,6 @@ namespace TickTrader.FDK.QuoteStore
             event_ = new AutoResetEvent(false);
         }
 
-        public string DownloadId
-        {
-            get { return downloadId_;  }
-        }
-
         public DateTime AvailFrom
         {
             get { return availFrom_; }
@@ -77,7 +72,7 @@ namespace TickTrader.FDK.QuoteStore
 
                     try
                     {
-                        client_.SendDownloadCancel(downloadId_);
+                        client_.CancelDownloadQuotesAsync(null, downloadId_);
                     }
                     catch
                     {

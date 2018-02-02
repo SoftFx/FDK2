@@ -68,7 +68,6 @@
         {
             BarEnumerator barEnumerator = datafeed_.quoteStoreClient_.DownloadBars
             (
-                Guid.NewGuid().ToString(), 
                 symbol_, 
                 priceType_, 
                 period_, 

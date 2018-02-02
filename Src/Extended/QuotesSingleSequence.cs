@@ -103,7 +103,6 @@
 		{
             QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
-                Guid.NewGuid().ToString(), 
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
                 StartTime,
@@ -124,7 +123,6 @@
 		{
             QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
-                Guid.NewGuid().ToString(), 
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
                 StartTime,
@@ -143,7 +141,6 @@
 		{
             QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
-                Guid.NewGuid().ToString(), 
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
                 StartTime,

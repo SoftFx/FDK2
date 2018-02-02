@@ -66,7 +66,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     try
                     {
-                        client_.CancelOrdersAsync(requestId_);
+                        client_.CancelOrdersAsync(null, requestId_);
                     }
                     catch
                     {

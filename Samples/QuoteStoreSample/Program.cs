@@ -315,7 +315,7 @@ namespace QuoteStoreSample
 
         void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
-            BarEnumerator barEnumerator = client_.DownloadBars(Guid.NewGuid().ToString(), symbol, priceType, periodicity, from, to, -1);
+            BarEnumerator barEnumerator = client_.DownloadBars(symbol, priceType, periodicity, from, to, -1);
 
             try
             {
@@ -334,12 +334,12 @@ namespace QuoteStoreSample
 
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            QuoteEnumerator quoteEnumerator = client_.DownloadQuotes(Guid.NewGuid().ToString(), symbol, depth, from, to, -1);
+            QuoteEnumerator quoteEnumerator = client_.DownloadQuotes(symbol, depth, from, to, -1);
 
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-
+/*
                 for (Quote quote = quoteEnumerator.Next(-1); quote != null; quote = quoteEnumerator.Next(-1))
                 {
                     Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
@@ -356,7 +356,7 @@ namespace QuoteStoreSample
 
                     Console.Error.WriteLine();
                 }
-
+*/
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");                
             }
             finally
