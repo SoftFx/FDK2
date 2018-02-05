@@ -153,7 +153,43 @@ namespace QuoteStoreSample
 
                             GetPeriodicityList(symbol);
                         }
-                        else if (command == "bar_download" || command == "b")
+                        else if (command == "bar_list" || command == "bl")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string priceType = GetNextWord(line, ref pos);
+
+                            if (priceType == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string periodicity = GetNextWord(line, ref pos);
+
+                            if (periodicity == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string count = GetNextWord(line, ref pos);
+
+                            if (count == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            GetBarList
+                            (
+                                symbol,
+                                (PriceType)Enum.Parse(typeof(PriceType), priceType),
+                                new BarPeriod(periodicity),
+                                DateTime.Parse(from),
+                                int.Parse(count)
+                            );
+                        }
+                        else if (command == "bar_download" || command == "bd")
                         {
                             string symbol = GetNextWord(line, ref pos);
 
@@ -189,7 +225,37 @@ namespace QuoteStoreSample
                                 DateTime.Parse(to)
                             );
                         }
-                        else if (command == "quote_download" || command == "q")
+                        else if (command == "quote_list" || command == "ql")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string quoteDepth = GetNextWord(line, ref pos);
+
+                            if (quoteDepth == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string count = GetNextWord(line, ref pos);
+
+                            if (count == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            GetQuoteList
+                            (
+                                symbol,
+                                (QuoteDepth)Enum.Parse(typeof(QuoteDepth), quoteDepth),
+                                DateTime.Parse(from),
+                                int.Parse(count)
+                            );
+                        }
+                        else if (command == "quote_download" || command == "qd")
                         {
                             string symbol = GetNextWord(line, ref pos);
 
@@ -282,8 +348,10 @@ namespace QuoteStoreSample
             Console.WriteLine("help (h) - print commands");
             Console.WriteLine("symbol_list (s) - request symbol list");
             Console.WriteLine("periodicity_list (p) <symbol> - request symbol periodicity list");
-            Console.WriteLine("bar_download (b) <symbol> <side> <periodicity> <from> <to> - download symbol bars");
-            Console.WriteLine("quote_download (q) <symbol> <depth> <from> <to> - download symbol quotes");
+            Console.WriteLine("bar_list (bl) <symbol> <side> <periodicity> <from> <count> - request symbol bar list");
+            Console.WriteLine("bar_download (bd) <symbol> <side> <periodicity> <from> <to> - download symbol bars");
+            Console.WriteLine("quote_list (ql) <symbol> <depth> <from> <count> - request symbol quote list");
+            Console.WriteLine("quote_download (qd) <symbol> <depth> <from> <to> - download symbol quotes");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -313,6 +381,18 @@ namespace QuoteStoreSample
             }
         }
 
+        void GetBarList(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, int count)
+        {
+            Bar[] bars = client_.GetBarList(symbol, priceType, periodicity, from, count, -1);
+
+            for (int index = 0; index < bars.Length; ++index)
+            {
+                Bar bar = bars[index];
+
+                Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
+            }
+        }
+
         void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
             BarEnumerator barEnumerator = client_.DownloadBars(symbol, priceType, periodicity, from, to, -1);
@@ -332,6 +412,30 @@ namespace QuoteStoreSample
             }
         }
 
+        void GetQuoteList(string symbol, QuoteDepth depth, DateTime from, int count)
+        {
+            Quote[] quotes = client_.GetQuoteList(symbol, depth, from, count, -1);
+
+            for (int index = 0; index < quotes.Length; ++index)
+            {
+                Quote quote = quotes[index];
+
+                Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
+                Console.Error.Write("    Bid :");
+
+                foreach (QuoteEntry entry in quote.Bids)
+                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Ask :");
+
+                foreach (QuoteEntry entry in quote.Asks)
+                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+            }
+        }
+
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             QuoteEnumerator quoteEnumerator = client_.DownloadQuotes(symbol, depth, from, to, -1);
@@ -339,7 +443,7 @@ namespace QuoteStoreSample
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-/*
+
                 for (Quote quote = quoteEnumerator.Next(-1); quote != null; quote = quoteEnumerator.Next(-1))
                 {
                     Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
@@ -356,7 +460,7 @@ namespace QuoteStoreSample
 
                     Console.Error.WriteLine();
                 }
-*/
+
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");                
             }
             finally
@@ -397,5 +501,7 @@ namespace QuoteStoreSample
     }
 }
 
-// b EURUSD Ask M1 "2016.06.01 08:00:00" "2016.06.01 08:20:00"
-// q EURUSD Top "2016.06.01 08:00:00" "2016.06.01 08:01:00"
+// bl EURUSD Ask M1 "2016.06.01 08:00:00" 100
+// bd EURUSD Ask M1 "2016.06.01 08:00:00" "2016.06.01 08:20:00"
+// ql EURUSD Top "2016.06.01 08:00:00" 100
+// qd EURUSD Top "2016.06.01 08:00:00" "2016.06.01 08:01:00"
