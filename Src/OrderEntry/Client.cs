@@ -4107,8 +4107,8 @@ namespace TickTrader.FDK.OrderEntry
                     case SoftFX.Net.OrderEntry.RejectReason.ThrottlingLimits:
                         return Common.RejectReason.ThrottlingLimits;
 
-                    case SoftFX.Net.OrderEntry.RejectReason.DownloadCancelled:
-                        return Common.RejectReason.DownloadCancelled;
+                    case SoftFX.Net.OrderEntry.RejectReason.RequestCancelled:
+                        return Common.RejectReason.RequestCancelled;
 
                     case SoftFX.Net.OrderEntry.RejectReason.InternalServerError:
                         return Common.RejectReason.InternalServerError;

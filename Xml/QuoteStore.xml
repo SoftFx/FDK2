@@ -60,10 +60,10 @@
                 <subMessage name="PeriodicityListReport"/>
                 <subMessage name="BarListReport"/>
                 <subMessage name="TickListReport"/>
-                <subMessage name="DownloadCancelReport"/>
                 <subMessage name="DownloadBeginReport"/>
                 <subMessage name="DownloadDataReport"/>
                 <subMessage name="DownloadEndReport"/>
+                <subMessage name="DownloadCancelReport"/>
                 <subMessage name="Reject"/>
             </subMessages>
             <fields>
@@ -190,24 +190,13 @@
                 <field name="Depth" offset="40" type="TickDepth" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="DownloadCancelRequest" id="17" superMessage="Request" size="24">
-            <fields>
-                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
-                <field name="RequestId" offset="16" type="string" optional="N" repeatable="N"/>
-            </fields>
-        </message>
-        <message name="DownloadCancelReport" id="18" superMessage="Response" size="16">
-            <fields>
-                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
-            </fields>
-        </message>
         <group name="FileInfo" size="16">
             <fields>
                 <field name="Id" offset="0" type="string" optional="N" repeatable="N"/>
                 <field name="Size" offset="8" type="uint64" optional="N" repeatable="N"/>
             </fields>
         </group>
-        <message name="DownloadBeginReport" id="19" superMessage="Response" size="40">
+        <message name="DownloadBeginReport" id="17" superMessage="Response" size="40">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Files" offset="16" type="FileInfo" optional="N" repeatable="Y"/>
@@ -215,7 +204,7 @@
                 <field name="AvailTo" offset="32" type="timestamp" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="DownloadDataReport" id="20" superMessage="Response" size="33">
+        <message name="DownloadDataReport" id="18" superMessage="Response" size="33">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
                 <field name="Id" offset="16" type="string" optional="N" repeatable="N"/>
@@ -223,15 +212,26 @@
                 <field name="Last" offset="32" type="bool" optional="N" repeatable="N"/>
             </fields>
         </message>
-        <message name="DownloadEndReport" id="21" superMessage="Response" size="16">
+        <message name="DownloadEndReport" id="19" superMessage="Response" size="16">
+            <fields>
+                <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="DownloadCancelRequest" id="20" superMessage="Request" size="24">
+            <fields>
+                <field name="Id" offset="8" type="string" optional="N" repeatable="N"/>
+                <field name="RequestId" offset="16" type="string" optional="N" repeatable="N"/>
+            </fields>
+        </message>
+        <message name="DownloadCancelReport" id="21" superMessage="Response" size="16">
             <fields>
                 <field name="RequestId" offset="8" type="string" optional="N" repeatable="N"/>
             </fields>
         </message>
         <enum name="RejectReason" size="4">
             <members>
-                <member name="DownloadCancelled" value="0"/>
-                <member name="ThrottlingLimits" value="1"/>
+                <member name="ThrottlingLimits" value="0"/>
+                <member name="RequestCancelled" value="1"/>
                 <member name="InternalServerError" value="2"/>
                 <member name="Other" value="3"/>
             </members>

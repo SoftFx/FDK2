@@ -442,7 +442,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeDownloadResultBegin(Client client, object data)
+        public void OnTradeDownloadResultBegin(Client client, object data, string id, int tradeCount)
         {
             try
             {

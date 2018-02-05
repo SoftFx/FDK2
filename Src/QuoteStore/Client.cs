@@ -2518,8 +2518,8 @@ namespace TickTrader.FDK.QuoteStore
                     case SoftFX.Net.QuoteStore.RejectReason.ThrottlingLimits:
                         return Common.RejectReason.ThrottlingLimits;
 
-                    case SoftFX.Net.QuoteStore.RejectReason.DownloadCancelled:
-                        return Common.RejectReason.DownloadCancelled;
+                    case SoftFX.Net.QuoteStore.RejectReason.RequestCancelled:
+                        return Common.RejectReason.RequestCancelled;
 
                     case SoftFX.Net.QuoteStore.RejectReason.InternalServerError:
                         return Common.RejectReason.InternalServerError;

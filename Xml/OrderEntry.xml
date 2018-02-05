@@ -100,7 +100,7 @@
         <enum name="RejectReason" size="4">
             <members>
                 <member name="ThrottlingLimits" value="0"/>
-                <member name="DownloadCancelled" value="1"/>
+                <member name="RequestCancelled" value="1"/>
                 <member name="InternalServerError" value="2"/>
                 <member name="Other" value="3"/>
             </members>

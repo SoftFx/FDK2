@@ -68,7 +68,7 @@
         /// <summary>
         /// 
         /// </summary>
-        DownloadCancelled = 16,
+        RequestCancelled = 16,
 
         /// <summary>
         /// 

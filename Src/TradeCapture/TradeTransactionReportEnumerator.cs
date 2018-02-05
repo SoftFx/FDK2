@@ -7,9 +7,11 @@ namespace TickTrader.FDK.TradeCapture
 {
     public class TradeTransactionReportEnumerator : IDisposable
     {
-        internal TradeTransactionReportEnumerator(Client client)
+        internal TradeTransactionReportEnumerator(Client client, string id, int tradeCount)
         {
             client_ = client;
+            id_ = id;
+            tradeCount_ = tradeCount;
 
             mutex_ = new object();
             completed_ = false;
@@ -19,6 +21,11 @@ namespace TickTrader.FDK.TradeCapture
             endIndex_ = 0;
             exception_ = null;
             event_ = new AutoResetEvent(false);
+        }
+
+        public int TradeCount
+        {
+            get { return tradeCount_;  }
         }
 
         public TradeTransactionReport Next(int timeout)
@@ -53,7 +60,18 @@ namespace TickTrader.FDK.TradeCapture
         {
             lock (mutex_)
             {
-                completed_ = true;
+                if (!completed_)
+                {
+                    completed_ = true;
+
+                    try
+                    {
+                        client_.CancelDownloadTradesAsync(null, id_);
+                    }
+                    catch
+                    {
+                    }
+                }
 
                 if (tradeTransactionReportCount_ > 0)
                 {
@@ -141,6 +159,8 @@ namespace TickTrader.FDK.TradeCapture
         const int GrowSize = 1000;
 
         Client client_;
+        string id_;
+        int tradeCount_;
 
         internal object mutex_;
         internal bool completed_;
