@@ -120,25 +120,26 @@
         /// <returns>can not be null</returns>
         public TradeRecord[] GetTradeRecordsEx(int timeoutInMilliseconds)
         {
-            OrderEnumerator orderEnumerator = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds);
-
-            TradeRecord[] tradeRecords = new TradeRecord[orderEnumerator.OrderCount];
-            int index = 0;
-
-            for 
-            (
-                ExecutionReport executionReport = orderEnumerator.Next(timeoutInMilliseconds); 
-                executionReport != null; 
-                executionReport = orderEnumerator.Next(timeoutInMilliseconds)
-            )
+            using (OrderEnumerator orderEnumerator = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds))
             {
-                TradeRecord tradeRecord = dataTrade_.GetTradeRecord(executionReport);
-                tradeRecords[index] = tradeRecord;
+                TradeRecord[] tradeRecords = new TradeRecord[orderEnumerator.OrderCount];
+                int index = 0;
 
-                ++index;
-            }                
+                for
+                (
+                    ExecutionReport executionReport = orderEnumerator.Next(timeoutInMilliseconds);
+                    executionReport != null;
+                    executionReport = orderEnumerator.Next(timeoutInMilliseconds)
+                )
+                {
+                    TradeRecord tradeRecord = dataTrade_.GetTradeRecord(executionReport);
+                    tradeRecords[index] = tradeRecord;
 
-            return tradeRecords;
+                    ++index;
+                }
+
+                return tradeRecords;
+            }
         }
 
 
