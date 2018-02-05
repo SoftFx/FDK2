@@ -209,6 +209,57 @@
         /// </summary>
         public bool Last { get; set; }
 
+        public ExecutionReport Clone()
+        {
+            ExecutionReport executionReport = new ExecutionReport();
+            executionReport.ExecutionType = ExecutionType;
+            executionReport.ClientOrderId = ClientOrderId;
+            executionReport.OrigClientOrderId = OrigClientOrderId;
+            executionReport.OrderId = OrderId;
+            executionReport.Symbol = Symbol;
+            executionReport.OrderSide = OrderSide;
+            executionReport.OrderType = OrderType;
+            executionReport.OrderTimeInForce = OrderTimeInForce;
+            executionReport.InitialVolume = InitialVolume;
+            executionReport.MaxVisibleVolume = MaxVisibleVolume;
+            executionReport.Price = Price;
+            executionReport.StopPrice = StopPrice;
+            executionReport.Expiration = Expiration;
+            executionReport.TakeProfit = TakeProfit;
+            executionReport.StopLoss = StopLoss;
+            executionReport.MarketWithSlippage = MarketWithSlippage;
+            executionReport.OrderStatus = OrderStatus;
+            executionReport.ExecutedVolume = ExecutedVolume;
+            executionReport.LeavesVolume = LeavesVolume;
+            executionReport.HiddenVolume = HiddenVolume;
+            executionReport.TradeAmount = TradeAmount;
+            executionReport.TradePrice = TradePrice;
+            executionReport.Commission = Commission;
+            executionReport.AgentCommission = AgentCommission;
+            executionReport.ReducedOpenCommission = ReducedOpenCommission;
+            executionReport.ReducedCloseCommission = ReducedCloseCommission;
+            executionReport.Swap = Swap;
+            executionReport.AveragePrice = AveragePrice;
+            executionReport.Created = Created;
+            executionReport.Modified = Modified;
+            executionReport.RejectReason = RejectReason;
+            executionReport.Text = Text;
+            executionReport.Comment = Comment;
+            executionReport.Tag = Tag;
+            executionReport.Magic = Magic;
+            if (Assets != null)
+            {
+                executionReport.Assets = (AssetInfo[])Assets.Clone();
+            }
+            else
+                executionReport.Assets = null;
+            executionReport.Balance = Balance;
+            executionReport.BalanceTradeAmount = BalanceTradeAmount;
+            executionReport.Last = Last;
+
+            return executionReport;
+        }
+
         public override string ToString()
         {
             return string.Format("ExecutionType = {0}; ClientOrderId = {1}; OrderId = {2}; OrderType = {3}; Symbol = {4}; OrderSide = {5}; InitialVolume = {6}; Price = {7}; OrderStatus = {8}; LeavesVolume = {9}; TradeAmount = {10}; TradePrice = {11}", ExecutionType, ClientOrderId, OrderId, OrderType, Symbol, OrderSide, InitialVolume, Price, OrderStatus, LeavesVolume, TradeAmount, TradePrice);

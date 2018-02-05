@@ -1303,10 +1303,11 @@ namespace TickTrader.FDK.OrderEntry
                     exception_ = exception;
                 }
             }
-
+                        
+            public TickTrader.FDK.Common.ExecutionReport executionReport_;
             public Exception exception_;
             public OrderEnumerator orderEnumerator_;
-            public AutoResetEvent event_;
+            public AutoResetEvent event_;            
         }
 
         class CancelOrdersAsyncContext : OrderMassStatusCancelRequestClientContext, IAsyncContext
@@ -2437,6 +2438,8 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
 
+                    context.executionReport_ = new TickTrader.FDK.Common.ExecutionReport();
+
                     if (client_.OrdersBeginResultEvent != null)
                     {
                         try
@@ -2465,11 +2468,11 @@ namespace TickTrader.FDK.OrderEntry
                 try
                 {
                     OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
+                    TickTrader.FDK.Common.ExecutionReport resultExecutionReport = context.executionReport_;
 
                     SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = message.Attributes;
-                    SoftFX.Net.OrderEntry.OrderState reportEntryState = message.State;
+                    SoftFX.Net.OrderEntry.OrderState reportEntryState = message.State;                    
 
-                    TickTrader.FDK.Common.ExecutionReport resultExecutionReport = new TickTrader.FDK.Common.ExecutionReport();
                     resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
                     resultExecutionReport.OrigClientOrderId = message.OrigClOrdId;
                     resultExecutionReport.OrderId = message.OrderId.ToString();
@@ -2521,7 +2524,9 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.orderEnumerator_.SetResult(resultExecutionReport);
+                        TickTrader.FDK.Common.ExecutionReport executionReport = resultExecutionReport.Clone();
+
+                        context.orderEnumerator_.SetResult(executionReport);
                     }
                 }
                 catch (Exception exception)
