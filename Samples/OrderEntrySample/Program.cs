@@ -488,9 +488,10 @@ namespace OrderEntrySample
             }
             catch
             {
-                client_.Disconnect("Client disconnect");
+                string text = client_.Disconnect("Client disconnect");
 
-                Console.WriteLine("Disconnected");
+                if (text != null)
+                    Console.WriteLine("Disconnected : " + text);
 
                 throw;
             }
@@ -508,9 +509,10 @@ namespace OrderEntrySample
             {
             }            
 
-            client_.Disconnect("Client disconnect");
+            string text = client_.Disconnect("Client disconnect");
 
-            Console.WriteLine("Disconnected");
+            if (text != null)
+                Console.WriteLine("Disconnected : {0}", text);
         }
 
         void PrintCommands()

@@ -107,9 +107,9 @@ namespace TickTrader.FDK.QuoteFeed
             session_.Connect(context, address);
         }
 
-        public bool Disconnect(string text)
+        public string Disconnect(string text)
         {
-            bool result;
+            string result;
 
             DisconnectAsyncContext context = new DisconnectAsyncContext(true);
 
@@ -117,10 +117,10 @@ namespace TickTrader.FDK.QuoteFeed
             {
                 context.Wait(-1);
 
-                result = true;
+                result = context.text_;
             }
             else
-                result = false;
+                result = null;
 
             return result;
         }
