@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.TradeCapture;
@@ -169,8 +170,8 @@ namespace TradeCaptureSample
                             DownloadTrades
                             (
                                 (TimeDirection)Enum.Parse(typeof(TimeDirection), timeDirection),
-                                DateTime.Parse(from),
-                                DateTime.Parse(to)
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
                         else if (command == "exit" || command == "e")

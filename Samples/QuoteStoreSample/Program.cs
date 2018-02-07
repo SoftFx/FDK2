@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.QuoteStore;
@@ -185,7 +186,7 @@ namespace QuoteStoreSample
                                 symbol,
                                 (PriceType)Enum.Parse(typeof(PriceType), priceType),
                                 new BarPeriod(periodicity),
-                                DateTime.Parse(from),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
                                 int.Parse(count)
                             );
                         }
@@ -221,8 +222,8 @@ namespace QuoteStoreSample
                                 symbol,
                                 (PriceType)Enum.Parse(typeof(PriceType), priceType),
                                 new BarPeriod(periodicity),
-                                DateTime.Parse(from),
-                                DateTime.Parse(to)
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
                         else if (command == "quote_list" || command == "ql")
@@ -251,7 +252,7 @@ namespace QuoteStoreSample
                             (
                                 symbol,
                                 (QuoteDepth)Enum.Parse(typeof(QuoteDepth), quoteDepth),
-                                DateTime.Parse(from),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
                                 int.Parse(count)
                             );
                         }
@@ -281,8 +282,8 @@ namespace QuoteStoreSample
                             (
                                 symbol,
                                 (QuoteDepth)Enum.Parse(typeof(QuoteDepth), quoteDepth),
-                                DateTime.Parse(from),
-                                DateTime.Parse(to)
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
                         else if (command == "exit" || command == "e")

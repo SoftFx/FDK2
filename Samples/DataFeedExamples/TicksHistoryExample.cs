@@ -14,8 +14,8 @@
 
         protected override void RunExample()
         {
-            var startTime = DateTime.Parse("06/01/2017 15:00:00", CultureInfo.InvariantCulture);
-            var endTime = DateTime.Parse("06/01/2017 15:59:59", CultureInfo.InvariantCulture);
+            var startTime = DateTime.Parse("06/01/2017 15:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var endTime = DateTime.Parse("06/01/2017 15:59:59Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
 
             var quotes = this.Feed.Server.GetQuotesHistory("EURUSD", startTime, endTime, 1);
 

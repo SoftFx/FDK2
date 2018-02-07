@@ -47,7 +47,7 @@ namespace TickTrader.FDK.QuoteStore.Serialization
                 quote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", year, mon, day, hour, min, sec, msec);
             }
 
-            quote.CreatingTime = new DateTime(year, mon, day, hour, min, sec, msec);
+            quote.CreatingTime = new DateTime(year, mon, day, hour, min, sec, msec, DateTimeKind.Utc);
 
             if (quoteDepth_ == QuoteDepth.Top)
             {

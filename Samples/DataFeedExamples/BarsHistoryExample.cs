@@ -14,8 +14,8 @@
 
         protected override void RunExample()
         {
-            var startTime = DateTime.Parse("06/01/2017 08:00:00", CultureInfo.InvariantCulture);
-            var endTime = DateTime.Parse("06/30/2017 07:59:59", CultureInfo.InvariantCulture);
+            var startTime = DateTime.Parse("06/01/2017 08:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var endTime = DateTime.Parse("06/30/2017 07:59:59Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
 
             var bars = this.Feed.Server.GetBarsHistory("EURUSD", BarPeriod.M1, startTime, endTime);
 

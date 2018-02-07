@@ -34,7 +34,7 @@ namespace TickTrader.FDK.QuoteStore.Serialization
 
             streamParser_.ValidateVerbatimChar('\t');
 
-            var dt = new DateTime(year, mon, day, hour, min, sec);
+            var dt = new DateTime(year, mon, day, hour, min, sec, DateTimeKind.Utc);
             double lo, hi, op, cl;
             double vol;
 
