@@ -2,8 +2,8 @@
     <members>
         <message name="ConnectMessage" id="200" size="22">
             <fields>
-                <field name="ProtocolMajorVer" offset="8" type="uint8" optional="N" repeatable="N"/>
-                <field name="ProtocolMinorVer" offset="9" type="uint8" optional="N" repeatable="N"/>
+                <field name="MajorVersion" offset="8" type="uint8" optional="N" repeatable="N"/>
+                <field name="MinorVersion" offset="9" type="uint8" optional="N" repeatable="N"/>
                 <field name="HeartbeatInterval" offset="10" type="int32" optional="N" repeatable="N"/>
                 <field name="SessionGuid" offset="14" type="string" optional="N" repeatable="N"/>
             </fields>

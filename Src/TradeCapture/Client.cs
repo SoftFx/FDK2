@@ -1868,11 +1868,11 @@ namespace TickTrader.FDK.TradeCapture
 
                 tradeTransactionReport.Id = trade.OrderId.GetValueOrDefault(0).ToString();
                 tradeTransactionReport.ClientId = trade.ClOrdId;
-                tradeTransactionReport.Quantity = trade.Qty.GetValueOrDefault(0);
+                tradeTransactionReport.Quantity = trade.Qty.GetValueOrDefault();
                 tradeTransactionReport.MaxVisibleQuantity = trade.MaxVisibleQty;
-                tradeTransactionReport.LeavesQuantity = trade.LeavesQty.GetValueOrDefault(0);
-                tradeTransactionReport.Price = trade.Price.GetValueOrDefault(0);
-                tradeTransactionReport.StopPrice = trade.StopPrice.GetValueOrDefault(0);
+                tradeTransactionReport.LeavesQuantity = trade.LeavesQty.GetValueOrDefault();
+                tradeTransactionReport.Price = trade.Price.GetValueOrDefault();
+                tradeTransactionReport.StopPrice = trade.StopPrice.GetValueOrDefault();
 
                 if (trade.OrderType.HasValue)
                 {
@@ -1880,6 +1880,13 @@ namespace TickTrader.FDK.TradeCapture
                 }
                 else
                     tradeTransactionReport.OrderType = TickTrader.FDK.Common.OrderType.Market;
+
+                if (trade.ParentOrderType.HasValue)
+                {
+                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                }
+                else
+                    tradeTransactionReport.ReqOrderType = null;
 
                 if (trade.OrderSide.HasValue)
                 {
@@ -1905,80 +1912,50 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.OrderCreated = trade.Created.GetValueOrDefault();
                 tradeTransactionReport.OrderModified = trade.Modified.GetValueOrDefault();
 
-                if (trade.ParentOrderType.HasValue)
+                if (trade.PosId.HasValue)
                 {
-                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                    tradeTransactionReport.PositionId = trade.PosId.ToString();
                 }
                 else
-                    tradeTransactionReport.ReqOrderType = null;
-
-                tradeTransactionReport.ReqOpenQuantity = trade.ParentQty;
-                tradeTransactionReport.ReqOpenPrice = trade.ParentPrice;
-                tradeTransactionReport.ReqClosePrice = null;
-                tradeTransactionReport.ReqCloseQuantity = null;
-
-                if (trade.Type == TradeType.PositionClosed)
-                {
-                    tradeTransactionReport.PositionId = trade.OrderId.ToString();
-
-                    if (trade.ByOrderId.HasValue)
-                    {
-                        tradeTransactionReport.PositionById = trade.ByOrderId.ToString();
-                    }
-                    else
-                        tradeTransactionReport.PositionById = null;
-
-                    tradeTransactionReport.PositionOpened = trade.Created.GetValueOrDefault();
-                    tradeTransactionReport.PosOpenReqPrice = 0;
-                    tradeTransactionReport.PosOpenPrice = trade.Price.Value;
-                    tradeTransactionReport.PositionQuantity = trade.Qty.Value;
-                    tradeTransactionReport.PositionLastQuantity = trade.LastQty.Value;
-                    tradeTransactionReport.PositionLeavesQuantity = trade.LeavesQty.Value;
-                    tradeTransactionReport.PositionCloseRequestedPrice = 0;
-                    tradeTransactionReport.PositionClosePrice = trade.LastPrice.Value;
-                    tradeTransactionReport.PositionClosed = trade.TransactTime;
-                    tradeTransactionReport.PositionModified = trade.Modified.Value;
-                }
-                else
-                {
                     tradeTransactionReport.PositionId = null;
-                    tradeTransactionReport.PositionById = null;
-                    tradeTransactionReport.PositionOpened = new DateTime();
-                    tradeTransactionReport.PosOpenReqPrice = 0;
-                    tradeTransactionReport.PosOpenPrice = 0;
-                    tradeTransactionReport.PositionQuantity = 0;
-                    tradeTransactionReport.PositionLastQuantity = 0;
-                    tradeTransactionReport.PositionLeavesQuantity = 0;
-                    tradeTransactionReport.PositionCloseRequestedPrice = 0;
-                    tradeTransactionReport.PositionClosePrice = 0;
-                    tradeTransactionReport.PositionClosed = new DateTime();
-                    tradeTransactionReport.PositionModified = new DateTime();
-                }
 
-                SoftFX.Net.TradeCapture.PositionNull position = trade.Position;
-                if (position.HasValue)
+                if (trade.PosById.HasValue)
                 {
-                    tradeTransactionReport.PosRemainingSide = Convert(position.Type);
-                    tradeTransactionReport.PosRemainingPrice = position.Price;
-                    tradeTransactionReport.PositionLeavesQuantity = position.Qty;
+                    tradeTransactionReport.PositionById = trade.PosById.ToString();
                 }
                 else
+                    tradeTransactionReport.PositionById = null;
+
+                tradeTransactionReport.PositionOpened = trade.PosOpened.GetValueOrDefault();
+                tradeTransactionReport.PosOpenPrice = trade.PosOpenPrice.GetValueOrDefault();
+                tradeTransactionReport.PositionQuantity = trade.PosQty.GetValueOrDefault();
+                tradeTransactionReport.PositionLastQuantity = trade.PosLastQty.GetValueOrDefault();
+                tradeTransactionReport.PositionLeavesQuantity = trade.PosLeavesQty.GetValueOrDefault();
+                tradeTransactionReport.PositionClosePrice = trade.PosClosePrice.GetValueOrDefault();
+                tradeTransactionReport.PositionClosed = trade.PosClosed.GetValueOrDefault();
+                tradeTransactionReport.PosRemainingPrice = trade.PosPrice;
+
+                if (trade.PosType.HasValue)
                 {
-                    tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
-                    tradeTransactionReport.PosRemainingPrice = null;
-                    tradeTransactionReport.PositionLeavesQuantity = 0;
+                    tradeTransactionReport.PosRemainingSide = Convert(trade.PosType.Value);
                 }
+                else
+                    tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
                 
-                tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault(0);
-                tradeTransactionReport.AgentCommission = trade.AgentCommission.GetValueOrDefault(0);
-                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault(0);                
+                tradeTransactionReport.ReqOpenQuantity = trade.ReqOpenQty;
+                tradeTransactionReport.ReqOpenPrice = trade.ReqOpenPrice;
+                tradeTransactionReport.ReqClosePrice = trade.ReqClosePrice;
+                tradeTransactionReport.ReqCloseQuantity = trade.ReqCloseQty;               
+                tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault();
+                tradeTransactionReport.AgentCommission = trade.AgentCommission.GetValueOrDefault();
+                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault();                
                 tradeTransactionReport.CommCurrency = trade.CommissionCurrId;
-                tradeTransactionReport.StopLoss = trade.StopLoss.GetValueOrDefault(0);
-                tradeTransactionReport.TakeProfit = trade.TakeProfit.GetValueOrDefault(0);
+                tradeTransactionReport.StopLoss = trade.StopLoss.GetValueOrDefault();
+                tradeTransactionReport.TakeProfit = trade.TakeProfit.GetValueOrDefault();
                 tradeTransactionReport.TransactionTime = trade.TransactTime;
                 tradeTransactionReport.OrderFillPrice = trade.LastPrice;
                 tradeTransactionReport.OrderLastFillAmount = trade.LastQty;
-                tradeTransactionReport.ActionId = trade.ActionId.GetValueOrDefault(0);
+                tradeTransactionReport.ActionId = trade.ActionId.GetValueOrDefault();
                 tradeTransactionReport.Expiration = trade.ExpireTime;
                 tradeTransactionReport.MarginCurrency = trade.MarginCurrId;
                 tradeTransactionReport.ProfitCurrency = trade.ProfitCurrId;
