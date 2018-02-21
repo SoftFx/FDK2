@@ -48,6 +48,7 @@
     <Compile Include="CommissionChargeMethod.cs" />
     <Compile Include="CommissionChargeType.cs" />
     <Compile Include="CommissionType.cs" />
+    <Compile Include="ConnectException.cs" />
     <Compile Include="CurrencyInfo.cs" />
     <Compile Include="DeviceIdGenerator.cs" />
     <Compile Include="DisconnectException.cs" />

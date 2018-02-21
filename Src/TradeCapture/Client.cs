@@ -817,7 +817,7 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -845,7 +845,7 @@ namespace TickTrader.FDK.TradeCapture
             {                
                 try
                 {
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -985,8 +985,7 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
-
+                    TickTrader.FDK.Common.LogoutReason reason = GetLogoutReason(message.Reason);
                     LoginException exception = new LoginException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
@@ -1284,7 +1283,7 @@ namespace TickTrader.FDK.TradeCapture
                     try
                     {
                         LogoutInfo result = new LogoutInfo();
-                        result.Reason = Convert(message.Reason);
+                        result.Reason = GetLogoutReason(message.Reason);
                         result.Message = message.Text;
 
                         if (client_.LogoutResultEvent != null)
@@ -1425,7 +1424,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.SubscribeTradesErrorEvent != null)
@@ -1450,7 +1449,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.UnsubscribeTradesErrorEvent != null)
@@ -1539,7 +1538,7 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         Trade trade = message.Trade;
 
-                        Convert(context.tradeTransactionReport_, trade);
+                        FillTradeTransactionReport(context.tradeTransactionReport_, trade);
 
                         if (client_.TradeDownloadResultEvent != null)
                         {
@@ -1639,7 +1638,7 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     TradeDownloadAsyncContext context = (TradeDownloadAsyncContext)TradeDownloadRequestClientContext;
 
-                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.TradeDownloadErrorEvent != null)
@@ -1722,7 +1721,7 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     CancelDownloadTradesAsyncContext context = (CancelDownloadTradesAsyncContext) TradeDownloadCancelRequestClientContext;
 
-                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.CancelDownloadTradesErrorEvent != null)
@@ -1752,7 +1751,7 @@ namespace TickTrader.FDK.TradeCapture
                 try
                 {
                     LogoutInfo result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
+                    result.Reason = GetLogoutReason(message.Reason);
                     result.Message = message.Text;
 
                     if (client_.LogoutEvent != null)
@@ -1777,9 +1776,9 @@ namespace TickTrader.FDK.TradeCapture
                 try
                 {
                     SoftFX.Net.TradeCapture.Trade trade = message.Trade;
-
                     TradeTransactionReport tradeTransactionReport = new TradeTransactionReport();
-                    Convert(tradeTransactionReport, trade);
+
+                    FillTradeTransactionReport(tradeTransactionReport, trade);
 
                     if (client_.TradeUpdateEvent != null)
                     {
@@ -1804,8 +1803,8 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
                     result.Id = message.Id;
-                    result.Type = Convert(message.Type);
-                    result.Severity = Convert(message.Severity);
+                    result.Type = GetNotificationType(message.Type);
+                    result.Severity = GetNotificationSeverity(message.Severity);
                     result.Message = message.Text;
 
                     if (client_.NotificationEvent != null)
@@ -1825,7 +1824,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.TradeCapture.RejectReason reason)
+            TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.TradeCapture.RejectReason reason)
             {
                 switch (reason)
                 {
@@ -1846,11 +1845,11 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            void Convert(TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport, SoftFX.Net.TradeCapture.Trade trade)
+            void FillTradeTransactionReport(TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport, SoftFX.Net.TradeCapture.Trade trade)
             {
                 tradeTransactionReport.TradeTransactionId = trade.Id;
-                tradeTransactionReport.TradeTransactionReportType = Convert(trade.Type);
-                tradeTransactionReport.TradeTransactionReason = Convert(trade.Reason);
+                tradeTransactionReport.TradeTransactionReportType = GetTradeTransactionReportType(trade.Type);
+                tradeTransactionReport.TradeTransactionReason = GetTradeTransactionReason(trade.Reason);
 
                 BalanceNull balance = trade.Balance;
                 if (balance.HasValue)
@@ -1876,28 +1875,28 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (trade.OrderType.HasValue)
                 {
-                    tradeTransactionReport.OrderType = Convert(trade.OrderType.Value);
+                    tradeTransactionReport.OrderType = GetOrderType(trade.OrderType.Value);
                 }
                 else
                     tradeTransactionReport.OrderType = TickTrader.FDK.Common.OrderType.Market;
 
                 if (trade.ParentOrderType.HasValue)
                 {
-                    tradeTransactionReport.ReqOrderType = Convert(trade.ParentOrderType.Value);
+                    tradeTransactionReport.ReqOrderType = GetOrderType(trade.ParentOrderType.Value);
                 }
                 else
                     tradeTransactionReport.ReqOrderType = null;
 
                 if (trade.OrderSide.HasValue)
                 {
-                    tradeTransactionReport.OrderSide = Convert(trade.OrderSide.Value);
+                    tradeTransactionReport.OrderSide = GetOrderSide(trade.OrderSide.Value);
                 }
                 else
                     tradeTransactionReport.OrderSide = TickTrader.FDK.Common.OrderSide.Buy;
 
                 if (trade.TimeInForce.HasValue)
                 {
-                    tradeTransactionReport.TimeInForce = Convert(trade.TimeInForce.Value);
+                    tradeTransactionReport.TimeInForce = GetOrderTimeInForce(trade.TimeInForce.Value);
                 }
                 else
                     tradeTransactionReport.TimeInForce = null;
@@ -1937,7 +1936,7 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (trade.PosType.HasValue)
                 {
-                    tradeTransactionReport.PosRemainingSide = Convert(trade.PosType.Value);
+                    tradeTransactionReport.PosRemainingSide = GetOrderSide(trade.PosType.Value);
                 }
                 else
                     tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
@@ -2057,7 +2056,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LoginRejectReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.TradeCapture.LoginRejectReason reason)
             {
                 switch (reason)
                 {
@@ -2081,7 +2080,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.TradeCapture.LogoutReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.TradeCapture.LogoutReason reason)
             {
                 switch (reason)
                 {
@@ -2108,7 +2107,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.TradeTransactionReportType Convert(SoftFX.Net.TradeCapture.TradeType type)
+            TickTrader.FDK.Common.TradeTransactionReportType GetTradeTransactionReportType(SoftFX.Net.TradeCapture.TradeType type)
             {
                 switch (type)
                 {
@@ -2135,7 +2134,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.TradeTransactionReason Convert(SoftFX.Net.TradeCapture.TradeReason reason)
+            TickTrader.FDK.Common.TradeTransactionReason GetTradeTransactionReason(SoftFX.Net.TradeCapture.TradeReason reason)
             {
                 switch (reason)
                 {
@@ -2172,7 +2171,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.OrderType Convert(SoftFX.Net.TradeCapture.OrderType type)
+            TickTrader.FDK.Common.OrderType GetOrderType(SoftFX.Net.TradeCapture.OrderType type)
             {
                 switch (type)
                 {
@@ -2196,7 +2195,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.OrderSide Convert(SoftFX.Net.TradeCapture.OrderSide side)
+            TickTrader.FDK.Common.OrderSide GetOrderSide(SoftFX.Net.TradeCapture.OrderSide side)
             {
                 switch (side)
                 {
@@ -2211,7 +2210,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.OrderTimeInForce Convert(SoftFX.Net.TradeCapture.OrderTimeInForce timeInForce)
+            TickTrader.FDK.Common.OrderTimeInForce GetOrderTimeInForce(SoftFX.Net.TradeCapture.OrderTimeInForce timeInForce)
             {
                 switch (timeInForce)
                 {
@@ -2229,7 +2228,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.OrderSide Convert(SoftFX.Net.TradeCapture.PosType posType)
+            TickTrader.FDK.Common.OrderSide GetOrderSide(SoftFX.Net.TradeCapture.PosType posType)
             {
                 switch (posType)
                 {
@@ -2244,7 +2243,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.TradeCapture.NotificationType type)
+            TickTrader.FDK.Common.NotificationType GetNotificationType(SoftFX.Net.TradeCapture.NotificationType type)
             {
                 switch (type)
                 {
@@ -2256,7 +2255,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.TradeCapture.NotificationSeverity severity)
+            TickTrader.FDK.Common.NotificationSeverity GetNotificationSeverity(SoftFX.Net.TradeCapture.NotificationSeverity severity)
             {
                 switch (severity)
                 {

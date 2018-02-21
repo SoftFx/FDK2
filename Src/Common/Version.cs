@@ -3,7 +3,7 @@
     public class Version
     {
         public const string Major = "2";
-        public const string Minor = "14";
+        public const string Minor = "17";
         public const string Build = "0";
         public const string Revision = "0";
         public const string Stage = "beta";

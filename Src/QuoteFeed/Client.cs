@@ -942,7 +942,7 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -970,7 +970,7 @@ namespace TickTrader.FDK.QuoteFeed
             {                
                 try
                 {
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -1110,7 +1110,7 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
+                    TickTrader.FDK.Common.LogoutReason reason = GetLogoutReason(message.Reason);
 
                     LoginException exception = new LoginException(reason, message.Text);
 
@@ -1409,7 +1409,7 @@ namespace TickTrader.FDK.QuoteFeed
                     try
                     {
                         LogoutInfo result = new LogoutInfo();
-                        result.Reason = Convert(message.Reason);
+                        result.Reason = GetLogoutReason(message.Reason);
                         result.Message = message.Text;
 
                         if (client_.LogoutResultEvent != null)
@@ -1525,7 +1525,7 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     CurrencyListAsyncContext context = (CurrencyListAsyncContext)CurrencyListRequestClientContext;
 
-                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.CurrencyListErrorEvent != null)
@@ -1576,20 +1576,20 @@ namespace TickTrader.FDK.QuoteFeed
                             resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;
                             resultSymbol.MaxTradeVolume = reportSymbol.MaxTradeVol;
                             resultSymbol.TradeVolumeStep = reportSymbol.TradeVolStep;
-                            resultSymbol.ProfitCalcMode = Convert(reportSymbol.ProfitCalcMode);
-                            resultSymbol.MarginCalcMode = Convert(reportSymbol.MarginCalcMode);
+                            resultSymbol.ProfitCalcMode = GetProfitCalcMode(reportSymbol.ProfitCalcMode);
+                            resultSymbol.MarginCalcMode = GetMarginCalcMode(reportSymbol.MarginCalcMode);
                             resultSymbol.MarginHedge = reportSymbol.MarginHedge;
                             resultSymbol.MarginFactorFractional = reportSymbol.MarginFactor;
                             resultSymbol.ContractMultiplier = reportSymbol.ContractMultiplier;
                             resultSymbol.Color = (int)reportSymbol.Color;
-                            resultSymbol.CommissionType = Convert(reportSymbol.CommissionType);
-                            resultSymbol.CommissionChargeType = Convert(reportSymbol.CommissionChargeType);
-                            resultSymbol.CommissionChargeMethod = Convert(reportSymbol.CommissionChargeMethod);
+                            resultSymbol.CommissionType = GetCommissionType(reportSymbol.CommissionType);
+                            resultSymbol.CommissionChargeType = GetCommissionChargeType(reportSymbol.CommissionChargeType);
+                            resultSymbol.CommissionChargeMethod = GetCommissionChargeMethod(reportSymbol.CommissionChargeMethod);
                             resultSymbol.LimitsCommission = reportSymbol.LimitsCommission;
                             resultSymbol.Commission = reportSymbol.Commission;
                             resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
                             resultSymbol.MinCommission = reportSymbol.MinCommission;
-                            resultSymbol.SwapType = Convert(reportSymbol.SwapType);
+                            resultSymbol.SwapType = GetSwapType(reportSymbol.SwapType);
                             resultSymbol.TripleSwapDay = reportSymbol.TripleSwapDay;
                             resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
                             resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
@@ -1657,7 +1657,7 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     SymbolListAsyncContext context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
-                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
@@ -1693,7 +1693,7 @@ namespace TickTrader.FDK.QuoteFeed
                         TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                         SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
-                        resultStatusInfo.Status = Convert(reportStatusInfo.Status);
+                        resultStatusInfo.Status = GetSessionStatus(reportStatusInfo.Status);
                         resultStatusInfo.StartTime = reportStatusInfo.StartTime;
                         resultStatusInfo.EndTime = reportStatusInfo.EndTime;
                         resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
@@ -1709,7 +1709,7 @@ namespace TickTrader.FDK.QuoteFeed
                             TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
 
                             resultGroup.StatusGroupId = reportGroup.Id;
-                            resultGroup.Status = Convert(reportGroup.Status);
+                            resultGroup.Status = GetSessionStatus(reportGroup.Status);
                             resultGroup.StartTime = reportGroup.StartTime;
                             resultGroup.EndTime = reportGroup.EndTime;
                             resultGroup.OpenTime = reportGroup.OpenTime;
@@ -1767,7 +1767,7 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     SessionInfoAsyncContext context = (SessionInfoAsyncContext)TradingSessionStatusRequestClientContext;
 
-                    TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SessionInfoErrorEvent != null)
@@ -2012,7 +2012,7 @@ namespace TickTrader.FDK.QuoteFeed
 
                         SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.SubscribeQuotesErrorEvent != null)
@@ -2037,7 +2037,7 @@ namespace TickTrader.FDK.QuoteFeed
 
                         UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.UnsubscribeQuotesErrorEvent != null)
@@ -2062,7 +2062,7 @@ namespace TickTrader.FDK.QuoteFeed
 
                         GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = Convert(message.Reason);
+                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.QuotesErrorEvent != null)
@@ -2092,8 +2092,8 @@ namespace TickTrader.FDK.QuoteFeed
             {
                 try
                 {
-                    var result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
+                    LogoutInfo result = new LogoutInfo();
+                    result.Reason = GetLogoutReason(message.Reason);
                     result.Message = message.Text;
 
                     if (client_.LogoutEvent != null)
@@ -2120,7 +2120,7 @@ namespace TickTrader.FDK.QuoteFeed
                     TickTrader.FDK.Common.SessionInfo resultStatusInfo = new TickTrader.FDK.Common.SessionInfo();
                     SoftFX.Net.QuoteFeed.TradingSessionStatusInfo reportStatusInfo = message.StatusInfo;
 
-                    resultStatusInfo.Status = Convert(reportStatusInfo.Status);
+                    resultStatusInfo.Status = GetSessionStatus(reportStatusInfo.Status);
                     resultStatusInfo.StartTime = reportStatusInfo.StartTime;
                     resultStatusInfo.EndTime = reportStatusInfo.EndTime;
                     resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
@@ -2136,7 +2136,7 @@ namespace TickTrader.FDK.QuoteFeed
                         TickTrader.FDK.Common.StatusGroupInfo resultGroup = new TickTrader.FDK.Common.StatusGroupInfo();
 
                         resultGroup.StatusGroupId = reportGroup.Id;
-                        resultGroup.Status = Convert(reportGroup.Status);
+                        resultGroup.Status = GetSessionStatus(reportGroup.Status);
                         resultGroup.StartTime = reportGroup.StartTime;
                         resultGroup.EndTime = reportGroup.EndTime;
                         resultGroup.OpenTime = reportGroup.OpenTime;
@@ -2221,8 +2221,8 @@ namespace TickTrader.FDK.QuoteFeed
                 {
                     TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
                     result.Id = message.Id;
-                    result.Type = Convert(message.Type);
-                    result.Severity = Convert(message.Severity);
+                    result.Type = GetNotificationType(message.Type);
+                    result.Severity = GetNotificationSeverity(message.Severity);
                     result.Message = message.Text;
 
                     if (client_.NotificationEvent != null)
@@ -2242,7 +2242,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.QuoteFeed.RejectReason reason)
+            TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.QuoteFeed.RejectReason reason)
             {
                 switch (reason)
                 {
@@ -2260,7 +2260,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.QuoteFeed.LoginRejectReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.QuoteFeed.LoginRejectReason reason)
             {
                 switch (reason)
                 {
@@ -2284,7 +2284,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.QuoteFeed.LogoutReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.QuoteFeed.LogoutReason reason)
             {
                 switch (reason)
                 {
@@ -2311,7 +2311,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.MarginCalcMode Convert(SoftFX.Net.QuoteFeed.MarginCalcMode mode)
+            TickTrader.FDK.Common.MarginCalcMode GetMarginCalcMode(SoftFX.Net.QuoteFeed.MarginCalcMode mode)
             {
                 switch (mode)
                 {
@@ -2335,7 +2335,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.ProfitCalcMode Convert(SoftFX.Net.QuoteFeed.ProfitCalcMode mode)
+            TickTrader.FDK.Common.ProfitCalcMode GetProfitCalcMode(SoftFX.Net.QuoteFeed.ProfitCalcMode mode)
             {
                 switch (mode)
                 {
@@ -2359,7 +2359,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.CommissionType Convert(SoftFX.Net.QuoteFeed.CommissionType type)
+            TickTrader.FDK.Common.CommissionType GetCommissionType(SoftFX.Net.QuoteFeed.CommissionType type)
             {
                 switch (type)
                 {
@@ -2377,7 +2377,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.CommissionChargeType Convert(SoftFX.Net.QuoteFeed.CommissionChargeType type)
+            TickTrader.FDK.Common.CommissionChargeType GetCommissionChargeType(SoftFX.Net.QuoteFeed.CommissionChargeType type)
             {
                 switch (type)
                 {
@@ -2392,7 +2392,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.CommissionChargeMethod Convert(SoftFX.Net.QuoteFeed.CommissionChargeMethod method)
+            TickTrader.FDK.Common.CommissionChargeMethod GetCommissionChargeMethod(SoftFX.Net.QuoteFeed.CommissionChargeMethod method)
             {
                 switch (method)
                 {
@@ -2407,7 +2407,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.SwapType Convert(SoftFX.Net.QuoteFeed.SwapType swapType)
+            TickTrader.FDK.Common.SwapType GetSwapType(SoftFX.Net.QuoteFeed.SwapType swapType)
             {
                 switch (swapType)
                 {
@@ -2422,7 +2422,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.SessionStatus Convert(SoftFX.Net.QuoteFeed.TradingSessionStatus status)
+            TickTrader.FDK.Common.SessionStatus GetSessionStatus(SoftFX.Net.QuoteFeed.TradingSessionStatus status)
             {
                 switch (status)
                 {
@@ -2437,7 +2437,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.QuoteFeed.NotificationType type)
+            TickTrader.FDK.Common.NotificationType GetNotificationType(SoftFX.Net.QuoteFeed.NotificationType type)
             {
                 switch (type)
                 {
@@ -2449,7 +2449,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.QuoteFeed.NotificationSeverity severity)
+            TickTrader.FDK.Common.NotificationSeverity GetNotificationSeverity(SoftFX.Net.QuoteFeed.NotificationSeverity severity)
             {
                 switch (severity)
                 {

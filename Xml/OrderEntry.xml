@@ -1,4 +1,4 @@
-<protocol name="OrderEntry" majorVer="7" minorVer="0">
+<protocol name="OrderEntry" majorVer="8" minorVer="0">
     <members>
         <message name="LoginRequest" id="0" size="48">
             <fields>
@@ -984,7 +984,7 @@
                     <expression>
                         <notEqual>
                             <field name="ClOrdId"/>
-                            <literal type="string" value=""/>
+                            <literal type="none" value="null"/>
                         </notEqual>
                     </expression>
                 </field>
@@ -1483,7 +1483,7 @@
                     <expression>
                         <equal>
                             <field name="ClOrdId"/>
-                            <literal type="string" value=""/>
+                            <literal type="none" value="null"/>
                         </equal>
                     </expression>
                 </message>
@@ -1931,7 +1931,7 @@
                     <expression>
                         <notEqual>
                             <field name="ClOrdId"/>
-                            <literal type="string" value=""/>
+                            <literal type="none" value="null"/>
                         </notEqual>
                     </expression>
                 </field>
@@ -2391,7 +2391,7 @@
                     <expression>
                         <equal>
                             <field name="ClOrdId"/>
-                            <literal type="string" value=""/>
+                            <literal type="none" value="null"/>
                         </equal>
                     </expression>
                 </message>

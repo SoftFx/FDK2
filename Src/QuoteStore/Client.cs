@@ -1032,7 +1032,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -1060,7 +1060,7 @@ namespace TickTrader.FDK.QuoteStore
             {                
                 try
                 {
-                    Exception exception = new Exception(text);
+                    ConnectException exception = new ConnectException(text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -1200,7 +1200,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
-                    TickTrader.FDK.Common.LogoutReason reason = Convert(message.Reason);
+                    TickTrader.FDK.Common.LogoutReason reason = GetLogoutReason(message.Reason);
                     LoginException exception = new LoginException(reason, message.Text);
 
                     if (client_.LoginErrorEvent != null)
@@ -1234,7 +1234,7 @@ namespace TickTrader.FDK.QuoteStore
                     try
                     {
                         LogoutInfo result = new LogoutInfo();
-                        result.Reason = Convert(message.Reason);
+                        result.Reason = GetLogoutReason(message.Reason);
                         result.Message = message.Text;
 
                         if (client_.LogoutResultEvent != null)
@@ -1342,7 +1342,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     var context = (SymbolListAsyncContext)SymbolListRequestClientContext;
 
-                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.SymbolListErrorEvent != null)
@@ -1434,7 +1434,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     PeriodictityListAsyncContext context = (PeriodictityListAsyncContext)PeriodicityListRequestClientContext;
 
-                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.PeriodicityListErrorEvent != null)
@@ -1534,7 +1534,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     BarListAsyncContext context = (BarListAsyncContext)BarListRequestClientContext;
 
-                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.BarListErrorEvent != null)
@@ -1672,7 +1672,7 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     QuoteListAsyncContext context = (QuoteListAsyncContext)TickListRequestClientContext;
 
-                    Common.RejectReason rejectReason = Convert(message.Reason);
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
                     if (client_.QuoteListErrorEvent != null)
@@ -2202,7 +2202,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         BarDownloadAsyncContext context = (BarDownloadAsyncContext)DownloadRequestClientContext;
 
-                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.BarDownloadErrorEvent != null)
@@ -2233,7 +2233,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         QuoteDownloadAsyncContext context = (QuoteDownloadAsyncContext)DownloadRequestClientContext;
 
-                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.QuoteDownloadErrorEvent != null)
@@ -2359,7 +2359,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
 
-                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.CancelDownloadBarsErrorEvent != null)
@@ -2382,7 +2382,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
 
-                        Common.RejectReason rejectReason = Convert(message.Reason);
+                        Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
 
                         if (client_.CancelDownloadQuotesErrorEvent != null)
@@ -2412,8 +2412,8 @@ namespace TickTrader.FDK.QuoteStore
             {
                 try
                 {
-                    var result = new LogoutInfo();
-                    result.Reason = Convert(message.Reason);
+                    LogoutInfo result = new LogoutInfo();
+                    result.Reason = GetLogoutReason(message.Reason);
                     result.Message = message.Text;
 
                     if (client_.LogoutEvent != null)
@@ -2439,8 +2439,8 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     TickTrader.FDK.Common.Notification result = new TickTrader.FDK.Common.Notification();
                     result.Id = message.Id;
-                    result.Type = Convert(message.Type);
-                    result.Severity = Convert(message.Severity);
+                    result.Type = GetNotificationType(message.Type);
+                    result.Severity = GetNotificationSeverity(message.Severity);
                     result.Message = message.Text;
 
                     if (client_.NotificationEvent != null)
@@ -2460,7 +2460,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.QuoteStore.LoginRejectReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.QuoteStore.LoginRejectReason reason)
             {
                 switch (reason)
                 {
@@ -2484,7 +2484,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            TickTrader.FDK.Common.LogoutReason Convert(SoftFX.Net.QuoteStore.LogoutReason reason)
+            TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.QuoteStore.LogoutReason reason)
             {
                 switch (reason)
                 {
@@ -2511,7 +2511,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason Convert(SoftFX.Net.QuoteStore.RejectReason reason)
+            TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.QuoteStore.RejectReason reason)
             {
                 switch (reason)
                 {
@@ -2532,7 +2532,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            TickTrader.FDK.Common.NotificationType Convert(SoftFX.Net.QuoteStore.NotificationType type)
+            TickTrader.FDK.Common.NotificationType GetNotificationType(SoftFX.Net.QuoteStore.NotificationType type)
             {
                 switch (type)
                 {
@@ -2544,7 +2544,7 @@ namespace TickTrader.FDK.QuoteStore
                 }
             }
 
-            TickTrader.FDK.Common.NotificationSeverity Convert(SoftFX.Net.QuoteStore.NotificationSeverity severity)
+            TickTrader.FDK.Common.NotificationSeverity GetNotificationSeverity(SoftFX.Net.QuoteStore.NotificationSeverity severity)
             {
                 switch (severity)
                 {
