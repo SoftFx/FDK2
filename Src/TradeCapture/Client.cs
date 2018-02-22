@@ -419,7 +419,7 @@ namespace TickTrader.FDK.TradeCapture
         {
             TradeDownloadRequest request = new TradeDownloadRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.Direction = Convert(timeDirection);
+            request.Direction = GetTradeHistoryDirection(timeDirection);
             request.From = from;
             request.To = to;
             request.SkipCancel = skipCancel;
@@ -458,7 +458,7 @@ namespace TickTrader.FDK.TradeCapture
         }
 
 
-        SoftFX.Net.TradeCapture.TradeHistoryDirection Convert(TickTrader.FDK.Common.TimeDirection timeDirection)
+        SoftFX.Net.TradeCapture.TradeHistoryDirection GetTradeHistoryDirection(TickTrader.FDK.Common.TimeDirection timeDirection)
         {
             switch (timeDirection)
             {

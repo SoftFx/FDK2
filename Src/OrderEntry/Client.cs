@@ -676,8 +676,8 @@ namespace TickTrader.FDK.OrderEntry
             message.ClOrdId = clientOrderId;
             OrderAttributes attributes = message.Attributes;
             attributes.SymbolId = symbol;
-            attributes.Type = Convert(type);            
-            attributes.Side = Convert(side);
+            attributes.Type = GetOrderType(type);            
+            attributes.Side = GetOrderSide(side);
             attributes.Qty = qty;
             attributes.MaxVisibleQty = maxVisibleQty;
             attributes.Price = price;
@@ -685,7 +685,7 @@ namespace TickTrader.FDK.OrderEntry
 
             if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = Convert(timeInForce.Value);
+                attributes.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
             }
             else
                 attributes.TimeInForce = null;
@@ -840,8 +840,8 @@ namespace TickTrader.FDK.OrderEntry
 
             OrderAttributes attributes = message.Attributes;
             attributes.SymbolId = symbol;
-            attributes.Type = Convert(type);            
-            attributes.Side = Convert(side);
+            attributes.Type = GetOrderType(type);            
+            attributes.Side = GetOrderSide(side);
             attributes.Qty = qty;
             attributes.MaxVisibleQty = maxVisibleQty;
             attributes.Price = price;
@@ -849,7 +849,7 @@ namespace TickTrader.FDK.OrderEntry
 
             if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = Convert(timeInForce.Value);
+                attributes.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
             }
             else
                 attributes.TimeInForce = null;
@@ -981,7 +981,7 @@ namespace TickTrader.FDK.OrderEntry
 
         #region Implementation
 
-        SoftFX.Net.OrderEntry.OrderType Convert(TickTrader.FDK.Common.OrderType type)
+        SoftFX.Net.OrderEntry.OrderType GetOrderType(TickTrader.FDK.Common.OrderType type)
         {
             switch (type)
             {
@@ -1005,7 +1005,7 @@ namespace TickTrader.FDK.OrderEntry
             }
         }
 
-        SoftFX.Net.OrderEntry.OrderSide Convert(TickTrader.FDK.Common.OrderSide side)
+        SoftFX.Net.OrderEntry.OrderSide GetOrderSide(TickTrader.FDK.Common.OrderSide side)
         {
             switch (side)
             {
@@ -1020,7 +1020,7 @@ namespace TickTrader.FDK.OrderEntry
             }
         }
 
-        SoftFX.Net.OrderEntry.OrderTimeInForce Convert(TickTrader.FDK.Common.OrderTimeInForce time)
+        SoftFX.Net.OrderEntry.OrderTimeInForce GetOrderTimeInForce(TickTrader.FDK.Common.OrderTimeInForce time)
         {
             switch (time)
             {

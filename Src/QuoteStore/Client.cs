@@ -374,7 +374,7 @@ namespace TickTrader.FDK.QuoteStore
             BarListRequest request = new BarListRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.SymbolId = symbol;
-            request.PriceType = Convert(priceType);
+            request.PriceType = GetPriceType(priceType);
             request.Periodicity = barPeriod.ToString();
             request.From = from;
             request.Count = count;
@@ -410,7 +410,7 @@ namespace TickTrader.FDK.QuoteStore
             TickListRequest request = new TickListRequest(0);
             request.Id = Guid.NewGuid().ToString();
             request.SymbolId = symbol;
-            request.Depth = Convert(depth);
+            request.Depth = GetTickDepth(depth);
             request.From = from;
             request.Count = count;
 
@@ -454,7 +454,7 @@ namespace TickTrader.FDK.QuoteStore
             BarDownloadRequest request = new BarDownloadRequest(0);
             request.Id = id;
             request.SymbolId = symbol;
-            request.PriceType = Convert(priceType);
+            request.PriceType = GetPriceType(priceType);
             request.Periodicity = barPeriod.ToString();
             request.From = from;
             request.To = to;
@@ -528,7 +528,7 @@ namespace TickTrader.FDK.QuoteStore
             TickDownloadRequest request = new TickDownloadRequest(0);
             request.Id = id;
             request.SymbolId = symbol;
-            request.Depth = Convert(depth);
+            request.Depth = GetTickDepth(depth);
             request.From = from;
             request.To = to;
 
@@ -569,7 +569,7 @@ namespace TickTrader.FDK.QuoteStore
 
         #region Implementation
 
-        SoftFX.Net.QuoteStore.PriceType Convert(TickTrader.FDK.Common.PriceType priceType)
+        SoftFX.Net.QuoteStore.PriceType GetPriceType(TickTrader.FDK.Common.PriceType priceType)
         {
             switch (priceType)
             {
@@ -584,7 +584,7 @@ namespace TickTrader.FDK.QuoteStore
             }
         }
 
-        SoftFX.Net.QuoteStore.TickDepth Convert(TickTrader.FDK.Common.QuoteDepth quoteDepth)
+        SoftFX.Net.QuoteStore.TickDepth GetTickDepth(TickTrader.FDK.Common.QuoteDepth quoteDepth)
         {
             switch (quoteDepth)
             {
