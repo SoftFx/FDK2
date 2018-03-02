@@ -674,28 +674,27 @@ namespace TickTrader.FDK.OrderEntry
         {
             NewOrderSingle message = new NewOrderSingle(0);
             message.ClOrdId = clientOrderId;
-            OrderAttributes attributes = message.Attributes;
-            attributes.SymbolId = symbol;
-            attributes.Type = GetOrderType(type);            
-            attributes.Side = GetOrderSide(side);
-            attributes.Qty = qty;
-            attributes.MaxVisibleQty = maxVisibleQty;
-            attributes.Price = price;
-            attributes.StopPrice = stopPrice;
+            message.SymbolId = symbol;
+            message.Type = GetOrderType(type);            
+            message.Side = GetOrderSide(side);
+            message.Qty = qty;
+            message.MaxVisibleQty = maxVisibleQty;
+            message.Price = price;
+            message.StopPrice = stopPrice;
 
             if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
+                message.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
             }
             else
-                attributes.TimeInForce = null;
+                message.TimeInForce = null;
 
-            attributes.ExpireTime = expireTime;
-            attributes.StopLoss = stopLoss;
-            attributes.TakeProfit = takeProfit;
-            attributes.Comment = comment;
-            attributes.Tag = tag;
-            attributes.Magic = magic;
+            message.ExpireTime = expireTime;
+            message.StopLoss = stopLoss;
+            message.TakeProfit = takeProfit;
+            message.Comment = comment;
+            message.Tag = tag;
+            message.Magic = magic;
 
             session_.SendNewOrderSingle(context, message);
         }
@@ -848,28 +847,27 @@ namespace TickTrader.FDK.OrderEntry
             else
                 message.OrderId = null;
 
-            OrderAttributes attributes = message.Attributes;
-            attributes.SymbolId = symbol;
-            attributes.Type = GetOrderType(type);            
-            attributes.Side = GetOrderSide(side);
-            attributes.Qty = qty;
-            attributes.MaxVisibleQty = maxVisibleQty;
-            attributes.Price = price;
-            attributes.StopPrice = stopPrice;
+            message.SymbolId = symbol;
+            message.Type = GetOrderType(type);            
+            message.Side = GetOrderSide(side);
+            message.Qty = qty;
+            message.MaxVisibleQty = maxVisibleQty;
+            message.Price = price;
+            message.StopPrice = stopPrice;
 
             if (timeInForce.HasValue)
             {
-                attributes.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
+                message.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
             }
             else
-                attributes.TimeInForce = null;
+                message.TimeInForce = null;
 
-            attributes.ExpireTime = expireTime;
-            attributes.StopLoss = stopLoss;
-            attributes.TakeProfit = takeProfit;
-            attributes.Comment = comment;
-            attributes.Tag = tag;
-            attributes.Magic = magic;
+            message.ExpireTime = expireTime;
+            message.StopLoss = stopLoss;
+            message.TakeProfit = takeProfit;
+            message.Comment = comment;
+            message.Tag = tag;
+            message.Magic = magic;
             message.InFlightMitigationFlag = inFlightMitigation;
             message.LeavesQty = currentQty;
 
@@ -2482,48 +2480,45 @@ namespace TickTrader.FDK.OrderEntry
                     OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
                     TickTrader.FDK.Common.ExecutionReport resultExecutionReport = context.executionReport_;
 
-                    SoftFX.Net.OrderEntry.OrderAttributes reportEntryAttributes = message.Attributes;
-                    SoftFX.Net.OrderEntry.OrderState reportEntryState = message.State;                    
-
-                    resultExecutionReport.ExecutionType = ExecutionType.OrderStatus;
+                    resultExecutionReport.ExecutionType = Common.ExecutionType.OrderStatus;
                     resultExecutionReport.OrigClientOrderId = message.OrigClOrdId;
                     resultExecutionReport.OrderId = message.OrderId.ToString();
-                    resultExecutionReport.Symbol = reportEntryAttributes.SymbolId;
-                    resultExecutionReport.OrderSide = GetOrderSide(reportEntryAttributes.Side);
-                    resultExecutionReport.OrderType = GetOrderType(reportEntryAttributes.Type);
+                    resultExecutionReport.Symbol = message.SymbolId;
+                    resultExecutionReport.OrderSide = GetOrderSide(message.Side);
+                    resultExecutionReport.OrderType = GetOrderType(message.Type);
 
-                    if (reportEntryAttributes.TimeInForce.HasValue)
+                    if (message.TimeInForce.HasValue)
                     {
-                        resultExecutionReport.OrderTimeInForce = GetOrderTimeInForce(reportEntryAttributes.TimeInForce.Value);
+                        resultExecutionReport.OrderTimeInForce = GetOrderTimeInForce(message.TimeInForce.Value);
                     }
                     else
                         resultExecutionReport.OrderTimeInForce = null;
 
-                    resultExecutionReport.InitialVolume = reportEntryAttributes.Qty;
-                    resultExecutionReport.MaxVisibleVolume = reportEntryAttributes.MaxVisibleQty;
-                    resultExecutionReport.Price = reportEntryAttributes.Price;
-                    resultExecutionReport.StopPrice = reportEntryAttributes.StopPrice;
-                    resultExecutionReport.Expiration = reportEntryAttributes.ExpireTime;
-                    resultExecutionReport.TakeProfit = reportEntryAttributes.TakeProfit;
-                    resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
-                    resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
-                    resultExecutionReport.OrderStatus = GetOrderStatus(reportEntryState.Status);
+                    resultExecutionReport.InitialVolume = message.Qty;
+                    resultExecutionReport.MaxVisibleVolume = message.MaxVisibleQty;
+                    resultExecutionReport.Price = message.Price;
+                    resultExecutionReport.StopPrice = message.StopPrice;
+                    resultExecutionReport.Expiration = message.ExpireTime;
+                    resultExecutionReport.TakeProfit = message.TakeProfit;
+                    resultExecutionReport.StopLoss = message.StopLoss;
+                    resultExecutionReport.MarketWithSlippage = (message.Flags & OrderFlags.Slippage) != 0;
+                    resultExecutionReport.OrderStatus = GetOrderStatus(message.Status);
                     resultExecutionReport.ReqVolume = message.ReqQty;
                     resultExecutionReport.ReqPrice = message.ReqPrice;
-                    resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
-                    resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
-                    resultExecutionReport.TradeAmount = reportEntryState.LastQty;
-                    resultExecutionReport.TradePrice = reportEntryState.LastPrice;
+                    resultExecutionReport.ExecutedVolume = message.CumQty;
+                    resultExecutionReport.LeavesVolume = message.LeavesQty;
+                    resultExecutionReport.TradeAmount = message.LastQty;
+                    resultExecutionReport.TradePrice = message.LastPrice;
                     resultExecutionReport.Commission = message.Commission;
                     resultExecutionReport.AgentCommission = message.AgentCommission;
                     resultExecutionReport.Swap = message.Swap;
-                    resultExecutionReport.AveragePrice = reportEntryState.AvgPrice;
-                    resultExecutionReport.Created = reportEntryState.Created;
-                    resultExecutionReport.Modified = reportEntryState.Modified;
+                    resultExecutionReport.AveragePrice = message.AvgPrice;
+                    resultExecutionReport.Created = message.Created;
+                    resultExecutionReport.Modified = message.Modified;
                     resultExecutionReport.RejectReason = TickTrader.FDK.Common.RejectReason.None;
-                    resultExecutionReport.Comment = reportEntryAttributes.Comment;
-                    resultExecutionReport.Tag = reportEntryAttributes.Tag;
-                    resultExecutionReport.Magic = reportEntryAttributes.Magic;
+                    resultExecutionReport.Comment = message.Comment;
+                    resultExecutionReport.Tag = message.Tag;
+                    resultExecutionReport.Magic = message.Magic;
 
                     if (client_.OrdersResultEvent != null)
                     {
@@ -4001,10 +3996,7 @@ namespace TickTrader.FDK.OrderEntry
 
             void FillExecutionReport(TickTrader.FDK.Common.ExecutionReport result, SoftFX.Net.OrderEntry.ExecutionReport report)
             {
-                SoftFX.Net.OrderEntry.OrderAttributes reportAttributes = report.Attributes;
-                SoftFX.Net.OrderEntry.OrderState reportState = report.State;
-
-                result.ExecutionType = GetExecutionType(report.Type);
+                result.ExecutionType = GetExecutionType(report.ExecType);
                 result.ClientOrderId = report.ClOrdId;
                 result.OrigClientOrderId = report.OrigClOrdId;
 
@@ -4015,40 +4007,40 @@ namespace TickTrader.FDK.OrderEntry
                 else
                     result.OrderId = null;
 
-                result.Symbol = reportAttributes.SymbolId;
-                result.OrderType = GetOrderType(reportAttributes.Type);
-                result.OrderSide = GetOrderSide(reportAttributes.Side);
+                result.Symbol = report.SymbolId;
+                result.OrderType = GetOrderType(report.Type);
+                result.OrderSide = GetOrderSide(report.Side);
 
-                if (reportAttributes.TimeInForce.HasValue)
+                if (report.TimeInForce.HasValue)
                 {
-                    result.OrderTimeInForce = GetOrderTimeInForce(reportAttributes.TimeInForce.Value);
+                    result.OrderTimeInForce = GetOrderTimeInForce(report.TimeInForce.Value);
                 }
                 else
                     result.OrderTimeInForce = null;
 
-                result.InitialVolume = reportAttributes.Qty;
-                result.MaxVisibleVolume = reportAttributes.MaxVisibleQty;
-                result.Price = reportAttributes.Price;
-                result.StopPrice = reportAttributes.StopPrice;
-                result.Expiration = reportAttributes.ExpireTime;
-                result.TakeProfit = reportAttributes.TakeProfit;
-                result.StopLoss = reportAttributes.StopLoss;
-                result.MarketWithSlippage = (reportAttributes.Flags & OrderFlags.Slippage) != 0;
-                result.OrderStatus = GetOrderStatus(reportState.Status);
+                result.InitialVolume = report.Qty;
+                result.MaxVisibleVolume = report.MaxVisibleQty;
+                result.Price = report.Price;
+                result.StopPrice = report.StopPrice;
+                result.Expiration = report.ExpireTime;
+                result.TakeProfit = report.TakeProfit;
+                result.StopLoss = report.StopLoss;
+                result.MarketWithSlippage = (report.Flags & OrderFlags.Slippage) != 0;
+                result.OrderStatus = GetOrderStatus(report.Status);
                 result.ReqVolume = report.ReqQty;
                 result.ReqPrice = report.ReqPrice;
-                result.ExecutedVolume = reportState.CumQty;                
-                result.LeavesVolume = reportState.LeavesQty;
-                result.TradeAmount = reportState.LastQty;
-                result.TradePrice = reportState.LastPrice;
+                result.ExecutedVolume = report.CumQty;                
+                result.LeavesVolume = report.LeavesQty;
+                result.TradeAmount = report.LastQty;
+                result.TradePrice = report.LastPrice;
                 result.Commission = report.Commission;
                 result.AgentCommission = report.AgentCommission;
                 result.ReducedOpenCommission = (report.CommissionFlags & OrderCommissionFlags.OpenReduced) != 0;
                 result.ReducedCloseCommission = (report.CommissionFlags & OrderCommissionFlags.CloseReduced) != 0;
                 result.Swap = report.Swap;                
-                result.AveragePrice = reportState.AvgPrice;                
-                result.Created = reportState.Created;
-                result.Modified = reportState.Modified;
+                result.AveragePrice = report.AvgPrice;                
+                result.Created = report.Created;
+                result.Modified = report.Modified;
 
                 if (report.RejectReason.HasValue)
                 {
@@ -4058,9 +4050,9 @@ namespace TickTrader.FDK.OrderEntry
                     result.RejectReason = TickTrader.FDK.Common.RejectReason.None;
 
                 result.Text = report.Text;
-                result.Comment = reportAttributes.Comment;
-                result.Tag = reportAttributes.Tag;
-                result.Magic = reportAttributes.Magic;
+                result.Comment = report.Comment;
+                result.Tag = report.Tag;
+                result.Magic = report.Magic;
 
                 BalanceNull reportBalance = report.Balance;
 
@@ -4310,41 +4302,41 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
-            TickTrader.FDK.Common.ExecutionType GetExecutionType(SoftFX.Net.OrderEntry.ExecType type)
+            TickTrader.FDK.Common.ExecutionType GetExecutionType(SoftFX.Net.OrderEntry.ExecutionType type)
             {
                 switch (type)
                 {
-                    case SoftFX.Net.OrderEntry.ExecType.New:
+                    case SoftFX.Net.OrderEntry.ExecutionType.New:
                         return TickTrader.FDK.Common.ExecutionType.New;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Fill:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Fill:
                         return TickTrader.FDK.Common.ExecutionType.Trade;
 
-                    case SoftFX.Net.OrderEntry.ExecType.PartialFill:
+                    case SoftFX.Net.OrderEntry.ExecutionType.PartialFill:
                         return TickTrader.FDK.Common.ExecutionType.Trade;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Cancelled:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Cancelled:
                         return TickTrader.FDK.Common.ExecutionType.Canceled;
 
-                    case SoftFX.Net.OrderEntry.ExecType.PendingCancel:
+                    case SoftFX.Net.OrderEntry.ExecutionType.PendingCancel:
                         return TickTrader.FDK.Common.ExecutionType.PendingCancel;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Rejected:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Rejected:
                         return TickTrader.FDK.Common.ExecutionType.Rejected;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Calculated:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Calculated:
                         return TickTrader.FDK.Common.ExecutionType.Calculated;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Expired:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Expired:
                         return TickTrader.FDK.Common.ExecutionType.Expired;
 
-                    case SoftFX.Net.OrderEntry.ExecType.Replaced:
+                    case SoftFX.Net.OrderEntry.ExecutionType.Replaced:
                         return TickTrader.FDK.Common.ExecutionType.Replace;
 
-                    case SoftFX.Net.OrderEntry.ExecType.PendingReplace:
+                    case SoftFX.Net.OrderEntry.ExecutionType.PendingReplace:
                         return TickTrader.FDK.Common.ExecutionType.PendingReplace;
 
-                    case SoftFX.Net.OrderEntry.ExecType.PendingClose:
+                    case SoftFX.Net.OrderEntry.ExecutionType.PendingClose:
                         return TickTrader.FDK.Common.ExecutionType.PendingClose;
 
                     default:
