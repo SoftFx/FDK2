@@ -349,9 +349,9 @@
         /// <param name="newTag">A new tag.</param>
         /// <param name="newMagic">A new magic.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecord(string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, string newComment, string newTag, int? newMagic)
+        public TradeRecord ModifyTradeRecord(string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, bool inFlightMitigation, double? currentQty, string newComment, string newTag, int? newMagic)
         {
-            return ModifyTradeRecordEx(orderId, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_);
+            return ModifyTradeRecordEx(orderId, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, inFlightMitigation, currentQty, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_);
         }
 
         /// <summary>
@@ -373,9 +373,9 @@
         /// <param name="newMagic">A new magic.</param>
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecordEx(string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
+        public TradeRecord ModifyTradeRecordEx(string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, bool inFlightMitigation, double? currentQty, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
         {
-            return ModifyTradeRecordEx(Guid.NewGuid().ToString(), orderId, null, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, newComment, newTag, newMagic, timeoutInMilliseconds);
+            return ModifyTradeRecordEx(Guid.NewGuid().ToString(), orderId, null, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, inFlightMitigation, currentQty, newComment, newTag, newMagic, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -400,9 +400,9 @@
         /// <param name="newTag">A new tag.</param>
         /// <param name="newMagic">A new magic.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, string newComment, string newTag, int? newMagic)
+        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, bool inFlightMitigation, double? currentQty, string newComment, string newTag, int? newMagic)
         {
-            return ModifyTradeRecordEx(operationId, orderId, null, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_);
+            return ModifyTradeRecordEx(operationId, orderId, null, symbol, type, side, newVolume, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpiration, inFlightMitigation, currentQty, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_);
         }
 
         /// <summary>
@@ -428,7 +428,7 @@
         /// <param name="newMagic">A new magic.</param>
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string clientId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
+        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string clientId, string symbol, OrderType type, OrderSide side, double? newVolume, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpiration, bool inFlightMitigation, double? currentQty, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
         {
             OrderTimeInForce orderTimeInForce;
 
@@ -455,6 +455,8 @@
                 newExpiration,
                 newStopLoss,
                 newTakeProfit,
+                inFlightMitigation,
+                currentQty,
                 newComment,
                 newTag,
                 newMagic,

@@ -647,7 +647,7 @@ namespace OrderEntrySample
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -655,7 +655,7 @@ namespace OrderEntrySample
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -663,7 +663,7 @@ namespace OrderEntrySample
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);

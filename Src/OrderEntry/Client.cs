@@ -716,6 +716,8 @@ namespace TickTrader.FDK.OrderEntry
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
+            bool inFlightMitigation,
+            double? currentQty,
             string comment,
             string tag,
             int? magic,
@@ -743,6 +745,8 @@ namespace TickTrader.FDK.OrderEntry
                 expireTime,
                 stopLoss,
                 takeProfit,
+                inFlightMitigation,
+                currentQty,
                 comment,
                 tag,
                 magic
@@ -774,6 +778,8 @@ namespace TickTrader.FDK.OrderEntry
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
+            bool inFlightMitigation,
+            double? currentQty,
             string comment,
             string tag,
             int? magic
@@ -799,6 +805,8 @@ namespace TickTrader.FDK.OrderEntry
                 expireTime,
                 stopLoss,
                 takeProfit,
+                inFlightMitigation,
+                currentQty,
                 comment,
                 tag,
                 magic
@@ -822,6 +830,8 @@ namespace TickTrader.FDK.OrderEntry
             DateTime? expireTime, 
             double? stopLoss, 
             double? takeProfit, 
+            bool inFlightMitigation,
+            double? currentQty,
             string comment, 
             string tag, 
             int? magic
@@ -860,6 +870,8 @@ namespace TickTrader.FDK.OrderEntry
             attributes.Comment = comment;
             attributes.Tag = tag;
             attributes.Magic = magic;
+            message.InFlightMitigationFlag = inFlightMitigation;
+            message.LeavesQty = currentQty;
 
             session_.SendOrderCancelReplaceRequest(context, message);
         }
@@ -2496,6 +2508,8 @@ namespace TickTrader.FDK.OrderEntry
                     resultExecutionReport.StopLoss = reportEntryAttributes.StopLoss;
                     resultExecutionReport.MarketWithSlippage = (reportEntryAttributes.Flags & OrderFlags.Slippage) != 0;
                     resultExecutionReport.OrderStatus = GetOrderStatus(reportEntryState.Status);
+                    resultExecutionReport.ReqVolume = message.ReqQty;
+                    resultExecutionReport.ReqPrice = message.ReqPrice;
                     resultExecutionReport.ExecutedVolume = reportEntryState.CumQty;
                     resultExecutionReport.LeavesVolume = reportEntryState.LeavesQty;
                     resultExecutionReport.TradeAmount = reportEntryState.LastQty;
@@ -4020,7 +4034,9 @@ namespace TickTrader.FDK.OrderEntry
                 result.TakeProfit = reportAttributes.TakeProfit;
                 result.StopLoss = reportAttributes.StopLoss;
                 result.MarketWithSlippage = (reportAttributes.Flags & OrderFlags.Slippage) != 0;
-                result.OrderStatus = GetOrderStatus(reportState.Status);                
+                result.OrderStatus = GetOrderStatus(reportState.Status);
+                result.ReqVolume = report.ReqQty;
+                result.ReqPrice = report.ReqPrice;
                 result.ExecutedVolume = reportState.CumQty;                
                 result.LeavesVolume = reportState.LeavesQty;
                 result.TradeAmount = reportState.LastQty;

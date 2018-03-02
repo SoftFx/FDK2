@@ -268,7 +268,7 @@
         /// <returns>A modified trade record.</returns>
         public TradeRecord ModifyEx(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(this.OrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpirationTime, newComment, newTag, newMagic, timeoutInMilliseconds);
+            return DataTrade.Server.ModifyTradeRecordEx(this.OrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpirationTime, true, null, newComment, newTag, newMagic, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -287,7 +287,7 @@
         /// <returns>A modified trade record.</returns>
         public TradeRecord ModifyEx(string operationId, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, this.ClientOrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpirationTime, newComment, newTag, newMagic, timeoutInMilliseconds);
+            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, this.ClientOrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newExpirationTime, true, null, newComment, newTag, newMagic, timeoutInMilliseconds);
         }
 
         /// <summary>

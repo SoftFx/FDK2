@@ -6,7 +6,7 @@
     {
         public ExecutionReport()
         {
-        }        
+        }
 
         /// <summary>
         /// Gets ExecType = 150 field.
@@ -98,6 +98,16 @@
         /// Gets OrdStatus = 39 field.
         /// </summary>
         public OrderStatus OrderStatus { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double ReqVolume { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? ReqPrice { get; set; }
 
         /// <summary>
         /// Gets CumQty = 14 field.
