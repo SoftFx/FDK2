@@ -1541,6 +1541,7 @@ namespace TickTrader.FDK.OrderEntry
             public ClientSessionListener(Client client)
             {
                 client_ = client;
+                connected_ = false;
             }
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
@@ -1549,14 +1550,44 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
-                    if (client_.ConnectResultEvent != null)
+                    if (clientSession.ServerMinorVersion < SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion)
                     {
-                        try
+                        clientSession.LogError(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion));
+
+                        DisconnectAsyncContext context = new DisconnectAsyncContext(false);
+                        client_.DisconnectInternal(context, "Client disconnect");
+
+                        ConnectException exception = new ConnectException(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion));
+
+                        if (client_.ConnectErrorEvent != null)
                         {
-                            client_.ConnectResultEvent(client_, connectAsyncContext.Data);
+                            try
+                            {
+                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (connectAsyncContext.Waitable)
                         {
+                            connectAsyncContext.exception_ = exception;
+                        }
+                    }
+                    else
+                    {
+                        connected_ = true;
+
+                        if (client_.ConnectResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.ConnectResultEvent(client_, connectAsyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
@@ -1570,14 +1601,40 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    if (client_.ReconnectEvent != null)
+                    if (clientSession.ServerMinorVersion > SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion)
                     {
-                        try
+                        clientSession.LogError(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion));
+
+                        DisconnectAsyncContext context = new DisconnectAsyncContext(false);
+
+                        client_.DisconnectInternal(context, "Client disconnect");
+
+                        ConnectException exception = new ConnectException(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.OrderEntry.Info.OrderEntry.MinorVersion));
+
+                        if (client_.ReconnectErrorEvent != null)
                         {
-                            client_.ReconnectEvent(client_);
+                            try
+                            {
+                                client_.ReconnectErrorEvent(client_, exception);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+                    }
+                    else
+                    {
+                        connected_ = true;
+
+                        if (client_.ReconnectEvent != null)
                         {
+                            try
+                            {
+                                client_.ReconnectEvent(client_);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
@@ -1644,33 +1701,38 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
-                    foreach (ClientContext context in contexts)
+                    if (connected_)
                     {
-                        try
-                        {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
-                        }
-                    }
+                        connected_ = false;
 
-                    if (client_.DisconnectResultEvent != null)
-                    {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
-                    if (disconnectAsyncContext.Waitable)
-                    {
-                        disconnectAsyncContext.text_ = text;
+                        if (client_.DisconnectResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (disconnectAsyncContext.Waitable)
+                        {
+                            disconnectAsyncContext.text_ = text;
+                        }
                     }
                 }
                 catch (Exception exception)
@@ -1683,25 +1745,30 @@ namespace TickTrader.FDK.OrderEntry
             {
                 try
                 {
-                    foreach (ClientContext context in contexts)
+                    if (connected_)
                     {
-                        try
-                        {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
-                        }
-                    }
+                        connected_ = false;
 
-                    if (client_.DisconnectEvent != null)
-                    {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            client_.DisconnectEvent(client_, text);
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
+
+                        if (client_.DisconnectEvent != null)
                         {
+                            try
+                            {
+                                client_.DisconnectEvent(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
@@ -4429,6 +4496,7 @@ namespace TickTrader.FDK.OrderEntry
             }
 
             Client client_;
+            bool connected_;
         }
 
         #endregion
