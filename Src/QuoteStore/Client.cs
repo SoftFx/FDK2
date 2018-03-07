@@ -28,7 +28,8 @@ namespace TickTrader.FDK.QuoteStore
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
-            options.ConnectionType = SoftFX.Net.Core.ConnectionType.Socket;
+            options.ConnectionType = SoftFX.Net.Core.ConnectionType.Secure;
+            options.ServerCertificateName = "TickTraderManagerService";
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;

@@ -19,7 +19,7 @@ namespace TickTrader.FDK.QuoteFeed
             int reconnectAttempts = -1,
             int connectInterval = 10000,
             int heartbeatInterval = 10000,
-            string logDirectory = "Logs"           
+            string logDirectory = "Logs"
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
