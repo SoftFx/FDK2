@@ -12,7 +12,7 @@ cd ..
 call Pack.cmd %1 || goto END
 
 del "TickTrader FDK "%1".zip"
-7z a -tzip "TickTrader FDK "%1".zip" "TickTrader FDK "%1"" || goto END
+"C:\Program Files\7-Zip\7z.exe" a -tzip "TickTrader FDK "%1".zip" "TickTrader FDK "%1"" || goto END
 
 goto END
 
