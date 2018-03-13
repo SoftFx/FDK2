@@ -169,6 +169,27 @@
             return time.AddMonths(-1 * period.factor);
         }
 
+        public long ToMilliseconds()
+        {
+            switch (prefix)
+            {
+                case BarPeriodPrefix.S:
+                    return factor;
+                case BarPeriodPrefix.M:
+                    return factor * 60000;
+                case BarPeriodPrefix.H:
+                    return factor * 3600000;
+                case BarPeriodPrefix.D:
+                    return factor * 28800000;
+                case BarPeriodPrefix.W:
+                    return factor * 201600000;
+                case BarPeriodPrefix.MN:
+                    return factor * 6048000000;
+                default:
+                    throw new Exception("Invalid bar period pefix");
+            }
+        }
+
         /// <summary>
         /// Converts the value of the current bar period object to its equivalent string representation.
         /// </summary>

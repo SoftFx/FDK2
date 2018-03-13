@@ -448,17 +448,41 @@ namespace TickTrader.FDK.QuoteStore
 
             context.downloadId_ = id;
             context.priceType_ = priceType;
-            context.barPeriod_ = barPeriod;
-            context.from_ = from;
-            context.to_ = to;
+            context.calcBarPeriod_ = barPeriod;
+            context.calcFrom_ = from;
+            context.calcTo_ = to;
+
+            long calcRangeMilliseconds = (long) ((to - from).TotalMilliseconds);
+            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();            
+
+            if ((calcRangeMilliseconds % calcPeriodMilliseconds) != 0)
+                throw new Exception("Invalid time range or bar period");            
+            
+            long h1PeriodMilliseconds = BarPeriod.H1.ToMilliseconds();
+            long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
+
+            if (calcPeriodMilliseconds >= h1PeriodMilliseconds)
+            {
+                context.barPeriod_ = BarPeriod.H1;                
+                context.from_ = from;
+                context.to_ = to.AddMilliseconds(calcPeriodMilliseconds - h1PeriodMilliseconds);
+            }
+            else if (calcPeriodMilliseconds >= m1PeriodMilliseconds)
+            {
+                context.barPeriod_ = BarPeriod.M1;
+                context.from_ = from;
+                context.to_ = to.AddMilliseconds(calcPeriodMilliseconds - m1PeriodMilliseconds);
+            }
+            else
+                throw new Exception("Invalid bar period : " + barPeriod);            
 
             BarDownloadRequest request = new BarDownloadRequest(0);
             request.Id = id;
             request.SymbolId = symbol;
             request.PriceType = GetPriceType(priceType);
-            request.Periodicity = barPeriod.ToString();
-            request.From = from;
-            request.To = to;
+            request.Periodicity = context.barPeriod_.ToString();
+            request.From = context.from_;
+            request.To = context.to_;
 
             session_.SendDownloadRequest(context, request);
         }
@@ -851,12 +875,16 @@ namespace TickTrader.FDK.QuoteStore
             }
 
             public string downloadId_;
-            public TickTrader.FDK.Common.PriceType priceType_;
-            public BarPeriod barPeriod_;
-            public DateTime from_;
-            public DateTime to_;            
+            public TickTrader.FDK.Common.PriceType priceType_;            
+            public BarPeriod calcBarPeriod_;
+            public DateTime calcFrom_;
+            public DateTime calcTo_;
+            public BarPeriod barPeriod_;            
+            public DateTime from_;            
+            public DateTime to_;
             public byte[] fileData_;
-            public int fileSize_;
+            public int fileSize_;            
+            public TickTrader.FDK.Common.Bar calcBar_;
             public TickTrader.FDK.Common.Bar bar_;
             public AutoResetEvent event_;
             public Exception exception_;
@@ -1788,6 +1816,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             context.fileData_ = new byte[maxFileSize];
                             context.fileSize_ = 0;
+                            context.calcBar_ = new TickTrader.FDK.Common.Bar();
                             context.bar_ = new TickTrader.FDK.Common.Bar();
 
                             string requestId = message.RequestId;
@@ -2004,36 +2033,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             using (Stream zipInputStream = zipFile.GetInputStream(zipEntry))
                             {
-                                Serialization.BarFormatter barFormatter = new Serialization.BarFormatter(zipInputStream);
-
-                                while (! barFormatter.IsEnd)
-                                {
-                                    barFormatter.Deserialize(context.barPeriod_, context.bar_);
-
-                                    if (context.bar_.From < context.from_)
-                                        continue;
-
-                                    if (context.bar_.From > context.to_)
-                                        break;
-
-                                    if (client_.BarDownloadResultEvent != null)
-                                    {
-                                        try
-                                        {
-                                            client_.BarDownloadResultEvent(client_, context.Data, context.bar_);
-                                        }
-                                        catch
-                                        {
-                                        }
-                                    }
-
-                                    if (context.Waitable)
-                                    {
-                                        TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
-
-                                        context.barEnumerator_.SetResult(bar);
-                                    }
-                                }                                    
+                                ProcessBarDownloadStream(context, downloadId, zipInputStream);
                             }
                         }
                     }
@@ -2042,36 +2042,101 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
                     {
-                        Serialization.BarFormatter barFormatter = new Serialization.BarFormatter(memoryStream);
+                        ProcessBarDownloadStream(context, downloadId, memoryStream);
+                    }
+                }
+            }
 
-                        while (! barFormatter.IsEnd)
+            void ProcessBarDownloadStream(BarDownloadAsyncContext context, string downloadId, Stream stream)
+            {
+                Serialization.BarFormatter barFormatter = new Serialization.BarFormatter(stream);
+
+                long calcPeriodMilliseconds = context.calcBarPeriod_.ToMilliseconds();
+
+                while (! barFormatter.IsEnd)
+                {
+                    barFormatter.Deserialize(context.barPeriod_, context.bar_);
+
+                    if (context.bar_.From < context.from_)
+                        continue;
+
+                    if (context.bar_.From > context.to_)
+                        break;
+                                                                        
+                    long milliseconds = (long) ((context.bar_.From - context.from_).TotalMilliseconds);
+                    milliseconds = milliseconds / calcPeriodMilliseconds * calcPeriodMilliseconds;
+                    DateTime calcFrom = context.from_.AddMilliseconds(milliseconds);
+
+                    if (context.calcBar_.From == new DateTime())
+                    {
+                        context.calcBar_.From = calcFrom;
+                        context.calcBar_.To = calcFrom + context.calcBarPeriod_;
+                        context.calcBar_.Open = context.bar_.Open;
+                        context.calcBar_.Close = context.bar_.Close;
+                        context.calcBar_.Low = context.bar_.Low;
+                        context.calcBar_.High = context.bar_.High;
+                        context.calcBar_.Volume = context.bar_.Volume;
+                    }
+                    else if (calcFrom == context.calcBar_.From)
+                    {
+                        context.calcBar_.Close = context.bar_.Close;
+
+                        if (context.bar_.Low < context.calcBar_.Low)
+                            context.calcBar_.Low = context.bar_.Low;
+
+                        if (context.bar_.High > context.calcBar_.High)
+                            context.calcBar_.High = context.bar_.High;
+
+                        context.calcBar_.Volume += context.bar_.Volume;
+                    }
+                    else
+                    {
+                        if (client_.BarDownloadResultEvent != null)
                         {
-                            barFormatter.Deserialize(context.barPeriod_, context.bar_);
-
-                            if (context.bar_.From < context.from_)
-                                continue;
-
-                            if (context.bar_.From > context.to_)
-                                break;
-
-                            if (client_.BarDownloadResultEvent != null)
+                            try
                             {
-                                try
-                                {
-                                    client_.BarDownloadResultEvent(client_, context.Data, context.bar_);
-                                }
-                                catch
-                                {
-                                }
+                                client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
                             }
-
-                            if (context.Waitable)
+                            catch
                             {
-                                TickTrader.FDK.Common.Bar bar = context.bar_.Clone();
-
-                                context.barEnumerator_.SetResult(bar);
                             }
                         }
+
+                        if (context.Waitable)
+                        {
+                            TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
+
+                            context.barEnumerator_.SetResult(bar);
+                        }
+
+                        context.calcBar_.From = calcFrom;
+                        context.calcBar_.To = calcFrom + context.calcBarPeriod_;
+                        context.calcBar_.Open = context.bar_.Open;
+                        context.calcBar_.Close = context.bar_.Close;
+                        context.calcBar_.Low = context.bar_.Low;
+                        context.calcBar_.High = context.bar_.High;
+                        context.calcBar_.Volume = context.bar_.Volume;
+                    }
+                }                                    
+
+                if (context.calcBar_.From != new DateTime())
+                {
+                    if (client_.BarDownloadResultEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
+
+                        context.barEnumerator_.SetResult(bar);
                     }
                 }
             }
@@ -2096,36 +2161,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             using (Stream zipInputStream = zipFile.GetInputStream(zipEntry))
                             {
-                                Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(context.quoteDepth_, zipInputStream);
-
-                                while (! tickFormatter.IsEnd)
-                                {
-                                    tickFormatter.Deserialize(context.quote_);
-
-                                    if (context.quote_.CreatingTime < context.from_)
-                                        continue;
-
-                                    if (context.quote_.CreatingTime > context.to_)
-                                        break;
-
-                                    if (client_.QuoteDownloadResultEvent != null)
-                                    {
-                                        try
-                                        {
-                                            client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
-                                        }
-                                        catch
-                                        {
-                                        }
-                                    }
-
-                                    if (context.Waitable)
-                                    {
-                                        Quote quote = context.quote_.Clone();
-
-                                        context.quoteEnumerator_.SetResult(quote);
-                                    }
-                                }
+                                ProcessQuoteDownloadStream(context, downloadId, zipInputStream);
                             }
                         }
                     }
@@ -2134,36 +2170,41 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
                     {
-                        Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(context.quoteDepth_, memoryStream);
+                        ProcessQuoteDownloadStream(context, downloadId, memoryStream);
+                    }
+                }
+            }
 
-                        while (! tickFormatter.IsEnd)
+            void ProcessQuoteDownloadStream(QuoteDownloadAsyncContext context, string downloadId, Stream stream)
+            {
+                Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(context.quoteDepth_, stream);
+
+                while (! tickFormatter.IsEnd)
+                {
+                    tickFormatter.Deserialize(context.quote_);
+
+                    if (context.quote_.CreatingTime < context.from_)
+                        continue;
+
+                    if (context.quote_.CreatingTime > context.to_)
+                        break;
+
+                    if (client_.QuoteDownloadResultEvent != null)
+                    {
+                        try
                         {
-                            tickFormatter.Deserialize(context.quote_);
+                            client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
+                        }
+                        catch
+                        {
+                        }
+                    }
 
-                            if (context.quote_.CreatingTime < context.from_)
-                                continue;
+                    if (context.Waitable)
+                    {
+                        Quote quote = context.quote_.Clone();
 
-                            if (context.quote_.CreatingTime > context.to_)
-                                break;
-
-                            if (client_.QuoteDownloadResultEvent != null)
-                            {
-                                try
-                                {
-                                    client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                Quote quote = context.quote_.Clone();
-
-                                context.quoteEnumerator_.SetResult(quote);
-                            }
-                        }                                    
+                        context.quoteEnumerator_.SetResult(quote);
                     }
                 }
             }
