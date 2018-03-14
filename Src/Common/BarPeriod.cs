@@ -3,7 +3,7 @@
     using System;
     using System.Text.RegularExpressions;
 
-    enum BarPeriodPrefix
+    public enum BarPeriodPrefix
     {
         S, M, H, D, W, MN
     }
@@ -109,6 +109,16 @@
             this.factor = Convert.ToInt32(match.Groups[2].Value);
         }
 
+        public BarPeriodPrefix Prefix
+        {
+            get { return prefix; }
+        }
+
+        public int Factor
+        {
+            get { return factor; }
+        }
+
         /// <summary>
         /// Calculates a next date time.
         /// </summary>
@@ -174,7 +184,7 @@
             switch (prefix)
             {
                 case BarPeriodPrefix.S:
-                    return factor;
+                    return factor * 1000;
                 case BarPeriodPrefix.M:
                     return factor * 60000;
                 case BarPeriodPrefix.H:
