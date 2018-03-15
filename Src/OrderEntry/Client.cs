@@ -3030,6 +3030,311 @@ namespace TickTrader.FDK.OrderEntry
                 }
             }
 
+            public override void OnNewOrderSingleLimitIocNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                    try
+                    {
+                        TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                        result.Last = false;
+
+                        FillExecutionReport(result, message);
+
+                        if (client_.NewOrderResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReportList_.Add(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleLimitIocCalculatedReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                    try
+                    {
+                        TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                        result.Last = false;
+
+                        FillExecutionReport(result, message);
+
+                        if (client_.NewOrderResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReportList_.Add(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleLimitIocFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                    try
+                    {
+                        TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                        result.Last = true;
+
+                        FillExecutionReport(result, message);
+
+                        if (client_.NewOrderResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReportList_.Add(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleLimitIocPartialFillReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                    try
+                    {
+                        TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                        result.Last = false;
+
+                        FillExecutionReport(result, message);
+
+                        if (client_.NewOrderResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReportList_.Add(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleLimitIocCancelledReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+
+                    try
+                    {
+                        TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                        result.Last = true;
+
+                        FillExecutionReport(result, message);
+
+                        if (client_.NewOrderResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderResultEvent(client_, context.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.executionReportList_.Add(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.NewOrderErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.NewOrderErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleLimitIocRejectReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
+
+                    TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
+                    result.Last = true;
+
+                    FillExecutionReport(result, message);
+
+                    ExecutionException exception = new ExecutionException(result);
+
+                    if (client_.NewOrderErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.NewOrderErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnNewOrderSingleNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 try
