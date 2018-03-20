@@ -150,7 +150,7 @@ namespace TradeCaptureSample
                         {
                             UnsubscribeTrades();
                         }
-                        else if (command == "download_trades" || command == "d")
+                        else if (command == "download_trade_reports" || command == "dt")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -168,6 +168,30 @@ namespace TradeCaptureSample
                                 throw new Exception("Invalid command : " + line);
 
                             DownloadTrades
+                            (
+                                (TimeDirection)Enum.Parse(typeof(TimeDirection), timeDirection),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
+                            );
+                        }
+                        else if (command == "download_account_reports" || command == "da")
+                        {
+                            string timeDirection = GetNextWord(line, ref pos);
+
+                            if (timeDirection == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string to = GetNextWord(line, ref pos);
+
+                            if (to == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            DownloadAccountReports
                             (
                                 (TimeDirection)Enum.Parse(typeof(TimeDirection), timeDirection),
                                 DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
@@ -311,6 +335,43 @@ namespace TradeCaptureSample
             }
         }
 
+        void DownloadAccountReports(TimeDirection timeDirection, DateTime from, DateTime to)
+        {
+            AccountReportEnumerator accountReportEnumerator = client_.DownloadAccountReports(timeDirection, from, to, -1);
+
+            try
+            {
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+                
+                for
+                (
+                    AccountReport accountReport = accountReportEnumerator.Next(-1);
+                    accountReport != null;
+                    accountReport = accountReportEnumerator.Next(-1)
+                )
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
+                        accountReport.Timestamp,
+                        accountReport.AccountId,
+                        accountReport.Type,                    
+                        accountReport.BalanceCurrency, 
+                        accountReport.Leverage, 
+                        accountReport.Balance, 
+                        accountReport.Margin, 
+                        accountReport.Equity
+                    );
+                }
+
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+            }
+            finally
+            {
+                accountReportEnumerator.Close();
+            }
+        }
+
         public void OnLogout(Client client, LogoutInfo info)
         {
             try
@@ -383,4 +444,5 @@ namespace TradeCaptureSample
     }
 }
 
-// d Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
+// dt Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
+// da Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"

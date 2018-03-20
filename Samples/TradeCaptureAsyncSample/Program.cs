@@ -82,7 +82,11 @@ namespace TradeCaptureAsyncSample
             client_.TradeDownloadResultBeginEvent += new Client.TradeDownloadResultBeginDelegate(this.OnTradeDownloadResultBegin);
             client_.TradeDownloadResultEvent += new Client.TradeDownloadResultDelegate(this.OnTradeDownloadResult);
             client_.TradeDownloadResultEndEvent += new Client.TradeDownloadResultEndDelegate(this.OnTradeDownloadResultEnd);
-            client_.TradeDownloadErrorEvent += new Client.TradeDownloadErrorDelegate(this.OnTradeDownloadError);            
+            client_.TradeDownloadErrorEvent += new Client.TradeDownloadErrorDelegate(this.OnTradeDownloadError);
+            client_.DownloadAccountReportsResultBeginEvent += new Client.DownloadAccountReportsResultBeginDelegate(this.OnDownloadAccountReportsResultBegin);
+            client_.DownloadAccountReportsResultEvent += new Client.DownloadAccountReportsResultDelegate(this.OnDownloadAccountReportsResult);
+            client_.DownloadAccountReportsResultEndEvent += new Client.DownloadAccountReportsResultEndDelegate(this.OnDownloadAccountReportsResultEnd);
+            client_.DownloadAccountReportsErrorEvent += new Client.DownloadAccountReportsErrorDelegate(this.OnDownloadAccountReportsError);
             client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
 
             address_ = address;
@@ -165,7 +169,7 @@ namespace TradeCaptureAsyncSample
                         {
                             UnsubscribeTrades();
                         }
-                        else if (command == "download_trades" || command == "d")
+                        else if (command == "download_trade_reports" || command == "dt")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -183,6 +187,30 @@ namespace TradeCaptureAsyncSample
                                 throw new Exception("Invalid command : " + line);
 
                             DownloadTrades
+                            (
+                                (TimeDirection)Enum.Parse(typeof(TimeDirection), timeDirection),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
+                            );
+                        }
+                        else if (command == "download_account_reports" || command == "da")
+                        {
+                            string timeDirection = GetNextWord(line, ref pos);
+
+                            if (timeDirection == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string to = GetNextWord(line, ref pos);
+
+                            if (to == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            DownloadAccountReports
                             (
                                 (TimeDirection)Enum.Parse(typeof(TimeDirection), timeDirection),
                                 DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
@@ -376,7 +404,8 @@ namespace TradeCaptureAsyncSample
             Console.WriteLine("help (h) - print commands");
             Console.WriteLine("subscribe_trades (s) - subscribe to trades updates");
             Console.WriteLine("unsubscribe_trades (u) - unsubscribe from trades updates");
-            Console.WriteLine("download_trades (d) <direction> <from> <to> - download trade reports");
+            Console.WriteLine("download_trade_reports (dt) <direction> <from> <to> - download trade reports");
+            Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -519,6 +548,70 @@ namespace TradeCaptureAsyncSample
             }
         }
 
+        void DownloadAccountReports(TimeDirection timeDirection, DateTime from, DateTime to)
+        {
+            client_.DownloadAccountReportsAsync(this, timeDirection, from, to);
+        }
+
+        public void OnDownloadAccountReportsResultBegin(Client client, object data, string id, int totalCount)
+        {
+            try
+            {
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnDownloadAccountReportsResult(Client client, object data, AccountReport accountReport)
+        {
+            try
+            {
+                Console.Error.WriteLine
+                (
+                    "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
+                    accountReport.Timestamp,
+                    accountReport.AccountId,
+                    accountReport.Type,                    
+                    accountReport.BalanceCurrency, 
+                    accountReport.Leverage, 
+                    accountReport.Balance, 
+                    accountReport.Margin, 
+                    accountReport.Equity
+                );
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnDownloadAccountReportsResultEnd(Client client, object data)
+        {
+            try
+            {
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnDownloadAccountReportsError(Client client, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
         public void OnTradeUpdate(Client client, TradeTransactionReport tradeTransactionReport)
         {
             try
@@ -567,4 +660,5 @@ namespace TradeCaptureAsyncSample
     }
 }
 
-// d Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
+// dt Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
+// da Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"

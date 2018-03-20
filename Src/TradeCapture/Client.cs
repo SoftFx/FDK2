@@ -314,6 +314,12 @@ namespace TickTrader.FDK.TradeCapture
         public delegate void TradeDownloadErrorDelegate(Client client, object data, Exception exception);
         public delegate void CancelDownloadTradesResultDelegate(Client client, object data);
         public delegate void CancelDownloadTradesErrorDelegate(Client client, object data, Exception exception);
+        public delegate void DownloadAccountReportsResultBeginDelegate(Client client, object data, string id, int count);
+        public delegate void DownloadAccountReportsResultDelegate(Client client, object data, AccountReport accountReport);
+        public delegate void DownloadAccountReportsResultEndDelegate(Client client, object data);
+        public delegate void DownloadAccountReportsErrorDelegate(Client client, object data, Exception exception);
+        public delegate void CancelDownloadAccountReportsResultDelegate(Client client, object data);
+        public delegate void CancelDownloadAccountReportsErrorDelegate(Client client, object data, Exception exception);
         public delegate void TradeUpdateDelegate(Client client, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void NotificationDelegate(Client client, TickTrader.FDK.Common.Notification notification);
         
@@ -327,6 +333,12 @@ namespace TickTrader.FDK.TradeCapture
         public event TradeDownloadErrorDelegate TradeDownloadErrorEvent;
         public event CancelDownloadTradesResultDelegate CancelDownloadTradesResultEvent;
         public event CancelDownloadTradesErrorDelegate CancelDownloadTradesErrorEvent;
+        public event DownloadAccountReportsResultBeginDelegate DownloadAccountReportsResultBeginEvent;
+        public event DownloadAccountReportsResultDelegate DownloadAccountReportsResultEvent;
+        public event DownloadAccountReportsResultEndDelegate DownloadAccountReportsResultEndEvent;
+        public event DownloadAccountReportsErrorDelegate DownloadAccountReportsErrorEvent;
+        public event CancelDownloadAccountReportsResultDelegate CancelDownloadAccountReportsResultEvent;
+        public event CancelDownloadAccountReportsErrorDelegate CancelDownloadAccountReportsErrorEvent;
         public event TradeUpdateDelegate TradeUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
@@ -457,6 +469,70 @@ namespace TickTrader.FDK.TradeCapture
             session_.SendTradeDownloadCancelRequest(context, request);
         }
 
+        public AccountReportEnumerator DownloadAccountReports(TimeDirection timeDirection, DateTime? from, DateTime? to, int timeout)
+        {
+            DownloadAccountReportsAsyncContext context = new DownloadAccountReportsAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);
+
+            DownloadAccountReportsInternal(context, timeDirection, from, to);
+
+            if (! context.event_.WaitOne(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.accountReportEnumerator_;
+        }
+
+        public void DownloadAccountReportsAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to)
+        {
+            DownloadAccountReportsAsyncContext context = new DownloadAccountReportsAsyncContext(false);
+            context.Data = data;
+
+            DownloadAccountReportsInternal(context, timeDirection, from, to);
+        }
+
+        void DownloadAccountReportsInternal(DownloadAccountReportsAsyncContext context, TimeDirection timeDirection, DateTime? from, DateTime? to)
+        {
+            AccountDownloadRequest request = new AccountDownloadRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.Direction = GetAccountHistoryDirection(timeDirection);
+            request.From = from;
+            request.To = to;
+
+            session_.SendAccountDownloadRequest(context, request);
+        }
+
+        public void CancelDownloadAccountReports(string id, int timeout)
+        {
+            CancelDownloadAccountReportsAsyncContext context = new CancelDownloadAccountReportsAsyncContext(true);
+
+            CancelDownloadAccountReportsInternal(context, id);
+
+            if (! context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void CancelDownloadAccountReportsAsync(object data, string id)
+        {
+            CancelDownloadAccountReportsAsyncContext context = new CancelDownloadAccountReportsAsyncContext(false);
+            context.Data = data;
+
+            CancelDownloadAccountReportsInternal(context, id);
+        }
+
+        void CancelDownloadAccountReportsInternal(CancelDownloadAccountReportsAsyncContext context, string id)
+        {
+            AccountDownloadCancelRequest request = new AccountDownloadCancelRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.RequestId = id;
+
+            session_.SendAccountDownloadCancelRequest(context, request);
+        }
 
         SoftFX.Net.TradeCapture.TradeHistoryDirection GetTradeHistoryDirection(TickTrader.FDK.Common.TimeDirection timeDirection)
         {
@@ -467,6 +543,21 @@ namespace TickTrader.FDK.TradeCapture
 
                 case TickTrader.FDK.Common.TimeDirection.Backward:
                     return SoftFX.Net.TradeCapture.TradeHistoryDirection.Backward;
+
+                default:
+                    throw new Exception("Invalid time direction : " + timeDirection);
+            }
+        }
+
+        SoftFX.Net.TradeCapture.AccountHistoryDirection GetAccountHistoryDirection(TickTrader.FDK.Common.TimeDirection timeDirection)
+        {
+            switch (timeDirection)
+            {
+                case TickTrader.FDK.Common.TimeDirection.Forward:
+                    return SoftFX.Net.TradeCapture.AccountHistoryDirection.Forward;
+
+                case TickTrader.FDK.Common.TimeDirection.Backward:
+                    return SoftFX.Net.TradeCapture.AccountHistoryDirection.Backward;
 
                 default:
                     throw new Exception("Invalid time direction : " + timeDirection);
@@ -745,6 +836,83 @@ namespace TickTrader.FDK.TradeCapture
                     try
                     {
                         client.CancelDownloadTradesErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+        }
+
+        class DownloadAccountReportsAsyncContext : AccountDownloadRequestClientContext, IAsyncContext
+        {
+            public DownloadAccountReportsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            ~DownloadAccountReportsAsyncContext()
+            {
+                if (event_ != null)
+                    event_.Close();
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.DownloadAccountReportsErrorEvent != null)
+                {
+                    try
+                    {
+                        client.DownloadAccountReportsErrorEvent(client, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    if (accountReportEnumerator_ != null)
+                    {
+                        accountReportEnumerator_.SetError(exception);
+                    }
+                    else
+                    {
+                        exception_ = exception;
+                        event_.Set();
+                    }
+                }
+            }
+
+            public AccountReport accountReport_;
+            public AutoResetEvent event_;
+            public Exception exception_;
+            public AccountReportEnumerator accountReportEnumerator_;
+        }
+
+        class CancelDownloadAccountReportsAsyncContext : AccountDownloadCancelRequestClientContext, IAsyncContext
+        {
+            public CancelDownloadAccountReportsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(Client client, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (client.CancelDownloadAccountReportsErrorEvent != null)
+                {
+                    try
+                    {
+                        client.CancelDownloadAccountReportsErrorEvent(client, Data, exception);
                     }
                     catch
                     {
@@ -1812,6 +1980,336 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
+            public override void OnAccountDownloadBeginReport(ClientSession session, AccountDownloadRequestClientContext AccountDownloadRequestClientContext, AccountDownloadBeginReport message)
+            {
+                try
+                {
+                    DownloadAccountReportsAsyncContext context = (DownloadAccountReportsAsyncContext) AccountDownloadRequestClientContext;
+
+                    try
+                    {
+                        context.accountReport_ = new AccountReport();
+
+                        if (client_.DownloadAccountReportsResultBeginEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsResultBeginEvent(client_, context.Data, message.RequestId, message.TotalCount);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.accountReportEnumerator_ = new AccountReportEnumerator(client_, message.RequestId, message.TotalCount);
+                            context.event_.Set();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadAccountReportsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnAccountDownloadReport(ClientSession session, AccountDownloadRequestClientContext AccountDownloadRequestClientContext, AccountDownloadReport message)
+            {
+                try
+                {
+                    DownloadAccountReportsAsyncContext context = (DownloadAccountReportsAsyncContext) AccountDownloadRequestClientContext;
+
+                    try
+                    {
+                        AccountReport accountReport = context.accountReport_;
+
+                        accountReport.Timestamp = message.TransactTime;
+                        accountReport.AccountId = message.Id.ToString();
+                        accountReport.Type = GetAccountType(message.Type);
+                        accountReport.Leverage = message.Leverage;
+
+                        BalanceNull balance = message.Balance;
+
+                        if (balance.HasValue)
+                        {
+                            accountReport.BalanceCurrency = balance.CurrId;
+                            accountReport.Balance = balance.Total;
+                        }
+                        else
+                        {
+                            accountReport.BalanceCurrency = null;
+                            accountReport.Balance = 0;
+                        }
+
+                        accountReport.Profit = message.Profit;
+                        accountReport.Commission = message.Commission;
+                        accountReport.AgentCommission = message.AgentCommission;
+                        accountReport.Equity = message.Equity;
+                        accountReport.Margin = message.Margin;
+                        accountReport.MarginLevel = message.MarginLevel;
+                        AccountFlags accountFlags = message.Flags;
+                        accountReport.IsBlocked = (accountFlags & AccountFlags.Blocked) != 0;
+                        accountReport.IsReadOnly = (accountFlags & AccountFlags.Investor) != 0;
+                        accountReport.IsValid = (accountFlags & AccountFlags.Valid) != 0;
+
+                        accountReport.BalanceCurrencyToUsdConversionRate = null;
+                        accountReport.UsdToBalanceCurrencyConversionRate = null;
+                        accountReport.ProfitCurrencyToUsdConversionRate = null;
+                        accountReport.UsdToProfitCurrencyConversionRate = null;
+
+                        ConversionArray conversions = message.Conversions;
+                        int conversionCount = conversions.Length;
+
+                        for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
+                        {
+                            Conversion conversion = conversions[conversionIndex];
+
+                            switch (conversion.Type)
+                            {
+                                case ConversionType.ProfitToUsd:
+                                    accountReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
+                                    break;
+
+                                case ConversionType.UsdToProfit:
+                                    accountReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
+                                    break;
+
+                                case ConversionType.BalanceToUsd:
+                                    accountReport.BalanceCurrencyToUsdConversionRate = conversion.Rate;
+                                    break;
+
+                                case ConversionType.UsdToBalance:
+                                    accountReport.UsdToBalanceCurrencyConversionRate = conversion.Rate;
+                                    break;
+                            }
+                        }
+
+                        if (client_.DownloadAccountReportsResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsResultEvent(client_, context.Data, context.accountReport_);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            AccountReport accountReportClone = context.accountReport_.Clone();
+
+                            context.accountReportEnumerator_.SetResult(accountReportClone);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadAccountReportsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.accountReportEnumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnAccountDownloadEndReport(ClientSession session, AccountDownloadRequestClientContext AccountDownloadRequestClientContext, AccountDownloadEndReport message)
+            {
+                try
+                {
+                    DownloadAccountReportsAsyncContext context = (DownloadAccountReportsAsyncContext) AccountDownloadRequestClientContext;
+
+                    try
+                    {
+                        if (client_.DownloadAccountReportsResultEndEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsResultEndEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.accountReportEnumerator_.SetEnd();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadAccountReportsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.accountReportEnumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnAccountDownloadReject(ClientSession session, AccountDownloadRequestClientContext AccountDownloadRequestClientContext, Reject message)
+            {
+                try
+                {
+                    DownloadAccountReportsAsyncContext context = (DownloadAccountReportsAsyncContext)AccountDownloadRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.DownloadAccountReportsErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.DownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        if (context.accountReportEnumerator_ != null)
+                        {
+                            context.accountReportEnumerator_.SetError(exception);
+                        }
+                        else
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnAccountDownloadCancelReport(ClientSession session, AccountDownloadCancelRequestClientContext AccountDownloadCancelRequestClientContext, AccountDownloadCancelReport message)
+            {
+                try
+                {
+                    CancelDownloadAccountReportsAsyncContext context = (CancelDownloadAccountReportsAsyncContext) AccountDownloadCancelRequestClientContext;
+
+                    try
+                    {
+                        if (client_.CancelDownloadAccountReportsResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadAccountReportsResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.CancelDownloadAccountReportsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnAccountDownloadCancelReject(ClientSession session, AccountDownloadCancelRequestClientContext AccountDownloadCancelRequestClientContext, Reject message)
+            {
+                try
+                {
+                    CancelDownloadAccountReportsAsyncContext context = (CancelDownloadAccountReportsAsyncContext) AccountDownloadCancelRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.CancelDownloadAccountReportsErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.CancelDownloadAccountReportsErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnLogout(ClientSession session, Logout message)
             {
                 try
@@ -2336,6 +2834,24 @@ namespace TickTrader.FDK.TradeCapture
 
                     default:
                         throw new Exception("Invalid notification severity : " + severity);
+                }
+            }
+
+            TickTrader.FDK.Common.AccountType GetAccountType(SoftFX.Net.TradeCapture.AccountType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.TradeCapture.AccountType.Gross:
+                        return TickTrader.FDK.Common.AccountType.Gross;
+
+                    case SoftFX.Net.TradeCapture.AccountType.Net:
+                        return TickTrader.FDK.Common.AccountType.Net;
+
+                    case SoftFX.Net.TradeCapture.AccountType.Cash:
+                        return TickTrader.FDK.Common.AccountType.Cash;
+
+                    default:
+                        throw new Exception("Invalid account type : " + type);
                 }
             }
 

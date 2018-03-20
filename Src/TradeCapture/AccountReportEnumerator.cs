@@ -5,9 +5,9 @@ using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.TradeCapture
 {
-    public class TradeTransactionReportEnumerator : IDisposable
+    public class AccountReportEnumerator : IDisposable
     {
-        internal TradeTransactionReportEnumerator(Client client, string id, int totalCount)
+        internal AccountReportEnumerator(Client client, string id, int totalCount)
         {
             client_ = client;
             id_ = id;
@@ -15,8 +15,8 @@ namespace TickTrader.FDK.TradeCapture
 
             mutex_ = new object();
             completed_ = false;
-            tradeTransactionReports_ = new TradeTransactionReport[GrowSize];
-            tradeTransactionReportCount_ = 0;
+            accountReports_ = new AccountReport[GrowSize];
+            count_ = 0;
             beginIndex_ = 0;
             endIndex_ = 0;
             exception_ = null;
@@ -28,18 +28,18 @@ namespace TickTrader.FDK.TradeCapture
             get { return totalCount_;  }
         }
 
-        public TradeTransactionReport Next(int timeout)
+        public AccountReport Next(int timeout)
         {
             while (true)
             {
                 lock (mutex_)
                 {
-                    if (tradeTransactionReportCount_ > 0)
+                    if (count_ > 0)
                     {
-                        TradeTransactionReport tradeTransactionReport = tradeTransactionReports_[beginIndex_];
-                        tradeTransactionReports_[beginIndex_] = null;       // !
-                        beginIndex_ = (beginIndex_ + 1) % tradeTransactionReports_.Length;
-                        --tradeTransactionReportCount_;
+                        AccountReport tradeTransactionReport = accountReports_[beginIndex_];
+                        accountReports_[beginIndex_] = null;       // !
+                        beginIndex_ = (beginIndex_ + 1) % accountReports_.Length;
+                        --count_;
 
                         return tradeTransactionReport;
                     }
@@ -66,19 +66,19 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
-                        client_.CancelDownloadTradesAsync(null, id_);
+                        client_.CancelDownloadAccountReportsAsync(null, id_);
                     }
                     catch
                     {
                     }
                 }
 
-                if (tradeTransactionReportCount_ > 0)
+                if (count_ > 0)
                 {
-                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % tradeTransactionReports_.Length)
-                        tradeTransactionReports_[index] = null;
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % accountReports_.Length)
+                        accountReports_[index] = null;
 
-                    tradeTransactionReportCount_ = 0;
+                    count_ = 0;
                     beginIndex_ = 0;
                     endIndex_ = 0;
                 }
@@ -94,35 +94,35 @@ namespace TickTrader.FDK.TradeCapture
             GC.SuppressFinalize(this);
         }
 
-        internal void SetResult(TradeTransactionReport tradeTransactionReport)
+        internal void SetResult(AccountReport tradeTransactionReport)
         {
             lock (mutex_)
             {
                 if (! completed_)
                 {
-                    if (tradeTransactionReportCount_ == tradeTransactionReports_.Length)
+                    if (count_ == accountReports_.Length)
                     {
-                        TradeTransactionReport[] tradeTransactionReports = new TradeTransactionReport[tradeTransactionReports_.Length + GrowSize];
+                        AccountReport[] tradeTransactionReports = new AccountReport[accountReports_.Length + GrowSize];
 
                         if (endIndex_ > beginIndex_)
                         {
-                            Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, tradeTransactionReportCount_);
+                            Array.Copy(accountReports_, beginIndex_, tradeTransactionReports, 0, count_);
                         }
                         else
                         {
-                            int count = tradeTransactionReports_.Length - beginIndex_;
-                            Array.Copy(tradeTransactionReports_, beginIndex_, tradeTransactionReports, 0, count);
-                            Array.Copy(tradeTransactionReports_, 0, tradeTransactionReports, count, endIndex_);
+                            int count = accountReports_.Length - beginIndex_;
+                            Array.Copy(accountReports_, beginIndex_, tradeTransactionReports, 0, count);
+                            Array.Copy(accountReports_, 0, tradeTransactionReports, count, endIndex_);
                         }
 
-                        tradeTransactionReports_ = tradeTransactionReports;
+                        accountReports_ = tradeTransactionReports;
                         beginIndex_ = 0;
-                        endIndex_ = tradeTransactionReportCount_;
+                        endIndex_ = count_;
                     }
 
-                    tradeTransactionReports_[endIndex_] = tradeTransactionReport;
-                    endIndex_ = (endIndex_ + 1) % tradeTransactionReports_.Length;
-                    ++tradeTransactionReportCount_;
+                    accountReports_[endIndex_] = tradeTransactionReport;
+                    endIndex_ = (endIndex_ + 1) % accountReports_.Length;
+                    ++count_;
 
                     event_.Set();
                 }
@@ -165,8 +165,8 @@ namespace TickTrader.FDK.TradeCapture
         object mutex_;
         bool completed_;
 
-        TradeTransactionReport[] tradeTransactionReports_;
-        int tradeTransactionReportCount_;
+        AccountReport[] accountReports_;
+        int count_;
         int beginIndex_;
         int endIndex_;
         Exception exception_;

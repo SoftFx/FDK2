@@ -791,6 +791,31 @@
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <returns></returns>
+        public AccountReports GetAccountHistory(TimeDirection direction, DateTime? from, DateTime? to)
+        {
+            return GetAccountHistoryEx(direction, from, to, dataTrade_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="direction"></param>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        /// <param name="timeoutInMilliseconds"></param>
+        /// <returns></returns>
+        public AccountReports GetAccountHistoryEx(TimeDirection direction, DateTime? from, DateTime? to, int timeoutInMilliseconds)
+        {
+            return new AccountReports(dataTrade_, direction, from, to, timeoutInMilliseconds);
+        }
+
+        /// <summary>
         /// The method gets snapshot of trade transaction reports and subscribe to notifications.
         /// All reports will be received as events.
         /// </summary>

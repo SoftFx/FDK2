@@ -40,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountInfo.cs" />
+    <Compile Include="AccountReport.cs" />
     <Compile Include="AccountType.cs" />
     <Compile Include="AssetInfo.cs" />
     <Compile Include="BalanceOperation.cs" />

@@ -44,6 +44,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountHistoryExample.cs" />
     <Compile Include="AccountInfoExample.cs" />
     <Compile Include="CloseByExample.cs" />
     <Compile Include="ClosePartiallyPositionExample.cs" />

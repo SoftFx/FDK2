@@ -38,6 +38,8 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AccountReports.cs" />
+    <Compile Include="AccountReportsEnumerator.cs" />
     <Compile Include="Bars.cs" />
     <Compile Include="BarsEnumerator.cs" />
     <Compile Include="ClosePositionResult.cs" />
