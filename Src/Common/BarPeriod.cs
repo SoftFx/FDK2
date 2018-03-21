@@ -190,11 +190,11 @@
                 case BarPeriodPrefix.H:
                     return factor * 3600000;
                 case BarPeriodPrefix.D:
-                    return factor * 28800000;
+                    return factor * 86400000;
                 case BarPeriodPrefix.W:
-                    return factor * 201600000;
+                    return factor * 604800000;
                 case BarPeriodPrefix.MN:
-                    return factor * 6048000000;
+                    return factor * 2592000000;
                 default:
                     throw new Exception("Invalid bar period pefix");
             }
