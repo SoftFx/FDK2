@@ -142,11 +142,16 @@ namespace TradeCaptureSample
                         {
                             PrintCommands();
                         }
-                        else if (command == "subscribe_trades" || command == "s")
+                        else if (command == "subscribe_trades" || command == "st")
                         {
-                            SubscribeTrades();
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            SubscribeTrades(DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal));
                         }
-                        else if (command == "unsubscribe_trades" || command == "u")
+                        else if (command == "unsubscribe_trades" || command == "ut")
                         {
                             UnsubscribeTrades();
                         }
@@ -261,15 +266,16 @@ namespace TradeCaptureSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("subscribe_trades (s) - subscribe to trades updates");
-            Console.WriteLine("unsubscribe_trades (u) - unsubscribe from trades updates");
-            Console.WriteLine("download_trades (d) <direction> <from> <to> - download trade reports");
+            Console.WriteLine("subscribe_trades (st) <from> - subscribe to trades updates");
+            Console.WriteLine("unsubscribe_trades (ut) - unsubscribe from trades updates");
+            Console.WriteLine("download_trade_report (dt) <direction> <from> <to> - download trade reports");
+            Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
             Console.WriteLine("exit (e) - exit");
         }
 
-        void SubscribeTrades()
+        void SubscribeTrades(DateTime from)
         {
-            client_.SubscribeTrades(false, -1);
+            client_.SubscribeTrades(from, false, -1);
 
             Console.WriteLine("Subscribed");
         }

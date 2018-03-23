@@ -60,6 +60,8 @@
     <Compile Include="SendMarketOrderExample.cs" />
     <Compile Include="SendStopLimitOrderExample.cs" />
     <Compile Include="SendStopOrderExample.cs" />
+    <Compile Include="TradeExample.cs" />
+    <Compile Include="TradeHistoryExample.cs" />
     <Compile Include="TradeServerInfoExample.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

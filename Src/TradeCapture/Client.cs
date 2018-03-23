@@ -308,7 +308,7 @@ namespace TickTrader.FDK.TradeCapture
         public delegate void SubscribeTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void UnsubscribeTradesResultDelegate(Client client, object data);
         public delegate void UnsubscribeTradesErrorDelegate(Client client, object data, Exception exception);
-        public delegate void TradeDownloadResultBeginDelegate(Client client, object data, string id, int tradeCount);
+        public delegate void TradeDownloadResultBeginDelegate(Client client, object data, string id, int totalCount);
         public delegate void TradeDownloadResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void TradeDownloadResultEndDelegate(Client client, object data);
         public delegate void TradeDownloadErrorDelegate(Client client, object data, Exception exception);
@@ -342,11 +342,11 @@ namespace TickTrader.FDK.TradeCapture
         public event TradeUpdateDelegate TradeUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
-        public void SubscribeTrades(bool skipCancel, int timeout)
+        public void SubscribeTrades(DateTime from, bool skipCancel, int timeout)
         {
             SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(true);
 
-            SubscribeTradesInternal(context, skipCancel);
+            SubscribeTradesInternal(context, from, skipCancel);
 
             if (! context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
@@ -355,22 +355,22 @@ namespace TickTrader.FDK.TradeCapture
                 throw context.exception_;
         }
 
-        public void SubscribeTradesAsync(object data, bool skipCancel)
+        public void SubscribeTradesAsync(object data, DateTime from, bool skipCancel)
         {
             SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(false);
             context.Data = data;
 
-            SubscribeTradesInternal(context, skipCancel);
+            SubscribeTradesInternal(context, from, skipCancel);
         }
 
-        void SubscribeTradesInternal(SubscribeTradesAsyncContext context, bool skipCancel)
+        void SubscribeTradesInternal(SubscribeTradesAsyncContext context, DateTime from, bool skipCancel)
         {
-            TradeCaptureRequest request = new TradeCaptureRequest(0);
+            TradeSubscribeRequest request = new TradeSubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.Type = TradeCaptureRequestType.Subscribe;
+            request.From = from;
             request.SkipCancel = skipCancel;
 
-            session_.SendTradeCaptureRequest(context, request);
+            session_.SendTradeSubscribeRequest(context, request);
         }
 
         public void UnsubscribeTrades(int timeout)
@@ -396,11 +396,10 @@ namespace TickTrader.FDK.TradeCapture
 
         void UnsubscribeTradesInternal(UnsubscribeTradesAsyncContext context)
         {
-            TradeCaptureRequest request = new TradeCaptureRequest(0);
+            TradeUnsubscribeRequest request = new TradeUnsubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.Type = TradeCaptureRequestType.Unsubscribe;
 
-            session_.SendTradeCaptureRequest(context, request);
+            session_.SendTradeUnsubscribeRequest(context, request);
         }
 
         public TradeTransactionReportEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
@@ -714,7 +713,7 @@ namespace TickTrader.FDK.TradeCapture
             public LogoutInfo logoutInfo_;
         }
 
-        class SubscribeTradesAsyncContext : TradeCaptureRequestClientContext, IAsyncContext
+        class SubscribeTradesAsyncContext : TradeSubscribeRequestClientContext, IAsyncContext
         {
             public SubscribeTradesAsyncContext(bool waitbale) : base(waitbale)
             {
@@ -744,7 +743,7 @@ namespace TickTrader.FDK.TradeCapture
             public Exception exception_;
         }
 
-        class UnsubscribeTradesAsyncContext : TradeCaptureRequestClientContext, IAsyncContext
+        class UnsubscribeTradesAsyncContext : TradeUnsubscribeRequestClientContext, IAsyncContext
         {
             public UnsubscribeTradesAsyncContext(bool waitable) : base(waitable)
             {
@@ -1561,106 +1560,27 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeCaptureReport(ClientSession session, TradeCaptureRequestClientContext TradeCaptureRequestClientContext, TradeCaptureReport message)
+            public override void OnTradeSubscribeReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeReport message)
             {
                 try
                 {
-                    if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
+                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeSubscribeRequestClientContext;
+
+                    try
                     {
-                        // SubscribeTrades
-
-                        SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
-
-                        try
+                        if (client_.SubscribeTradesResultEvent != null)
                         {
-                            if (client_.SubscribeTradesResultEvent != null)
+                            try
                             {
-                                try
-                                {
-                                    client_.SubscribeTradesResultEvent(client_, context.Data);
-                                }
-                                catch
-                                {
-                                }
+                                client_.SubscribeTradesResultEvent(client_, context.Data);
                             }
-                        }
-                        catch (Exception exception)
-                        {
-                            if (client_.SubscribeTradesErrorEvent != null)
+                            catch
                             {
-                                try
-                                {
-                                    client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                context.exception_ = exception;
                             }
                         }
                     }
-                    else
+                    catch (Exception exception)
                     {
-                        // UnsubscribeTrades
-
-                        UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
-
-                        try
-                        {
-                            if (client_.UnsubscribeTradesResultEvent != null)
-                            {
-                                try
-                                {
-                                    client_.UnsubscribeTradesResultEvent(client_, context.Data);
-                                }
-                                catch
-                                {
-                                }
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            if (client_.UnsubscribeTradesErrorEvent != null)
-                            {
-                                try
-                                {
-                                    client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                context.exception_ = exception;
-                            }
-                        }
-                    }
-                }
-                catch (Exception exception)
-                {
-                    client_.session_.LogError(exception.Message);
-                }
-            }            
-
-            public override void OnTradeCaptureReject(ClientSession session, TradeCaptureRequestClientContext TradeCaptureRequestClientContext, Reject message)
-            {
-                try
-                {
-                    if (TradeCaptureRequestClientContext is SubscribeTradesAsyncContext)
-                    {
-                        // SubscribeTrades
-
-                        SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
-
-                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                        RejectException exception = new RejectException(rejectReason, message.Text);
-
                         if (client_.SubscribeTradesErrorEvent != null)
                         {
                             try
@@ -1677,15 +1597,65 @@ namespace TickTrader.FDK.TradeCapture
                             context.exception_ = exception;
                         }
                     }
-                    else
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTradeSubscribeReject(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, Reject message)
+            {
+                try
+                {
+                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeSubscribeRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.SubscribeTradesErrorEvent != null)
                     {
-                        // UnsubscribeTrades
+                        try
+                        {
+                            client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
 
-                        UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeCaptureRequestClientContext;
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                        RejectException exception = new RejectException(rejectReason, message.Text);
+            public override void OnTradeUnsubscribeReport(ClientSession session, TradeUnsubscribeRequestClientContext TradeUnsubscribeRequestClientContext, TradeUnsubscribeReport message)
+            {
+                try
+                {
+                    UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext) TradeUnsubscribeRequestClientContext;
 
+                    try
+                    {
+                        if (client_.UnsubscribeTradesResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeTradesResultEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
                         if (client_.UnsubscribeTradesErrorEvent != null)
                         {
                             try
@@ -1709,6 +1679,37 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
+            public override void OnTradeUnsubscribeReject(ClientSession session, TradeUnsubscribeRequestClientContext TradeUnsubscribeRequestClientContext, Reject message)
+            {
+                try
+                {
+                    UnsubscribeTradesAsyncContext context = (UnsubscribeTradesAsyncContext)TradeUnsubscribeRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.UnsubscribeTradesErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.UnsubscribeTradesErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnTradeDownloadBeginReport(ClientSession session, TradeDownloadRequestClientContext TradeDownloadRequestClientContext, TradeDownloadBeginReport message)
             {
                 try
@@ -1723,7 +1724,7 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             try
                             {
-                                client_.TradeDownloadResultBeginEvent(client_, context.Data, message.RequestId, message.TradeCount);
+                                client_.TradeDownloadResultBeginEvent(client_, context.Data, message.RequestId, message.TotalCount);
                             }
                             catch
                             {
@@ -1732,7 +1733,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_, message.RequestId, message.TradeCount);
+                            context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_, message.RequestId, message.TotalCount);
                             context.event_.Set();
                         }
                     }
@@ -1770,9 +1771,7 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
-                        Trade trade = message.Trade;
-
-                        FillTradeTransactionReport(context.tradeTransactionReport_, trade);
+                        FillTradeTransactionReport(context.tradeTransactionReport_, message.Trade);
 
                         if (client_.TradeDownloadResultEvent != null)
                         {
@@ -2041,68 +2040,7 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
-                        AccountReport accountReport = context.accountReport_;
-
-                        accountReport.Timestamp = message.TransactTime;
-                        accountReport.AccountId = message.Id.ToString();
-                        accountReport.Type = GetAccountType(message.Type);
-                        accountReport.Leverage = message.Leverage;
-
-                        BalanceNull balance = message.Balance;
-
-                        if (balance.HasValue)
-                        {
-                            accountReport.BalanceCurrency = balance.CurrId;
-                            accountReport.Balance = balance.Total;
-                        }
-                        else
-                        {
-                            accountReport.BalanceCurrency = null;
-                            accountReport.Balance = 0;
-                        }
-
-                        accountReport.Profit = message.Profit;
-                        accountReport.Commission = message.Commission;
-                        accountReport.AgentCommission = message.AgentCommission;
-                        accountReport.Equity = message.Equity;
-                        accountReport.Margin = message.Margin;
-                        accountReport.MarginLevel = message.MarginLevel;
-                        AccountFlags accountFlags = message.Flags;
-                        accountReport.IsBlocked = (accountFlags & AccountFlags.Blocked) != 0;
-                        accountReport.IsReadOnly = (accountFlags & AccountFlags.Investor) != 0;
-                        accountReport.IsValid = (accountFlags & AccountFlags.Valid) != 0;
-
-                        accountReport.BalanceCurrencyToUsdConversionRate = null;
-                        accountReport.UsdToBalanceCurrencyConversionRate = null;
-                        accountReport.ProfitCurrencyToUsdConversionRate = null;
-                        accountReport.UsdToProfitCurrencyConversionRate = null;
-
-                        ConversionArray conversions = message.Conversions;
-                        int conversionCount = conversions.Length;
-
-                        for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
-                        {
-                            Conversion conversion = conversions[conversionIndex];
-
-                            switch (conversion.Type)
-                            {
-                                case ConversionType.ProfitToUsd:
-                                    accountReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
-                                    break;
-
-                                case ConversionType.UsdToProfit:
-                                    accountReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
-                                    break;
-
-                                case ConversionType.BalanceToUsd:
-                                    accountReport.BalanceCurrencyToUsdConversionRate = conversion.Rate;
-                                    break;
-
-                                case ConversionType.UsdToBalance:
-                                    accountReport.UsdToBalanceCurrencyConversionRate = conversion.Rate;
-                                    break;
-                            }
-                        }
+                        FillAccountReport(context.accountReport_, message.Account);
 
                         if (client_.DownloadAccountReportsResultEvent != null)
                         {
@@ -2335,14 +2273,13 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeCaptureUpdate(ClientSession session, TradeCaptureUpdate message)
+            public override void OnTradeUpdateReport(ClientSession session, TradeUpdateReport message)
             {
                 try
                 {
-                    SoftFX.Net.TradeCapture.Trade trade = message.Trade;
                     TradeTransactionReport tradeTransactionReport = new TradeTransactionReport();
 
-                    FillTradeTransactionReport(tradeTransactionReport, trade);
+                    FillTradeTransactionReport(tradeTransactionReport, message.Trade);
 
                     if (client_.TradeUpdateEvent != null)
                     {
@@ -2615,6 +2552,70 @@ namespace TickTrader.FDK.TradeCapture
 
                         case ConversionType.UsdToAsset2:
                             tradeTransactionReport.UsdToDstAssetConversionRate = conversion.Rate;
+                            break;
+                    }
+                }
+            }
+
+            void FillAccountReport(TickTrader.FDK.Common.AccountReport accountReport, SoftFX.Net.TradeCapture.Account account)
+            {
+                accountReport.Timestamp = account.TransactTime;
+                accountReport.AccountId = account.Id.ToString();
+                accountReport.Type = GetAccountType(account.Type);
+                accountReport.Leverage = account.Leverage;
+
+                BalanceNull balance = account.Balance;
+
+                if (balance.HasValue)
+                {
+                    accountReport.BalanceCurrency = balance.CurrId;
+                    accountReport.Balance = balance.Total;
+                }
+                else
+                {
+                    accountReport.BalanceCurrency = null;
+                    accountReport.Balance = 0;
+                }
+
+                accountReport.Profit = account.Profit;
+                accountReport.Commission = account.Commission;
+                accountReport.AgentCommission = account.AgentCommission;
+                accountReport.Equity = account.Equity;
+                accountReport.Margin = account.Margin;
+                accountReport.MarginLevel = account.MarginLevel;
+                AccountFlags accountFlags = account.Flags;
+                accountReport.IsBlocked = (accountFlags & AccountFlags.Blocked) != 0;
+                accountReport.IsReadOnly = (accountFlags & AccountFlags.Investor) != 0;
+                accountReport.IsValid = (accountFlags & AccountFlags.Valid) != 0;
+
+                accountReport.BalanceCurrencyToUsdConversionRate = null;
+                accountReport.UsdToBalanceCurrencyConversionRate = null;
+                accountReport.ProfitCurrencyToUsdConversionRate = null;
+                accountReport.UsdToProfitCurrencyConversionRate = null;
+
+                ConversionArray conversions = account.Conversions;
+                int conversionCount = conversions.Length;
+
+                for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
+                {
+                    Conversion conversion = conversions[conversionIndex];
+
+                    switch (conversion.Type)
+                    {
+                        case ConversionType.ProfitToUsd:
+                            accountReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToProfit:
+                            accountReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.BalanceToUsd:
+                            accountReport.BalanceCurrencyToUsdConversionRate = conversion.Rate;
+                            break;
+
+                        case ConversionType.UsdToBalance:
+                            accountReport.UsdToBalanceCurrencyConversionRate = conversion.Rate;
                             break;
                     }
                 }

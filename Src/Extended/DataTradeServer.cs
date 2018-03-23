@@ -729,9 +729,9 @@
         /// The method starts trade transaction reports receiving.
         /// </summary>
         /// <param name="skipCancel"></param>
-        public void SubscribeTradeTransactionReports(bool skipCancel)
+        public void SubscribeTradeTransactionReports(DateTime from, bool skipCancel)
         {
-            dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancel, dataTrade_.synchOperationTimeout_);
+            SubscribeTradeTransactionReportsEx(from, skipCancel, dataTrade_.synchOperationTimeout_);
         }
 
         /// <summary>
@@ -739,9 +739,9 @@
         /// </summary>
         /// <param name="skipCancel"></param>
         /// <param name="timeoutInMilliseconds"></param>
-        public void SubscribeTradeTransactionReportsEx(bool skipCancel, int timeoutInMilliseconds)
+        public void SubscribeTradeTransactionReportsEx(DateTime from, bool skipCancel, int timeoutInMilliseconds)
         {
-            dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancel, timeoutInMilliseconds);
+            dataTrade_.tradeCaptureClient_.SubscribeTrades(from, skipCancel, timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -855,6 +855,7 @@
         /// </param>
         /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
         /// <returns>Can not be null.</returns>
+        [Obsolete]
         public TradeTransactionReportsEnumerator GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel)
         {
             return GetTradeTransactionReportsEx(direction, subscribeToNotifications, from, to, preferedBufferSize, skipCancel, dataTrade_.synchOperationTimeout_);
@@ -879,30 +880,28 @@
         /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
         /// <returns>Can not be null.</returns>
+        [Obsolete]
         public TradeTransactionReportsEnumerator GetTradeTransactionReportsEx(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel, int timeoutInMilliseconds)
         {
+            TradeTransactionReportsEnumerator tradeTransactionReportsEnumerator;
+
             bool skipCancelValue = skipCancel != null ? skipCancel.Value : false;
 
             if (subscribeToNotifications)
             {
-                dataTrade_.tradeCaptureClient_.SubscribeTrades(skipCancelValue, timeoutInMilliseconds);
-            }
+                DateTime fromValue = from != null ? from.Value : DateTime.UtcNow;
+                SubscribeTradeTransactionReportsEx(fromValue, skipCancelValue, timeoutInMilliseconds);
 
-            try
+                tradeTransactionReportsEnumerator = null;
+            }
+            else
             {
-                TradeTransactionReports tradeTransactionReports = new TradeTransactionReports(dataTrade_, direction, from, to, skipCancelValue, timeoutInMilliseconds);
+                TradeTransactionReports tradeTransactionReports = GetTradeTransactionReportsHistoryEx(direction, from, to, skipCancelValue, timeoutInMilliseconds);
 
-                return tradeTransactionReports.GetEnumerator();
+                tradeTransactionReportsEnumerator = tradeTransactionReports.GetEnumerator();
             }
-            catch
-            {
-                if (subscribeToNotifications)
-                {
-                    dataTrade_.tradeCaptureClient_.UnsubscribeTrades(timeoutInMilliseconds);
-                }
 
-                throw;
-            }
+            return tradeTransactionReportsEnumerator;
         }
 
         ClosePositionResult GetClosePositionResult(ExecutionReport executionReport)

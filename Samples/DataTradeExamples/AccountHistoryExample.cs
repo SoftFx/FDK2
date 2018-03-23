@@ -14,8 +14,8 @@
 
         protected override void RunExample()
         {
-            DateTime from = DateTime.Parse("2017.01.01 0:0:0");
-            DateTime to = DateTime.UtcNow;
+            DateTime from = DateTime.Parse("01.01.2017 00:00:00");
+            DateTime to = DateTime.Parse("01.01.2018 00:00:00");
 
             double minMargin = double.MaxValue;
             double maxMargin = double.MinValue;

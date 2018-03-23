@@ -39,8 +39,9 @@
                         Console.WriteLine("10 - ClosePositionExample");
                         Console.WriteLine("11 - ClosePartiallyPositionExample");
                         Console.WriteLine("12 - CloseByExample");
-                        Console.WriteLine("13 - GetTradeTransactionReportsExample");
-                        Console.WriteLine("14 - AccountHistoryExample");
+                        Console.WriteLine("13 - TradeExample");
+                        Console.WriteLine("14 - TradeHistoryExample");
+                        Console.WriteLine("15 - AccountHistoryExample");
                         Console.WriteLine("0 - Exit");
                         Console.Write("Please select : ");
 
@@ -98,9 +99,13 @@
                         }
                         else if (command == "13")
                         {
-                            example = new GetTradeTransactionReportsExample(address, username, password);
+                            example = new TradeExample(address, username, password);
                         }
                         else if (command == "14")
+                        {
+                            example = new TradeHistoryExample(address, username, password);
+                        }
+                        else if (command == "15")
                         {
                             example = new AccountHistoryExample(address, username, password);
                         }

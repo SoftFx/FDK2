@@ -77,8 +77,8 @@ namespace TradeCaptureAsyncSample
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.SubscribeTradesResultEvent += new Client.SubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
             client_.SubscribeTradesErrorEvent += new Client.SubscribeTradesErrorDelegate(this.OnSubscribeTradesError);
-            client_.UnsubscribeTradesResultEvent += new Client.UnsubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
-            client_.UnsubscribeTradesErrorEvent += new Client.UnsubscribeTradesErrorDelegate(this.OnSubscribeTradesError);            
+            client_.UnsubscribeTradesResultEvent += new Client.UnsubscribeTradesResultDelegate(this.OnUnsubscribeTradesResult);
+            client_.UnsubscribeTradesErrorEvent += new Client.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);            
             client_.TradeDownloadResultBeginEvent += new Client.TradeDownloadResultBeginDelegate(this.OnTradeDownloadResultBegin);
             client_.TradeDownloadResultEvent += new Client.TradeDownloadResultDelegate(this.OnTradeDownloadResult);
             client_.TradeDownloadResultEndEvent += new Client.TradeDownloadResultEndDelegate(this.OnTradeDownloadResultEnd);
@@ -161,11 +161,16 @@ namespace TradeCaptureAsyncSample
                         {
                             PrintCommands();
                         }
-                        else if (command == "subscribe_trades" || command == "s")
+                        else if (command == "subscribe_trades" || command == "st")
                         {
-                            SubscribeTrades();
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            SubscribeTrades(DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal));
                         }
-                        else if (command == "unsubscribe_trades" || command == "u")
+                        else if (command == "unsubscribe_trades" || command == "ut")
                         {
                             UnsubscribeTrades();
                         }
@@ -402,16 +407,16 @@ namespace TradeCaptureAsyncSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("subscribe_trades (s) - subscribe to trades updates");
-            Console.WriteLine("unsubscribe_trades (u) - unsubscribe from trades updates");
+            Console.WriteLine("subscribe_trades (st) <from> - subscribe to trades updates");
+            Console.WriteLine("unsubscribe_trades (ut) - unsubscribe from trades updates");
             Console.WriteLine("download_trade_reports (dt) <direction> <from> <to> - download trade reports");
             Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
             Console.WriteLine("exit (e) - exit");
         }
 
-        void SubscribeTrades()
+        void SubscribeTrades(DateTime from)
         {
-            client_.SubscribeTradesAsync(this, false);
+            client_.SubscribeTradesAsync(this, from,  false);
         }
 
         void UnsubscribeTrades()
@@ -660,5 +665,6 @@ namespace TradeCaptureAsyncSample
     }
 }
 
+// st "2017.01.01 0:0:0"
 // dt Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
 // da Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
