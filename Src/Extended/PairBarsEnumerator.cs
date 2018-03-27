@@ -10,7 +10,7 @@
 
     public class PairBarsEnumerator : IEnumerator<PairBar>
     {
-        public PairBarsEnumerator(PairBars pairBars, BarEnumerator bidEnumerator, BarEnumerator askEnumerator)
+        public PairBarsEnumerator(PairBars pairBars, DownloadBarsEnumerator bidEnumerator, DownloadBarsEnumerator askEnumerator)
         {
             this.pairBars = pairBars;
             this.bidEnumerator = bidEnumerator;
@@ -171,8 +171,8 @@
 
         PairBars pairBars;
 
-        BarEnumerator bidEnumerator;
-        BarEnumerator askEnumerator;
+        DownloadBarsEnumerator bidEnumerator;
+        DownloadBarsEnumerator askEnumerator;
 
         Bar bid;
         Bar ask;

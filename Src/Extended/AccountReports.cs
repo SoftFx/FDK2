@@ -34,7 +34,7 @@
         /// <returns>Can not be null.</returns>
         public AccountReportsEnumerator GetEnumerator()
         {
-            AccountReportEnumerator accountReportEnumerator = dataTrade_.tradeCaptureClient_.DownloadAccountReports
+            DownloadAccountReportsEnumerator accountReportEnumerator = dataTrade_.tradeCaptureClient_.DownloadAccountReports
             (
                 direction_, 
                 startTime_, 

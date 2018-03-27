@@ -101,7 +101,7 @@
 		/// <returns>a new enumerator instance.</returns>
 		public QuotesSingleSequenceEnumerator GetEnumerator()
 		{
-            QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
+            DownloadQuotesEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
@@ -121,7 +121,7 @@
 		/// <returns>a new enumerator instance.</returns>
 		IEnumerator<Quote> IEnumerable<Quote>.GetEnumerator()
 		{
-            QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
+            DownloadQuotesEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,
@@ -139,7 +139,7 @@
 		/// <returns>a new enumerator instance.</returns>
 		IEnumerator IEnumerable.GetEnumerator()
 		{
-            QuoteEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
+            DownloadQuotesEnumerator quoteEnumerator = DataFeed.quoteStoreClient_.DownloadQuotes
             (
                 Symbol,
                 Depth == 1 ? QuoteDepth.Top : QuoteDepth.Level2,

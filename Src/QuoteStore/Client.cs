@@ -418,7 +418,7 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendTickListRequest(context, request);
         }
 
-        public BarEnumerator DownloadBars(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
+        public DownloadBarsEnumerator DownloadBars(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
         {
             long periodMilliseconds = barPeriod.ToMilliseconds();
             long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
@@ -436,7 +436,7 @@ namespace TickTrader.FDK.QuoteStore
                 if (context.exception_ != null)
                     throw context.exception_;
 
-                return context.barEnumerator_;
+                return context.enumerartor_;
             }
             else
             {
@@ -451,7 +451,7 @@ namespace TickTrader.FDK.QuoteStore
                 if (context.exception_ != null)
                     throw context.exception_;
 
-                return context.barEnumerator_;
+                return context.enumerartor_;
             }
         }
 
@@ -569,7 +569,7 @@ namespace TickTrader.FDK.QuoteStore
             session_.SendDownloadCancelRequest(context, request);
         }
 
-        public QuoteEnumerator DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
+        public DownloadQuotesEnumerator DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
         {
             QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(true);
             context.event_ = new AutoResetEvent(false);
@@ -582,7 +582,7 @@ namespace TickTrader.FDK.QuoteStore
             if (context.exception_ != null)
                 throw context.exception_;
 
-            return context.quoteEnumerator_;
+            return context.enumerartor_;
         }
 
         public void DownloadQuotesAsync(object data, string symbol, QuoteDepth depth, DateTime from, DateTime to)
@@ -914,9 +914,9 @@ namespace TickTrader.FDK.QuoteStore
 
                 if (Waitable)
                 {
-                    if (barEnumerator_ != null)
+                    if (enumerartor_ != null)
                     {
-                        barEnumerator_.SetError(exception);
+                        enumerartor_.SetError(exception);
                     }
                     else
                     {
@@ -938,7 +938,7 @@ namespace TickTrader.FDK.QuoteStore
             public TickTrader.FDK.Common.Bar bar_;
             public AutoResetEvent event_;
             public Exception exception_;
-            public BarEnumerator barEnumerator_;
+            public DownloadBarsEnumerator enumerartor_;
         }
 
         class BarQuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
@@ -970,9 +970,9 @@ namespace TickTrader.FDK.QuoteStore
 
                 if (Waitable)
                 {
-                    if (barEnumerator_ != null)
+                    if (enumerartor_ != null)
                     {
-                        barEnumerator_.SetError(exception);
+                        enumerartor_.SetError(exception);
                     }
                     else
                     {
@@ -993,7 +993,7 @@ namespace TickTrader.FDK.QuoteStore
             public Quote quote_;
             public AutoResetEvent event_;
             public Exception exception_;
-            public BarEnumerator barEnumerator_;
+            public DownloadBarsEnumerator enumerartor_;
         }
 
         class CancelDownloadBarsAsyncContext : DownloadCancelRequestClientContext, IAsyncContext
@@ -1055,9 +1055,9 @@ namespace TickTrader.FDK.QuoteStore
 
                 if (Waitable)
                 {
-                    if (quoteEnumerator_ != null)
+                    if (enumerartor_ != null)
                     {
-                        quoteEnumerator_.SetError(exception);
+                        enumerartor_.SetError(exception);
                     }
                     else
                     {
@@ -1076,7 +1076,7 @@ namespace TickTrader.FDK.QuoteStore
             public Quote quote_;
             public AutoResetEvent event_;
             public Exception exception_;
-            public QuoteEnumerator quoteEnumerator_;            
+            public DownloadQuotesEnumerator enumerartor_;            
         }       
 
         class CancelDownloadQuotesAsyncContext : DownloadCancelRequestClientContext, IAsyncContext
@@ -1941,7 +1941,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
+                                context.enumerartor_ = new DownloadBarsEnumerator(client_, requestId, availFrom, availTo);
                                 context.event_.Set();
                             }
                         }
@@ -2005,7 +2005,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_ = new BarEnumerator(client_, requestId, availFrom, availTo);
+                                context.enumerartor_ = new DownloadBarsEnumerator(client_, requestId, availFrom, availTo);
                                 context.event_.Set();
                             }
                         }
@@ -2068,7 +2068,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.quoteEnumerator_ = new QuoteEnumerator(client_, requestId, availFrom, availTo);
+                                context.enumerartor_ = new DownloadQuotesEnumerator(client_, requestId, availFrom, availTo);
                                 context.event_.Set();
                             }
                         }
@@ -2135,7 +2135,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2171,7 +2171,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2207,7 +2207,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.quoteEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2311,7 +2311,7 @@ namespace TickTrader.FDK.QuoteStore
                         {
                             TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
 
-                            context.barEnumerator_.SetResult(bar);
+                            context.enumerartor_.SetResult(bar);
                         }
 
                         context.calcBar_.From = calcFrom;
@@ -2341,7 +2341,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
 
-                        context.barEnumerator_.SetResult(bar);
+                        context.enumerartor_.SetResult(bar);
                     }
                 }
             }
@@ -2449,7 +2449,7 @@ namespace TickTrader.FDK.QuoteStore
                             {
                                 TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
 
-                                context.barEnumerator_.SetResult(bar);
+                                context.enumerartor_.SetResult(bar);
                             }
 
                             QuoteEntry quoteEntry = quoteEntryList[0];
@@ -2482,7 +2482,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
 
-                        context.barEnumerator_.SetResult(bar);
+                        context.enumerartor_.SetResult(bar);
                     }
                 }
             }
@@ -2550,7 +2550,7 @@ namespace TickTrader.FDK.QuoteStore
                     {
                         Quote quote = context.quote_.Clone();
 
-                        context.quoteEnumerator_.SetResult(quote);
+                        context.enumerartor_.SetResult(quote);
                     }
                 }
             }
@@ -2578,7 +2578,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetEnd();
+                                context.enumerartor_.SetEnd();
                             }
                         }
                         catch (Exception exception)
@@ -2596,7 +2596,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2619,7 +2619,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetEnd();
+                                context.enumerartor_.SetEnd();
                             }
                         }
                         catch (Exception exception)
@@ -2637,7 +2637,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2660,7 +2660,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.quoteEnumerator_.SetEnd();
+                                context.enumerartor_.SetEnd();
                             }
                         }
                         catch (Exception exception)
@@ -2678,7 +2678,7 @@ namespace TickTrader.FDK.QuoteStore
 
                             if (context.Waitable)
                             {
-                                context.quoteEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                         }
                     }
@@ -2713,9 +2713,9 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.Waitable)
                         {
-                            if (context.barEnumerator_ != null)
+                            if (context.enumerartor_ != null)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                             else
                             {
@@ -2744,9 +2744,9 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.Waitable)
                         {
-                            if (context.barEnumerator_ != null)
+                            if (context.enumerartor_ != null)
                             {
-                                context.barEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                             else
                             {
@@ -2775,9 +2775,9 @@ namespace TickTrader.FDK.QuoteStore
 
                         if (context.Waitable)
                         {
-                            if (context.quoteEnumerator_ != null)
+                            if (context.enumerartor_ != null)
                             {
-                                context.quoteEnumerator_.SetError(exception);
+                                context.enumerartor_.SetError(exception);
                             }
                             else
                             {

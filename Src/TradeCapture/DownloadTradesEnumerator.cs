@@ -5,9 +5,9 @@ using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.TradeCapture
 {
-    public class TradeTransactionReportEnumerator : IDisposable
+    public class DownloadTradesEnumerator : IDisposable
     {
-        internal TradeTransactionReportEnumerator(Client client, string id, int totalCount)
+        internal DownloadTradesEnumerator(Client client, string id, int totalCount)
         {
             client_ = client;
             id_ = id;

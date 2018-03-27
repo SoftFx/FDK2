@@ -398,20 +398,20 @@ namespace QuoteStoreSample
 
         void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
-            BarEnumerator barEnumerator = client_.DownloadBars(symbol, priceType, periodicity, from, to, -1);
+            DownloadBarsEnumerator enumerator = client_.DownloadBars(symbol, priceType, periodicity, from, to, -1);
 
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
 
-                for (Bar bar = barEnumerator.Next(-1); bar != null; bar = barEnumerator.Next(-1))
+                for (Bar bar = enumerator.Next(-1); bar != null; bar = enumerator.Next(-1))
                     Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
 
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
             }
             finally
             {
-                barEnumerator.Close();
+                enumerator.Close();
             }
         }
 
@@ -441,13 +441,13 @@ namespace QuoteStoreSample
 
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            QuoteEnumerator quoteEnumerator = client_.DownloadQuotes(symbol, depth, from, to, -1);
+            DownloadQuotesEnumerator enumerator = client_.DownloadQuotes(symbol, depth, from, to, -1);
 
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
 
-                for (Quote quote = quoteEnumerator.Next(-1); quote != null; quote = quoteEnumerator.Next(-1))
+                for (Quote quote = enumerator.Next(-1); quote != null; quote = enumerator.Next(-1))
                 {
                     Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
                     Console.Error.Write("    Bid :");
@@ -468,7 +468,7 @@ namespace QuoteStoreSample
             }
             finally
             {
-                quoteEnumerator.Close();
+                enumerator.Close();
             }
         }
 

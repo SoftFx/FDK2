@@ -52,7 +52,6 @@
     <Compile Include="DeletePendingOrderExample.cs" />
     <Compile Include="Example.cs" />
     <Compile Include="GetOrdersExample.cs" />
-    <Compile Include="GetTradeTransactionReportsExample.cs" />
     <Compile Include="ModifyTradeRecordExample.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -49,10 +49,10 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BarEnumerator.cs" />
+    <Compile Include="DownloadBarsEnumerator.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="QuoteEnumerator.cs" />
+    <Compile Include="DownloadQuotesEnumerator.cs" />
     <Compile Include="Serialization\BarFormatter.cs" />
     <Compile Include="Serialization\TickFormatter.cs" />
     <Compile Include="Serialization\StreamParser.cs" />

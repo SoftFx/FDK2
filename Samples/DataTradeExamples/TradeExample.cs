@@ -14,7 +14,14 @@
 
         protected override void RunExample()
         {
-            this.Trade.Server.SubscribeTradeTransactionReports(DateTime.UtcNow, true);
+            DateTime from = DateTime.Parse("01.01.2017 00:00:00");
+
+            SubscribeTradeTransactionReportsEnumerator enumerator = this.Trade.Server.SubscribeTradeTransactionReports(from, true);
+
+            while (enumerator.MoveNext())
+            {
+                Console.WriteLine("Trade update : {0}", enumerator.Current);
+            }
 
             Console.WriteLine("Press any key to stop");
             Console.ReadKey();

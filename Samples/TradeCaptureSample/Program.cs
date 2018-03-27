@@ -275,9 +275,56 @@ namespace TradeCaptureSample
 
         void SubscribeTrades(DateTime from)
         {
-            client_.SubscribeTrades(from, false, -1);
+            SubscribeTradesEnumerator subscribeTradesEnumerator = client_.SubscribeTrades(from, false, -1);
 
-            Console.WriteLine("Subscribed");
+            try
+            {
+                Console.WriteLine("Subscribing");
+                
+                for
+                (
+                    TradeTransactionReport tradeTransactionReport = subscribeTradesEnumerator.Next(-1);
+                    tradeTransactionReport != null;
+                    tradeTransactionReport = subscribeTradesEnumerator.Next(-1)
+                )
+                {
+                    if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
+                        tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
+                    {
+                        Console.Error.WriteLine
+                        (
+                            "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
+                            tradeTransactionReport.TradeTransactionId,
+                            tradeTransactionReport.TransactionTime,
+                            tradeTransactionReport.TradeTransactionReportType,
+                            tradeTransactionReport.TradeTransactionReason,
+                            tradeTransactionReport.ClientId,
+                            tradeTransactionReport.OrderType,
+                            tradeTransactionReport.Symbol,
+                            tradeTransactionReport.OrderSide,
+                            tradeTransactionReport.OrderLastFillAmount,
+                            tradeTransactionReport.OrderFillPrice
+                        );
+                    }
+                    else
+                    {
+                        Console.Error.WriteLine
+                        (
+                            "Trade report : {0}, {1}, {2}, {3}", 
+                            tradeTransactionReport.TradeTransactionId,
+                            tradeTransactionReport.TransactionTime,
+                            tradeTransactionReport.TradeTransactionReportType,
+                            tradeTransactionReport.TradeTransactionReason
+                        );
+                    }
+                }
+
+                Console.WriteLine("Subscribed");
+            }
+            finally
+            {
+                subscribeTradesEnumerator.Close();
+            }
         }
 
         void UnsubscribeTrades()
@@ -289,7 +336,7 @@ namespace TradeCaptureSample
 
         void DownloadTrades(TimeDirection timeDirection, DateTime from, DateTime to)
         {
-            TradeTransactionReportEnumerator tradeTransactionReportEnumerator = client_.DownloadTrades(timeDirection, from, to, false, -1);
+            DownloadTradesEnumerator downloadTradesEnumerator = client_.DownloadTrades(timeDirection, from, to, false, -1);
 
             try
             {
@@ -297,9 +344,9 @@ namespace TradeCaptureSample
                 
                 for
                 (
-                    TradeTransactionReport tradeTransactionReport = tradeTransactionReportEnumerator.Next(-1);
+                    TradeTransactionReport tradeTransactionReport = downloadTradesEnumerator.Next(-1);
                     tradeTransactionReport != null;
-                    tradeTransactionReport = tradeTransactionReportEnumerator.Next(-1)
+                    tradeTransactionReport = downloadTradesEnumerator.Next(-1)
                 )
                 {
                     if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
@@ -337,13 +384,13 @@ namespace TradeCaptureSample
             }
             finally
             {
-                tradeTransactionReportEnumerator.Close();
+                downloadTradesEnumerator.Close();
             }
         }
 
         void DownloadAccountReports(TimeDirection timeDirection, DateTime from, DateTime to)
         {
-            AccountReportEnumerator accountReportEnumerator = client_.DownloadAccountReports(timeDirection, from, to, -1);
+            DownloadAccountReportsEnumerator downloadAccountReportsEnumerator = client_.DownloadAccountReports(timeDirection, from, to, -1);
 
             try
             {
@@ -351,9 +398,9 @@ namespace TradeCaptureSample
                 
                 for
                 (
-                    AccountReport accountReport = accountReportEnumerator.Next(-1);
+                    AccountReport accountReport = downloadAccountReportsEnumerator.Next(-1);
                     accountReport != null;
-                    accountReport = accountReportEnumerator.Next(-1)
+                    accountReport = downloadAccountReportsEnumerator.Next(-1)
                 )
                 {
                     Console.Error.WriteLine
@@ -374,7 +421,7 @@ namespace TradeCaptureSample
             }
             finally
             {
-                accountReportEnumerator.Close();
+                downloadAccountReportsEnumerator.Close();
             }
         }
 
@@ -450,5 +497,6 @@ namespace TradeCaptureSample
     }
 }
 
+// st "2017.01.01 0:0:0"
 // dt Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
 // da Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"

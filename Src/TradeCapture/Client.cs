@@ -32,7 +32,7 @@ namespace TickTrader.FDK.TradeCapture
             options.HeartbeatInterval = heartbeatInterval;
             options.Log.Directory = logDirectory;
 #if DEBUG
-            options.Log.Events = true;
+            options.Log.Events = false;
             options.Log.States = false;
             options.Log.Messages = true;
 #else
@@ -304,14 +304,16 @@ namespace TickTrader.FDK.TradeCapture
 
         #region Trade Capture
         
-        public delegate void SubscribeTradesResultDelegate(Client client, object data);
+        public delegate void SubscribeTradesResultBeginDelegate(Client client, object data, int count);        
+        public delegate void SubscribeTradesResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
+        public delegate void SubscribeTradesResultEndDelegate(Client client, object data);
         public delegate void SubscribeTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void UnsubscribeTradesResultDelegate(Client client, object data);
         public delegate void UnsubscribeTradesErrorDelegate(Client client, object data, Exception exception);
-        public delegate void TradeDownloadResultBeginDelegate(Client client, object data, string id, int totalCount);
-        public delegate void TradeDownloadResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
-        public delegate void TradeDownloadResultEndDelegate(Client client, object data);
-        public delegate void TradeDownloadErrorDelegate(Client client, object data, Exception exception);
+        public delegate void DownloadTradesResultBeginDelegate(Client client, object data, string id, int totalCount);
+        public delegate void DownloadTradesResultDelegate(Client client, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
+        public delegate void DownloadTradesResultEndDelegate(Client client, object data);
+        public delegate void DownloadTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void CancelDownloadTradesResultDelegate(Client client, object data);
         public delegate void CancelDownloadTradesErrorDelegate(Client client, object data, Exception exception);
         public delegate void DownloadAccountReportsResultBeginDelegate(Client client, object data, string id, int count);
@@ -323,14 +325,16 @@ namespace TickTrader.FDK.TradeCapture
         public delegate void TradeUpdateDelegate(Client client, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void NotificationDelegate(Client client, TickTrader.FDK.Common.Notification notification);
         
+        public event SubscribeTradesResultBeginDelegate SubscribeTradesResultBeginEvent;
         public event SubscribeTradesResultDelegate SubscribeTradesResultEvent;
+        public event SubscribeTradesResultEndDelegate SubscribeTradesResultEndEvent;
         public event SubscribeTradesErrorDelegate SubscribeTradesErrorEvent;
         public event UnsubscribeTradesResultDelegate UnsubscribeTradesResultEvent;
         public event UnsubscribeTradesErrorDelegate UnsubscribeTradesErrorEvent;
-        public event TradeDownloadResultBeginDelegate TradeDownloadResultBeginEvent;
-        public event TradeDownloadResultDelegate TradeDownloadResultEvent;
-        public event TradeDownloadResultEndDelegate TradeDownloadResultEndEvent;
-        public event TradeDownloadErrorDelegate TradeDownloadErrorEvent;
+        public event DownloadTradesResultBeginDelegate DownloadTradesResultBeginEvent;
+        public event DownloadTradesResultDelegate DownloadTradesResultEvent;
+        public event DownloadTradesResultEndDelegate DownloadTradesResultEndEvent;
+        public event DownloadTradesErrorDelegate DownloadTradesErrorEvent;
         public event CancelDownloadTradesResultDelegate CancelDownloadTradesResultEvent;
         public event CancelDownloadTradesErrorDelegate CancelDownloadTradesErrorEvent;
         public event DownloadAccountReportsResultBeginDelegate DownloadAccountReportsResultBeginEvent;
@@ -342,20 +346,23 @@ namespace TickTrader.FDK.TradeCapture
         public event TradeUpdateDelegate TradeUpdateEvent;
         public event NotificationDelegate NotificationEvent;
 
-        public void SubscribeTrades(DateTime from, bool skipCancel, int timeout)
+        public SubscribeTradesEnumerator SubscribeTrades(DateTime? from, bool skipCancel, int timeout)
         {
             SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(true);
+            context.event_ = new AutoResetEvent(false);
 
             SubscribeTradesInternal(context, from, skipCancel);
 
-            if (! context.Wait(timeout))
+            if (! context.event_.WaitOne(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
                 throw context.exception_;
+
+            return context.enumerator_;
         }
 
-        public void SubscribeTradesAsync(object data, DateTime from, bool skipCancel)
+        public void SubscribeTradesAsync(object data, DateTime? from, bool skipCancel)
         {
             SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(false);
             context.Data = data;
@@ -363,7 +370,7 @@ namespace TickTrader.FDK.TradeCapture
             SubscribeTradesInternal(context, from, skipCancel);
         }
 
-        void SubscribeTradesInternal(SubscribeTradesAsyncContext context, DateTime from, bool skipCancel)
+        void SubscribeTradesInternal(SubscribeTradesAsyncContext context, DateTime? from, bool skipCancel)
         {
             TradeSubscribeRequest request = new TradeSubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -402,7 +409,7 @@ namespace TickTrader.FDK.TradeCapture
             session_.SendTradeUnsubscribeRequest(context, request);
         }
 
-        public TradeTransactionReportEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
+        public DownloadTradesEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
         {
             TradeDownloadAsyncContext context = new TradeDownloadAsyncContext(true);
             context.event_ = new AutoResetEvent(false);
@@ -415,7 +422,7 @@ namespace TickTrader.FDK.TradeCapture
             if (context.exception_ != null)
                 throw context.exception_;
 
-            return context.tradeTransactionReportEnumerator_;
+            return context.enumerator_;
         }
 
         public void DownloadTradesAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel)
@@ -468,7 +475,7 @@ namespace TickTrader.FDK.TradeCapture
             session_.SendTradeDownloadCancelRequest(context, request);
         }
 
-        public AccountReportEnumerator DownloadAccountReports(TimeDirection timeDirection, DateTime? from, DateTime? to, int timeout)
+        public DownloadAccountReportsEnumerator DownloadAccountReports(TimeDirection timeDirection, DateTime? from, DateTime? to, int timeout)
         {
             DownloadAccountReportsAsyncContext context = new DownloadAccountReportsAsyncContext(true);
             context.event_ = new AutoResetEvent(false);
@@ -481,7 +488,7 @@ namespace TickTrader.FDK.TradeCapture
             if (context.exception_ != null)
                 throw context.exception_;
 
-            return context.accountReportEnumerator_;
+            return context.enumerator_;
         }
 
         public void DownloadAccountReportsAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to)
@@ -719,6 +726,12 @@ namespace TickTrader.FDK.TradeCapture
             {
             }
 
+            ~SubscribeTradesAsyncContext()
+            {
+                if (event_ != null)
+                    event_.Close();
+            }
+
             public void ProcessDisconnect(Client client, string text)
             {
                 DisconnectException exception = new DisconnectException(text);
@@ -736,11 +749,22 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    exception_ = exception;
+                    if (enumerator_ != null)
+                    {
+                        enumerator_.SetError(exception);
+                    }
+                    else
+                    {
+                        exception_ = exception;
+                        event_.Set();
+                    }
                 }
             }
 
+            public TradeTransactionReport tradeTransactionReport_;
+            public AutoResetEvent event_;
             public Exception exception_;
+            public SubscribeTradesEnumerator enumerator_;            
         }
 
         class UnsubscribeTradesAsyncContext : TradeUnsubscribeRequestClientContext, IAsyncContext
@@ -789,11 +813,11 @@ namespace TickTrader.FDK.TradeCapture
             {
                 DisconnectException exception = new DisconnectException(text);
 
-                if (client.TradeDownloadErrorEvent != null)
+                if (client.DownloadTradesErrorEvent != null)
                 {
                     try
                     {
-                        client.TradeDownloadErrorEvent(client, Data, exception);
+                        client.DownloadTradesErrorEvent(client, Data, exception);
                     }
                     catch
                     {
@@ -802,9 +826,9 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    if (tradeTransactionReportEnumerator_ != null)
+                    if (enumerator_ != null)
                     {
-                        tradeTransactionReportEnumerator_.SetError(exception);
+                        enumerator_.SetError(exception);
                     }
                     else
                     {
@@ -817,7 +841,7 @@ namespace TickTrader.FDK.TradeCapture
             public TradeTransactionReport tradeTransactionReport_;
             public AutoResetEvent event_;
             public Exception exception_;
-            public TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;            
+            public DownloadTradesEnumerator enumerator_;            
         }
 
         class CancelDownloadTradesAsyncContext : TradeDownloadCancelRequestClientContext, IAsyncContext
@@ -879,9 +903,9 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    if (accountReportEnumerator_ != null)
+                    if (enumerator_ != null)
                     {
-                        accountReportEnumerator_.SetError(exception);
+                        enumerator_.SetError(exception);
                     }
                     else
                     {
@@ -894,7 +918,7 @@ namespace TickTrader.FDK.TradeCapture
             public AccountReport accountReport_;
             public AutoResetEvent event_;
             public Exception exception_;
-            public AccountReportEnumerator accountReportEnumerator_;
+            public DownloadAccountReportsEnumerator enumerator_;
         }
 
         class CancelDownloadAccountReportsAsyncContext : AccountDownloadCancelRequestClientContext, IAsyncContext
@@ -1560,7 +1584,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeSubscribeReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeReport message)
+            public override void OnTradeSubscribeBeginReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeBeginReport message)
             {
                 try
                 {
@@ -1568,15 +1592,23 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
+                        context.tradeTransactionReport_ = new TradeTransactionReport();
+
                         if (client_.SubscribeTradesResultEvent != null)
                         {
                             try
                             {
-                                client_.SubscribeTradesResultEvent(client_, context.Data);
+                                client_.SubscribeTradesResultBeginEvent(client_, context.Data, message.TotalCount);
                             }
                             catch
                             {
                             }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.enumerator_ = new SubscribeTradesEnumerator(client_, message.TotalCount);
+                            context.event_.Set();
                         }
                     }
                     catch (Exception exception)
@@ -1595,6 +1627,7 @@ namespace TickTrader.FDK.TradeCapture
                         if (context.Waitable)
                         {
                             context.exception_ = exception;
+                            context.event_.Set();
                         }
                     }
                 }
@@ -1602,6 +1635,108 @@ namespace TickTrader.FDK.TradeCapture
                 {
                     client_.session_.LogError(exception.Message);
                 }
+            }
+
+            public override void OnTradeSubscribeReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeUpdateReport message)
+            {
+                try
+                {
+                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeSubscribeRequestClientContext;
+
+                    try
+                    {
+                        FillTradeTransactionReport(context.tradeTransactionReport_, message.Trade);
+
+                        if (client_.SubscribeTradesResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTradesResultEvent(client_, context.Data, context.tradeTransactionReport_);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
+
+                            context.enumerator_.SetResult(tradeTransactionReport);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeTradesErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTradeSubscribeEndReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeEndReport message)
+            {
+                try
+                {
+                    SubscribeTradesAsyncContext context = (SubscribeTradesAsyncContext)TradeSubscribeRequestClientContext;
+
+                    try
+                    {
+                        if (client_.SubscribeTradesResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTradesResultEndEvent(client_, context.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.enumerator_.SetEnd();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeTradesErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTradesErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                } 
             }
 
             public override void OnTradeSubscribeReject(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, Reject message)
@@ -1626,7 +1761,15 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        context.exception_ = exception;
+                        if (context.enumerator_ != null)
+                        {
+                            context.enumerator_.SetError(exception);
+                        }
+                        else
+                        {
+                            context.exception_ = exception;
+                            context.event_.Set();
+                        }
                     }
                 }
                 catch (Exception exception)
@@ -1720,11 +1863,11 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         context.tradeTransactionReport_ = new TradeTransactionReport();
 
-                        if (client_.TradeDownloadResultBeginEvent != null)
+                        if (client_.DownloadTradesResultBeginEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadResultBeginEvent(client_, context.Data, message.RequestId, message.TotalCount);
+                                client_.DownloadTradesResultBeginEvent(client_, context.Data, message.RequestId, message.TotalCount);
                             }
                             catch
                             {
@@ -1733,17 +1876,17 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.tradeTransactionReportEnumerator_ = new TradeTransactionReportEnumerator(client_, message.RequestId, message.TotalCount);
+                            context.enumerator_ = new DownloadTradesEnumerator(client_, message.RequestId, message.TotalCount);
                             context.event_.Set();
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TradeDownloadErrorEvent != null)
+                        if (client_.DownloadTradesErrorEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                                client_.DownloadTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
@@ -1773,11 +1916,11 @@ namespace TickTrader.FDK.TradeCapture
                     {
                         FillTradeTransactionReport(context.tradeTransactionReport_, message.Trade);
 
-                        if (client_.TradeDownloadResultEvent != null)
+                        if (client_.DownloadTradesResultEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadResultEvent(client_, context.Data, context.tradeTransactionReport_);
+                                client_.DownloadTradesResultEvent(client_, context.Data, context.tradeTransactionReport_);
                             }
                             catch
                             {
@@ -1788,16 +1931,16 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             TradeTransactionReport tradeTransactionReport = context.tradeTransactionReport_.Clone();
 
-                            context.tradeTransactionReportEnumerator_.SetResult(tradeTransactionReport);
+                            context.enumerator_.SetResult(tradeTransactionReport);
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TradeDownloadErrorEvent != null)
+                        if (client_.DownloadTradesErrorEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                                client_.DownloadTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
@@ -1806,7 +1949,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.tradeTransactionReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -1824,11 +1967,11 @@ namespace TickTrader.FDK.TradeCapture
 
                     try
                     {
-                        if (client_.TradeDownloadResultEndEvent != null)
+                        if (client_.DownloadTradesResultEndEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadResultEndEvent(client_, context.Data);
+                                client_.DownloadTradesResultEndEvent(client_, context.Data);
                             }
                             catch
                             {
@@ -1837,16 +1980,16 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.tradeTransactionReportEnumerator_.SetEnd();
+                            context.enumerator_.SetEnd();
                         }
                     }
                     catch (Exception exception)
                     {
-                        if (client_.TradeDownloadErrorEvent != null)
+                        if (client_.DownloadTradesErrorEvent != null)
                         {
                             try
                             {
-                                client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                                client_.DownloadTradesErrorEvent(client_, context.Data, exception);
                             }
                             catch
                             {
@@ -1855,7 +1998,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.tradeTransactionReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -1874,11 +2017,11 @@ namespace TickTrader.FDK.TradeCapture
                     TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
 
-                    if (client_.TradeDownloadErrorEvent != null)
+                    if (client_.DownloadTradesErrorEvent != null)
                     {
                         try
                         {
-                            client_.TradeDownloadErrorEvent(client_, context.Data, exception);
+                            client_.DownloadTradesErrorEvent(client_, context.Data, exception);
                         }
                         catch
                         {
@@ -1887,9 +2030,9 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        if (context.tradeTransactionReportEnumerator_ != null)
+                        if (context.enumerator_ != null)
                         {
-                            context.tradeTransactionReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                         else
                         {
@@ -2002,7 +2145,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.accountReportEnumerator_ = new AccountReportEnumerator(client_, message.RequestId, message.TotalCount);
+                            context.enumerator_ = new DownloadAccountReportsEnumerator(client_, message.RequestId, message.TotalCount);
                             context.event_.Set();
                         }
                     }
@@ -2057,7 +2200,7 @@ namespace TickTrader.FDK.TradeCapture
                         {
                             AccountReport accountReportClone = context.accountReport_.Clone();
 
-                            context.accountReportEnumerator_.SetResult(accountReportClone);
+                            context.enumerator_.SetResult(accountReportClone);
                         }
                     }
                     catch (Exception exception)
@@ -2075,7 +2218,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.accountReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -2106,7 +2249,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.accountReportEnumerator_.SetEnd();
+                            context.enumerator_.SetEnd();
                         }
                     }
                     catch (Exception exception)
@@ -2124,7 +2267,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.accountReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -2156,9 +2299,9 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        if (context.accountReportEnumerator_ != null)
+                        if (context.enumerator_ != null)
                         {
-                            context.accountReportEnumerator_.SetError(exception);
+                            context.enumerator_.SetError(exception);
                         }
                         else
                         {

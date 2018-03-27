@@ -75,14 +75,16 @@ namespace TradeCaptureAsyncSample
             client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
+            client_.SubscribeTradesResultBeginEvent += new Client.SubscribeTradesResultBeginDelegate(this.OnSubscribeTradesResultBegin);
             client_.SubscribeTradesResultEvent += new Client.SubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
+            client_.SubscribeTradesResultEndEvent += new Client.SubscribeTradesResultEndDelegate(this.OnSubscribeTradesResultEnd);
             client_.SubscribeTradesErrorEvent += new Client.SubscribeTradesErrorDelegate(this.OnSubscribeTradesError);
             client_.UnsubscribeTradesResultEvent += new Client.UnsubscribeTradesResultDelegate(this.OnUnsubscribeTradesResult);
             client_.UnsubscribeTradesErrorEvent += new Client.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);            
-            client_.TradeDownloadResultBeginEvent += new Client.TradeDownloadResultBeginDelegate(this.OnTradeDownloadResultBegin);
-            client_.TradeDownloadResultEvent += new Client.TradeDownloadResultDelegate(this.OnTradeDownloadResult);
-            client_.TradeDownloadResultEndEvent += new Client.TradeDownloadResultEndDelegate(this.OnTradeDownloadResultEnd);
-            client_.TradeDownloadErrorEvent += new Client.TradeDownloadErrorDelegate(this.OnTradeDownloadError);
+            client_.DownloadTradesResultBeginEvent += new Client.DownloadTradesResultBeginDelegate(this.OnDownloadTradesResultBegin);
+            client_.DownloadTradesResultEvent += new Client.DownloadTradesResultDelegate(this.OnDownloadTradesResult);
+            client_.DownloadTradesResultEndEvent += new Client.DownloadTradesResultEndDelegate(this.OnDownloadTradesResultEnd);
+            client_.DownloadTradesErrorEvent += new Client.DownloadTradesErrorDelegate(this.OnDownloadTradesError);
             client_.DownloadAccountReportsResultBeginEvent += new Client.DownloadAccountReportsResultBeginDelegate(this.OnDownloadAccountReportsResultBegin);
             client_.DownloadAccountReportsResultEvent += new Client.DownloadAccountReportsResultDelegate(this.OnDownloadAccountReportsResult);
             client_.DownloadAccountReportsResultEndEvent += new Client.DownloadAccountReportsResultEndDelegate(this.OnDownloadAccountReportsResultEnd);
@@ -419,17 +421,61 @@ namespace TradeCaptureAsyncSample
             client_.SubscribeTradesAsync(this, from,  false);
         }
 
-        void UnsubscribeTrades()
+        public void OnSubscribeTradesResultBegin(Client client, object data, int count)
         {
-            client_.UnsubscribeTradesAsync(this);
+            try
+            {
+                Console.Error.WriteLine("Subscribing");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
-        void DownloadTrades(TimeDirection timeDirection, DateTime from, DateTime to)
+        public void OnSubscribeTradesResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
         {
-            client_.DownloadTradesAsync(this, timeDirection, from, to, false);
+            try
+            {
+                if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
+                    tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason,
+                        tradeTransactionReport.Id,
+                        tradeTransactionReport.OrderType,
+                        tradeTransactionReport.Symbol,
+                        tradeTransactionReport.OrderSide,
+                        tradeTransactionReport.OrderLastFillAmount,
+                        tradeTransactionReport.OrderFillPrice,
+                        tradeTransactionReport.Comment
+                    );
+                }
+                else
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}", 
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason
+                    );
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
-        public void OnSubscribeTradesResult(Client client, object data)
+
+        public void OnSubscribeTradesResultEnd(Client client, object data)
         {
             try
             {
@@ -451,6 +497,11 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
             }
+        }
+
+        void UnsubscribeTrades()
+        {
+            client_.UnsubscribeTradesAsync(this);
         }
 
         public void OnUnsubscribeTradesResult(Client client, object data)
@@ -477,7 +528,12 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeDownloadResultBegin(Client client, object data, string id, int tradeCount)
+        void DownloadTrades(TimeDirection timeDirection, DateTime from, DateTime to)
+        {
+            client_.DownloadTradesAsync(this, timeDirection, from, to, false);
+        }
+
+        public void OnDownloadTradesResultBegin(Client client, object data, string id, int tradeCount)
         {
             try
             {
@@ -489,7 +545,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeDownloadResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
+        public void OnDownloadTradesResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
         {
             try
             {
@@ -498,7 +554,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
+                        "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -508,7 +564,8 @@ namespace TradeCaptureAsyncSample
                         tradeTransactionReport.Symbol,
                         tradeTransactionReport.OrderSide,
                         tradeTransactionReport.OrderLastFillAmount,
-                        tradeTransactionReport.OrderFillPrice
+                        tradeTransactionReport.OrderFillPrice,
+                        tradeTransactionReport.Comment
                     );
                 }
                 else
@@ -529,7 +586,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeDownloadResultEnd(Client client, object data)
+        public void OnDownloadTradesResultEnd(Client client, object data)
         {
             try
             {
@@ -541,7 +598,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeDownloadError(Client client, object data, Exception error)
+        public void OnDownloadTradesError(Client client, object data, Exception error)
         {
             try
             {
@@ -626,17 +683,18 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
                         tradeTransactionReport.TradeTransactionReason,
-                        tradeTransactionReport.ClientId,
+                        tradeTransactionReport.Id,
                         tradeTransactionReport.OrderType,
                         tradeTransactionReport.Symbol,
                         tradeTransactionReport.OrderSide,
                         tradeTransactionReport.OrderLastFillAmount,
-                        tradeTransactionReport.OrderFillPrice
+                        tradeTransactionReport.OrderFillPrice,
+                        tradeTransactionReport.Comment
                     );
                 }
                 else

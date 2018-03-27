@@ -120,9 +120,9 @@
         /// <returns>can not be null</returns>
         public TradeRecord[] GetTradeRecordsEx(int timeoutInMilliseconds)
         {
-            using (OrderEnumerator orderEnumerator = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds))
+            using (GetOrdersEnumerator orderEnumerator = dataTrade_.orderEntryClient_.GetOrders(timeoutInMilliseconds))
             {
-                TradeRecord[] tradeRecords = new TradeRecord[orderEnumerator.OrderCount];
+                TradeRecord[] tradeRecords = new TradeRecord[orderEnumerator.TotalCount];
                 int index = 0;
 
                 for
@@ -727,11 +727,11 @@
 
         /// <summary>
         /// The method starts trade transaction reports receiving.
-        /// </summary>
+        /// </summary>  
         /// <param name="skipCancel"></param>
-        public void SubscribeTradeTransactionReports(DateTime from, bool skipCancel)
+        public SubscribeTradeTransactionReportsEnumerator SubscribeTradeTransactionReports(DateTime? from, bool skipCancel)
         {
-            SubscribeTradeTransactionReportsEx(from, skipCancel, dataTrade_.synchOperationTimeout_);
+            return SubscribeTradeTransactionReportsEx(from, skipCancel, dataTrade_.synchOperationTimeout_);
         }
 
         /// <summary>
@@ -739,9 +739,11 @@
         /// </summary>
         /// <param name="skipCancel"></param>
         /// <param name="timeoutInMilliseconds"></param>
-        public void SubscribeTradeTransactionReportsEx(DateTime from, bool skipCancel, int timeoutInMilliseconds)
+        public SubscribeTradeTransactionReportsEnumerator SubscribeTradeTransactionReportsEx(DateTime? from, bool skipCancel, int timeoutInMilliseconds)
         {
-            dataTrade_.tradeCaptureClient_.SubscribeTrades(from, skipCancel, timeoutInMilliseconds);
+            TradeCapture.SubscribeTradesEnumerator tradeTransactionReportEnumerator = dataTrade_.tradeCaptureClient_.SubscribeTrades(from, skipCancel, timeoutInMilliseconds);
+
+            return new SubscribeTradeTransactionReportsEnumerator(dataTrade_, from, skipCancel, timeoutInMilliseconds, tradeTransactionReportEnumerator);
         }
 
         /// <summary>
@@ -813,95 +815,6 @@
         public AccountReports GetAccountHistoryEx(TimeDirection direction, DateTime? from, DateTime? to, int timeoutInMilliseconds)
         {
             return new AccountReports(dataTrade_, direction, from, to, timeoutInMilliseconds);
-        }
-
-        /// <summary>
-        /// The method gets snapshot of trade transaction reports and subscribe to notifications.
-        /// All reports will be received as events.
-        /// </summary>
-        /// <param name="direction">Time direction of reports snapshot</param>>
-        /// <param name="subscribeToNotifications">Specify false to receive only history snapshot; true to receive history snapshot and updates.</param>
-        /// <param name="from">
-        /// Optional parameter, which specifies the start date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "to" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <param name="to">
-        /// Optional parameter, which specifies the finish date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "from" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <returns>Can not be null.</returns>
-        public TradeTransactionReportsEnumerator GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, bool? skipCancel)
-        {
-            return this.GetTradeTransactionReports(direction, subscribeToNotifications, from, to, 16, skipCancel);
-        }
-
-        /// <summary>
-        /// The method gets snapshot of trade transaction reports and subscribe to notifications.
-        /// All reports will be received as events.
-        /// </summary>
-        /// <param name="direction">Time direction of reports snapshot</param>>
-        /// <param name="subscribeToNotifications">Specifye false to receive only history snapshot; true to receive history snapshot and updates.</param>
-        /// <param name="from">
-        /// Optional parameter, which specifies the start date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "to" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <param name="to">
-        /// Optional parameter, which specifies the finish date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "from" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
-        /// <returns>Can not be null.</returns>
-        [Obsolete]
-        public TradeTransactionReportsEnumerator GetTradeTransactionReports(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel)
-        {
-            return GetTradeTransactionReportsEx(direction, subscribeToNotifications, from, to, preferedBufferSize, skipCancel, dataTrade_.synchOperationTimeout_);
-        }
-
-        /// <summary>
-        /// The method gets snapshot of trade transaction reports and subscribe to notifications.
-        /// All reports will be received as events.
-        /// </summary>
-        /// <param name="direction">Time direction of reports snapshot</param>
-        /// <param name="subscribeToNotifications">Specifye false to receive only history snapshot; true to receive history snapshot and updates.</param>
-        /// <param name="from">
-        /// Optional parameter, which specifies the start date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "to" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <param name="to">
-        /// Optional parameter, which specifies the finish date and time for trade transaction reports.
-        /// You should specify the parameter, if you specified "from" parameter.
-        /// The parameter is supported since 1.6 FIX version.
-        /// </param>
-        /// <param name="preferedBufferSize"> Specifies number of reports requested at once. Server has itself limitation and if you specify out of range value it will be ignored.</param>
-        /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds</param>
-        /// <returns>Can not be null.</returns>
-        [Obsolete]
-        public TradeTransactionReportsEnumerator GetTradeTransactionReportsEx(TimeDirection direction, bool subscribeToNotifications, DateTime? from, DateTime? to, int preferedBufferSize, bool? skipCancel, int timeoutInMilliseconds)
-        {
-            TradeTransactionReportsEnumerator tradeTransactionReportsEnumerator;
-
-            bool skipCancelValue = skipCancel != null ? skipCancel.Value : false;
-
-            if (subscribeToNotifications)
-            {
-                DateTime fromValue = from != null ? from.Value : DateTime.UtcNow;
-                SubscribeTradeTransactionReportsEx(fromValue, skipCancelValue, timeoutInMilliseconds);
-
-                tradeTransactionReportsEnumerator = null;
-            }
-            else
-            {
-                TradeTransactionReports tradeTransactionReports = GetTradeTransactionReportsHistoryEx(direction, from, to, skipCancelValue, timeoutInMilliseconds);
-
-                tradeTransactionReportsEnumerator = tradeTransactionReports.GetEnumerator();
-            }
-
-            return tradeTransactionReportsEnumerator;
         }
 
         ClosePositionResult GetClosePositionResult(ExecutionReport executionReport)

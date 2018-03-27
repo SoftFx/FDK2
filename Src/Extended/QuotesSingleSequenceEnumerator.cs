@@ -8,7 +8,7 @@
 
 	public class QuotesSingleSequenceEnumerator : IEnumerator<Quote>
 	{
-		internal QuotesSingleSequenceEnumerator(QuotesSingleSequence quotesSingleSequence, QuoteEnumerator quoteEnumerator)
+		internal QuotesSingleSequenceEnumerator(QuotesSingleSequence quotesSingleSequence, DownloadQuotesEnumerator quoteEnumerator)
 		{
 			quotesSingleSequence_ = quotesSingleSequence;
             quoteEnumerator_ = quoteEnumerator;
@@ -57,7 +57,7 @@
 		}
 
 		QuotesSingleSequence quotesSingleSequence_;
-        QuoteEnumerator quoteEnumerator_;
+        DownloadQuotesEnumerator quoteEnumerator_;
 
         Quote quote_;
 	}

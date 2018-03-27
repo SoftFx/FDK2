@@ -8,10 +8,10 @@
 
     public class TradeTransactionReportsEnumerator : IEnumerator<TradeTransactionReport>
     {
-        internal TradeTransactionReportsEnumerator(TradeTransactionReports tradeTransactionReports, TradeTransactionReportEnumerator tradeTransactionReportEnumerator)
+        internal TradeTransactionReportsEnumerator(TradeTransactionReports tradeTransactionReports, DownloadTradesEnumerator tradeTransactionReportEnumerator)
         {
             tradeTransactionReports_ = tradeTransactionReports;
-            tradeTransactionReportEnumerator_ = tradeTransactionReportEnumerator;
+            downloadTradesEnumerator_ = tradeTransactionReportEnumerator;
 
             tradeTransactionReport_ = null;
         }
@@ -28,16 +28,16 @@
 
         public bool MoveNext()
         {
-            tradeTransactionReport_ = tradeTransactionReportEnumerator_.Next(tradeTransactionReports_.timeout_);
+            tradeTransactionReport_ = downloadTradesEnumerator_.Next(tradeTransactionReports_.timeout_);
 
             return tradeTransactionReport_ != null;
         }
 
         public void Reset()
         {
-            tradeTransactionReportEnumerator_.Dispose();
+            downloadTradesEnumerator_.Dispose();
 
-            tradeTransactionReportEnumerator_ = tradeTransactionReports_.dataTrade_.tradeCaptureClient_.DownloadTrades
+            downloadTradesEnumerator_ = tradeTransactionReports_.dataTrade_.tradeCaptureClient_.DownloadTrades
             (
                 tradeTransactionReports_.direction_, 
                 tradeTransactionReports_.startTime_, 
@@ -51,13 +51,13 @@
 
         public void Dispose()
         {
-            tradeTransactionReportEnumerator_.Dispose();
+            downloadTradesEnumerator_.Dispose();
 
             GC.SuppressFinalize(this);
         }
 
         TradeTransactionReports tradeTransactionReports_;
-        TradeTransactionReportEnumerator tradeTransactionReportEnumerator_;
+        DownloadTradesEnumerator downloadTradesEnumerator_;
         TradeTransactionReport tradeTransactionReport_;
     }
 }

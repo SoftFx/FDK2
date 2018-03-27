@@ -8,7 +8,7 @@
 
     public class BarsEnumerator : IEnumerator<Bar>
     {
-        internal BarsEnumerator(Bars bars, BarEnumerator barEnumerator)
+        internal BarsEnumerator(Bars bars, DownloadBarsEnumerator barEnumerator)
         {
             bars_ = bars;
             barEnumerator_ = barEnumerator;
@@ -58,7 +58,7 @@
         }
 
         Bars bars_;
-        BarEnumerator barEnumerator_;
+        DownloadBarsEnumerator barEnumerator_;
         Bar bar_;
     }
 }

@@ -1447,8 +1447,8 @@
             }
             
             public PairBars pairBars_;
-            public BarEnumerator bidBarEnumerator_;
-            public BarEnumerator askBarEnumerator_;
+            public DownloadBarsEnumerator bidBarEnumerator_;
+            public DownloadBarsEnumerator askBarEnumerator_;
             public Exception exception_;
             public PairBarsEnumerator pairBarsEnumerator_;
             public AutoResetEvent event_;
@@ -1476,10 +1476,10 @@
                         {
                             if (barDownloadContext.priceType_ == PriceType.Bid)
                             {
-                                pairBarDownloadContext.bidBarEnumerator_ = new BarEnumerator(client, downloadId, availFrom, availTo);
+                                pairBarDownloadContext.bidBarEnumerator_ = new DownloadBarsEnumerator(client, downloadId, availFrom, availTo);
                             }
                             else
-                                pairBarDownloadContext.askBarEnumerator_ = new BarEnumerator(client, downloadId, availFrom, availTo);
+                                pairBarDownloadContext.askBarEnumerator_ = new DownloadBarsEnumerator(client, downloadId, availFrom, availTo);
 
                             if (pairBarDownloadContext.bidBarEnumerator_ != null && 
                                 pairBarDownloadContext.askBarEnumerator_ != null)

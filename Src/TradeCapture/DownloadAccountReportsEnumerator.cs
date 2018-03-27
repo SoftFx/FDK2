@@ -1,21 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using TickTrader.FDK.Common;
 
-namespace TickTrader.FDK.OrderEntry
+namespace TickTrader.FDK.TradeCapture
 {
-    public class OrderEnumerator : IDisposable
+    public class DownloadAccountReportsEnumerator : IDisposable
     {
-        internal OrderEnumerator(Client client, string requestId, int orderCount)
+        internal DownloadAccountReportsEnumerator(Client client, string id, int totalCount)
         {
             client_ = client;
-            requestId_ = requestId;
-            orderCount_ = orderCount;
+            id_ = id;
+            totalCount_ = totalCount;
 
             mutex_ = new object();
             completed_ = false;
-            orders_ = new ExecutionReport[GrowSize];
+            accountReports_ = new AccountReport[GrowSize];
             count_ = 0;
             beginIndex_ = 0;
             endIndex_ = 0;
@@ -23,12 +23,12 @@ namespace TickTrader.FDK.OrderEntry
             event_ = new AutoResetEvent(false);
         }
 
-        public int OrderCount
+        public int TotalCount
         {
-            get { return orderCount_; }
+            get { return totalCount_;  }
         }
 
-        public ExecutionReport Next(int timeout)
+        public AccountReport Next(int timeout)
         {
             while (true)
             {
@@ -36,12 +36,12 @@ namespace TickTrader.FDK.OrderEntry
                 {
                     if (count_ > 0)
                     {
-                        ExecutionReport order = orders_[beginIndex_];
-                        orders_[beginIndex_] = null;       // !
-                        beginIndex_ = (beginIndex_ + 1) % orders_.Length;
+                        AccountReport tradeTransactionReport = accountReports_[beginIndex_];
+                        accountReports_[beginIndex_] = null;       // !
+                        beginIndex_ = (beginIndex_ + 1) % accountReports_.Length;
                         --count_;
 
-                        return order;
+                        return tradeTransactionReport;
                     }
 
                     if (exception_ != null)
@@ -53,20 +53,20 @@ namespace TickTrader.FDK.OrderEntry
 
                 if (! event_.WaitOne(timeout))
                     throw new Common.TimeoutException("Method call timed out");
-            }            
+            }
         }
 
         public void Close()
         {
             lock (mutex_)
             {
-                if (! completed_)
+                if (!completed_)
                 {
                     completed_ = true;
 
                     try
                     {
-                        client_.CancelOrdersAsync(null, requestId_);
+                        client_.CancelDownloadAccountReportsAsync(null, id_);
                     }
                     catch
                     {
@@ -75,8 +75,8 @@ namespace TickTrader.FDK.OrderEntry
 
                 if (count_ > 0)
                 {
-                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % orders_.Length)
-                        orders_[index] = null;
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % accountReports_.Length)
+                        accountReports_[index] = null;
 
                     count_ = 0;
                     beginIndex_ = 0;
@@ -94,35 +94,35 @@ namespace TickTrader.FDK.OrderEntry
             GC.SuppressFinalize(this);
         }
 
-        internal void SetResult(ExecutionReport order)
+        internal void SetResult(AccountReport tradeTransactionReport)
         {
             lock (mutex_)
             {
                 if (! completed_)
                 {
-                    if (count_ == orders_.Length)
+                    if (count_ == accountReports_.Length)
                     {
-                        ExecutionReport[] orders = new ExecutionReport[orders_.Length + GrowSize];
+                        AccountReport[] tradeTransactionReports = new AccountReport[accountReports_.Length + GrowSize];
 
                         if (endIndex_ > beginIndex_)
                         {
-                            Array.Copy(orders_, beginIndex_, orders, 0, count_);
+                            Array.Copy(accountReports_, beginIndex_, tradeTransactionReports, 0, count_);
                         }
                         else
                         {
-                            int count = orders_.Length - beginIndex_;
-                            Array.Copy(orders_, beginIndex_, orders, 0, count);
-                            Array.Copy(orders_, 0, orders, count, endIndex_);
+                            int count = accountReports_.Length - beginIndex_;
+                            Array.Copy(accountReports_, beginIndex_, tradeTransactionReports, 0, count);
+                            Array.Copy(accountReports_, 0, tradeTransactionReports, count, endIndex_);
                         }
 
-                        orders_ = orders;
+                        accountReports_ = tradeTransactionReports;
                         beginIndex_ = 0;
                         endIndex_ = count_;
                     }
 
-                    orders_[endIndex_] = order;
-                    endIndex_ = (endIndex_ + 1) % orders_.Length;
-                    ++ count_;
+                    accountReports_[endIndex_] = tradeTransactionReport;
+                    endIndex_ = (endIndex_ + 1) % accountReports_.Length;
+                    ++count_;
 
                     event_.Set();
                 }
@@ -148,8 +148,8 @@ namespace TickTrader.FDK.OrderEntry
             {
                 if (! completed_)
                 {
-                    exception_ = exception;
-                    completed_ = true;
+                    exception_ = exception;                    
+                    completed_ = true;                    
 
                     event_.Set();
                 }
@@ -159,13 +159,13 @@ namespace TickTrader.FDK.OrderEntry
         const int GrowSize = 1000;
 
         Client client_;
-        string requestId_;
-        int orderCount_;
+        string id_;
+        int totalCount_;
 
         object mutex_;
         bool completed_;
 
-        ExecutionReport[] orders_;
+        AccountReport[] accountReports_;
         int count_;
         int beginIndex_;
         int endIndex_;

@@ -1,13 +1,13 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.QuoteStore
 {
-    public class BarEnumerator : IDisposable
+    public class DownloadQuotesEnumerator : IDisposable
     {
-        public BarEnumerator(Client client, string downloadId, DateTime availFrom, DateTime availTo)
+        internal DownloadQuotesEnumerator(Client client, string downloadId, DateTime availFrom, DateTime availTo)
         {
             client_ = client;
             downloadId_ = downloadId;
@@ -16,8 +16,8 @@ namespace TickTrader.FDK.QuoteStore
 
             mutex_ = new object();
             completed_ = false;
-            bars_ = new Bar[GrowSize];
-            barCount_ = 0;
+            quotes_ = new Quote[GrowSize];
+            quoteCount_ = 0;
             beginIndex_ = 0;
             endIndex_ = 0;
             exception_ = null;
@@ -34,20 +34,20 @@ namespace TickTrader.FDK.QuoteStore
             get { return availTo_; }
         }
 
-        public Bar Next(int timeout)
+        public Quote Next(int timeout)
         {
             while (true)
             {
                 lock (mutex_)
                 {
-                    if (barCount_ > 0)
+                    if (quoteCount_ > 0)
                     {
-                        Bar bar = bars_[beginIndex_];
-                        bars_[beginIndex_] = null;       // !
-                        beginIndex_ = (beginIndex_ + 1) % bars_.Length;
-                        --barCount_;
+                        Quote quote = quotes_[beginIndex_];
+                        quotes_[beginIndex_] = null;       // !
+                        beginIndex_ = (beginIndex_ + 1) % quotes_.Length;
+                        --quoteCount_;
 
-                        return bar;
+                        return quote;
                     }
 
                     if (exception_ != null)
@@ -59,32 +59,32 @@ namespace TickTrader.FDK.QuoteStore
 
                 if (! event_.WaitOne(timeout))
                     throw new Common.TimeoutException("Method call timed out");
-            }
+            }            
         }
 
         public void Close()
         {
             lock (mutex_)
             {
-                if (!completed_)
+                if (! completed_)
                 {
                     completed_ = true;
 
                     try
                     {
-                        client_.CancelDownloadBarsAsync(null, downloadId_);
+                        client_.CancelDownloadQuotesAsync(null, downloadId_);
                     }
                     catch
                     {
                     }
                 }
 
-                if (barCount_ > 0)
+                if (quoteCount_ > 0)
                 {
-                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % bars_.Length)
-                        bars_[index] = null;
+                    for (int index = beginIndex_; index != endIndex_; index = (index + 1) % quotes_.Length)
+                        quotes_[index] = null;
 
-                    barCount_ = 0;
+                    quoteCount_ = 0;
                     beginIndex_ = 0;
                     endIndex_ = 0;
                 }
@@ -100,42 +100,42 @@ namespace TickTrader.FDK.QuoteStore
             GC.SuppressFinalize(this);
         }
 
-        public void SetResult(Bar bar)
+        internal void SetResult(Quote quote)
         {
             lock (mutex_)
             {
                 if (! completed_)
                 {
-                    if (barCount_ == bars_.Length)
+                    if (quoteCount_ == quotes_.Length)
                     {
-                        Bar[] bars = new Bar[bars_.Length + GrowSize];
+                        Quote[] quotes = new Quote[quotes_.Length + GrowSize];
 
                         if (endIndex_ > beginIndex_)
                         {
-                            Array.Copy(bars_, beginIndex_, bars, 0, barCount_);
+                            Array.Copy(quotes_, beginIndex_, quotes, 0, quoteCount_);
                         }
                         else
                         {
-                            int count = bars_.Length - beginIndex_;
-                            Array.Copy(bars_, beginIndex_, bars, 0, count);
-                            Array.Copy(bars_, 0, bars, count, endIndex_);
+                            int count = quotes_.Length - beginIndex_;
+                            Array.Copy(quotes_, beginIndex_, quotes, 0, count);
+                            Array.Copy(quotes_, 0, quotes, count, endIndex_);
                         }
 
-                        bars_ = bars;
+                        quotes_ = quotes;
                         beginIndex_ = 0;
-                        endIndex_ = barCount_;
+                        endIndex_ = quoteCount_;
                     }
 
-                    bars_[endIndex_] = bar;
-                    endIndex_ = (endIndex_ + 1) % bars_.Length;
-                    ++barCount_;
+                    quotes_[endIndex_] = quote;
+                    endIndex_ = (endIndex_ + 1) % quotes_.Length;
+                    ++quoteCount_;
 
                     event_.Set();
                 }
             }
         }
 
-        public void SetEnd()
+        internal void SetEnd()
         {
             lock (mutex_)
             {
@@ -148,7 +148,7 @@ namespace TickTrader.FDK.QuoteStore
             }
         }
 
-        public void SetError(Exception exception)
+        internal void SetError(Exception exception)
         {
             lock (mutex_)
             {
@@ -156,12 +156,12 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     exception_ = exception;
                     completed_ = true;
-                    
+
                     event_.Set();
                 }
             }
         }
-        
+
         const int GrowSize = 1000;
 
         Client client_;
@@ -172,8 +172,8 @@ namespace TickTrader.FDK.QuoteStore
         object mutex_;
         bool completed_;
 
-        Bar[] bars_;
-        int barCount_;
+        Quote[] quotes_;
+        int quoteCount_;
         int beginIndex_;
         int endIndex_;
         Exception exception_;

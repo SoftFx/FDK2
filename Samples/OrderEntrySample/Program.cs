@@ -570,13 +570,13 @@ namespace OrderEntrySample
         
         void GetOrders()
         {
-            OrderEnumerator orderEnumerator = client_.GetOrders(Timeout);
+            GetOrdersEnumerator enumerator = client_.GetOrders(Timeout);
 
             try
             {
-                Console.Error.WriteLine("Total orders : {0}", orderEnumerator.OrderCount);
+                Console.Error.WriteLine("Total orders : {0}", enumerator.TotalCount);
 
-                for (ExecutionReport executionReport = orderEnumerator.Next(Timeout); executionReport != null; executionReport = orderEnumerator.Next(Timeout))
+                for (ExecutionReport executionReport = enumerator.Next(Timeout); executionReport != null; executionReport = enumerator.Next(Timeout))
                 {
                     if (executionReport.OrderType == OrderType.Stop)
                     {
@@ -592,7 +592,7 @@ namespace OrderEntrySample
             }
             finally
             {
-                orderEnumerator.Close();
+                enumerator.Close();
             }
         }
 

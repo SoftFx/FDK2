@@ -8,7 +8,7 @@
 
     public class AccountReportsEnumerator : IEnumerator<AccountReport>
     {
-        internal AccountReportsEnumerator(AccountReports accountReports, AccountReportEnumerator accountReportEnumerator)
+        internal AccountReportsEnumerator(AccountReports accountReports, DownloadAccountReportsEnumerator accountReportEnumerator)
         {
             accountReports_ = accountReports;
             accountReportEnumerator_ = accountReportEnumerator;
@@ -56,7 +56,7 @@
         }
 
         AccountReports accountReports_;
-        AccountReportEnumerator accountReportEnumerator_;
+        DownloadAccountReportsEnumerator accountReportEnumerator_;
         AccountReport accountReport_;
     }
 }

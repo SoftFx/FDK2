@@ -66,7 +66,7 @@
         /// <returns>Can not be null.</returns>
         public BarsEnumerator GetEnumerator()
         {
-            BarEnumerator barEnumerator = datafeed_.quoteStoreClient_.DownloadBars
+            DownloadBarsEnumerator barEnumerator = datafeed_.quoteStoreClient_.DownloadBars
             (
                 symbol_, 
                 priceType_, 

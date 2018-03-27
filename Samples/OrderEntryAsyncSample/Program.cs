@@ -866,7 +866,7 @@ namespace OrderEntryAsyncSample
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.ImmediateOrCancel, null, null, null, comment, null, null);
         }
 
         void OnNewOrderResult(Client client, object data, ExecutionReport executionReport)

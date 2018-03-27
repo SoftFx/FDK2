@@ -46,10 +46,11 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AccountReportEnumerator.cs" />
+    <Compile Include="DownloadAccountReportsEnumerator.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TradeTransactionReportEnumerator.cs" />
+    <Compile Include="SubscribeTradesEnumerator.cs" />
+    <Compile Include="DownloadTradesEnumerator.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">

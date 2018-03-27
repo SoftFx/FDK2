@@ -460,7 +460,7 @@ namespace TickTrader.FDK.OrderEntry
             session_.SendTradingSessionStatusRequest(context, request);
         }
 
-        public OrderEnumerator GetOrders(int timeout)
+        public GetOrdersEnumerator GetOrders(int timeout)
         {
             OrdersAsyncContext context = new OrdersAsyncContext(true);
             context.event_ = new AutoResetEvent(false);            
@@ -473,7 +473,7 @@ namespace TickTrader.FDK.OrderEntry
             if (context.exception_ != null)
                 throw context.exception_;
 
-            return context.orderEnumerator_;
+            return context.enumerator_;
         }
 
         public void GetOrdersAsync(object data)
@@ -1316,7 +1316,7 @@ namespace TickTrader.FDK.OrderEntry
                         
             public TickTrader.FDK.Common.ExecutionReport executionReport_;
             public Exception exception_;
-            public OrderEnumerator orderEnumerator_;
+            public GetOrdersEnumerator enumerator_;
             public AutoResetEvent event_;            
         }
 
@@ -2530,7 +2530,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.orderEnumerator_ = new OrderEnumerator(client_, message.RequestId, message.OrderCount);
+                        context.enumerator_ = new GetOrdersEnumerator(client_, message.RequestId, message.OrderCount);
                         context.event_.Set();
                     }
                 }
@@ -2602,7 +2602,7 @@ namespace TickTrader.FDK.OrderEntry
                     {
                         TickTrader.FDK.Common.ExecutionReport executionReport = resultExecutionReport.Clone();
 
-                        context.orderEnumerator_.SetResult(executionReport);
+                        context.enumerator_.SetResult(executionReport);
                     }
                 }
                 catch (Exception exception)
@@ -2630,7 +2630,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.orderEnumerator_.SetEnd();
+                        context.enumerator_.SetEnd();
                     }
                 }
                 catch (Exception exception)
@@ -2661,13 +2661,13 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        if (context.orderEnumerator_ == null)
+                        if (context.enumerator_ == null)
                         {
                             context.exception_ = exception;
                             context.event_.Set();
                         }
                         else
-                            context.orderEnumerator_.SetError(exception);                            
+                            context.enumerator_.SetError(exception);                            
                     }
                 }
                 catch (Exception exception)
