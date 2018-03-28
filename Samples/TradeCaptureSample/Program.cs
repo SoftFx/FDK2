@@ -68,6 +68,9 @@ namespace TradeCaptureSample
 
             client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
+            client_.SubscribeTradesResultBeginEvent += new Client.SubscribeTradesResultBeginDelegate(this.OnSubscribeTradesResultBegin);
+            client_.SubscribeTradesResultEvent += new Client.SubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
+            client_.SubscribeTradesResultEndEvent += new Client.SubscribeTradesResultEndDelegate(this.OnSubscribeTradesResultEnd);
             client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
 
             address_ = address;
@@ -279,47 +282,7 @@ namespace TradeCaptureSample
 
             try
             {
-                Console.WriteLine("Subscribing");
-                
-                for
-                (
-                    TradeTransactionReport tradeTransactionReport = subscribeTradesEnumerator.Next(-1);
-                    tradeTransactionReport != null;
-                    tradeTransactionReport = subscribeTradesEnumerator.Next(-1)
-                )
-                {
-                    if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
-                        tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
-                    {
-                        Console.Error.WriteLine
-                        (
-                            "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
-                            tradeTransactionReport.TradeTransactionId,
-                            tradeTransactionReport.TransactionTime,
-                            tradeTransactionReport.TradeTransactionReportType,
-                            tradeTransactionReport.TradeTransactionReason,
-                            tradeTransactionReport.ClientId,
-                            tradeTransactionReport.OrderType,
-                            tradeTransactionReport.Symbol,
-                            tradeTransactionReport.OrderSide,
-                            tradeTransactionReport.OrderLastFillAmount,
-                            tradeTransactionReport.OrderFillPrice
-                        );
-                    }
-                    else
-                    {
-                        Console.Error.WriteLine
-                        (
-                            "Trade report : {0}, {1}, {2}, {3}", 
-                            tradeTransactionReport.TradeTransactionId,
-                            tradeTransactionReport.TransactionTime,
-                            tradeTransactionReport.TradeTransactionReportType,
-                            tradeTransactionReport.TradeTransactionReason
-                        );
-                    }
-                }
-
-                Console.WriteLine("Subscribed");
+                subscribeTradesEnumerator.End(-1);
             }
             finally
             {
@@ -442,6 +405,70 @@ namespace TradeCaptureSample
             try
             {
                 Console.WriteLine("Disconnected : " + text);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnSubscribeTradesResultBegin(Client client, object data, int count)
+        {
+            try
+            {
+                Console.WriteLine("Subscribing");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnSubscribeTradesResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
+        {
+            try
+            {
+                if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
+                    tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}",
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason,
+                        tradeTransactionReport.ClientId,
+                        tradeTransactionReport.OrderType,
+                        tradeTransactionReport.Symbol,
+                        tradeTransactionReport.OrderSide,
+                        tradeTransactionReport.OrderLastFillAmount,
+                        tradeTransactionReport.OrderFillPrice
+                    );
+                }
+                else
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}", 
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason
+                    );
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        public void OnSubscribeTradesResultEnd(Client client, object data)
+        {
+            try
+            {
+                Console.WriteLine("Subscribed");
             }
             catch (Exception exception)
             {

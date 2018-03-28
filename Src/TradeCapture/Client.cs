@@ -2468,27 +2468,6 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.TradeCapture.RejectReason reason)
-            {
-                switch (reason)
-                {
-                    case SoftFX.Net.TradeCapture.RejectReason.ThrottlingLimits:
-                        return Common.RejectReason.ThrottlingLimits;
-
-                    case SoftFX.Net.TradeCapture.RejectReason.RequestCancelled:
-                        return Common.RejectReason.RequestCancelled;
-
-                    case SoftFX.Net.TradeCapture.RejectReason.InternalServerError:
-                        return Common.RejectReason.InternalServerError;
-
-                    case SoftFX.Net.TradeCapture.RejectReason.Other:
-                        return Common.RejectReason.Other;
-
-                    default:
-                        throw new Exception("Invalid reject reason : " + reason);
-                }
-            }
-
             void FillTradeTransactionReport(TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport, SoftFX.Net.TradeCapture.Trade trade)
             {
                 tradeTransactionReport.TradeTransactionId = trade.Id;
@@ -2761,6 +2740,27 @@ namespace TickTrader.FDK.TradeCapture
                             accountReport.UsdToBalanceCurrencyConversionRate = conversion.Rate;
                             break;
                     }
+                }
+            }
+
+            TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.TradeCapture.RejectReason reason)
+            {
+                switch (reason)
+                {
+                    case SoftFX.Net.TradeCapture.RejectReason.ThrottlingLimits:
+                        return Common.RejectReason.ThrottlingLimits;
+
+                    case SoftFX.Net.TradeCapture.RejectReason.RequestCancelled:
+                        return Common.RejectReason.RequestCancelled;
+
+                    case SoftFX.Net.TradeCapture.RejectReason.InternalServerError:
+                        return Common.RejectReason.InternalServerError;
+
+                    case SoftFX.Net.TradeCapture.RejectReason.Other:
+                        return Common.RejectReason.Other;
+
+                    default:
+                        throw new Exception("Invalid reject reason : " + reason);
                 }
             }
 

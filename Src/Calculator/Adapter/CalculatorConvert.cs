@@ -18,7 +18,7 @@
             };
         }
 
-        public static Calculator.SymbolInfo ToSymbolInfo(SymbolEntry symbol)
+        public static Calculator.SymbolInfo ToSymbolInfo(Calculator.SymbolEntry symbol)
         {
             return new Calculator.SymbolInfo
             {

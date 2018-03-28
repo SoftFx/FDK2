@@ -138,21 +138,21 @@ namespace QuoteFeedAsyncSample
                         {
                             PrintCommands();
                         }
-                        else if (command == "currency_list" || command == "c")
+                        else if (command == "get_currency_list" || command == "c")
                         {
                             GetCurrencyList();
                         }
-                        else if (command == "symbol_list" || command == "s")
+                        else if (command == "get_symbol_list" || command == "s")
                         {
                             GetSymbolList();
                         }
-                        else if (command == "session_info" || command == "i")
+                        else if (command == "get_session_info" || command == "i")
                         {
                             GetSessionInfo();
                         }
                         else if (command == "subscribe_quotes" || command == "sq")
                         {
-                            List<string> symbolIds = new List<string>();
+                            List<SymbolEntry> symbolEnries = new List<SymbolEntry>();
 
                             while (true)
                             {
@@ -161,12 +161,16 @@ namespace QuoteFeedAsyncSample
                                 if (symbolId == null)
                                     break;
 
-                                symbolIds.Add(symbolId);
+                                SymbolEntry symbolEntry = new SymbolEntry();
+                                symbolEntry.Id = symbolId;
+                                symbolEntry.MarketDepth = 5;
+
+                                symbolEnries.Add(symbolEntry);
                             }
 
-                            SubscribeQuotes(symbolIds);
+                            SubscribeQuotes(symbolEnries);
                         }
-                        else if (command == "unsubscribe_quote" || command == "uq")
+                        else if (command == "unsubscribe_quotes" || command == "uq")
                         {
                             List<string> symbolIds = new List<string>();
 
@@ -182,9 +186,9 @@ namespace QuoteFeedAsyncSample
 
                             UnsubscribeQuotes(symbolIds);
                         }
-                        else if (command == "quotes" || command == "q")
+                        else if (command == "get_quotes" || command == "gq")
                         {
-                            List<string> symbolIds = new List<string>();
+                            List<SymbolEntry> symbolEnries = new List<SymbolEntry>();
 
                             while (true)
                             {
@@ -193,10 +197,14 @@ namespace QuoteFeedAsyncSample
                                 if (symbolId == null)
                                     break;
 
-                                symbolIds.Add(symbolId);
+                                SymbolEntry symbolEntry = new SymbolEntry();
+                                symbolEntry.Id = symbolId;
+                                symbolEntry.MarketDepth = 5;
+
+                                symbolEnries.Add(symbolEntry);
                             }
 
-                            GetQuotes(symbolIds);
+                            GetQuotes(symbolEnries);
                         }
                         else if (command == "exit" || command == "e")
                         {
@@ -385,12 +393,12 @@ namespace QuoteFeedAsyncSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("currency_list (c) - request currency list");
-            Console.WriteLine("symbol_list (s) - request symbol list");
-            Console.WriteLine("session_info (i) - request session info");
+            Console.WriteLine("get_currency_list (c) - request currency list");
+            Console.WriteLine("get_symbol_list (s) - request symbol list");
+            Console.WriteLine("get_session_info (i) - request session info");
+            Console.WriteLine("get_quotes (gq) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
             Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
-            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");
-            Console.WriteLine("quotes (q) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
+            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");            
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -503,9 +511,9 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void SubscribeQuotes(List<string> symbolIds)
+        void SubscribeQuotes(List<SymbolEntry> symbolEntries)
         {
-            client_.SubscribeQuotesAsync(null, symbolIds.ToArray(), 5);
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
         }
 
         void OnSubscribeQuotesResult(Client client, object data, Quote[] quotes)
@@ -576,9 +584,9 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void GetQuotes(List<string> symbolIds)
+        void GetQuotes(List<SymbolEntry> symbolEntries)
         {
-            client_.GetQuotesAsync(null, symbolIds.ToArray(), 5);
+            client_.GetQuotesAsync(null, symbolEntries.ToArray());
         }
 
         void OnQuotesResult(Client client, object data, Quote[] quotes)
@@ -650,7 +658,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Refresh : {0}, {1}", quote.Symbol, quote.CreatingTime);
+                Console.Error.WriteLine("Update : {0}, {1}", quote.Symbol, quote.CreatingTime);
                 Console.Error.Write("    Bid :");
 
                 foreach (QuoteEntry entry in quote.Bids)

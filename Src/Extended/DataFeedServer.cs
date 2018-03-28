@@ -117,11 +117,17 @@
         /// <param name="timeoutInMilliseconds">Timeout of the operation</param>
         public void SubscribeToQuotesEx(IEnumerable<string> symbols, int depth, int timeoutInMilliseconds)
         {
-            List<string> symbolList = new List<string>();
+            List<SymbolEntry> symbolEntryList = new List<SymbolEntry>();
             foreach (string symbol in symbols)
-                symbolList.Add(symbol);
+            {
+                SymbolEntry symbolEntry = new SymbolEntry();
+                symbolEntry.Id = symbol;
+                symbolEntry.MarketDepth = (ushort) depth;
 
-            dataFeed_.quoteFeedClient_.SubscribeQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
+                symbolEntryList.Add(symbolEntry);
+            }
+
+            dataFeed_.quoteFeedClient_.SubscribeQuotes(symbolEntryList.ToArray(), timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -144,7 +150,7 @@
             foreach (string symbol in symbols)
                 symbolList.Add(symbol);
 
-            dataFeed_.quoteFeedClient_.UnsbscribeQuotes(symbolList.ToArray(), timeoutInMilliseconds);
+            dataFeed_.quoteFeedClient_.UnsubscribeQuotes(symbolList.ToArray(), timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -163,11 +169,17 @@
         /// <returns>can not be null</returns>
         public Quote[] GetQuotesEx(IEnumerable<string> symbols, int depth, int timeoutInMilliseconds)
         {
-            List<string> symbolList = new List<string>();
+            List<SymbolEntry> symbolEntryList = new List<SymbolEntry>();
             foreach (string symbol in symbols)
-                symbolList.Add(symbol);
+            {
+                SymbolEntry symbolEntry = new SymbolEntry();
+                symbolEntry.Id = symbol;
+                symbolEntry.MarketDepth = (ushort) depth;
 
-            return dataFeed_.quoteFeedClient_.GetQuotes(symbolList.ToArray(), depth, timeoutInMilliseconds);
+                symbolEntryList.Add(symbolEntry);
+            }
+
+            return dataFeed_.quoteFeedClient_.GetQuotes(symbolEntryList.ToArray(), timeoutInMilliseconds);
         }
 
         /// <summary>

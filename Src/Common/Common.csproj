@@ -82,6 +82,7 @@
     <Compile Include="OrderSide.cs" />
     <Compile Include="OrderType.cs" />
     <Compile Include="SwapType.cs" />
+    <Compile Include="SymbolEntry.cs" />
     <Compile Include="SymbolInfo.cs" />
     <Compile Include="TimeDirection.cs" />
     <Compile Include="TimeoutException.cs" />

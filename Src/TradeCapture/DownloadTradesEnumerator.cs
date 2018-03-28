@@ -56,6 +56,34 @@ namespace TickTrader.FDK.TradeCapture
             }
         }
 
+        public void End(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (tradeTransactionReportCount_ > 0)
+                    {
+                        for (int index = beginIndex_; index != endIndex_; index = (index + 1) % tradeTransactionReports_.Length)
+                            tradeTransactionReports_[index] = null;
+
+                        tradeTransactionReportCount_ = 0;
+                        beginIndex_ = 0;
+                        endIndex_ = 0;
+                    }
+
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (completed_)
+                        return;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }
+        }
+
         public void Close()
         {
             lock (mutex_)

@@ -430,46 +430,51 @@ namespace TickTrader.FDK.QuoteFeed
             session_.SendTradingSessionStatusRequest(context, request);
         }
 
-        public void SubscribeQuotes(string[] symbolIds, int marketDepth, int timeout)
+        public Quote[] SubscribeQuotes(SymbolEntry[] symbolEntries, int timeout)
         {
             SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(true);
 
-            SubscribeQuotesInternal(context, symbolIds, marketDepth);
+            SubscribeQuotesInternal(context, symbolEntries);
 
             if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
                 throw context.exception_;
+
+            return context.quotes_;
         }
 
-        public void SubscribeQuotesAsync(object data, string[] symbolIds, int marketDepth)
+        public void SubscribeQuotesAsync(object data, SymbolEntry[] symbolEntries)
         {
             SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(false);
             context.Data = data;
 
-            SubscribeQuotesInternal(context, symbolIds, marketDepth);
+            SubscribeQuotesInternal(context, symbolEntries);
         }
 
-        void SubscribeQuotesInternal(SubscribeQuotesAsyncContext context, string[] symbolIds, int marketDepth)
+        void SubscribeQuotesInternal(SubscribeQuotesAsyncContext context, SymbolEntry[] symbolEntries)
         {
-            MarketDataRequest request = new MarketDataRequest(0);
+            MarketDataSubscribeRequest request = new MarketDataSubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.RequestType = MarketDataRequestType.Subscribe;
-            request.UpdateType = SoftFX.Net.QuoteFeed.MarketDataUpdateType.FullRefresh;
-            request.MarketDepth = (ushort) marketDepth;
 
-            StringArray requestSymbolIds = request.SymbolIds;
-            int count = symbolIds.Length;
-            requestSymbolIds.Resize(count);
+            MarketDataSymbolEntryArray requestSymbolEnties = request.SymbolEntries;
+            int count = symbolEntries.Length;
+            requestSymbolEnties.Resize(count);
 
-            for (int index = 0; index < count; ++ index)
-                requestSymbolIds[index] = symbolIds[index];
+            for (int index = 0; index < count; ++index)
+            {
+                SymbolEntry symbolEntry = symbolEntries[index];
+                MarketDataSymbolEntry marketDataSymbolEntry = requestSymbolEnties[index];
 
-            session_.SendMarketDataRequest(context, request);
+                marketDataSymbolEntry.Id = symbolEntry.Id;
+                marketDataSymbolEntry.MarketDepth = symbolEntry.MarketDepth;
+            }
+
+            session_.SendMarketDataSubscribeRequest(context, request);
         }
 
-        public void UnsbscribeQuotes(string[] symbolIds, int timeout)
+        public void UnsubscribeQuotes(string[] symbolIds, int timeout)
         {
             UnsubscribeQuotesAsyncContext context = new UnsubscribeQuotesAsyncContext(true);
 
@@ -494,9 +499,8 @@ namespace TickTrader.FDK.QuoteFeed
         {
             context.SymbolIds = symbolIds;
 
-            MarketDataRequest request = new MarketDataRequest(0);
+            MarketDataUnsubscribeRequest request = new MarketDataUnsubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.RequestType = MarketDataRequestType.Unsubscribe;
 
             StringArray requestSymbolIds = request.SymbolIds;
             int count = symbolIds.Length;
@@ -505,14 +509,14 @@ namespace TickTrader.FDK.QuoteFeed
             for (int index = 0; index < count; ++index)
                 requestSymbolIds[index] = symbolIds[index];
 
-           session_.SendMarketDataRequest(context, request);
+           session_.SendMarketDataUnsubscribeRequest(context, request);
         }
 
-        public Quote[] GetQuotes(string[] symbolIds, int marketDepth, int timeout)
+        public Quote[] GetQuotes(SymbolEntry[] symbolEntries, int timeout)
         {
             GetQuotesAsyncContext context = new GetQuotesAsyncContext(true);
 
-            GetQuotesInternal(context, symbolIds, marketDepth);
+            GetQuotesInternal(context, symbolEntries);
 
             if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
@@ -523,28 +527,31 @@ namespace TickTrader.FDK.QuoteFeed
             return context.quotes_;
         }
 
-        public void GetQuotesAsync(object data, string[] symbolIds, int marketDepth)
+        public void GetQuotesAsync(object data, SymbolEntry[] symbolEntries)
         {
             GetQuotesAsyncContext context = new GetQuotesAsyncContext(false);
             context.Data = data;
 
-            GetQuotesInternal(context, symbolIds, marketDepth);
+            GetQuotesInternal(context, symbolEntries);
         }
 
-        void GetQuotesInternal(GetQuotesAsyncContext context, string[] symbolIds, int marketDepth)
+        void GetQuotesInternal(GetQuotesAsyncContext context, SymbolEntry[] symbolEntries)
         {
             MarketDataRequest request = new MarketDataRequest(0);
             request.Id = Guid.NewGuid().ToString();
-            request.RequestType = MarketDataRequestType.Snapshot;
-            request.UpdateType = SoftFX.Net.QuoteFeed.MarketDataUpdateType.FullRefresh;
-            request.MarketDepth = (ushort)marketDepth;
 
-            StringArray requestSymbolIds = request.SymbolIds;
-            int count = symbolIds.Length;
-            requestSymbolIds.Resize(count);
+            MarketDataSymbolEntryArray requestSymbolEnties = request.SymbolEntries;
+            int count = symbolEntries.Length;
+            requestSymbolEnties.Resize(count);
 
             for (int index = 0; index < count; ++index)
-                requestSymbolIds[index] = symbolIds[index];
+            {
+                SymbolEntry symbolEntry = symbolEntries[index];
+                MarketDataSymbolEntry marketDataSymbolEntry = requestSymbolEnties[index];
+
+                marketDataSymbolEntry.Id = symbolEntry.Id;
+                marketDataSymbolEntry.MarketDepth = symbolEntry.MarketDepth;
+            }
 
             session_.SendMarketDataRequest(context, request);
         }
@@ -792,7 +799,7 @@ namespace TickTrader.FDK.QuoteFeed
             public SessionInfo sessionInfo_;
         }
 
-        class SubscribeQuotesAsyncContext : MarketDataRequestClientContext, IAsyncContext
+        class SubscribeQuotesAsyncContext : MarketDataSubscribeRequestClientContext, IAsyncContext
         {
             public SubscribeQuotesAsyncContext(bool waitable) : base(waitable)
             {
@@ -820,9 +827,10 @@ namespace TickTrader.FDK.QuoteFeed
             }
 
             public Exception exception_;
+            public Quote[] quotes_;
         }
 
-        class UnsubscribeQuotesAsyncContext : MarketDataRequestClientContext, IAsyncContext
+        class UnsubscribeQuotesAsyncContext : MarketDataUnsubscribeRequestClientContext, IAsyncContext
         {
             public UnsubscribeQuotesAsyncContext(bool waitable) : base(waitable)
             {
@@ -1858,229 +1866,72 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            public override void OnMarketDataReport(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, MarketDataReport message)
+            public override void OnMarketDataSubscribeReport(ClientSession session, MarketDataSubscribeRequestClientContext MarketDataSubscribeRequestClientContext, MarketDataSubscribeReport message)
             {
                 try
                 {
-                    if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
+                    SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataSubscribeRequestClientContext;
+
+                    try
                     {
-                        // SubscribeQuotes
+                        MarketDataSnapshotArray reportSnapshots = message.Snapshots;
+                        int count = reportSnapshots.Length;
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
 
-                        SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
-
-                        try
+                        for (int index = 0; index < count; ++index)
                         {
-                            MarketDataSnapshotArray reportSnapshots = message.Snapshots;
-                            int count = reportSnapshots.Length;
-                            TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+                            MarketDataSnapshot reportSnapshot = reportSnapshots[index];
 
-                            for (int index = 0; index < count; ++index)
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+                            resultQuote.Symbol = reportSnapshot.SymbolId;
+                            resultQuote.Id = reportSnapshot.Id;
+                            resultQuote.CreatingTime = reportSnapshot.OrigTime;
+
+                            MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
+                            int count2 = reportSnapshotEntries.Length;
+
+                            resultQuote.Bids.Clear();
+                            resultQuote.Asks.Clear();
+
+                            for (int index2 = 0; index2 < count2; ++index2)
                             {
-                                MarketDataSnapshot reportSnapshot = reportSnapshots[index];
+                                MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
 
-                                TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
-                                resultQuote.Symbol = reportSnapshot.SymbolId;
-                                resultQuote.Id = reportSnapshot.Id;
-                                resultQuote.CreatingTime = reportSnapshot.OrigTime;
+                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
+                                quoteEntry.Volume = reportSnapshotEntry.Size;
+                                quoteEntry.Price = reportSnapshotEntry.Price;
 
-                                MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
-                                int count2 = reportSnapshotEntries.Length;
-
-                                resultQuote.Bids.Clear();
-                                resultQuote.Asks.Clear();
-
-                                for (int index2 = 0; index2 < count2; ++index2)
+                                if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
                                 {
-                                    MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-
-                                    TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
-                                    quoteEntry.Volume = reportSnapshotEntry.Size;
-                                    quoteEntry.Price = reportSnapshotEntry.Price;
-
-                                    if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
-                                    {
-                                        resultQuote.Bids.Add(quoteEntry);
-                                    }
-                                    else
-                                        resultQuote.Asks.Add(quoteEntry);
+                                    resultQuote.Bids.Add(quoteEntry);
                                 }
-
-                                resultQuote.Bids.Reverse();
-
-                                resultQuotes[index] = resultQuote;
+                                else
+                                    resultQuote.Asks.Add(quoteEntry);
                             }
 
-                            if (client_.SubscribeQuotesResultEvent != null)
+                            resultQuote.Bids.Reverse();
+
+                            resultQuotes[index] = resultQuote;
+                        }
+
+                        if (client_.SubscribeQuotesResultEvent != null)
+                        {
+                            try
                             {
-                                try
-                                {
-                                    client_.SubscribeQuotesResultEvent(client_, context.Data, resultQuotes);
-                                }
-                                catch
-                                {
-                                }
+                                client_.SubscribeQuotesResultEvent(client_, context.Data, resultQuotes);
+                            }
+                            catch
+                            {
                             }
                         }
-                        catch (Exception exception)
-                        {
-                            if (client_.SubscribeQuotesErrorEvent != null)
-                            {
-                                try
-                                {
-                                    client_.SubscribeQuotesErrorEvent(client_, context.Data, exception);
-                                }
-                                catch
-                                {
-                                }
-                            }
 
-                            if (context.Waitable)
-                            {
-                                context.exception_ = exception;
-                            }
+                        if (context.Waitable)
+                        {
+                            context.quotes_ = resultQuotes;
                         }
                     }
-                    else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
+                    catch (Exception exception)
                     {
-                        // UnsubscribeQuotes
-
-                        UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
-
-                        try
-                        {
-                            if (client_.UnsubscribeQuotesResultEvent != null)
-                            {
-                                try
-                                {
-                                    client_.UnsubscribeQuotesResultEvent(client_, context.Data, context.SymbolIds);
-                                }
-                                catch
-                                {
-                                }
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            if (client_.UnsubscribeQuotesErrorEvent != null)
-                            {
-                                try
-                                {
-                                    client_.UnsubscribeQuotesErrorEvent(client_, context.Data, exception);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                context.exception_ = exception;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // GetQuotes
-
-                        GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
-
-                        try
-                        {
-                            MarketDataSnapshotArray reportSnapshots = message.Snapshots;
-                            int count = reportSnapshots.Length;
-                            TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
-
-                            for (int index = 0; index < count; ++index)
-                            {
-                                MarketDataSnapshot reportSnapshot = reportSnapshots[index];
-
-                                TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
-                                resultQuote.Symbol = reportSnapshot.SymbolId;
-                                resultQuote.Id = reportSnapshot.Id;
-                                resultQuote.CreatingTime = reportSnapshot.OrigTime;
-
-                                MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
-                                int count2 = reportSnapshotEntries.Length;
-
-                                resultQuote.Bids.Clear();
-                                resultQuote.Asks.Clear();
-
-                                for (int index2 = 0; index2 < count2; ++index2)
-                                {
-                                    MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
-                                    TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
-
-                                    quoteEntry.Volume = reportSnapshotEntry.Size;
-                                    quoteEntry.Price = reportSnapshotEntry.Price;
-
-                                    if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
-                                    {
-                                        resultQuote.Bids.Add(quoteEntry);
-                                    }
-                                    else
-                                        resultQuote.Asks.Add(quoteEntry);
-                                }
-
-                                resultQuote.Bids.Reverse();
-
-                                resultQuotes[index] = resultQuote;
-                            }
-
-                            if (client_.QuotesResultEvent != null)
-                            {
-                                try
-                                {
-                                    client_.QuotesResultEvent(client_, context.Data, resultQuotes);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                context.quotes_ = resultQuotes;
-                            }
-                        }
-                        catch (Exception exception)
-                        {
-                            if (client_.QuotesErrorEvent != null)
-                            {
-                                try
-                                {
-                                    client_.QuotesErrorEvent(client_, context.Data, exception);
-                                }
-                                catch
-                                {
-                                }
-                            }
-
-                            if (context.Waitable)
-                            {
-                                context.exception_ = exception;
-                            }
-                        }
-                    }
-                }
-                catch (Exception exception)
-                {
-                    client_.session_.LogError(exception.Message);
-                }
-            }
-
-            public override void OnMarketDataReject(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, Reject message)
-            {
-                try
-                {
-                    if (MarketDataRequestClientContext is SubscribeQuotesAsyncContext)
-                    {
-                        // SubscribeQuotes
-
-                        SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataRequestClientContext;
-
-                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                        RejectException exception = new RejectException(rejectReason, message.Text);
-
                         if (client_.SubscribeQuotesErrorEvent != null)
                         {
                             try
@@ -2097,15 +1948,65 @@ namespace TickTrader.FDK.QuoteFeed
                             context.exception_ = exception;
                         }
                     }
-                    else if (MarketDataRequestClientContext is UnsubscribeQuotesAsyncContext)
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnMarketDataSubscribeReject(ClientSession session, MarketDataSubscribeRequestClientContext MarketDataSubscribeRequestClientContext, Reject message)
+            {
+                try
+                {
+                    SubscribeQuotesAsyncContext context = (SubscribeQuotesAsyncContext)MarketDataSubscribeRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.SubscribeQuotesErrorEvent != null)
                     {
-                        // UnsubscribeQuotes
+                        try
+                        {
+                            client_.SubscribeQuotesErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
 
-                        UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataRequestClientContext;
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                        RejectException exception = new RejectException(rejectReason, message.Text);
+            public override void OnMarketDataUnsubscribeReport(ClientSession session, MarketDataUnsubscribeRequestClientContext MarketDataUnsubscribeRequestClientContext, MarketDataUnsubscribeReport message)
+            {
+                try
+                {
+                    UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataUnsubscribeRequestClientContext;
 
+                    try
+                    {
+                        if (client_.UnsubscribeQuotesResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeQuotesResultEvent(client_, context.Data, context.SymbolIds);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
                         if (client_.UnsubscribeQuotesErrorEvent != null)
                         {
                             try
@@ -2122,15 +2023,110 @@ namespace TickTrader.FDK.QuoteFeed
                             context.exception_ = exception;
                         }
                     }
-                    else
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnMarketDataUnsubscribeReject(ClientSession session, MarketDataUnsubscribeRequestClientContext MarketDataUnsubscribeRequestClientContext, Reject message)
+            {
+                try
+                {
+                    UnsubscribeQuotesAsyncContext context = (UnsubscribeQuotesAsyncContext)MarketDataUnsubscribeRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.UnsubscribeQuotesErrorEvent != null)
                     {
-                        // GetQuotes
+                        try
+                        {
+                            client_.UnsubscribeQuotesErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
 
-                        GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
 
-                        TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                        RejectException exception = new RejectException(rejectReason, message.Text);
+            public override void OnMarketDataReport(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, MarketDataReport message)
+            {
+                try
+                {
+                    GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
 
+                    try
+                    {
+                        MarketDataSnapshotArray reportSnapshots = message.Snapshots;
+                        int count = reportSnapshots.Length;
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            MarketDataSnapshot reportSnapshot = reportSnapshots[index];
+
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+                            resultQuote.Symbol = reportSnapshot.SymbolId;
+                            resultQuote.Id = reportSnapshot.Id;
+                            resultQuote.CreatingTime = reportSnapshot.OrigTime;
+
+                            MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
+                            int count2 = reportSnapshotEntries.Length;
+
+                            resultQuote.Bids.Clear();
+                            resultQuote.Asks.Clear();
+
+                            for (int index2 = 0; index2 < count2; ++index2)
+                            {
+                                MarketDataEntry reportSnapshotEntry = reportSnapshotEntries[index2];
+                                TickTrader.FDK.Common.QuoteEntry quoteEntry = new TickTrader.FDK.Common.QuoteEntry();
+
+                                quoteEntry.Volume = reportSnapshotEntry.Size;
+                                quoteEntry.Price = reportSnapshotEntry.Price;
+
+                                if (reportSnapshotEntry.Type == MarketDataEntryType.Bid)
+                                {
+                                    resultQuote.Bids.Add(quoteEntry);
+                                }
+                                else
+                                    resultQuote.Asks.Add(quoteEntry);
+                            }
+
+                            resultQuote.Bids.Reverse();
+
+                            resultQuotes[index] = resultQuote;
+                        }
+
+                        if (client_.QuotesResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.QuotesResultEvent(client_, context.Data, resultQuotes);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.quotes_ = resultQuotes;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
                         if (client_.QuotesErrorEvent != null)
                         {
                             try
@@ -2146,6 +2142,37 @@ namespace TickTrader.FDK.QuoteFeed
                         {
                             context.exception_ = exception;
                         }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnMarketDataReject(ClientSession session, MarketDataRequestClientContext MarketDataRequestClientContext, Reject message)
+            {
+                try
+                {
+                    GetQuotesAsyncContext context = (GetQuotesAsyncContext)MarketDataRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.QuotesErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuotesErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
                     }
                 }
                 catch (Exception exception)
@@ -2230,7 +2257,7 @@ namespace TickTrader.FDK.QuoteFeed
                 }
             }
 
-            public override void OnMarketDataRefresh(ClientSession session, MarketDataSnapshotRefresh message)
+            public override void OnMarketDataUpdate(ClientSession session, MarketDataUpdate message)
             {
                 try
                 {
