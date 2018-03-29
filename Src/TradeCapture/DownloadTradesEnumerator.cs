@@ -7,13 +7,13 @@ namespace TickTrader.FDK.TradeCapture
 {
     public class DownloadTradesEnumerator : IDisposable
     {
-        internal DownloadTradesEnumerator(Client client, string id, int totalCount)
+        internal DownloadTradesEnumerator(Client client)
         {
             client_ = client;
-            id_ = id;
-            totalCount_ = totalCount;
 
             mutex_ = new object();
+            started_ = false;
+            started_ = false;
             completed_ = false;
             tradeTransactionReports_ = new TradeTransactionReport[GrowSize];
             tradeTransactionReportCount_ = 0;
@@ -49,6 +49,24 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (completed_)
                         return null;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }
+        }
+
+        public void Begin(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (started_)
+                        return;
                 }
 
                 if (! event_.WaitOne(timeout))
@@ -122,6 +140,21 @@ namespace TickTrader.FDK.TradeCapture
             GC.SuppressFinalize(this);
         }
 
+        internal void SetBegin(string id, int totalCount)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    id_ = id;
+                    totalCount_ = totalCount;
+                    started_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
         internal void SetResult(TradeTransactionReport tradeTransactionReport)
         {
             lock (mutex_)
@@ -191,6 +224,7 @@ namespace TickTrader.FDK.TradeCapture
         int totalCount_;
 
         object mutex_;
+        bool started_;
         bool completed_;
 
         TradeTransactionReport[] tradeTransactionReports_;

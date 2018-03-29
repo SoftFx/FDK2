@@ -7,13 +7,12 @@ namespace TickTrader.FDK.TradeCapture
 {
     public class DownloadAccountReportsEnumerator : IDisposable
     {
-        internal DownloadAccountReportsEnumerator(Client client, string id, int totalCount)
+        internal DownloadAccountReportsEnumerator(Client client)
         {
             client_ = client;
-            id_ = id;
-            totalCount_ = totalCount;
 
             mutex_ = new object();
+            started_ = false;
             completed_ = false;
             accountReports_ = new AccountReport[GrowSize];
             count_ = 0;
@@ -26,6 +25,24 @@ namespace TickTrader.FDK.TradeCapture
         public int TotalCount
         {
             get { return totalCount_;  }
+        }
+
+        public void Begin(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (started_)
+                        return;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }
         }
 
         public AccountReport Next(int timeout)
@@ -122,6 +139,21 @@ namespace TickTrader.FDK.TradeCapture
             GC.SuppressFinalize(this);
         }
 
+        internal void SetBegin(string id, int totalCount)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    id_ = id;
+                    totalCount_ = totalCount;
+                    started_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
         internal void SetResult(AccountReport tradeTransactionReport)
         {
             lock (mutex_)
@@ -191,6 +223,7 @@ namespace TickTrader.FDK.TradeCapture
         int totalCount_;
 
         object mutex_;
+        bool started_;
         bool completed_;
 
         AccountReport[] accountReports_;

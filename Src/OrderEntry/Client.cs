@@ -463,15 +463,11 @@ namespace TickTrader.FDK.OrderEntry
         public GetOrdersEnumerator GetOrders(int timeout)
         {
             OrdersAsyncContext context = new OrdersAsyncContext(true);
-            context.event_ = new AutoResetEvent(false);            
+            context.enumerator_ = new GetOrdersEnumerator(this);
 
             GetOrdersInternal(context);
 
-            if (!context.event_.WaitOne(timeout))
-                throw new Common.TimeoutException("Method call timed out");
-
-            if (context.exception_ != null)
-                throw context.exception_;
+            context.enumerator_.Begin(timeout);
 
             return context.enumerator_;
         }
@@ -1310,14 +1306,12 @@ namespace TickTrader.FDK.OrderEntry
 
                 if (Waitable)
                 {
-                    exception_ = exception;
+                    enumerator_.SetError(exception);
                 }
             }
                         
             public TickTrader.FDK.Common.ExecutionReport executionReport_;
-            public Exception exception_;
             public GetOrdersEnumerator enumerator_;
-            public AutoResetEvent event_;            
         }
 
         class CancelOrdersAsyncContext : OrderMassStatusCancelRequestClientContext, IAsyncContext
@@ -2530,8 +2524,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        context.enumerator_ = new GetOrdersEnumerator(client_, message.RequestId, message.OrderCount);
-                        context.event_.Set();
+                        context.enumerator_.SetBegin(message.RequestId, message.OrderCount);
                     }
                 }
                 catch (Exception exception)
@@ -2661,13 +2654,7 @@ namespace TickTrader.FDK.OrderEntry
 
                     if (context.Waitable)
                     {
-                        if (context.enumerator_ == null)
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
-                        else
-                            context.enumerator_.SetError(exception);                            
+                        context.enumerator_.SetError(exception);                            
                     }
                 }
                 catch (Exception exception)

@@ -1280,26 +1280,22 @@
             }
         }
 
-        internal class PairBarListContext
+        internal class BarListContext
         {
-            ~PairBarListContext()
+            public BarListContext()
+            {
+                event_ = new AutoResetEvent(false);
+            }
+
+            ~BarListContext()
             {
                 if (event_ != null)
                     event_.Close();
             }
-            
-            public int count_;            
-            public TickTrader.FDK.Common.Bar[] bidBars_;
-            public TickTrader.FDK.Common.Bar[] askBars_;
-            public Exception exception_;
-            public TickTrader.FDK.Common.PairBar[] pairBars_;
-            public AutoResetEvent event_;
-        };
 
-        internal class BarListContext
-        {
-            public PriceType priceType_;
-            public PairBarListContext pairContext_;
+            public Exception exception_;
+            public TickTrader.FDK.Common.Bar[] bars_;
+            public AutoResetEvent event_;
         }
 
         void OnBarListResult(QuoteStore.Client client, object data, Bar[] bars)
@@ -1310,41 +1306,8 @@
 
                 if (barListContext != null)
                 {
-                    PairBarListContext pairBarListContext = barListContext.pairContext_;
-
-                    try
-                    {
-                        if (pairBarListContext.exception_ == null)
-                        {
-                            if (barListContext.priceType_ == PriceType.Bid)
-                            {
-                                pairBarListContext.bidBars_ = bars;
-                            }
-                            else
-                                pairBarListContext.askBars_ = bars;
-
-                            if (pairBarListContext.bidBars_ != null && 
-                                pairBarListContext.askBars_ != null)
-                            {
-                                pairBarListContext.pairBars_ = GetPairBarList
-                                (
-                                    pairBarListContext.bidBars_, 
-                                    pairBarListContext.askBars_, 
-                                    pairBarListContext.count_
-                                );
-
-                                pairBarListContext.event_.Set();
-                            }
-                        }
-                    }
-                    catch (Exception exception)
-                    {
-                        if (pairBarListContext.exception_ == null)
-                        {
-                            pairBarListContext.exception_ = exception;
-                            pairBarListContext.event_.Set();
-                        }
-                    }
+                    barListContext.bars_ = bars;
+                    barListContext.event_.Set();
                 }
             }
             catch
@@ -1360,13 +1323,8 @@
 
                 if (barListContext != null)
                 {
-                    PairBarListContext pairBarListContext = barListContext.pairContext_;
-
-                    if (pairBarListContext.exception_ == null)
-                    {
-                        pairBarListContext.exception_ = exception;
-                        pairBarListContext.event_.Set();
-                    }
+                    barListContext.exception_ = exception;
+                    barListContext.event_.Set();
                 }
             }
             catch
@@ -1374,90 +1332,9 @@
             }
         }
 
-        TickTrader.FDK.Common.PairBar[] GetPairBarList(TickTrader.FDK.Common.Bar[] bidBars, TickTrader.FDK.Common.Bar[] askBars, int count)
-        {
-            int absCount = Math.Abs(count);
-            List<PairBar> pairBars = new List<PairBar>(absCount);
-                
-            int bidIndex = 0;
-            int askIndex = 0;
-
-            while (pairBars.Count < absCount)
-            {
-                TickTrader.FDK.Common.Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
-                TickTrader.FDK.Common.Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
-
-                PairBar pairBar;
-
-                if (bidBar != null)
-                {
-                    if (askBar != null)
-                    {
-                        int i = DateTime.Compare(bidBar.From, askBar.From);
-
-                        if (i < 0)
-                        {
-                            pairBar = new PairBar(bidBar, null);
-                            ++bidIndex;
-                        }
-                        else if (i > 0)
-                        {
-                            pairBar = new PairBar(null, askBar);
-                            ++askIndex;
-                        }
-                        else
-                        {
-                            pairBar = new PairBar(bidBar, askBar);
-                            ++bidIndex;
-                            ++askIndex;
-                        }
-                    }
-                    else
-                    {
-                        pairBar = new PairBar(bidBar, null);
-                        ++bidIndex;
-                    }
-                }
-                else if (askBar != null)
-                {
-                    pairBar = new PairBar(null, askBar);
-                    ++askIndex;
-                }
-                else
-                    break;
-
-                pairBars.Add(pairBar);
-            }
-
-            return pairBars.ToArray();
-        }
-
-        internal class PairBarDownloadContext
-        {
-            ~PairBarDownloadContext()
-            {
-                if (bidBarEnumerator_ != null)
-                    bidBarEnumerator_.Close();
-
-                if (askBarEnumerator_ != null)
-                    askBarEnumerator_.Close();
-
-                if (event_ != null)
-                    event_.Close();
-            }
-            
-            public PairBars pairBars_;
-            public DownloadBarsEnumerator bidBarEnumerator_;
-            public DownloadBarsEnumerator askBarEnumerator_;
-            public Exception exception_;
-            public PairBarsEnumerator pairBarsEnumerator_;
-            public AutoResetEvent event_;
-        };
-
         internal class BarDownloadContext
         {
-            public PriceType priceType_;
-            public PairBarDownloadContext pairContext_;
+            public DownloadBarsEnumerator barEnumerator_;
         }
 
         void OnBarDownloadResultBegin(QuoteStore.Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
@@ -1468,40 +1345,13 @@
 
                 if (barDownloadContext != null)
                 {
-                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
-
                     try
                     {
-                        if (pairBarDownloadContext.exception_ == null)
-                        {
-                            if (barDownloadContext.priceType_ == PriceType.Bid)
-                            {
-                                pairBarDownloadContext.bidBarEnumerator_ = new DownloadBarsEnumerator(client, downloadId, availFrom, availTo);
-                            }
-                            else
-                                pairBarDownloadContext.askBarEnumerator_ = new DownloadBarsEnumerator(client, downloadId, availFrom, availTo);
-
-                            if (pairBarDownloadContext.bidBarEnumerator_ != null && 
-                                pairBarDownloadContext.askBarEnumerator_ != null)
-                            {
-                                pairBarDownloadContext.pairBarsEnumerator_ = new PairBarsEnumerator
-                                (
-                                    pairBarDownloadContext.pairBars_, 
-                                    pairBarDownloadContext.bidBarEnumerator_, 
-                                    pairBarDownloadContext.askBarEnumerator_
-                                );
-
-                                pairBarDownloadContext.event_.Set();
-                            }
-                        }
+                        barDownloadContext.barEnumerator_.SetBegin(downloadId, availFrom, availTo);
                     }
                     catch (Exception exception)
                     {
-                        if (pairBarDownloadContext.exception_ == null)
-                        {
-                            pairBarDownloadContext.exception_ = exception;
-                            pairBarDownloadContext.event_.Set();
-                        }
+                        barDownloadContext.barEnumerator_.SetError(exception);
                     }
                 }
             }
@@ -1518,25 +1368,15 @@
 
                 if (barDownloadContext != null)
                 {
-                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
-
                     try
                     {
-                        if (barDownloadContext.priceType_ == PriceType.Bid)
-                        {
-                            pairBarDownloadContext.bidBarEnumerator_.SetResult(bar);
-                        }
-                        else
-                            pairBarDownloadContext.askBarEnumerator_.SetResult(bar);
+                        Bar cloneBar = bar.Clone();
+
+                        barDownloadContext.barEnumerator_.SetResult(cloneBar);
                     }
                     catch (Exception exception)
                     {
-                        if (barDownloadContext.priceType_ == PriceType.Bid)
-                        {
-                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
-                        }
-                        else
-                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
+                        barDownloadContext.barEnumerator_.SetError(exception);
                     }
                 }
             }
@@ -1553,25 +1393,13 @@
 
                 if (barDownloadContext != null)
                 {
-                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
-
                     try
                     {
-                        if (barDownloadContext.priceType_ == PriceType.Bid)
-                        {
-                            pairBarDownloadContext.bidBarEnumerator_.SetEnd();
-                        }
-                        else
-                            pairBarDownloadContext.askBarEnumerator_.SetEnd();
+                        barDownloadContext.barEnumerator_.SetEnd();
                     }
                     catch (Exception exception)
                     {
-                        if (barDownloadContext.priceType_ == PriceType.Bid)
-                        {
-                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
-                        }
-                        else
-                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
+                        barDownloadContext.barEnumerator_.SetError(exception);
                     }
                 }
             }
@@ -1588,25 +1416,7 @@
 
                 if (barDownloadContext != null)
                 {
-                    PairBarDownloadContext pairBarDownloadContext = barDownloadContext.pairContext_;
-                    
-                    if (pairBarDownloadContext.pairBarsEnumerator_ == null)
-                    {
-                        if (pairBarDownloadContext.exception_ == null)
-                        {
-                            pairBarDownloadContext.exception_ = exception;
-                            pairBarDownloadContext.event_.Set();
-                        }
-                    }
-                    else
-                    {
-                        if (barDownloadContext.priceType_ == PriceType.Bid)
-                        {
-                            pairBarDownloadContext.bidBarEnumerator_.SetError(exception);
-                        }
-                        else
-                            pairBarDownloadContext.askBarEnumerator_.SetError(exception);
-                    }
+                    barDownloadContext.barEnumerator_.SetError(exception);
                 }
             }
             catch

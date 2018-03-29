@@ -7,13 +7,12 @@ namespace TickTrader.FDK.OrderEntry
 {
     public class GetOrdersEnumerator : IDisposable
     {
-        internal GetOrdersEnumerator(Client client, string requestId, int totalCount)
+        internal GetOrdersEnumerator(Client client)
         {
             client_ = client;
-            requestId_ = requestId;
-            totalCount_ = totalCount;
 
             mutex_ = new object();
+            started_ = false;
             completed_ = false;
             orders_ = new ExecutionReport[GrowSize];
             count_ = 0;
@@ -26,6 +25,24 @@ namespace TickTrader.FDK.OrderEntry
         public int TotalCount
         {
             get { return totalCount_; }
+        }
+
+        public void Begin(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (started_)
+                        return;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }
         }
 
         public ExecutionReport Next(int timeout)
@@ -122,6 +139,21 @@ namespace TickTrader.FDK.OrderEntry
             GC.SuppressFinalize(this);
         }
 
+        internal void SetBegin(string requestId, int totalCount)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    requestId_ = requestId;
+                    totalCount_ = totalCount;
+                    started_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
         internal void SetResult(ExecutionReport order)
         {
             lock (mutex_)
@@ -191,6 +223,7 @@ namespace TickTrader.FDK.OrderEntry
         int totalCount_;
 
         object mutex_;
+        bool started_;
         bool completed_;
 
         ExecutionReport[] orders_;

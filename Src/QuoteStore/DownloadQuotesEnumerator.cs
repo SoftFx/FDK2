@@ -7,14 +7,12 @@ namespace TickTrader.FDK.QuoteStore
 {
     public class DownloadQuotesEnumerator : IDisposable
     {
-        internal DownloadQuotesEnumerator(Client client, string downloadId, DateTime availFrom, DateTime availTo)
+        internal DownloadQuotesEnumerator(Client client)
         {
             client_ = client;
-            downloadId_ = downloadId;
-            availFrom_ = availFrom;
-            availTo_ = availTo;
 
             mutex_ = new object();
+            started_ = false;
             completed_ = false;
             quotes_ = new Quote[GrowSize];
             quoteCount_ = 0;
@@ -32,6 +30,24 @@ namespace TickTrader.FDK.QuoteStore
         public DateTime AvailTo
         {
             get { return availTo_; }
+        }
+
+        public void Begin(int timeout)
+        {
+            while (true)
+            {
+                lock (mutex_)
+                {
+                    if (exception_ != null)
+                        throw exception_;
+
+                    if (started_)
+                        return;
+                }
+
+                if (! event_.WaitOne(timeout))
+                    throw new Common.TimeoutException("Method call timed out");
+            }
         }
 
         public Quote Next(int timeout)
@@ -128,6 +144,22 @@ namespace TickTrader.FDK.QuoteStore
             GC.SuppressFinalize(this);
         }
 
+        internal void SetBegin(string downloadId, DateTime availFrom, DateTime availTo)
+        {
+            lock (mutex_)
+            {
+                if (! completed_)
+                {
+                    downloadId_ = downloadId;
+                    availFrom_ = availFrom;
+                    availTo_ = availTo;
+                    started_ = true;
+
+                    event_.Set();
+                }
+            }
+        }
+
         internal void SetResult(Quote quote)
         {
             lock (mutex_)
@@ -198,6 +230,7 @@ namespace TickTrader.FDK.QuoteStore
         DateTime availTo_;
 
         object mutex_;
+        bool started_;
         bool completed_;
 
         Quote[] quotes_;

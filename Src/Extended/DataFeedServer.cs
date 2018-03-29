@@ -233,32 +233,25 @@
         /// <returns></returns>
         public PairBar[] GetBarsEx(string symbol, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
         {
-            DataFeed.PairBarListContext pairBarListContext = new DataFeed.PairBarListContext();
-            pairBarListContext.count_ = count;
-            pairBarListContext.bidBars_ = null;
-            pairBarListContext.askBars_ = null;
-            pairBarListContext.exception_ = null;
-            pairBarListContext.pairBars_ = null;
-            pairBarListContext.event_ = new AutoResetEvent(false);
-
             DataFeed.BarListContext bidBarListContext = new DataFeed.BarListContext();
-            bidBarListContext.priceType_ = PriceType.Bid;
-            bidBarListContext.pairContext_ = pairBarListContext;
-
             DataFeed.BarListContext askBarListContext = new DataFeed.BarListContext();
-            askBarListContext.priceType_ = PriceType.Ask;
-            askBarListContext.pairContext_ = pairBarListContext;
 
             dataFeed_.quoteStoreClient_.GetBarListAsync(bidBarListContext, symbol, PriceType.Bid, period, startTime, count);
             dataFeed_.quoteStoreClient_.GetBarListAsync(askBarListContext, symbol, PriceType.Ask, period, startTime, count);
 
-            if (! pairBarListContext.event_.WaitOne(timeoutInMilliseconds))
+            if (! bidBarListContext.event_.WaitOne(timeoutInMilliseconds))
                 throw new Common.TimeoutException("Method call timed out");
 
-            if (pairBarListContext.exception_ != null)
-                throw pairBarListContext.exception_;
+            if (! askBarListContext.event_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
 
-            return pairBarListContext.pairBars_;
+            if (bidBarListContext.exception_ != null)
+                throw bidBarListContext.exception_;
+
+            if (askBarListContext.exception_ != null)
+                throw askBarListContext.exception_;
+
+            return GetPairBarList(bidBarListContext.bars_, askBarListContext.bars_, count);
         }
 
         /// <summary>
@@ -368,6 +361,64 @@
         public CurrencyInfo[] GetCurrencies(int timeoutInMilliseconds)
         {
             return GetCurrenciesEx(timeoutInMilliseconds);
+        }
+
+        TickTrader.FDK.Common.PairBar[] GetPairBarList(TickTrader.FDK.Common.Bar[] bidBars, TickTrader.FDK.Common.Bar[] askBars, int count)
+        {
+            int absCount = Math.Abs(count);
+            List<PairBar> pairBars = new List<PairBar>(absCount);
+                
+            int bidIndex = 0;
+            int askIndex = 0;
+
+            while (pairBars.Count < absCount)
+            {
+                TickTrader.FDK.Common.Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
+                TickTrader.FDK.Common.Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
+
+                PairBar pairBar;
+
+                if (bidBar != null)
+                {
+                    if (askBar != null)
+                    {
+                        int i = DateTime.Compare(bidBar.From, askBar.From);
+
+                        if (i < 0)
+                        {
+                            pairBar = new PairBar(bidBar, null);
+                            ++bidIndex;
+                        }
+                        else if (i > 0)
+                        {
+                            pairBar = new PairBar(null, askBar);
+                            ++askIndex;
+                        }
+                        else
+                        {
+                            pairBar = new PairBar(bidBar, askBar);
+                            ++bidIndex;
+                            ++askIndex;
+                        }
+                    }
+                    else
+                    {
+                        pairBar = new PairBar(bidBar, null);
+                        ++bidIndex;
+                    }
+                }
+                else if (askBar != null)
+                {
+                    pairBar = new PairBar(null, askBar);
+                    ++askIndex;
+                }
+                else
+                    break;
+
+                pairBars.Add(pairBar);
+            }
+
+            return pairBars.ToArray();
         }
 
         DataFeed dataFeed_;

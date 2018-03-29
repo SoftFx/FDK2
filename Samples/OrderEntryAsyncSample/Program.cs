@@ -866,7 +866,7 @@ namespace OrderEntryAsyncSample
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.ImmediateOrCancel, null, null, null, comment, null, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
         }
 
         void OnNewOrderResult(Client client, object data, ExecutionReport executionReport)
@@ -905,7 +905,7 @@ namespace OrderEntryAsyncSample
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null);
+            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null);
         }
 
         void OnReplaceOrderResult(Client client, object data, ExecutionReport executionReport)

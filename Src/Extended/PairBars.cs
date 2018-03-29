@@ -66,21 +66,12 @@
         /// <returns></returns>
         public PairBarsEnumerator GetEnumerator()
         {
-            DataFeed.PairBarDownloadContext pairBarDownloadContext = new DataFeed.PairBarDownloadContext();
-            pairBarDownloadContext.pairBars_ = this;
-            pairBarDownloadContext.bidBarEnumerator_ = null;
-            pairBarDownloadContext.askBarEnumerator_ = null;
-            pairBarDownloadContext.exception_ = null;
-            pairBarDownloadContext.pairBarsEnumerator_ = null;
-            pairBarDownloadContext.event_ = new AutoResetEvent(false);
+            DownloadBarsEnumerator bidBarEnumerator = new DownloadBarsEnumerator(datafeed_.quoteStoreClient_);
+            DownloadBarsEnumerator askBarEnumerator = new DownloadBarsEnumerator(datafeed_.quoteStoreClient_);
+            PairBarsEnumerator pairBarsEnumerator = new PairBarsEnumerator(this, bidBarEnumerator, askBarEnumerator);
 
             DataFeed.BarDownloadContext bidBarDownloadContext = new DataFeed.BarDownloadContext();
-            bidBarDownloadContext.priceType_ = PriceType.Bid;
-            bidBarDownloadContext.pairContext_ = pairBarDownloadContext;
-
-            DataFeed.BarDownloadContext askBarDownloadContext = new DataFeed.BarDownloadContext();
-            askBarDownloadContext.priceType_ = PriceType.Ask;
-            askBarDownloadContext.pairContext_ = pairBarDownloadContext;
+            bidBarDownloadContext.barEnumerator_ = bidBarEnumerator;
 
             datafeed_.quoteStoreClient_.DownloadBarsAsync
             (
@@ -92,23 +83,41 @@
                 endTime_
             );
 
-            datafeed_.quoteStoreClient_.DownloadBarsAsync
-            (
-                askBarDownloadContext,
-                symbol_,
-                PriceType.Ask,
-                period_,
-                startTime_,
-                endTime_
-            );
+            try
+            {
+                DataFeed.BarDownloadContext askBarDownloadContext = new DataFeed.BarDownloadContext();
+                askBarDownloadContext.barEnumerator_ = askBarEnumerator;
 
-            if (!pairBarDownloadContext.event_.WaitOne(timeout_))
-                throw new Common.TimeoutException("Method call timed out");
+                datafeed_.quoteStoreClient_.DownloadBarsAsync
+                (
+                    askBarDownloadContext,
+                    symbol_,
+                    PriceType.Ask,
+                    period_,
+                    startTime_,
+                    endTime_
+                );
 
-            if (pairBarDownloadContext.exception_ != null)
-                throw pairBarDownloadContext.exception_;
+                try
+                {
+                    bidBarEnumerator.Begin(timeout_);
+                    askBarEnumerator.Begin(timeout_);
 
-            return pairBarDownloadContext.pairBarsEnumerator_;
+                    return pairBarsEnumerator;
+                }
+                catch
+                {
+                    askBarEnumerator.Close();
+
+                    throw;
+                }
+            }
+            catch
+            {
+                bidBarEnumerator.Close();
+
+                throw;
+            }
         }
 
         /// <summary>

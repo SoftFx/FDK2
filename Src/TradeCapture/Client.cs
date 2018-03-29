@@ -349,15 +349,11 @@ namespace TickTrader.FDK.TradeCapture
         public SubscribeTradesEnumerator SubscribeTrades(DateTime? from, bool skipCancel, int timeout)
         {
             SubscribeTradesAsyncContext context = new SubscribeTradesAsyncContext(true);
-            context.event_ = new AutoResetEvent(false);
+            context.enumerator_ = new SubscribeTradesEnumerator(this);
 
             SubscribeTradesInternal(context, from, skipCancel);
 
-            if (! context.event_.WaitOne(timeout))
-                throw new Common.TimeoutException("Method call timed out");
-
-            if (context.exception_ != null)
-                throw context.exception_;
+            context.enumerator_.Begin(timeout);
 
             return context.enumerator_;
         }
@@ -412,15 +408,11 @@ namespace TickTrader.FDK.TradeCapture
         public DownloadTradesEnumerator DownloadTrades(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipCancel, int timeout)
         {
             TradeDownloadAsyncContext context = new TradeDownloadAsyncContext(true);
-            context.event_ = new AutoResetEvent(false);
+            context.enumerator_ = new DownloadTradesEnumerator(this);
 
             DownloadTradesInternal(context, timeDirection, from, to, skipCancel);
 
-            if (! context.event_.WaitOne(timeout))
-                throw new Common.TimeoutException("Method call timed out");
-
-            if (context.exception_ != null)
-                throw context.exception_;
+            context.enumerator_.Begin(timeout);
 
             return context.enumerator_;
         }
@@ -478,15 +470,11 @@ namespace TickTrader.FDK.TradeCapture
         public DownloadAccountReportsEnumerator DownloadAccountReports(TimeDirection timeDirection, DateTime? from, DateTime? to, int timeout)
         {
             DownloadAccountReportsAsyncContext context = new DownloadAccountReportsAsyncContext(true);
-            context.event_ = new AutoResetEvent(false);
+            context.enumerator_ = new DownloadAccountReportsEnumerator(this);
 
             DownloadAccountReportsInternal(context, timeDirection, from, to);
 
-            if (! context.event_.WaitOne(timeout))
-                throw new Common.TimeoutException("Method call timed out");
-
-            if (context.exception_ != null)
-                throw context.exception_;
+            context.enumerator_.Begin(timeout);
 
             return context.enumerator_;
         }
@@ -726,12 +714,6 @@ namespace TickTrader.FDK.TradeCapture
             {
             }
 
-            ~SubscribeTradesAsyncContext()
-            {
-                if (event_ != null)
-                    event_.Close();
-            }
-
             public void ProcessDisconnect(Client client, string text)
             {
                 DisconnectException exception = new DisconnectException(text);
@@ -749,21 +731,11 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    if (enumerator_ != null)
-                    {
-                        enumerator_.SetError(exception);
-                    }
-                    else
-                    {
-                        exception_ = exception;
-                        event_.Set();
-                    }
+                    enumerator_.SetError(exception);
                 }
             }
 
             public TradeTransactionReport tradeTransactionReport_;
-            public AutoResetEvent event_;
-            public Exception exception_;
             public SubscribeTradesEnumerator enumerator_;            
         }
 
@@ -803,12 +775,6 @@ namespace TickTrader.FDK.TradeCapture
             {
             }
 
-            ~TradeDownloadAsyncContext()
-            {
-                if (event_ != null)
-                    event_.Close();
-            }
-
             public void ProcessDisconnect(Client client, string text)
             {
                 DisconnectException exception = new DisconnectException(text);
@@ -826,21 +792,11 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    if (enumerator_ != null)
-                    {
-                        enumerator_.SetError(exception);
-                    }
-                    else
-                    {
-                        exception_ = exception;
-                        event_.Set();
-                    }
+                    enumerator_.SetError(exception);
                 }
             }
 
             public TradeTransactionReport tradeTransactionReport_;
-            public AutoResetEvent event_;
-            public Exception exception_;
             public DownloadTradesEnumerator enumerator_;            
         }
 
@@ -880,12 +836,6 @@ namespace TickTrader.FDK.TradeCapture
             {
             }
 
-            ~DownloadAccountReportsAsyncContext()
-            {
-                if (event_ != null)
-                    event_.Close();
-            }
-
             public void ProcessDisconnect(Client client, string text)
             {
                 DisconnectException exception = new DisconnectException(text);
@@ -903,21 +853,11 @@ namespace TickTrader.FDK.TradeCapture
 
                 if (Waitable)
                 {
-                    if (enumerator_ != null)
-                    {
-                        enumerator_.SetError(exception);
-                    }
-                    else
-                    {
-                        exception_ = exception;
-                        event_.Set();
-                    }
+                    enumerator_.SetError(exception);
                 }
             }
 
             public AccountReport accountReport_;
-            public AutoResetEvent event_;
-            public Exception exception_;
             public DownloadAccountReportsEnumerator enumerator_;
         }
 
@@ -1607,8 +1547,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.enumerator_ = new SubscribeTradesEnumerator(client_, message.TotalCount);
-                            context.event_.Set();
+                            context.enumerator_.Begin(message.TotalCount);
                         }
                     }
                     catch (Exception exception)
@@ -1626,8 +1565,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.exception_ = exception;
-                            context.event_.Set();
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -1761,15 +1699,7 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        if (context.enumerator_ != null)
-                        {
-                            context.enumerator_.SetError(exception);
-                        }
-                        else
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
+                        context.enumerator_.SetError(exception);
                     }
                 }
                 catch (Exception exception)
@@ -1876,8 +1806,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.enumerator_ = new DownloadTradesEnumerator(client_, message.RequestId, message.TotalCount);
-                            context.event_.Set();
+                            context.enumerator_.SetBegin(message.RequestId, message.TotalCount);
                         }
                     }
                     catch (Exception exception)
@@ -1895,8 +1824,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.exception_ = exception;
-                            context.event_.Set();
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -2030,15 +1958,7 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        if (context.enumerator_ != null)
-                        {
-                            context.enumerator_.SetError(exception);
-                        }
-                        else
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
+                        context.enumerator_.SetError(exception);
                     }
                 }
                 catch (Exception exception)
@@ -2145,8 +2065,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.enumerator_ = new DownloadAccountReportsEnumerator(client_, message.RequestId, message.TotalCount);
-                            context.event_.Set();
+                            context.enumerator_.SetBegin(message.RequestId, message.TotalCount);
                         }
                     }
                     catch (Exception exception)
@@ -2164,8 +2083,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.exception_ = exception;
-                            context.event_.Set();
+                            context.enumerator_.SetError(exception);
                         }
                     }
                 }
@@ -2299,15 +2217,7 @@ namespace TickTrader.FDK.TradeCapture
 
                     if (context.Waitable)
                     {
-                        if (context.enumerator_ != null)
-                        {
-                            context.enumerator_.SetError(exception);
-                        }
-                        else
-                        {
-                            context.exception_ = exception;
-                            context.event_.Set();
-                        }
+                        context.enumerator_.SetError(exception);
                     }
                 }
                 catch (Exception exception)
