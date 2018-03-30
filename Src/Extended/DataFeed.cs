@@ -925,10 +925,9 @@
                     Quote quote = quotes[index];
 
                     SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
-                    subscribedArgs.Tick = quote;
+                    subscribedArgs.Symbol = quote.Symbol;
                     eventQueue_.PushEvent(subscribedArgs);
 
-                    // For backward compatibility
                     TickEventArgs tickArgs = new TickEventArgs();
                     tickArgs.Tick = quote;
                     eventQueue_.PushEvent(tickArgs);

@@ -1090,6 +1090,10 @@
                         <recv name="MarketDataRequest" next="628_13">
                             <messages>
                                 <message name="MarketDataRequest"/>
+                            </messages>
+                        </recv>
+                        <recv name="MarketDataRequest_0" next="635_13">
+                            <messages>
                                 <message name="MarketDataRequest_0"/>
                             </messages>
                         </recv>
@@ -1179,28 +1183,42 @@
                         </send>
                     </operations>
                 </state>
+                <state label="635_13">
+                    <operations>
+                        <send>
+                            <messages>
+                                <message name="MarketDataReport"/>
+                            </messages>
+                        </send>
+                        <send>
+                            <messages>
+                                <message name="Reject"/>
+                            </messages>
+                        </send>
+                    </operations>
+                </state>
             </states>
         </processor>
-        <processor name="ServerUpdate" superProcessor="Server" head="644_13">
+        <processor name="ServerUpdate" superProcessor="Server" head="651_13">
             <messages>
                 <message name="TradingSessionStatusUpdate"//>
                 <message name="MarketDataUpdate"//>
                 <message name="Notification"//>
             </messages>
             <states>
-                <state label="644_13">
+                <state label="651_13">
                     <operations>
-                        <send next="644_13">
+                        <send next="651_13">
                             <messages>
                                 <message name="TradingSessionStatusUpdate"/>
                             </messages>
                         </send>
-                        <send next="644_13">
+                        <send next="651_13">
                             <messages>
                                 <message name="MarketDataUpdate"/>
                             </messages>
                         </send>
-                        <send next="644_13">
+                        <send next="651_13">
                             <messages>
                                 <message name="Notification"/>
                             </messages>

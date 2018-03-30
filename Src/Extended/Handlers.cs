@@ -147,9 +147,9 @@
     public class SubscribedEventArgs : DataEventArgs
     {
         /// <summary>
-        /// Gets snapshot tick.
+        /// Gets symbol name.
         /// </summary>
-        public Quote Tick { get; set; }
+        public string Symbol { get; set; }
 
         /// <summary>
         /// Returns formatted string for class instance.
@@ -157,7 +157,7 @@
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            var result = this.Tick.ToString();
+            var result = this.Symbol;
             return result;
         }
     }
