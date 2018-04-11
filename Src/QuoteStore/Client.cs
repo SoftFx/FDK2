@@ -420,6 +420,8 @@ namespace TickTrader.FDK.QuoteStore
 
         public DownloadBarsEnumerator DownloadBars(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
         {
+            GetBarPeriodicity(ref from, ref to, barPeriod);
+
             long periodMilliseconds = barPeriod.ToMilliseconds();
             long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
 
@@ -449,6 +451,8 @@ namespace TickTrader.FDK.QuoteStore
 
         public void DownloadBarsAsync(object data, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
+            GetBarPeriodicity(ref from, ref to, barPeriod);
+
             long periodMilliseconds = barPeriod.ToMilliseconds();
             long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
 
@@ -471,10 +475,7 @@ namespace TickTrader.FDK.QuoteStore
         void DownloadBarsInternal(BarDownloadAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             long calcRangeMilliseconds = (long) ((to - from).TotalMilliseconds);
-            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();            
-
-            if ((calcRangeMilliseconds % calcPeriodMilliseconds) != 0)
-                throw new Exception("Invalid time range or bar period");            
+            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();                   
             
             string id = Guid.NewGuid().ToString();
 
@@ -508,10 +509,7 @@ namespace TickTrader.FDK.QuoteStore
         void DownloadBarsInternal(BarQuoteDownloadAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
             long calcRangeMilliseconds = (long) ((to - from).TotalMilliseconds);
-            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();            
-
-            if ((calcRangeMilliseconds % calcPeriodMilliseconds) != 0)
-                throw new Exception("Invalid time range or bar period");            
+            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();                       
             
             string id = Guid.NewGuid().ToString();
 
@@ -3016,6 +3014,22 @@ namespace TickTrader.FDK.QuoteStore
             
             Client client_;
             bool connected_;
+        }
+
+        private void GetBarPeriodicity(ref DateTime from, ref DateTime to, BarPeriod barPeriod)
+        {
+            int result = DateTime.Compare(from, to);
+            if (result > 0)
+            {
+                DateTime temp = from;
+                from = to;
+                to = temp;
+            }
+                
+            Periodicity periodicity = new Periodicity();
+            Periodicity.TryParse(barPeriod.ToString(), out periodicity);
+            from = periodicity.GetPeriodStartTime(from);
+            to = periodicity.GetPeriodStartTime(periodicity.Shift(to, 1));
         }
 
         #endregion

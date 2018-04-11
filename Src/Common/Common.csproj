@@ -66,6 +66,7 @@
     <Compile Include="OrderStatus.cs" />
     <Compile Include="OrderTimeInForce.cs" />
     <Compile Include="PairBar.cs" />
+    <Compile Include="Periodicity.cs" />
     <Compile Include="Position.cs" />
     <Compile Include="PriceType.cs" />
     <Compile Include="ProfitCalcMode.cs" />
@@ -86,6 +87,12 @@
     <Compile Include="SymbolInfo.cs" />
     <Compile Include="TimeDirection.cs" />
     <Compile Include="TimeoutException.cs" />
+    <Compile Include="Time\ITimePeriod.cs" />
+    <Compile Include="Time\ITimeZone.cs" />
+    <Compile Include="Time\SystemTimeZone.cs" />
+    <Compile Include="Time\TimeInterval.cs" />
+    <Compile Include="Time\TimeIntervalExtensions.cs" />
+    <Compile Include="Time\TimePeriod.cs" />
     <Compile Include="TradeServerInfo.cs" />
     <Compile Include="TradeTransactionReason.cs" />
     <Compile Include="TradeTransactionReport.cs" />
