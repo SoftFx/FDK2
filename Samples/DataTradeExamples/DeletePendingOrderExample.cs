@@ -13,7 +13,7 @@
 
         protected override void RunExample()
         {
-            var record = this.Trade.Server.SendOrder("EURUSD", TradeCommand.Limit, OrderSide.Buy, 10000, null, 1.0, null, null, null, null, null, null, null);
+            var record = this.Trade.Server.SendOrder("EURUSD", OrderType.Limit, OrderSide.Buy, 10000, null, 1.0, null, null, null, null, null, null, null, null);
             Console.WriteLine(record);
             record.Delete();
             Console.WriteLine("Order has been deleted");

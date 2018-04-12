@@ -13,9 +13,9 @@
 
         protected override void RunExample()
         {
-            var record1 = this.Trade.Server.SendOrder("EURUSD", TradeCommand.Limit, OrderSide.Buy, 10000, null, 1.0, null, null, null, null, null, null, null);
+            var record1 = this.Trade.Server.SendOrder("EURUSD", OrderType.Limit, OrderSide.Buy, 10000, null, 1.0, null, null, null, OrderTimeInForce.GoodTillCancel, null, null, null, null);
             Console.WriteLine(record1);
-            var record2 = record1.Modify(1.1, null, null, null, null, null, null, null);
+            var record2 = record1.Modify(1.1, null, null, null, OrderTimeInForce.GoodTillCancel, null, null, null, null);
             Console.WriteLine(record2);
         }
     }

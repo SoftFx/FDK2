@@ -13,9 +13,9 @@
 
         protected override void RunExample()
         {
-            var buyRecord = this.Trade.Server.SendOrder("EURUSD", TradeCommand.Market, OrderSide.Buy, 100000, null, null, null, null, null, null, null, null, null);
+            var buyRecord = this.Trade.Server.SendOrder("EURUSD", OrderType.Market, OrderSide.Buy, 100000, null, null, null, null, null, null, null, null, null, null);
             Console.WriteLine(buyRecord);
-            var sellRecord = this.Trade.Server.SendOrder("EURUSD", TradeCommand.Market, OrderSide.Sell, 120000, null, null, null, null, null, null, null, null, null);
+            var sellRecord = this.Trade.Server.SendOrder("EURUSD", OrderType.Market, OrderSide.Sell, 120000, null, null, null, null, null, null, null, null, null, null);
             Console.WriteLine(sellRecord);
             buyRecord.CloseBy(sellRecord);
             Console.WriteLine("Positions have been closed");

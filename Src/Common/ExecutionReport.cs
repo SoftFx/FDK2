@@ -53,6 +53,14 @@
         /// Gets TimeInForce field.
         /// </summary>
         public OrderTimeInForce? OrderTimeInForce { get; set; }
+        
+        /// <summary>
+        /// Gets OrdType = 40 field.
+        /// </summary>
+        /// <remarks>
+        /// For backward compatibility see TradeRecordType property.
+        /// </remarks>
+        public OrderType InitialOrderType { get; set; }
 
         /// <summary>
         /// Gets OrderQty = 38 field.

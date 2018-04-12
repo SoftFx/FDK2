@@ -63,7 +63,6 @@
     <Compile Include="QuotesSingleSequenceEnumerator.cs" />
     <Compile Include="RejectReason.cs" />
     <Compile Include="SubscribeTradeTransactionReportsEnumerator.cs" />
-    <Compile Include="TradeCommand.cs" />
     <Compile Include="TradeRecord.cs" />
     <Compile Include="TradeTransactionReports.cs" />
     <Compile Include="TradeTransactionReportsEnumerator.cs" />
