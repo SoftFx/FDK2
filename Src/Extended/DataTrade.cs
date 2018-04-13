@@ -2314,6 +2314,7 @@
             tradeRecord.InitialVolume = executionReport.InitialVolume.GetValueOrDefault();
             tradeRecord.Volume = executionReport.LeavesVolume;
             tradeRecord.MaxVisibleVolume = executionReport.MaxVisibleVolume;
+            tradeRecord.InitialPrice = executionReport.InitialPrice;
             tradeRecord.Price = executionReport.Price;
             tradeRecord.StopPrice = executionReport.StopPrice;
             tradeRecord.TakeProfit = executionReport.TakeProfit;
@@ -2321,6 +2322,7 @@
             tradeRecord.Commission = executionReport.Commission;
             tradeRecord.AgentCommission = executionReport.AgentCommission;
             tradeRecord.Swap = executionReport.Swap;
+            tradeRecord.InitialType = executionReport.InitialOrderType;
             tradeRecord.Type = executionReport.OrderType;
             tradeRecord.Side = executionReport.OrderSide;
             tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;

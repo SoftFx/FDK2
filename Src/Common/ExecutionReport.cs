@@ -70,6 +70,11 @@
         /// <summary>
         /// 
         /// </summary>
+        public double? InitialPrice { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public double? MaxVisibleVolume { get; set; }
 
         /// <summary>
@@ -106,16 +111,6 @@
         /// Gets OrdStatus = 39 field.
         /// </summary>
         public OrderStatus OrderStatus { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public double ReqVolume { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public double? ReqPrice { get; set; }
 
         /// <summary>
         /// Gets CumQty = 14 field.

@@ -2563,8 +2563,9 @@ namespace TickTrader.FDK.OrderEntry
                     resultExecutionReport.StopLoss = message.StopLoss;
                     resultExecutionReport.MarketWithSlippage = (message.Flags & OrderFlags.Slippage) != 0;
                     resultExecutionReport.OrderStatus = GetOrderStatus(message.Status);
-                    resultExecutionReport.ReqVolume = message.ReqQty;
-                    resultExecutionReport.ReqPrice = message.ReqPrice;
+                    resultExecutionReport.InitialOrderType = GetOrderType(message.ReqType);
+                    resultExecutionReport.InitialVolume = message.ReqQty;
+                    resultExecutionReport.InitialPrice = message.ReqPrice;
                     resultExecutionReport.ExecutedVolume = message.CumQty;
                     resultExecutionReport.LeavesVolume = message.LeavesQty;
                     resultExecutionReport.TradeAmount = message.LastQty;
@@ -4386,8 +4387,9 @@ namespace TickTrader.FDK.OrderEntry
                 result.StopLoss = report.StopLoss;
                 result.MarketWithSlippage = (report.Flags & OrderFlags.Slippage) != 0;
                 result.OrderStatus = GetOrderStatus(report.Status);
-                result.ReqVolume = report.ReqQty;
-                result.ReqPrice = report.ReqPrice;
+                result.InitialOrderType = GetOrderType(report.ReqType);
+                result.InitialVolume = report.ReqQty;
+                result.InitialPrice = report.ReqPrice;
                 result.ExecutedVolume = report.CumQty;                
                 result.LeavesVolume = report.LeavesQty;
                 result.TradeAmount = report.LastQty;

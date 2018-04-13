@@ -53,6 +53,11 @@
         /// <summary>
         /// Gets price of the order.
         /// </summary>
+        public double? InitialPrice { get; set; }
+
+        /// <summary>
+        /// Gets price of the order.
+        /// </summary>
         public double? Price { get; set; }
 
         /// <summary>
@@ -94,6 +99,11 @@
         /// It's used by FinancialCalculator.
         /// </summary>
         public double? Margin { get; set; }
+
+        /// <summary>
+        /// Gets type of the order.
+        /// </summary>
+        public OrderType InitialType { get; set; }
 
         /// <summary>
         /// Gets type of the order.
