@@ -30,6 +30,7 @@ namespace TickTrader.FDK.QuoteStore
             ClientSessionOptions options = new ClientSessionOptions(port);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.Secure;
             options.ServerCertificateName = "TickTraderManagerService";
+            options.ServerMinMinorVersion = Info.QuoteStore.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;
@@ -1068,7 +1069,6 @@ namespace TickTrader.FDK.QuoteStore
             public ClientSessionListener(Client client)
             {
                 client_ = client;
-                connected_ = false;
             }
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
@@ -1077,44 +1077,14 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
-                    if (clientSession.ServerMinorVersion < SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion)
+                    if (client_.ConnectResultEvent != null)
                     {
-                        clientSession.LogError(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion));
-
-                        DisconnectAsyncContext context = new DisconnectAsyncContext(false);
-                        client_.DisconnectInternal(context, "Client disconnect");
-
-                        ConnectException exception = new ConnectException(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion));
-
-                        if (client_.ConnectErrorEvent != null)
+                        try
                         {
-                            try
-                            {
-                                client_.ConnectErrorEvent(client_, connectAsyncContext.Data, exception);
-                            }
-                            catch
-                            {
-                            }
+                            client_.ConnectResultEvent(client_, connectAsyncContext.Data);
                         }
-
-                        if (connectAsyncContext.Waitable)
+                        catch
                         {
-                            connectAsyncContext.exception_ = exception;
-                        }
-                    }
-                    else
-                    {
-                        connected_ = true;
-
-                        if (client_.ConnectResultEvent != null)
-                        {
-                            try
-                            {
-                                client_.ConnectResultEvent(client_, connectAsyncContext.Data);
-                            }
-                            catch
-                            {
-                            }
                         }
                     }
                 }
@@ -1128,39 +1098,14 @@ namespace TickTrader.FDK.QuoteStore
             {
                 try
                 {
-                    if (clientSession.ServerMinorVersion < SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion)
+                    if (client_.ReconnectEvent != null)
                     {
-                        clientSession.LogError(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion));
-
-                        DisconnectAsyncContext context = new DisconnectAsyncContext(false);
-                        client_.DisconnectInternal(context, "Client disconnect");
-
-                        ConnectException exception = new ConnectException(string.Format("Invalid server protocol minor version : {0} vs {1}", clientSession.ServerMinorVersion, SoftFX.Net.QuoteStore.Info.QuoteStore.MinorVersion));
-
-                        if (client_.ConnectErrorEvent != null)
+                        try
                         {
-                            try
-                            {
-                                client_.ReconnectErrorEvent(client_, exception);
-                            }
-                            catch
-                            {
-                            }
+                            client_.ReconnectEvent(client_);
                         }
-                    }
-                    else
-                    {
-                        connected_ = true;
-
-                        if (client_.ReconnectEvent != null)
+                        catch
                         {
-                            try
-                            {
-                                client_.ReconnectEvent(client_);
-                            }
-                            catch
-                            {
-                            }
                         }
                     }
                 }
@@ -1229,36 +1174,31 @@ namespace TickTrader.FDK.QuoteStore
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
 
-                    if (connected_)
+                    foreach (ClientContext context in contexts)
                     {
-                        connected_ = false;
-
-                        foreach (ClientContext context in contexts)
+                        try
                         {
-                            try
-                            {
-                                ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                            }
-                            catch
-                            {
-                            }
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
                         }
-
-                        if (client_.DisconnectResultEvent != null)
+                        catch
                         {
-                            try
-                            {
-                                client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
-                            }
-                            catch
-                            {
-                            }
                         }
+                    }
 
-                        if (disconnectAsyncContext.Waitable)
+                    if (client_.DisconnectResultEvent != null)
+                    {
+                        try
                         {
-                            disconnectAsyncContext.text_ = text;
+                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
                         }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (disconnectAsyncContext.Waitable)
+                    {
+                        disconnectAsyncContext.text_ = text;
                     }
                 }
                 catch (Exception exception)
@@ -1271,30 +1211,25 @@ namespace TickTrader.FDK.QuoteStore
             {
                 try
                 {
-                    if (connected_)
+                    foreach (ClientContext context in contexts)
                     {
-                        connected_ = false;
-
-                        foreach (ClientContext context in contexts)
+                        try
                         {
-                            try
-                            {
-                                ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                            }
-                            catch
-                            {
-                            }
+                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
                         }
-
-                        if (client_.DisconnectEvent != null)
+                        catch
                         {
-                            try
-                            {
-                                client_.DisconnectEvent(client_, text);
-                            }
-                            catch
-                            {
-                            }
+                        }
+                    }
+
+                    if (client_.DisconnectEvent != null)
+                    {
+                        try
+                        {
+                            client_.DisconnectEvent(client_, text);
+                        }
+                        catch
+                        {
                         }
                     }
                 }
@@ -3013,7 +2948,6 @@ namespace TickTrader.FDK.QuoteStore
             }
             
             Client client_;
-            bool connected_;
         }
 
         private void GetBarPeriodicity(ref DateTime from, ref DateTime to, BarPeriod barPeriod)
