@@ -1222,7 +1222,7 @@
                 </state>
             </states>
         </processor>
-        <bloc name="ClientNewOrderSingle" head="921_9">
+        <bloc name="ClientNewOrderSingleResponse" head="921_9">
             <states>
                 <state label="921_9">
                     <operations>
@@ -2965,7 +2965,7 @@
                 </state>
             </states>
         </processor>
-        <bloc name="ServerNewOrderSingle" head="1238_9">
+        <bloc name="ServerNewOrderSingleResponse" head="1238_9">
             <states>
                 <state label="1238_9">
                     <operations>

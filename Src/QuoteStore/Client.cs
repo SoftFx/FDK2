@@ -1375,7 +1375,7 @@ namespace TickTrader.FDK.QuoteStore
 
                     try
                     {
-                        StringArray reportSymbolIds = message.SymbolIds;
+                        SoftFX.Net.Core.StringArray reportSymbolIds = message.SymbolIds;
                         int count = reportSymbolIds.Length;
                         string[] resultSymbols = new string[count];
 
@@ -1464,7 +1464,7 @@ namespace TickTrader.FDK.QuoteStore
 
                     try
                     {
-                        StringArray reportPeriodicities = message.Periodicities;
+                        SoftFX.Net.Core.StringArray reportPeriodicities = message.Periodicities;
                         int count = reportPeriodicities.Length;
                         BarPeriod[] resultPeriodicities = new BarPeriod[count];
 

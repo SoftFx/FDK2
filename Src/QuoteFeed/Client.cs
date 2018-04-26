@@ -503,7 +503,7 @@ namespace TickTrader.FDK.QuoteFeed
             MarketDataUnsubscribeRequest request = new MarketDataUnsubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
 
-            StringArray requestSymbolIds = request.SymbolIds;
+            SoftFX.Net.Core.StringArray requestSymbolIds = request.SymbolIds;
             int count = symbolIds.Length;
             requestSymbolIds.Resize(count);
 
