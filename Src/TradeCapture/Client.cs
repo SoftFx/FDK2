@@ -2555,6 +2555,51 @@ namespace TickTrader.FDK.TradeCapture
                 accountReport.IsReadOnly = (accountFlags & AccountFlags.Investor) != 0;
                 accountReport.IsValid = (accountFlags & AccountFlags.Valid) != 0;
 
+                PositionArray positions = account.Positions;
+                int positionCount = positions.Length;
+
+                accountReport.Positions = new TickTrader.FDK.Common.Position[positionCount];
+
+                for (int index = 0; index < positionCount; ++index)
+                {
+                    SoftFX.Net.TradeCapture.Position position = positions[index];
+                    TickTrader.FDK.Common.Position accountPosition = new TickTrader.FDK.Common.Position();
+
+                    accountPosition.Symbol = position.SymbolId;
+                    if (position.Type == PosType.Long)
+                    {
+                        accountPosition.SellAmount = position.Qty;
+                        accountPosition.SellPrice = position.Price;
+                    }
+                    else
+                    {
+                        accountPosition.BuyAmount = position.Qty;
+                        accountPosition.BuyPrice = position.Price;
+                    }
+                    accountPosition.Swap = position.Swap;
+                    accountPosition.Commission = position.Commission;
+                    accountPosition.Modified = position.Modified;
+
+                    accountReport.Positions[index] = accountPosition;
+                }
+
+                AssetArray assets = account.Assets;
+                int assetCount = assets.Length;
+
+                accountReport.Assets = new AssetInfo[assetCount];
+
+                for (int index = 0; index < assetCount; ++ index)
+                {
+                    Asset asset = assets[index];
+                    AssetInfo assetInfo = new AssetInfo();
+
+                    assetInfo.Currency = asset.CurrId;
+                    assetInfo.Balance = asset.Total;
+                    assetInfo.TradeAmount = asset.Move;
+
+                    accountReport.Assets[index] = assetInfo;
+                }
+
                 accountReport.BalanceCurrencyToUsdConversionRate = null;
                 accountReport.UsdToBalanceCurrencyConversionRate = null;
                 accountReport.ProfitCurrencyToUsdConversionRate = null;

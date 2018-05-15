@@ -104,6 +104,16 @@
         /// <summary>
         /// 
         /// </summary>
+        public Position[] Positions { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public AssetInfo[] Assets { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
         public double? BalanceCurrencyToUsdConversionRate { get; set; }
 
         /// <summary>
@@ -120,11 +130,6 @@
         /// 
         /// </summary>
         public double? UsdToProfitCurrencyConversionRate { get; set; }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public AssetInfo[] Assets { get; set; }
 
         public AccountReport Clone()
         {
@@ -145,17 +150,12 @@
             accountReport.IsBlocked = IsBlocked;
             accountReport.IsValid = IsValid;
             accountReport.IsReadOnly = IsReadOnly;
+            accountReport.Positions = (Position[])Positions.Clone();
+            accountReport.Assets = (AssetInfo[])Assets.Clone();
             accountReport.BalanceCurrencyToUsdConversionRate = BalanceCurrencyToUsdConversionRate;
             accountReport.UsdToBalanceCurrencyConversionRate = UsdToBalanceCurrencyConversionRate;
             accountReport.ProfitCurrencyToUsdConversionRate = ProfitCurrencyToUsdConversionRate;
             accountReport.UsdToProfitCurrencyConversionRate = UsdToProfitCurrencyConversionRate;
-
-            if (Assets != null)
-            {
-                accountReport.Assets = (AssetInfo[])Assets.Clone();
-            }
-            else
-                accountReport.Assets = null;
 
             return accountReport;
         }

@@ -1,5 +1,7 @@
 ﻿namespace TickTrader.FDK.Common
 {
+    using System;
+
     /// <summary>
     /// Contains position information for a symbol.
     /// </summary>
@@ -63,6 +65,11 @@
         /// Gets average price of sell position.
         /// </summary>
         public double? SellPrice { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public DateTime? Modified { get; set; }
 
         /// <summary>
         /// Returns formatted string for the class instance.
