@@ -1903,25 +1903,48 @@
 
                     AssetInfo[] cacheAssets = cache_.accountInfo_.Assets;
 
-                    int cacheIndex;
-                    for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                    if (reportAsset.Balance != 0)
                     {
-                        AssetInfo cacheAsset = cacheAssets[cacheIndex];
-
-                        if (cacheAsset.Currency == reportAsset.Currency)
+                        int cacheIndex;
+                        for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
                         {
-                            cacheAssets[cacheIndex] = reportAsset;
-                            break;
+                            AssetInfo cacheAsset = cacheAssets[cacheIndex];
+
+                            if (cacheAsset.Currency == reportAsset.Currency)
+                            {
+                                cacheAssets[cacheIndex] = reportAsset;
+                                break;
+                            }
+                        }
+
+                        if (cacheIndex == cacheAssets.Length)
+                        {
+                            AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
+                            Array.Copy(cacheAssets, assets, cacheAssets.Length);
+                            assets[cacheAssets.Length] = reportAsset;
+
+                            cache_.accountInfo_.Assets = assets;
                         }
                     }
-
-                    if (cacheIndex == cacheAssets.Length)
+                    else
                     {
-                        AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
-                        Array.Copy(cacheAssets, assets, cacheAssets.Length);
-                        assets[cacheAssets.Length] = reportAsset;
+                        int cacheIndex;
+                        for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                        {
+                            AssetInfo cacheAsset = cacheAssets[cacheIndex];
 
-                        cache_.accountInfo_.Assets = assets;
+                            if (cacheAsset.Currency == reportAsset.Currency)
+                                break;
+                        }
+
+                        if (cacheIndex < cacheAssets.Length)
+                        {
+                            AssetInfo[] assets = new AssetInfo[cacheAssets.Length - 1];
+                            Array.Copy(cacheAssets, 0, assets, 0, cacheIndex);
+                            Array.Copy(cacheAssets, cacheIndex + 1, assets, cacheIndex, assets.Length - cacheIndex);
+
+                            cache_.accountInfo_.Assets = assets;
+                        }
                     }
                 }
 
@@ -1940,33 +1963,56 @@
                 {
                     AssetInfo[] cacheAssets = cache_.accountInfo_.Assets;
 
-                    int cacheIndex;
-                    for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                    if (balanceOperation.Balance != 0)
                     {
-                        AssetInfo cacheAsset = cacheAssets[cacheIndex];
-
-                        if (cacheAsset.Currency == balanceOperation.TransactionCurrency)
+                        int cacheIndex;
+                        for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
                         {
-                            cacheAsset.Balance = balanceOperation.Balance;
-                            cacheAsset.TradeAmount = balanceOperation.TransactionAmount;
+                            AssetInfo cacheAsset = cacheAssets[cacheIndex];
 
-                            break;
+                            if (cacheAsset.Currency == balanceOperation.TransactionCurrency)
+                            {
+                                cacheAsset.Balance = balanceOperation.Balance;
+                                cacheAsset.TradeAmount = balanceOperation.TransactionAmount;
+
+                                break;
+                            }
+                        }
+
+                        if (cacheIndex == cacheAssets.Length)
+                        {
+                            AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
+                            Array.Copy(cacheAssets, assets, cacheAssets.Length);
+
+                            AssetInfo assetInfo = new AssetInfo();
+                            assetInfo.Currency = balanceOperation.TransactionCurrency;
+                            assetInfo.Balance = balanceOperation.Balance;
+                            assetInfo.TradeAmount = balanceOperation.TransactionAmount;
+
+                            assets[cacheAssets.Length] = assetInfo;
+
+                            cache_.accountInfo_.Assets = assets;
                         }
                     }
-
-                    if (cacheIndex == cacheAssets.Length)
+                    else
                     {
-                        AssetInfo[] assets = new AssetInfo[cacheAssets.Length + 1];
-                        Array.Copy(cacheAssets, assets, cacheAssets.Length);
+                        int cacheIndex;
+                        for (cacheIndex = 0; cacheIndex < cacheAssets.Length; ++cacheIndex)
+                        {
+                            AssetInfo cacheAsset = cacheAssets[cacheIndex];
 
-                        AssetInfo assetInfo = new AssetInfo();
-                        assetInfo.Currency = balanceOperation.TransactionCurrency;
-                        assetInfo.Balance = balanceOperation.Balance;
-                        assetInfo.TradeAmount = balanceOperation.TransactionAmount;
+                            if (cacheAsset.Currency == balanceOperation.TransactionCurrency)
+                                break;
+                        }
 
-                        assets[cacheAssets.Length] = assetInfo;
+                        if (cacheIndex < cacheAssets.Length)
+                        {
+                            AssetInfo[] assets = new AssetInfo[cacheAssets.Length - 1];
+                            Array.Copy(cacheAssets, 0, assets, 0, cacheIndex);
+                            Array.Copy(cacheAssets, cacheIndex + 1, assets, cacheIndex, assets.Length - cacheIndex);
 
-                        cache_.accountInfo_.Assets = assets;
+                            cache_.accountInfo_.Assets = assets;
+                        }
                     }
                 }
                 else
