@@ -54,8 +54,7 @@ namespace TickTrader.FDK.QuoteFeed
 
         public void Dispose()
         {
-            DisconnectAsync(this, "Client disconnect");
-            Join();
+            session_.Dispose();
 
             GC.SuppressFinalize(this);
         }
@@ -70,6 +69,7 @@ namespace TickTrader.FDK.QuoteFeed
         public delegate void DisconnectDelegate(Client client, string text);
         public delegate void ReconnectDelegate(Client client);
         public delegate void ReconnectErrorDelegate(Client client, Exception exception);
+        public delegate void SendDataDelegate(Client client);
 
         public event ConnectResultDelegate ConnectResultEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
@@ -77,6 +77,7 @@ namespace TickTrader.FDK.QuoteFeed
         public event DisconnectDelegate DisconnectEvent;
         public event ReconnectDelegate ReconnectEvent;
         public event ReconnectErrorDelegate ReconnectErrorEvent;
+        public event SendDataDelegate SendDataEvent;
 
         public void Connect(string address, int timeout)
         {
@@ -87,6 +88,7 @@ namespace TickTrader.FDK.QuoteFeed
             if (! context.Wait(timeout))
             {
                 DisconnectInternal(null, "Connect timeout");
+                Join();
 
                 throw new Common.TimeoutException("Method call timed out");
             }
@@ -1057,6 +1059,27 @@ namespace TickTrader.FDK.QuoteFeed
                         try
                         {
                             client_.DisconnectEvent(client_, text);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnSend(ClientSession clientSession, int size)
+            {
+                try
+                {
+                    if (client_.SendDataEvent != null)
+                    {
+                        try
+                        {
+                            client_.SendDataEvent(client_);
                         }
                         catch
                         {
