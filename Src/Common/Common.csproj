@@ -60,6 +60,7 @@
     <Compile Include="LogoutInfo.cs" />
     <Compile Include="LogoutReason.cs" />
     <Compile Include="MarginCalcMode.cs" />
+    <Compile Include="NetworkActivity.cs" />
     <Compile Include="Notification.cs" />
     <Compile Include="NotificationSeverity.cs" />
     <Compile Include="NotificationType.cs" />

@@ -66,6 +66,20 @@ namespace TickTrader.FDK.QuoteStore
 
         #endregion
 
+        #region Network activity
+
+        public NetworkActivity NetworkActivity
+        {
+            get
+            {
+                SoftFX.Net.Core.ClientSessionStatistics statistics = session_.Statistics;
+
+                return new NetworkActivity(statistics.SendDataSize, statistics.ReceiveDataSize);
+            }
+        }
+
+        #endregion
+
         #region Connect / disconnect
 
         public delegate void ConnectResultDelegate(Client client, object data);
@@ -74,7 +88,7 @@ namespace TickTrader.FDK.QuoteStore
         public delegate void DisconnectDelegate(Client client, string text);
         public delegate void ReconnectDelegate(Client client);
         public delegate void ReconnectErrorDelegate(Client client, Exception exception);
-        public delegate void SendDataDelegate(Client client);
+        public delegate void SendDelegate(Client client);
 
         public event ConnectResultDelegate ConnectResultEvent;
         public event ConnectErrorDelegate ConnectErrorEvent;
@@ -82,7 +96,7 @@ namespace TickTrader.FDK.QuoteStore
         public event DisconnectDelegate DisconnectEvent;
         public event ReconnectDelegate ReconnectEvent;
         public event ReconnectErrorDelegate ReconnectErrorEvent;
-        public event SendDataDelegate SendDataEvent;
+        public event SendDelegate SendEvent;
 
         public void Connect(string address, int timeout)
         {
@@ -1245,11 +1259,11 @@ namespace TickTrader.FDK.QuoteStore
             {
                 try
                 {
-                    if (client_.SendDataEvent != null)
+                    if (client_.SendEvent != null)
                     {
                         try
                         {
-                            client_.SendDataEvent(client_);
+                            client_.SendEvent(client_);
                         }
                         catch
                         {

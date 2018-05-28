@@ -50,12 +50,12 @@
     <Compile Include="DataFeedServer.cs" />
     <Compile Include="DataTrade.cs" />
     <Compile Include="DataTradeCache.cs" />
+    <Compile Include="DataTradeNetwork.cs" />
     <Compile Include="DataTradeServer.cs" />
     <Compile Include="EventQueue.cs" />
     <Compile Include="Exceptions.cs" />
     <Compile Include="Handlers.cs" />
-    <Compile Include="Network.cs" />
-    <Compile Include="NetworkActivity.cs" />
+    <Compile Include="DataFeedNetwork.cs" />
     <Compile Include="PairBars.cs" />
     <Compile Include="PairBarsEnumerator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

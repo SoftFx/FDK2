@@ -39,7 +39,7 @@
             name_ = name;
             server_ = new DataTradeServer(this);
             cache_ = new DataTradeCache(this);
-            network_ = new Network();
+            network_ = new DataTradeNetwork(this);
 
             if (!string.IsNullOrEmpty(connectionString))
                 Initialize(connectionString);
@@ -201,7 +201,7 @@
         /// <summary>
         /// Returns a network information of corresponded client connection; can not be null.
         /// </summary>
-        public Network Network
+        public DataTradeNetwork Network
         {
             get { return network_; }
         }
@@ -2419,7 +2419,7 @@
 
         internal DataTradeServer server_;
         internal DataTradeCache cache_;
-        internal Network network_;
+        internal DataTradeNetwork network_;
         internal OrderEntry.Client orderEntryClient_;
         internal TradeCapture.Client tradeCaptureClient_;
 

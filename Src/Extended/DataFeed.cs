@@ -38,7 +38,7 @@
             name_ = name;
             server_ = new DataFeedServer(this);
             cache_ = new DataFeedCache(this);
-            network_ = new Network();
+            network_ = new DataFeedNetwork(this);
 
             if (!string.IsNullOrEmpty(connectionString))
                 Initialize(connectionString);
@@ -185,7 +185,7 @@
         /// <summary>
         /// Returns a network information of corresponded client connection; can not be null.
         /// </summary>
-        public Network Network
+        public DataFeedNetwork Network
         {
             get { return network_; }
         }
@@ -1790,7 +1790,7 @@
 
         internal DataFeedServer server_;
         internal DataFeedCache cache_;
-        internal Network network_;
+        internal DataFeedNetwork network_;
         internal QuoteFeed.Client quoteFeedClient_;
         internal QuoteStore.Client quoteStoreClient_;
 
