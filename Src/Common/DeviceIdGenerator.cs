@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Win32;
 
 namespace TickTrader.FDK.Common
 {
@@ -21,9 +22,25 @@ namespace TickTrader.FDK.Common
         {
             if (string.IsNullOrEmpty(deviceId))
             {
-                deviceId = GetHash($"CPU >> {CpuId()}\nBIOS >> {BiosId()}\nBASE >> {BaseId()}"
-                    //+ $"\nDISK >> {diskId()}\nVIDEO >> {videoId()}\nMAC >> {macId()}"
-                    );
+                try
+                {
+                    deviceId = GetHash($"Product >> {ProductId()}\nBIOS >> {BiosId()}\nBASE >> {BaseId()}");
+                }
+                catch (Exception) {}
+
+                if (deviceId != string.Empty)
+                    return deviceId;
+
+                try
+                {
+                    deviceId = GetHash($"Product >> {ProductId()}");
+                }
+                catch (Exception) {}
+
+                if (deviceId != string.Empty)
+                    return deviceId;
+
+                deviceId = Guid.NewGuid().ToString("D");
             }
             return deviceId;
         }
@@ -65,8 +82,7 @@ namespace TickTrader.FDK.Common
         private static string Identifier(string wmiClass, string wmiProperty, string wmiMustBeTrue)
         {
             string result = "";
-            System.Management.ManagementClass mc =
-        new System.Management.ManagementClass(wmiClass);
+            System.Management.ManagementClass mc = new System.Management.ManagementClass(wmiClass);
             System.Management.ManagementObjectCollection moc = mc.GetInstances();
             foreach (System.Management.ManagementObject mo in moc)
             {
@@ -178,6 +194,38 @@ namespace TickTrader.FDK.Common
             return Identifier("Win32_NetworkAdapterConfiguration",
                 "MACAddress", "IPEnabled");
         }
+
+        public static string ProductId()
+        {
+            try
+            {
+                RegistryKey localMachine = RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, RegistryView.Registry32);
+                RegistryKey windowsNtKey = localMachine.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion");
+                Object value = windowsNtKey?.GetValue("ProductId");
+                if (value != null)
+                    return value as string;
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
+            try
+            {
+                RegistryKey localMachine = RegistryKey.OpenBaseKey(Microsoft.Win32.RegistryHive.LocalMachine, RegistryView.Registry64);
+                RegistryKey windowsNtKey = localMachine.OpenSubKey(@"Software\Microsoft\Windows NT\CurrentVersion");
+                Object value = windowsNtKey?.GetValue("ProductId");
+                if (value != null)
+                    return value as string;
+            }
+            catch (Exception)
+            {
+                // ignored
+            }
+
+            return "";
+        }
+
         #endregion
     }
 }
