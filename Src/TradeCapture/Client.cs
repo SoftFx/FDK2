@@ -1519,7 +1519,7 @@ namespace TickTrader.FDK.TradeCapture
 
                         if (context.Waitable)
                         {
-                            context.enumerator_.Begin(message.TotalCount);
+                            context.enumerator_.SetBegin(message.TotalCount);
                         }
                     }
                     catch (Exception exception)
@@ -1547,7 +1547,7 @@ namespace TickTrader.FDK.TradeCapture
                 }
             }
 
-            public override void OnTradeSubscribeReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeUpdateReport message)
+            public override void OnTradeSubscribeReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeReport message)
             {
                 try
                 {
