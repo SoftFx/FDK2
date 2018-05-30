@@ -148,4 +148,4 @@ goto END
 echo Error: Package version is not specified
 
 :END
-
+exit %ERRORLEVEL%
