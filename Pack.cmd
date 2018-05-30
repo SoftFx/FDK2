@@ -2,7 +2,9 @@ rem @echo off
 
 if [%1]==[] goto INVALID_COMMAND_LINE_ERROR
 
-set PACKAGE_DIR="Package\TickTrader FDK "%1""
+call Build.cmd
+
+set PACKAGE_DIR="Pack\TickTrader FDK "%1""
 
 rd /S /Q %PACKAGE_DIR%
 mkdir %PACKAGE_DIR% || goto END
@@ -132,23 +134,14 @@ xcopy Samples\TradeFeedExamples\*.cs %PACKAGE_DIR%\Samples\TradeFeedExamples || 
 mkdir %PACKAGE_DIR%\Samples\TradeFeedExamples\Properties || goto END
 xcopy Samples\TradeFeedExamples\Properties\*.cs %PACKAGE_DIR%\Samples\TradeFeedExamples\Properties || goto END
 
-rem Xml
-
-mkdir %PACKAGE_DIR%\Xml || goto END
-xcopy Xml\Core.xml %PACKAGE_DIR%\Xml || goto END
-xcopy Xml\OrderEntry.xml %PACKAGE_DIR%\Xml || goto END
-xcopy Xml\QuoteFeed.xml %PACKAGE_DIR%\Xml || goto END
-xcopy Xml\QuoteStore.xml %PACKAGE_DIR%\Xml || goto END
-xcopy Xml\TradeCapture.xml %PACKAGE_DIR%\Xml || goto END
-
 rem Zip
 
-cd Package || goto END
+cd Pack || goto END
 del "TickTrader FDK "%1".zip"
 7z.exe a -tzip "TickTrader FDK "%1".zip" "TickTrader FDK "%1"" || goto END
 cd ..
 
-echo Build succeeded
+echo Succeeded
 goto END
 
 :INVALID_COMMAND_LINE_ERROR
