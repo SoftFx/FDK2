@@ -17,11 +17,6 @@
         public string Symbol { get; set; }
 
         /// <summary>
-        /// Gets the position settlement price.
-        /// </summary>
-        public double SettlementPrice { get; set; }
-
-        /// <summary>
         /// Gets total amount, which has been bought.
         /// </summary>
         public double BuyAmount { get; set; }
@@ -72,12 +67,22 @@
         public DateTime? Modified { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public double? BidPrice { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? AskPrice { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("Symbol = {0}; Settlement Price = {1}; Buy Amount = {2}; Sell Amount = {3}", this.Symbol, this.SettlementPrice, this.BuyAmount, this.SellAmount);
+            return string.Format("Symbol = {0}; Buy Price = {1}; Buy Amount = {2}; Sell Price = {3}; Sell Amount = {4}", this.Symbol, this.BuyPrice, this.BuyAmount, this.SellPrice, this.SellAmount);
         }
     }
 }

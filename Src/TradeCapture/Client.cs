@@ -2356,7 +2356,7 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.TradeTransactionReportType = GetTradeTransactionReportType(trade.Type);
                 tradeTransactionReport.TradeTransactionReason = GetTradeTransactionReason(trade.Reason);
 
-                BalanceNull balance = trade.Balance;
+                TradeBalanceNull balance = trade.Balance;
                 if (balance.HasValue)
                 {
                     tradeTransactionReport.AccountBalance = balance.Total;
@@ -2465,7 +2465,7 @@ namespace TickTrader.FDK.TradeCapture
                 tradeTransactionReport.ProfitCurrency = trade.ProfitCurrId;
                 tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrId;
 
-                AssetNull asset1 = trade.Asset1;
+                TradeAssetNull asset1 = trade.Asset1;
                 if (asset1.HasValue)
                 {
                     tradeTransactionReport.SrcAssetCurrency = asset1.CurrId;
@@ -2479,7 +2479,7 @@ namespace TickTrader.FDK.TradeCapture
                     tradeTransactionReport.SrcAssetMovement = null;
                 }
 
-                AssetNull asset2 = trade.Asset2;
+                TradeAssetNull asset2 = trade.Asset2;
                 if (asset2.HasValue)
                 {
                     tradeTransactionReport.DstAssetCurrency = asset2.CurrId;
@@ -2568,7 +2568,7 @@ namespace TickTrader.FDK.TradeCapture
                 accountReport.Type = GetAccountType(account.Type);
                 accountReport.Leverage = account.Leverage;
 
-                BalanceNull balance = account.Balance;
+                AccountBalanceNull balance = account.Balance;
 
                 if (balance.HasValue)
                 {
@@ -2592,14 +2592,14 @@ namespace TickTrader.FDK.TradeCapture
                 accountReport.IsReadOnly = (accountFlags & AccountFlags.Investor) != 0;
                 accountReport.IsValid = (accountFlags & AccountFlags.Valid) != 0;
 
-                PositionArray positions = account.Positions;
+                AccountPositionArray positions = account.Positions;
                 int positionCount = positions.Length;
 
                 accountReport.Positions = new TickTrader.FDK.Common.Position[positionCount];
 
                 for (int index = 0; index < positionCount; ++index)
                 {
-                    SoftFX.Net.TradeCapture.Position position = positions[index];
+                    SoftFX.Net.TradeCapture.AccountPosition position = positions[index];
                     TickTrader.FDK.Common.Position accountPosition = new TickTrader.FDK.Common.Position();
 
                     accountPosition.Symbol = position.SymbolId;
@@ -2613,26 +2613,30 @@ namespace TickTrader.FDK.TradeCapture
                         accountPosition.BuyAmount = position.Qty;
                         accountPosition.BuyPrice = position.Price;
                     }
+                    accountPosition.Margin = position.Margin;
+                    accountPosition.Profit = position.Profit;                    
                     accountPosition.Swap = position.Swap;
                     accountPosition.Commission = position.Commission;
                     accountPosition.Modified = position.Modified;
+                    accountPosition.BidPrice = position.Bid;
+                    accountPosition.AskPrice = position.Ask;
 
                     accountReport.Positions[index] = accountPosition;
                 }
 
-                AssetArray assets = account.Assets;
+                AccountAssetArray assets = account.Assets;
                 int assetCount = assets.Length;
 
                 accountReport.Assets = new AssetInfo[assetCount];
 
                 for (int index = 0; index < assetCount; ++ index)
                 {
-                    Asset asset = assets[index];
+                    AccountAsset asset = assets[index];
                     AssetInfo assetInfo = new AssetInfo();
 
                     assetInfo.Currency = asset.CurrId;
+                    assetInfo.LockedAmount = asset.Locked;
                     assetInfo.Balance = asset.Total;
-                    assetInfo.TradeAmount = asset.Move;
 
                     accountReport.Assets[index] = assetInfo;
                 }

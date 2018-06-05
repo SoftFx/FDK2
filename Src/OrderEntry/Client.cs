@@ -2728,7 +2728,6 @@ namespace TickTrader.FDK.OrderEntry
 
                             TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
                             resultPosition.Symbol = reportPosition.SymbolId;
-                            resultPosition.SettlementPrice = reportPosition.SettltPrice;
                             resultPosition.Commission = reportPosition.Commission;
                             resultPosition.AgentCommission = reportPosition.AgentCommission;
                             resultPosition.Swap = reportPosition.Swap;
@@ -4077,7 +4076,6 @@ namespace TickTrader.FDK.OrderEntry
                     TickTrader.FDK.Common.Position resultPosition = new TickTrader.FDK.Common.Position();
 
                     resultPosition.Symbol = reportPosition.SymbolId;
-                    resultPosition.SettlementPrice = reportPosition.SettltPrice;
                     resultPosition.Commission = reportPosition.Commission;
                     resultPosition.AgentCommission = reportPosition.AgentCommission;
                     resultPosition.Swap = reportPosition.Swap;

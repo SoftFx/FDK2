@@ -205,15 +205,14 @@
                         if (volume >= 0)
                         {
                             record.Side = OrderSide.Buy;
-                            record.Price = element.BuyPrice ?? Math.Abs(element.SettlementPrice);
+                            record.Price = element.BuyPrice;
                         }
                         else
                         {
                             record.Side = OrderSide.Sell;
-                            record.Price = element.SellPrice ?? Math.Abs(element.SettlementPrice);
+                            record.Price = element.SellPrice;
                         }
                         
-                        record.Price = Math.Abs(element.SettlementPrice);
                         tradeRecords.Add(record);
                     }
                 }
