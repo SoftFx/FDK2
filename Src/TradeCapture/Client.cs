@@ -2605,13 +2605,17 @@ namespace TickTrader.FDK.TradeCapture
                     accountPosition.Symbol = position.SymbolId;
                     if (position.Type == PosType.Long)
                     {
-                        accountPosition.SellAmount = position.Qty;
-                        accountPosition.SellPrice = position.Price;
+                        accountPosition.BuyAmount = position.Qty;
+                        accountPosition.BuyPrice = position.Price;
+                        accountPosition.SellAmount = 0;
+                        accountPosition.SellPrice = 0;
                     }
                     else
                     {
-                        accountPosition.BuyAmount = position.Qty;
-                        accountPosition.BuyPrice = position.Price;
+                        accountPosition.BuyAmount = 0;
+                        accountPosition.BuyPrice = 0;
+                        accountPosition.SellAmount = position.Qty;
+                        accountPosition.SellPrice = position.Price;
                     }
                     accountPosition.Margin = position.Margin;
                     accountPosition.Profit = position.Profit;                    
