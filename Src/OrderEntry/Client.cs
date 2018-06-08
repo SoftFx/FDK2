@@ -2543,6 +2543,8 @@ namespace TickTrader.FDK.OrderEntry
                     resultExecutionReport.TradePrice = message.LastPrice;
                     resultExecutionReport.Commission = message.Commission;
                     resultExecutionReport.AgentCommission = message.AgentCommission;
+                    resultExecutionReport.ReducedOpenCommission = (message.CommissionFlags & OrderCommissionFlags.OpenReduced) != 0;
+                    resultExecutionReport.ReducedCloseCommission = (message.CommissionFlags & OrderCommissionFlags.CloseReduced) != 0;
                     resultExecutionReport.Swap = message.Swap;
                     resultExecutionReport.AveragePrice = message.AvgPrice;
                     resultExecutionReport.Created = message.Created;
