@@ -51,6 +51,7 @@
             Version = TickTrader.FDK.Common.Version.Major + "." + TickTrader.FDK.Common.Version.Minor;
             if (TickTrader.FDK.Common.Version.Stage != "")
                 Version = Version + " " + TickTrader.FDK.Common.Version.Stage;
+            Version = Version + " Build " + TickTrader.FDK.Common.Version.Build;
             Id = string.Empty;
             ResolveDotNetAssemblies = true;
             Platform = "MSIL";

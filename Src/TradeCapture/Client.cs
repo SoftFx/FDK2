@@ -2584,6 +2584,7 @@ namespace TickTrader.FDK.TradeCapture
                 accountReport.Profit = account.Profit;
                 accountReport.Commission = account.Commission;
                 accountReport.AgentCommission = account.AgentCommission;
+                accountReport.Swap = account.Swap;
                 accountReport.Equity = account.Equity;
                 accountReport.Margin = account.Margin;
                 accountReport.MarginLevel = account.MarginLevel;
