@@ -1,0 +1,111 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TickTrader.FDK.Common</RootNamespace>
+    <AssemblyName>TickTrader.FDK.Common</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile>
+    </TargetFrameworkProfile>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>..\Bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\Bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Management" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AccountInfo.cs" />
+    <Compile Include="AccountReport.cs" />
+    <Compile Include="AccountType.cs" />
+    <Compile Include="AssetInfo.cs" />
+    <Compile Include="BalanceOperation.cs" />
+    <Compile Include="Bar.cs" />
+    <Compile Include="BarPeriod.cs" />
+    <Compile Include="CommissionChargeMethod.cs" />
+    <Compile Include="CommissionChargeType.cs" />
+    <Compile Include="CommissionType.cs" />
+    <Compile Include="ConnectException.cs" />
+    <Compile Include="CurrencyInfo.cs" />
+    <Compile Include="DeviceIdGenerator.cs" />
+    <Compile Include="DisconnectException.cs" />
+    <Compile Include="ExecutionReport.cs" />
+    <Compile Include="ExecutionType.cs" />
+    <Compile Include="Library.cs" />
+    <Compile Include="LoginException.cs" />
+    <Compile Include="LogoutInfo.cs" />
+    <Compile Include="LogoutReason.cs" />
+    <Compile Include="MarginCalcMode.cs" />
+    <Compile Include="NetworkActivity.cs" />
+    <Compile Include="Notification.cs" />
+    <Compile Include="NotificationSeverity.cs" />
+    <Compile Include="NotificationType.cs" />
+    <Compile Include="OrderStatus.cs" />
+    <Compile Include="OrderTimeInForce.cs" />
+    <Compile Include="PairBar.cs" />
+    <Compile Include="Periodicity.cs" />
+    <Compile Include="Position.cs" />
+    <Compile Include="PriceType.cs" />
+    <Compile Include="ProfitCalcMode.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Quote.cs" />
+    <Compile Include="QuoteDepth.cs" />
+    <Compile Include="QuoteEntry.cs" />
+    <Compile Include="ExecutionException.cs" />
+    <Compile Include="RejectException.cs" />
+    <Compile Include="RejectReason.cs" />
+    <Compile Include="SessionInfo.cs" />
+    <Compile Include="SessionStatus.cs" />
+    <Compile Include="StatusGroupInfo.cs" />
+    <Compile Include="OrderSide.cs" />
+    <Compile Include="OrderType.cs" />
+    <Compile Include="SwapType.cs" />
+    <Compile Include="SymbolEntry.cs" />
+    <Compile Include="SymbolInfo.cs" />
+    <Compile Include="TimeDirection.cs" />
+    <Compile Include="TimeoutException.cs" />
+    <Compile Include="Time\ITimePeriod.cs" />
+    <Compile Include="Time\ITimeZone.cs" />
+    <Compile Include="Time\SystemTimeZone.cs" />
+    <Compile Include="Time\TimeInterval.cs" />
+    <Compile Include="Time\TimeIntervalExtensions.cs" />
+    <Compile Include="Time\TimePeriod.cs" />
+    <Compile Include="TradeServerInfo.cs" />
+    <Compile Include="TradeTransactionReason.cs" />
+    <Compile Include="TradeTransactionReport.cs" />
+    <Compile Include="TradeTransactionReportType.cs" />
+    <Compile Include="Version.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

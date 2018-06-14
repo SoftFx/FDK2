@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using NDesk.Options;
 using TickTrader.FDK.Common;
-using TickTrader.FDK.QuoteFeed;
+using TickTrader.FDK.Client;
 
 namespace QuoteFeedAsyncSample
 {
@@ -61,33 +61,33 @@ namespace QuoteFeedAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("QuoteFeedAsyncSample", port : port, logMessages : true);
+            client_ = new QuoteFeed("QuoteFeedAsyncSample", port : port, logMessages : true);
 
-            client_.ConnectResultEvent += new Client.ConnectResultDelegate(this.OnConnectResult);
-            client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectResultEvent += new Client.DisconnectResultDelegate(this.OnDisconnectResult);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.ReconnectEvent += new Client.ReconnectDelegate(this.OnReconnect);
-            client_.ReconnectErrorEvent += new Client.ReconnectErrorDelegate(this.OnReconnectError);
-            client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.CurrencyListResultEvent += new Client.CurrencyListResultDelegate(this.OnCurrencyListResult);
-            client_.CurrencyListErrorEvent += new Client.CurrencyListErrorDelegate(this.OnCurrencyListError);
-            client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
-            client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
-            client_.SessionInfoResultEvent += new Client.SessionInfoResultDelegate(this.OnSessionInfoResult);
-            client_.SessionInfoErrorEvent += new Client.SessionInfoErrorDelegate(this.OnSessionInfoError);
-            client_.SubscribeQuotesResultEvent += new Client.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
-            client_.SubscribeQuotesErrorEvent += new Client.SubscribeQuotesErrorDelegate(this.OnSubscribeQuotesError);
-            client_.UnsubscribeQuotesResultEvent += new Client.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
-            client_.UnsubscribeQuotesErrorEvent += new Client.UnsubscribeQuotesErrorDelegate(this.OnUnsubscribeQuotesError);
-            client_.QuotesResultEvent += new Client.QuotesResultDelegate(this.OnQuotesResult);
-            client_.QuotesErrorEvent += new Client.QuotesErrorDelegate(this.OnQuotesError);            
-            client_.SessionInfoUpdateEvent += new Client.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
-            client_.QuoteUpdateEvent += new Client.QuoteUpdateDelegate(this.OnQuoteUpdate);
+            client_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
+            client_.ConnectErrorEvent += new QuoteFeed.ConnectErrorDelegate(this.OnConnectError);
+            client_.DisconnectResultEvent += new QuoteFeed.DisconnectResultDelegate(this.OnDisconnectResult);
+            client_.DisconnectEvent += new QuoteFeed.DisconnectDelegate(this.OnDisconnect);
+            client_.ReconnectEvent += new QuoteFeed.ReconnectDelegate(this.OnReconnect);
+            client_.ReconnectErrorEvent += new QuoteFeed.ReconnectErrorDelegate(this.OnReconnectError);
+            client_.LoginResultEvent += new QuoteFeed.LoginResultDelegate(this.OnLoginResult);
+            client_.LoginErrorEvent += new QuoteFeed.LoginErrorDelegate(this.OnLoginError);
+            client_.LogoutResultEvent += new QuoteFeed.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new QuoteFeed.LogoutErrorDelegate(this.OnLogoutError);
+            client_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);
+            client_.CurrencyListResultEvent += new QuoteFeed.CurrencyListResultDelegate(this.OnCurrencyListResult);
+            client_.CurrencyListErrorEvent += new QuoteFeed.CurrencyListErrorDelegate(this.OnCurrencyListError);
+            client_.SymbolListResultEvent += new QuoteFeed.SymbolListResultDelegate(this.OnSymbolListResult);
+            client_.SymbolListErrorEvent += new QuoteFeed.SymbolListErrorDelegate(this.OnSymbolListError);
+            client_.SessionInfoResultEvent += new QuoteFeed.SessionInfoResultDelegate(this.OnSessionInfoResult);
+            client_.SessionInfoErrorEvent += new QuoteFeed.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            client_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
+            client_.SubscribeQuotesErrorEvent += new QuoteFeed.SubscribeQuotesErrorDelegate(this.OnSubscribeQuotesError);
+            client_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
+            client_.UnsubscribeQuotesErrorEvent += new QuoteFeed.UnsubscribeQuotesErrorDelegate(this.OnUnsubscribeQuotesError);
+            client_.QuotesResultEvent += new QuoteFeed.QuotesResultDelegate(this.OnQuotesResult);
+            client_.QuotesErrorEvent += new QuoteFeed.QuotesErrorDelegate(this.OnQuotesError);            
+            client_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
+            client_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
             address_ = address;
             login_ = login;
@@ -244,7 +244,7 @@ namespace QuoteFeedAsyncSample
             client_.Join();
         }
 
-        void OnConnectResult(Client client, object data)
+        void OnConnectResult(QuoteFeed client, object data)
         {
             try
             {
@@ -260,7 +260,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnConnectError(Client client, object data, Exception error)
+        void OnConnectError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -272,7 +272,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnDisconnectResult(Client client, object data, string text)
+        void OnDisconnectResult(QuoteFeed client, object data, string text)
         {
             try
             {
@@ -284,7 +284,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        void OnDisconnect(QuoteFeed client, string text)
         {
             try
             {
@@ -296,7 +296,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnReconnect(Client client)
+        void OnReconnect(QuoteFeed client)
         {
             try
             {
@@ -312,7 +312,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnReconnectError(Client client, Exception error)
+        void OnReconnectError(QuoteFeed client, Exception error)
         {
             try
             {
@@ -324,7 +324,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnLoginResult(Client client, object data)
+        void OnLoginResult(QuoteFeed client, object data)
         {
             try
             {
@@ -336,7 +336,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, Exception error)
+        void OnLoginError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -350,7 +350,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo info)
+        void OnLogoutResult(QuoteFeed client, object data, LogoutInfo info)
         {
             try
             {
@@ -364,7 +364,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnLogoutError(Client client, object data, Exception error)
+        void OnLogoutError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -376,7 +376,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
+        public void OnLogout(QuoteFeed client, LogoutInfo info)
         {
             try
             {
@@ -407,7 +407,7 @@ namespace QuoteFeedAsyncSample
             client_.GetCurrencyListAsync(null);
         }
 
-        void OnCurrencyListResult(Client client, object data, CurrencyInfo[] currencies)
+        void OnCurrencyListResult(QuoteFeed client, object data, CurrencyInfo[] currencies)
         {
             try
             {
@@ -425,7 +425,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnCurrencyListError(Client client, object data, Exception error)
+        void OnCurrencyListError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -442,7 +442,7 @@ namespace QuoteFeedAsyncSample
             client_.GetSymbolListAsync(null);
         }
 
-        void OnSymbolListResult(Client client, object data, SymbolInfo[] symbols)
+        void OnSymbolListResult(QuoteFeed client, object data, SymbolInfo[] symbols)
         {
             try
             {
@@ -460,7 +460,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSymbolListError(Client client, object data, Exception error)
+        void OnSymbolListError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -477,7 +477,7 @@ namespace QuoteFeedAsyncSample
             client_.GetSessionInfoAsync(null);
         }
                 
-        void OnSessionInfoResult(Client client, object data, SessionInfo sessionInfo)
+        void OnSessionInfoResult(QuoteFeed client, object data, SessionInfo sessionInfo)
         {
             try
             {
@@ -499,7 +499,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSessionInfoError(Client client, object data, Exception error)
+        void OnSessionInfoError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -516,7 +516,7 @@ namespace QuoteFeedAsyncSample
             client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
         }
 
-        void OnSubscribeQuotesResult(Client client, object data, Quote[] quotes)
+        void OnSubscribeQuotesResult(QuoteFeed client, object data, Quote[] quotes)
         {
             try
             {
@@ -545,7 +545,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSubscribeQuotesError(Client client, object data, Exception error)
+        void OnSubscribeQuotesError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -562,7 +562,7 @@ namespace QuoteFeedAsyncSample
             client_.UnsubscribeQuotesAsync(null, symbolIds.ToArray());
         }
 
-        void OnUnsubscribeQuotesResult(Client client, object data, string[] symbolIds)
+        void OnUnsubscribeQuotesResult(QuoteFeed client, object data, string[] symbolIds)
         {
             for (int index = 0; index < symbolIds.Length; ++index)
             {
@@ -572,7 +572,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnUnsubscribeQuotesError(Client client, object data, Exception error)
+        void OnUnsubscribeQuotesError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -589,7 +589,7 @@ namespace QuoteFeedAsyncSample
             client_.GetQuotesAsync(null, symbolEntries.ToArray());
         }
 
-        void OnQuotesResult(Client client, object data, Quote[] quotes)
+        void OnQuotesResult(QuoteFeed client, object data, Quote[] quotes)
         {
             try
             {
@@ -619,7 +619,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnQuotesError(Client client, object data, Exception error)
+        void OnQuotesError(QuoteFeed client, object data, Exception error)
         {
             try
             {
@@ -631,7 +631,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        void OnSessionInfoUpdate(Client quoteFeedClient, SessionInfo info)
+        void OnSessionInfoUpdate(QuoteFeed client, SessionInfo info)
         {
             try
             {
@@ -654,7 +654,7 @@ namespace QuoteFeedAsyncSample
         }
 
 
-        void OnQuoteUpdate(Client quoteFeedClient, Quote quote)
+        void OnQuoteUpdate(QuoteFeed client, Quote quote)
         {
             try
             {
@@ -678,7 +678,7 @@ namespace QuoteFeedAsyncSample
             }
         }
 
-        Client client_;
+        QuoteFeed client_;
 
         string address_;
         string login_;

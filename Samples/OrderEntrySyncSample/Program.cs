@@ -5,10 +5,12 @@ using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 
-namespace OrderEntryAsyncSample
+namespace OrderEntrySyncSample
 {
     public class Program : IDisposable
     {
+        const int Timeout = 30000;
+
         static void Main(string[] args)
         {
             try
@@ -35,15 +37,15 @@ namespace OrderEntryAsyncSample
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("OrderEntryAsyncSample: ");
+                    Console.Write("OrderEntrySyncSample: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `OrderEntryAsyncSample --help' for more information.");
+                    Console.WriteLine("Try `OrderEntrySample --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("OrderEntryAsyncSample usage:");
+                    Console.WriteLine("OrderEntrySyncSample usage:");
                     options.WriteOptionDescriptions(Console.Out);
                     return;
                 }
@@ -61,36 +63,10 @@ namespace OrderEntryAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new OrderEntry("OrderEntryAsyncSample", port : port, logMessages : true);
-            
-            client_.ConnectResultEvent += new OrderEntry.ConnectResultDelegate(this.OnConnectResult);
-            client_.ConnectErrorEvent += new OrderEntry.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectResultEvent += new OrderEntry.DisconnectResultDelegate(this.OnDisconnectResult);
+            client_ = new OrderEntry("OrderEntrySyncSample", port : port, reconnectAttempts : 0, logMessages : true);
+
+            client_.LogoutEvent += new OrderEntry.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new OrderEntry.DisconnectDelegate(this.OnDisconnect);
-            client_.ReconnectEvent += new OrderEntry.ReconnectDelegate(this.OnReconnect);
-            client_.ReconnectErrorEvent += new OrderEntry.ReconnectErrorDelegate(this.OnReconnectError);
-            client_.LoginResultEvent += new OrderEntry.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new OrderEntry.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new OrderEntry.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutErrorEvent += new OrderEntry.LogoutErrorDelegate(this.OnLogoutError);
-            client_.LogoutEvent += new OrderEntry.LogoutDelegate(this.OnLogout);            
-            client_.AccountInfoResultEvent += new OrderEntry.AccountInfoResultDelegate(this.OnAccountInfoResult);
-            client_.AccountInfoErrorEvent += new OrderEntry.AccountInfoErrorDelegate(this.OnAccountInfoError);
-            client_.SessionInfoResultEvent += new OrderEntry.SessionInfoResultDelegate(this.OnSessionInfoResult);
-            client_.SessionInfoErrorEvent += new OrderEntry.SessionInfoErrorDelegate(this.OnSessionInfoError);
-            client_.OrdersBeginResultEvent += new OrderEntry.OrdersBeginResultDelegate(this.OnOrdersBeginResult);
-            client_.OrdersResultEvent += new OrderEntry.OrdersResultDelegate(this.OnOrdersResult);
-            client_.OrdersErrorEvent += new OrderEntry.OrdersErrorDelegate(this.OnOrdersError);
-            client_.PositionsResultEvent += new OrderEntry.PositionsResultDelegate(this.OnPositionsResult);
-            client_.PositionsErrorEvent += new OrderEntry.PositionsErrorDelegate(this.OnPositionsError);
-            client_.NewOrderResultEvent += new OrderEntry.NewOrderResultDelegate(this.OnNewOrderResult);
-            client_.NewOrderErrorEvent += new OrderEntry.NewOrderErrorDelegate(this.OnNewOrderError);
-            client_.ReplaceOrderResultEvent += new OrderEntry.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
-            client_.ReplaceOrderErrorEvent += new OrderEntry.ReplaceOrderErrorDelegate(this.OnReplaceOrderError);
-            client_.CancelOrderResultEvent += new OrderEntry.CancelOrderResultDelegate(this.OnCancelOrderResult);
-            client_.CancelOrderErrorEvent += new OrderEntry.CancelOrderErrorDelegate(this.OnCancelOrderError);
-            client_.ClosePositionResultEvent += new OrderEntry.ClosePositionResultDelegate(this.OnClosePositionResult);
-            client_.ClosePositionErrorEvent += new OrderEntry.ClosePositionErrorDelegate(this.OnClosePositionError);            
             client_.OrderUpdateEvent += new OrderEntry.OrderUpdateDelegate(this.OnOrderUpdate);
             client_.PositionUpdateEvent += new OrderEntry.PositionUpdateDelegate(this.OnPositionUpdate);
             client_.AccountInfoUpdateEvent += new OrderEntry.AccountInfoUpdateDelegate(this.OnAccountInfoUpdate);
@@ -500,167 +476,43 @@ namespace OrderEntryAsyncSample
 
         void Connect()
         {
-            client_.ConnectAsync(null, address_);
+            client_.Connect(address_, Timeout);
+
+            try
+            {
+                Console.WriteLine("Connected");
+
+                client_.Login(login_, password_, "", "", "", Timeout);
+
+                Console.WriteLine("Login succeeded");
+            }
+            catch
+            {
+                string text = client_.Disconnect("Client disconnect");
+
+                if (text != null)
+                    Console.WriteLine("Disconnected : " + text);
+
+                throw;
+            }
         }
 
         void Disconnect()
         {
             try
             {
-                client_.LogoutAsync(null, "Client logout");
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
+
+                Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
+            }            
 
-            client_.Join();  
-        }
+            string text = client_.Disconnect("Client disconnect");
 
-        void OnConnectResult(OrderEntry client, object data)
-        {
-            try
-            {
-                Console.WriteLine("Connected");
-
-                client_.LoginAsync(null, login_, password_, "", "", "");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
-        }
-
-        void OnConnectError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnDisconnectResult(OrderEntry client, object data, string text)
-        {
-            try
-            {
-                Console.WriteLine("Disconnected : " + text);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnDisconnect(OrderEntry client, string text)
-        {
-            try
-            {
-                Console.WriteLine("Disconnected : " + text);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnReconnect(OrderEntry client)
-        {
-            try
-            {
-                Console.WriteLine("Connected");
-
-                client_.LoginAsync(null, login_, password_, "", "", "");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
-        }
-
-        void OnReconnectError(OrderEntry client, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLoginResult(OrderEntry client, object data)
-        {
-            try
-            {
-                Console.WriteLine("Login succeeded");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLoginError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLogoutResult(OrderEntry client, object data, LogoutInfo logoutInfo)
-        {
-            try
-            {
-                Console.WriteLine("Logout : " + logoutInfo.Message);
-
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLogoutError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnLogout(OrderEntry client, LogoutInfo logoutInfo)
-        {
-            try
-            {
-                Console.WriteLine("Logout : " + logoutInfo.Message);
-
-                client_.DisconnectAsync(null, "Client disconnect");
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
+            if (text != null)
+                Console.WriteLine("Disconnected : {0}", text);
         }
 
         void PrintCommands()
@@ -684,291 +536,152 @@ namespace OrderEntryAsyncSample
 
         void GetAccountInfo()
         {
-            client_.GetAccountInfoAsync(this);
-        }
+            AccountInfo accountInfo = client_.GetAccountInfo(Timeout);
 
-        void OnAccountInfoResult(OrderEntry client, object data, AccountInfo accountInfo)
-        {
-            try
+            Console.Error.WriteLine("Account : {0}, {1}, {2}, {3}, {4}, {5}, {6} ", accountInfo.AccountId, accountInfo.Type, accountInfo.Currency, accountInfo.Leverage, accountInfo.Balance, accountInfo.Margin, accountInfo.Equity);
+
+            AssetInfo[] accountAssets = accountInfo.Assets;
+
+            int count = accountAssets.Length;
+            for (int index = 0; index < count; ++index)
             {
-                Console.Error.WriteLine("Account : {0}, {1}, {2}, {3}, {4}, {5}, {6} ", accountInfo.AccountId, accountInfo.Type, accountInfo.Currency, accountInfo.Leverage, accountInfo.Balance, accountInfo.Margin, accountInfo.Equity);
+                AssetInfo accountAsset = accountAssets[index];
 
-                AssetInfo[] accountAssets = accountInfo.Assets;
-
-                int count = accountAssets.Length;
-                for (int index = 0; index < count; ++index)
-                {
-                    AssetInfo accountAsset = accountAssets[index];
-
-                    Console.Error.WriteLine("    Asset : {0}, {1}, {2}", accountAsset.Currency, accountAsset.Balance, accountAsset.LockedAmount);
-                }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnAccountInfoError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.Error.WriteLine("    Asset : {0}, {1}, {2}", accountAsset.Currency, accountAsset.Balance, accountAsset.LockedAmount);
             }
         }
 
         void GetSessionInfo()
         {
-            client_.GetSessionInfoAsync(this);
-        }
+            SessionInfo sessionInfo = client_.GetSessionInfo(Timeout);
 
-        void OnSessionInfoResult(OrderEntry client, object data, SessionInfo sessionInfo)
-        {
-            try
+            Console.Error.WriteLine("Session info : {0}, {1}-{2}, {3}", sessionInfo.Status, sessionInfo.StartTime, sessionInfo.EndTime, sessionInfo.ServerTimeZoneOffset);
+
+            StatusGroupInfo[] groups = sessionInfo.StatusGroups;
+
+            int count = groups.Length;
+            for (int index = 0; index < count; ++index)
             {
-                Console.Error.WriteLine("Session info : {0}, {1}-{2}, {3}", sessionInfo.Status, sessionInfo.StartTime, sessionInfo.EndTime, sessionInfo.ServerTimeZoneOffset);
+                StatusGroupInfo group = groups[index];
 
-                StatusGroupInfo[] groups = sessionInfo.StatusGroups;
-
-                int count = groups.Length;
-                for (int index = 0; index < count; ++index)
-                {
-                    StatusGroupInfo group = groups[index];
-
-                    Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
-                }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnSessionInfoError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
             }
         }
         
         void GetOrders()
         {
-            client_.GetOrdersAsync(this);
-        }
+            GetOrdersEnumerator enumerator = client_.GetOrders(Timeout);
 
-        void OnOrdersBeginResult(OrderEntry client, object data, string id, int orderCount)
-        {
             try
             {
-                Console.Error.WriteLine("Total orders : {0}", orderCount);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
+                Console.Error.WriteLine("Total orders : {0}", enumerator.TotalCount);
 
-        void OnOrdersResult(OrderEntry client, object data, ExecutionReport executionReport)
-        {
-            try
-            {
-                if (executionReport.OrderType == OrderType.Stop)
+                for (ExecutionReport executionReport = enumerator.Next(Timeout); executionReport != null; executionReport = enumerator.Next(Timeout))
                 {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    if (executionReport.OrderType == OrderType.Stop)
+                    {
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    }
+                    else if (executionReport.OrderType == OrderType.StopLimit)
+                    {
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    }
+                    else
+                        Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
                 }
-                else if (executionReport.OrderType == OrderType.StopLimit)
-                {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
-                }
-                else
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
             }
-            catch (Exception exception)
+            finally
             {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnOrdersError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
+                enumerator.Close();
             }
         }
 
         void GetPositions()
         {
-            client_.GetPositionsAsync(this);
-        }
+            Position[] positions = client_.GetPositions(Timeout);
 
-        void OnPositionsResult(OrderEntry client, object data, Position[] positions)
-        {
-            try
+            int count = positions.Length;
+
+            Console.Error.WriteLine("Total positions : {0}", count);
+
+            for (int index = 0; index < count; ++ index)
             {
-                int count = positions.Length;
+                Position position = positions[index];
 
-                Console.Error.WriteLine("Total positions : {0}", count);
-
-                for (int index = 0; index < count; ++ index)
-                {
-                    Position position = positions[index];
-
-                    double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
-                    Console.Error.WriteLine("    Position : {0}, {1}", position.Symbol, qty);
-                }
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnPositionsError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
+                double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
+                Console.Error.WriteLine("    Position : {0}, {1}", position.Symbol, qty);
             }
         }
 
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, Timeout);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null, Timeout);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null);
-        }
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null, Timeout);
 
-        void OnNewOrderResult(OrderEntry client, object data, ExecutionReport executionReport)
-        {
-            try
-            {
+            foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnNewOrderError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
         }
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            client_.ReplaceOrderAsync(null, Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.StopLimit, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null);
-        }
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
 
-        void OnReplaceOrderResult(OrderEntry client, object data, ExecutionReport executionReport)
-        {
-            try
-            {
+            foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnReplaceOrderError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
         }
 
         void CancelOrder(string orderId)
         {
-            client_.CancelOrderAsync(null, Guid.NewGuid().ToString(), orderId, null);
-        }
+            ExecutionReport[] executionReports = client_.CancelOrder(Guid.NewGuid().ToString(), orderId, null, Timeout);
 
-        void OnCancelOrderResult(OrderEntry client, object data, ExecutionReport executionReport)
-        {
-            try
-            {
-                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
-        }
-
-        void OnCancelOrderError(OrderEntry client, object data, Exception error)
-        {
-            try
-            {
-                Console.WriteLine("Error : " + error.Message);
-            }
-            catch (Exception exception)
-            {
-                Console.WriteLine("Error : " + exception.Message);
-            }
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
         }
 
         void ClosePosition(string orderId, double qty)
         {
-            client_.ClosePositionAsync(null, Guid.NewGuid().ToString(), orderId, qty);
-        }
+            ExecutionReport[] executionReports = client_.ClosePosition(Guid.NewGuid().ToString(), orderId, qty, Timeout);
 
-        void OnClosePositionResult(OrderEntry client, object data, ExecutionReport executionReport)
-        {
-            try
+            foreach (ExecutionReport executionReport in executionReports)
             {
                 if (executionReport.ExecutionType == ExecutionType.Trade)
                 {
@@ -977,17 +690,25 @@ namespace OrderEntryAsyncSample
                 else
                     Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
             }
+        }
+
+        void OnLogout(OrderEntry client, LogoutInfo info)
+        {
+            try
+            {
+                Console.WriteLine("Logout : {0}", info.Message);
+            }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
             }
         }
 
-        void OnClosePositionError(OrderEntry client, object data, Exception error)
+        void OnDisconnect(OrderEntry client, string text)
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Disconnected : {0}", text);
             }
             catch (Exception exception)
             {

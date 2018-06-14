@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
 using TickTrader.FDK.Common;
-using TickTrader.FDK.TradeCapture;
+using TickTrader.FDK.Client;
 
 namespace TradeCaptureAsyncSample
 {
@@ -62,34 +62,34 @@ namespace TradeCaptureAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("TradeCaptureAsyncSample", port : port, logMessages : true);
+            client_ = new TradeCapture("TradeCaptureAsyncSample", port : port, logMessages : true);
 
-            client_.ConnectResultEvent += new Client.ConnectResultDelegate(this.OnConnectResult);
-            client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectResultEvent += new Client.DisconnectResultDelegate(this.OnDisconnectResult);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.ReconnectEvent += new Client.ReconnectDelegate(this.OnReconnect);
-            client_.ReconnectErrorEvent += new Client.ReconnectErrorDelegate(this.OnReconnectError);
-            client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.SubscribeTradesResultBeginEvent += new Client.SubscribeTradesResultBeginDelegate(this.OnSubscribeTradesResultBegin);
-            client_.SubscribeTradesResultEvent += new Client.SubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
-            client_.SubscribeTradesResultEndEvent += new Client.SubscribeTradesResultEndDelegate(this.OnSubscribeTradesResultEnd);
-            client_.SubscribeTradesErrorEvent += new Client.SubscribeTradesErrorDelegate(this.OnSubscribeTradesError);
-            client_.UnsubscribeTradesResultEvent += new Client.UnsubscribeTradesResultDelegate(this.OnUnsubscribeTradesResult);
-            client_.UnsubscribeTradesErrorEvent += new Client.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);            
-            client_.DownloadTradesResultBeginEvent += new Client.DownloadTradesResultBeginDelegate(this.OnDownloadTradesResultBegin);
-            client_.DownloadTradesResultEvent += new Client.DownloadTradesResultDelegate(this.OnDownloadTradesResult);
-            client_.DownloadTradesResultEndEvent += new Client.DownloadTradesResultEndDelegate(this.OnDownloadTradesResultEnd);
-            client_.DownloadTradesErrorEvent += new Client.DownloadTradesErrorDelegate(this.OnDownloadTradesError);
-            client_.DownloadAccountReportsResultBeginEvent += new Client.DownloadAccountReportsResultBeginDelegate(this.OnDownloadAccountReportsResultBegin);
-            client_.DownloadAccountReportsResultEvent += new Client.DownloadAccountReportsResultDelegate(this.OnDownloadAccountReportsResult);
-            client_.DownloadAccountReportsResultEndEvent += new Client.DownloadAccountReportsResultEndDelegate(this.OnDownloadAccountReportsResultEnd);
-            client_.DownloadAccountReportsErrorEvent += new Client.DownloadAccountReportsErrorDelegate(this.OnDownloadAccountReportsError);
-            client_.TradeUpdateEvent += new Client.TradeUpdateDelegate(this.OnTradeUpdate);
+            client_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
+            client_.ConnectErrorEvent += new TradeCapture.ConnectErrorDelegate(this.OnConnectError);
+            client_.DisconnectResultEvent += new TradeCapture.DisconnectResultDelegate(this.OnDisconnectResult);
+            client_.DisconnectEvent += new TradeCapture.DisconnectDelegate(this.OnDisconnect);
+            client_.ReconnectEvent += new TradeCapture.ReconnectDelegate(this.OnReconnect);
+            client_.ReconnectErrorEvent += new TradeCapture.ReconnectErrorDelegate(this.OnReconnectError);
+            client_.LoginResultEvent += new TradeCapture.LoginResultDelegate(this.OnLoginResult);
+            client_.LoginErrorEvent += new TradeCapture.LoginErrorDelegate(this.OnLoginError);
+            client_.LogoutResultEvent += new TradeCapture.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new TradeCapture.LogoutErrorDelegate(this.OnLogoutError);
+            client_.LogoutEvent += new TradeCapture.LogoutDelegate(this.OnLogout);
+            client_.SubscribeTradesResultBeginEvent += new TradeCapture.SubscribeTradesResultBeginDelegate(this.OnSubscribeTradesResultBegin);
+            client_.SubscribeTradesResultEvent += new TradeCapture.SubscribeTradesResultDelegate(this.OnSubscribeTradesResult);
+            client_.SubscribeTradesResultEndEvent += new TradeCapture.SubscribeTradesResultEndDelegate(this.OnSubscribeTradesResultEnd);
+            client_.SubscribeTradesErrorEvent += new TradeCapture.SubscribeTradesErrorDelegate(this.OnSubscribeTradesError);
+            client_.UnsubscribeTradesResultEvent += new TradeCapture.UnsubscribeTradesResultDelegate(this.OnUnsubscribeTradesResult);
+            client_.UnsubscribeTradesErrorEvent += new TradeCapture.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);            
+            client_.DownloadTradesResultBeginEvent += new TradeCapture.DownloadTradesResultBeginDelegate(this.OnDownloadTradesResultBegin);
+            client_.DownloadTradesResultEvent += new TradeCapture.DownloadTradesResultDelegate(this.OnDownloadTradesResult);
+            client_.DownloadTradesResultEndEvent += new TradeCapture.DownloadTradesResultEndDelegate(this.OnDownloadTradesResultEnd);
+            client_.DownloadTradesErrorEvent += new TradeCapture.DownloadTradesErrorDelegate(this.OnDownloadTradesError);
+            client_.DownloadAccountReportsResultBeginEvent += new TradeCapture.DownloadAccountReportsResultBeginDelegate(this.OnDownloadAccountReportsResultBegin);
+            client_.DownloadAccountReportsResultEvent += new TradeCapture.DownloadAccountReportsResultDelegate(this.OnDownloadAccountReportsResult);
+            client_.DownloadAccountReportsResultEndEvent += new TradeCapture.DownloadAccountReportsResultEndDelegate(this.OnDownloadAccountReportsResultEnd);
+            client_.DownloadAccountReportsErrorEvent += new TradeCapture.DownloadAccountReportsErrorDelegate(this.OnDownloadAccountReportsError);
+            client_.TradeUpdateEvent += new TradeCapture.TradeUpdateDelegate(this.OnTradeUpdate);
 
             address_ = address;
             login_ = login;
@@ -262,7 +262,7 @@ namespace TradeCaptureAsyncSample
             client_.Join();
         }
 
-        void OnConnectResult(Client client, object data)
+        void OnConnectResult(TradeCapture client, object data)
         {
             try
             {
@@ -276,7 +276,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnConnectError(Client client, object data, Exception error)
+        void OnConnectError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -288,7 +288,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnDisconnectResult(Client client, object data, string text)
+        void OnDisconnectResult(TradeCapture client, object data, string text)
         {
             try
             {
@@ -300,7 +300,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        void OnDisconnect(TradeCapture client, string text)
         {
             try
             {
@@ -312,7 +312,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnReconnect(Client client)
+        void OnReconnect(TradeCapture client)
         {
             try
             {
@@ -328,7 +328,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnReconnectError(Client client, Exception error)
+        void OnReconnectError(TradeCapture client, Exception error)
         {
             try
             {
@@ -340,7 +340,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnLoginResult(Client client, object data)
+        void OnLoginResult(TradeCapture client, object data)
         {
             try
             {
@@ -352,7 +352,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, Exception error)
+        void OnLoginError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -366,7 +366,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo info)
+        void OnLogoutResult(TradeCapture client, object data, LogoutInfo info)
         {
             try
             {
@@ -380,7 +380,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        void OnLogoutError(Client client, object data, Exception error)
+        void OnLogoutError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -392,7 +392,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnLogout(Client client, LogoutInfo info)
+        public void OnLogout(TradeCapture client, LogoutInfo info)
         {
             try
             {
@@ -421,7 +421,7 @@ namespace TradeCaptureAsyncSample
             client_.SubscribeTradesAsync(this, from,  false);
         }
 
-        public void OnSubscribeTradesResultBegin(Client client, object data, int count)
+        public void OnSubscribeTradesResultBegin(TradeCapture client, object data, int count)
         {
             try
             {
@@ -433,7 +433,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnSubscribeTradesResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
+        public void OnSubscribeTradesResult(TradeCapture client, object data, TradeTransactionReport tradeTransactionReport)
         {
             try
             {
@@ -475,7 +475,7 @@ namespace TradeCaptureAsyncSample
         }
 
 
-        public void OnSubscribeTradesResultEnd(Client client, object data)
+        public void OnSubscribeTradesResultEnd(TradeCapture client, object data)
         {
             try
             {
@@ -487,7 +487,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnSubscribeTradesError(Client client, object data, Exception error)
+        public void OnSubscribeTradesError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -504,7 +504,7 @@ namespace TradeCaptureAsyncSample
             client_.UnsubscribeTradesAsync(this);
         }
 
-        public void OnUnsubscribeTradesResult(Client client, object data)
+        public void OnUnsubscribeTradesResult(TradeCapture client, object data)
         {
             try
             {
@@ -516,7 +516,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnUnsubscribeTradesError(Client client, object data, Exception error)
+        public void OnUnsubscribeTradesError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -533,7 +533,7 @@ namespace TradeCaptureAsyncSample
             client_.DownloadTradesAsync(this, timeDirection, from, to, false);
         }
 
-        public void OnDownloadTradesResultBegin(Client client, object data, string id, int tradeCount)
+        public void OnDownloadTradesResultBegin(TradeCapture client, object data, string id, int tradeCount)
         {
             try
             {
@@ -545,7 +545,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadTradesResult(Client client, object data, TradeTransactionReport tradeTransactionReport)
+        public void OnDownloadTradesResult(TradeCapture client, object data, TradeTransactionReport tradeTransactionReport)
         {
             try
             {
@@ -586,7 +586,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadTradesResultEnd(Client client, object data)
+        public void OnDownloadTradesResultEnd(TradeCapture client, object data)
         {
             try
             {
@@ -598,7 +598,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadTradesError(Client client, object data, Exception error)
+        public void OnDownloadTradesError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -615,7 +615,7 @@ namespace TradeCaptureAsyncSample
             client_.DownloadAccountReportsAsync(this, timeDirection, from, to);
         }
 
-        public void OnDownloadAccountReportsResultBegin(Client client, object data, string id, int totalCount)
+        public void OnDownloadAccountReportsResultBegin(TradeCapture client, object data, string id, int totalCount)
         {
             try
             {
@@ -627,7 +627,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadAccountReportsResult(Client client, object data, AccountReport accountReport)
+        public void OnDownloadAccountReportsResult(TradeCapture client, object data, AccountReport accountReport)
         {
             try
             {
@@ -650,7 +650,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadAccountReportsResultEnd(Client client, object data)
+        public void OnDownloadAccountReportsResultEnd(TradeCapture client, object data)
         {
             try
             {
@@ -662,7 +662,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadAccountReportsError(Client client, object data, Exception error)
+        public void OnDownloadAccountReportsError(TradeCapture client, object data, Exception error)
         {
             try
             {
@@ -674,7 +674,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnTradeUpdate(Client client, TradeTransactionReport tradeTransactionReport)
+        public void OnTradeUpdate(TradeCapture client, TradeTransactionReport tradeTransactionReport)
         {
             try
             {
@@ -715,7 +715,7 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        Client client_;
+        TradeCapture client_;
 
         string address_;
         string login_;

@@ -1,11 +1,7 @@
 @echo off
 
-cd  Src || goto END
-call Build.cmd || goto END
+call VsMSBuildCmd.bat || goto END
 
-cd ..\Samples || goto END
-call Build.cmd || goto END
-
-cd ..
+MSBuild.exe /t:Build /p:Configuration=Release FDK.sln || goto END
 
 :END

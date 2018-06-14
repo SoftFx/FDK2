@@ -4,11 +4,11 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{B33E4ADA-5980-43EA-80C4-1587F434566B}</ProjectGuid>
+    <ProjectGuid>{B33E4ADA-5980-43EA-80C4-15334434566B}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>QuoteStoreAsyncSample</RootNamespace>
-    <AssemblyName>QuoteStoreAsyncSample</AssemblyName>
+    <RootNamespace>TradeCaptureSyncSample</RootNamespace>
+    <AssemblyName>TradeCaptureSyncSample</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>

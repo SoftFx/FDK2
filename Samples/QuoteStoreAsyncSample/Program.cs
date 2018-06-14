@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
 using TickTrader.FDK.Common;
-using TickTrader.FDK.QuoteStore;
+using TickTrader.FDK.Client;
 
 namespace QuoteStoreAsyncSample
 {
@@ -62,35 +62,35 @@ namespace QuoteStoreAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new Client("QuoteStoreAsyncSample", port : port, logMessages : true);
+            client_ = new QuoteStore("QuoteStoreAsyncSample", port : port, logMessages : true);
 
-            client_.ConnectResultEvent += new Client.ConnectResultDelegate(this.OnConnectResult);
-            client_.ConnectErrorEvent += new Client.ConnectErrorDelegate(this.OnConnectError);
-            client_.DisconnectResultEvent += new Client.DisconnectResultDelegate(this.OnDisconnectResult);
-            client_.DisconnectEvent += new Client.DisconnectDelegate(this.OnDisconnect);
-            client_.ReconnectEvent += new Client.ReconnectDelegate(this.OnReconnect);
-            client_.ReconnectErrorEvent += new Client.ReconnectErrorDelegate(this.OnReconnectError);
-            client_.LoginResultEvent += new Client.LoginResultDelegate(this.OnLoginResult);
-            client_.LoginErrorEvent += new Client.LoginErrorDelegate(this.OnLoginError);
-            client_.LogoutResultEvent += new Client.LogoutResultDelegate(this.OnLogoutResult);
-            client_.LogoutErrorEvent += new Client.LogoutErrorDelegate(this.OnLogoutError);
-            client_.LogoutEvent += new Client.LogoutDelegate(this.OnLogout);
-            client_.SymbolListResultEvent += new Client.SymbolListResultDelegate(this.OnSymbolListResult);
-            client_.SymbolListErrorEvent += new Client.SymbolListErrorDelegate(this.OnSymbolListError);
-            client_.PeriodicityListResultEvent += new Client.PeriodicityListResultDelegate(this.OnPeriodicityListResult);
-            client_.PeriodicityListErrorEvent += new Client.PeriodicityListErrorDelegate(this.OnPeriodicityListError);
-            client_.BarListResultEvent += new Client.BarListResultDelegate(this.OnBarListResult);
-            client_.BarListErrorEvent += new Client.BarListErrorDelegate(this.OnBarListError);
-            client_.BarDownloadResultBeginEvent += new Client.BarDownloadResultBeginDelegate(this.OnBarDownloadBeginResult);
-            client_.BarDownloadResultEvent += new Client.BarDownloadResultDelegate(this.OnBarDownloadResult);
-            client_.BarDownloadResultEndEvent += new Client.BarDownloadResultEndDelegate(this.OnBarDownloadEndResult);
-            client_.BarDownloadErrorEvent += new Client.BarDownloadErrorDelegate(this.OnBarDownloadError);
-            client_.QuoteListResultEvent += new Client.QuoteListResultDelegate(this.OnQuoteListResult);
-            client_.QuoteListErrorEvent += new Client.QuoteListErrorDelegate(this.OnQuoteListError);
-            client_.QuoteDownloadResultBeginEvent += new Client.QuoteDownloadResultBeginDelegate(this.OnQuoteDownloadBeginResult);
-            client_.QuoteDownloadResultEvent += new Client.QuoteDownloadResultDelegate(this.OnQuoteDownloadResult);
-            client_.QuoteDownloadResultEndEvent += new Client.QuoteDownloadResultEndDelegate(this.OnQuoteDownloadEndResult);
-            client_.QuoteDownloadErrorEvent += new Client.QuoteDownloadErrorDelegate(this.OnQuoteDownloadError);            
+            client_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
+            client_.ConnectErrorEvent += new QuoteStore.ConnectErrorDelegate(this.OnConnectError);
+            client_.DisconnectResultEvent += new QuoteStore.DisconnectResultDelegate(this.OnDisconnectResult);
+            client_.DisconnectEvent += new QuoteStore.DisconnectDelegate(this.OnDisconnect);
+            client_.ReconnectEvent += new QuoteStore.ReconnectDelegate(this.OnReconnect);
+            client_.ReconnectErrorEvent += new QuoteStore.ReconnectErrorDelegate(this.OnReconnectError);
+            client_.LoginResultEvent += new QuoteStore.LoginResultDelegate(this.OnLoginResult);
+            client_.LoginErrorEvent += new QuoteStore.LoginErrorDelegate(this.OnLoginError);
+            client_.LogoutResultEvent += new QuoteStore.LogoutResultDelegate(this.OnLogoutResult);
+            client_.LogoutErrorEvent += new QuoteStore.LogoutErrorDelegate(this.OnLogoutError);
+            client_.LogoutEvent += new QuoteStore.LogoutDelegate(this.OnLogout);
+            client_.SymbolListResultEvent += new QuoteStore.SymbolListResultDelegate(this.OnSymbolListResult);
+            client_.SymbolListErrorEvent += new QuoteStore.SymbolListErrorDelegate(this.OnSymbolListError);
+            client_.PeriodicityListResultEvent += new QuoteStore.PeriodicityListResultDelegate(this.OnPeriodicityListResult);
+            client_.PeriodicityListErrorEvent += new QuoteStore.PeriodicityListErrorDelegate(this.OnPeriodicityListError);
+            client_.BarListResultEvent += new QuoteStore.BarListResultDelegate(this.OnBarListResult);
+            client_.BarListErrorEvent += new QuoteStore.BarListErrorDelegate(this.OnBarListError);
+            client_.BarDownloadResultBeginEvent += new QuoteStore.BarDownloadResultBeginDelegate(this.OnBarDownloadBeginResult);
+            client_.BarDownloadResultEvent += new QuoteStore.BarDownloadResultDelegate(this.OnBarDownloadResult);
+            client_.BarDownloadResultEndEvent += new QuoteStore.BarDownloadResultEndDelegate(this.OnBarDownloadEndResult);
+            client_.BarDownloadErrorEvent += new QuoteStore.BarDownloadErrorDelegate(this.OnBarDownloadError);
+            client_.QuoteListResultEvent += new QuoteStore.QuoteListResultDelegate(this.OnQuoteListResult);
+            client_.QuoteListErrorEvent += new QuoteStore.QuoteListErrorDelegate(this.OnQuoteListError);
+            client_.QuoteDownloadResultBeginEvent += new QuoteStore.QuoteDownloadResultBeginDelegate(this.OnQuoteDownloadBeginResult);
+            client_.QuoteDownloadResultEvent += new QuoteStore.QuoteDownloadResultDelegate(this.OnQuoteDownloadResult);
+            client_.QuoteDownloadResultEndEvent += new QuoteStore.QuoteDownloadResultEndDelegate(this.OnQuoteDownloadEndResult);
+            client_.QuoteDownloadErrorEvent += new QuoteStore.QuoteDownloadErrorDelegate(this.OnQuoteDownloadError);            
             
             address_ = address;
             login_ = login;
@@ -347,7 +347,7 @@ namespace QuoteStoreAsyncSample
             client_.Join();
         }
 
-        void OnConnectResult(Client client, object data)
+        void OnConnectResult(QuoteStore client, object data)
         {
             try
             {
@@ -363,7 +363,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnConnectError(Client client, object data, Exception error)
+        void OnConnectError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -375,7 +375,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnDisconnectResult(Client client, object data, string text)
+        void OnDisconnectResult(QuoteStore client, object data, string text)
         {
             try
             {
@@ -387,7 +387,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnDisconnect(Client client, string text)
+        void OnDisconnect(QuoteStore client, string text)
         {
             try
             {
@@ -399,7 +399,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnReconnect(Client client)
+        void OnReconnect(QuoteStore client)
         {
             try
             {
@@ -415,7 +415,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnReconnectError(Client client, Exception error)
+        void OnReconnectError(QuoteStore client, Exception error)
         {
             try
             {
@@ -427,7 +427,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnLoginResult(Client client, object data)
+        void OnLoginResult(QuoteStore client, object data)
         {
             try
             {
@@ -439,7 +439,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnLoginError(Client client, object data, Exception error)
+        void OnLoginError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -453,7 +453,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnLogoutResult(Client client, object data, LogoutInfo info)
+        void OnLogoutResult(QuoteStore client, object data, LogoutInfo info)
         {
             try
             {
@@ -467,7 +467,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnLogoutError(Client client, object data, Exception error)
+        void OnLogoutError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -479,7 +479,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        public void OnLogout(Client quoteFeedClient, LogoutInfo info)
+        public void OnLogout(QuoteStore client, LogoutInfo info)
         {
             try
             {
@@ -510,7 +510,7 @@ namespace QuoteStoreAsyncSample
             client_.GetSymbolListAsync(null);
         }
 
-        void OnSymbolListResult(Client client, object data, string[] symbols)
+        void OnSymbolListResult(QuoteStore client, object data, string[] symbols)
         {
             try
             {
@@ -528,7 +528,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnSymbolListError(Client client, object data, Exception error)
+        void OnSymbolListError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -545,7 +545,7 @@ namespace QuoteStoreAsyncSample
             client_.GetPeriodicityListAsync(this, symbol);
         }
 
-        void OnPeriodicityListResult(Client quoteFeedClient, object data, BarPeriod[] periodicities)
+        void OnPeriodicityListResult(QuoteStore client, object data, BarPeriod[] periodicities)
         {
             try
             {
@@ -563,7 +563,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnPeriodicityListError(Client client, object data, Exception error)
+        void OnPeriodicityListError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -580,7 +580,7 @@ namespace QuoteStoreAsyncSample
             client_.GetBarListAsync(this, symbol, priceType, periodicity, from, count);
         }
 
-        void OnBarListResult(Client client, object data, Bar[] bars)
+        void OnBarListResult(QuoteStore client, object data, Bar[] bars)
         {
             try
             {
@@ -597,7 +597,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarListError(Client client, object data, Exception error)
+        void OnBarListError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -614,7 +614,7 @@ namespace QuoteStoreAsyncSample
             client_.DownloadBarsAsync(this, symbol, priceType, periodicity, from, to);
         }
 
-        void OnBarDownloadBeginResult(Client client, object data, string downloadId, DateTime availFrom, DateTime availTo)
+        void OnBarDownloadBeginResult(QuoteStore client, object data, string downloadId, DateTime availFrom, DateTime availTo)
         {
             try
             {
@@ -626,7 +626,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadResult(Client client, object data, Bar bar)
+        void OnBarDownloadResult(QuoteStore client, object data, Bar bar)
         {
             try
             {
@@ -638,7 +638,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadEndResult(Client client, object data)
+        void OnBarDownloadEndResult(QuoteStore client, object data)
         {
             try
             {
@@ -650,7 +650,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnBarDownloadError(Client client, object data, Exception error)
+        void OnBarDownloadError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -667,7 +667,7 @@ namespace QuoteStoreAsyncSample
             client_.GetQuoteListAsync(this, symbol, depth, from, count);
         }
 
-        void OnQuoteListResult(Client client, object data, Quote[] quotes)
+        void OnQuoteListResult(QuoteStore client, object data, Quote[] quotes)
         {
             try
             {
@@ -696,7 +696,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnQuoteListError(Client client, object data, Exception error)
+        void OnQuoteListError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -713,7 +713,7 @@ namespace QuoteStoreAsyncSample
             client_.DownloadQuotesAsync(this, symbol, depth, from, to);
         }
 
-        void OnQuoteDownloadBeginResult(Client client, object data, string id, DateTime availFrom, DateTime availTo)
+        void OnQuoteDownloadBeginResult(QuoteStore client, object data, string id, DateTime availFrom, DateTime availTo)
         {
             try
             {
@@ -725,7 +725,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnQuoteDownloadResult(Client client, object data, Quote quote)
+        void OnQuoteDownloadResult(QuoteStore client, object data, Quote quote)
         {
             try
             {
@@ -749,7 +749,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        void OnQuoteDownloadEndResult(Client client, object data)
+        void OnQuoteDownloadEndResult(QuoteStore client, object data)
         {
             try
             {
@@ -761,7 +761,7 @@ namespace QuoteStoreAsyncSample
             }            
         }
 
-        void OnQuoteDownloadError(Client client, object data, Exception error)
+        void OnQuoteDownloadError(QuoteStore client, object data, Exception error)
         {
             try
             {
@@ -773,7 +773,7 @@ namespace QuoteStoreAsyncSample
             }
         }
 
-        Client client_;
+        QuoteStore client_;
 
         string address_;
         string login_;

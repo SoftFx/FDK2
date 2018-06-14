@@ -22,21 +22,18 @@ xcopy Bin\SoftFX.Net.OrderEntry.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.QuoteStore.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\SoftFX.Net.TradeCapture.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Common.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TickTrader.FDK.QuoteFeed.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TickTrader.FDK.OrderEntry.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TickTrader.FDK.QuoteStore.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TickTrader.FDK.TradeCapture.dll %PACKAGE_DIR%\Bin || goto END
+xcopy Bin\Release\TickTrader.FDK.Client.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Extended.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Calculator.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Standard.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\QuoteFeedAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteFeedSample.exe %PACKAGE_DIR%\Bin || goto END
+xcopy Bin\Release\QuoteFeedSyncSample.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\OrderEntryAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\OrderEntrySample.exe %PACKAGE_DIR%\Bin || goto END
+xcopy Bin\Release\OrderEntrySyncSample.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\QuoteStoreAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteStoreSample.exe %PACKAGE_DIR%\Bin || goto END
+xcopy Bin\Release\QuoteStoreSyncSample.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TradeCaptureAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TradeCaptureSample.exe %PACKAGE_DIR%\Bin || goto END
+xcopy Bin\Release\TradeCaptureSyncSample.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\DataFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\DataTradeExamples.exe %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TradeFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
@@ -71,12 +68,12 @@ xcopy Samples\OrderEntryAsyncSample\*.cs %PACKAGE_DIR%\Samples\OrderEntryAsyncSa
 mkdir %PACKAGE_DIR%\Samples\OrderEntryAsyncSample\Properties || goto END
 xcopy Samples\OrderEntryAsyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\OrderEntryAsyncSample\Properties || goto END
 
-mkdir %PACKAGE_DIR%\Samples\OrderEntrySample || goto END
-xcopy Samples\OrderEntrySample\OrderEntrySample.csproj %PACKAGE_DIR%\Samples\OrderEntrySample || goto END
-xcopy Samples\OrderEntrySample\*.cs %PACKAGE_DIR%\Samples\OrderEntrySample || goto END
+mkdir %PACKAGE_DIR%\Samples\OrderEntrySyncSample || goto END
+xcopy Samples\OrderEntrySyncSample\OrderEntrySyncSample.csproj %PACKAGE_DIR%\Samples\OrderEntrySyncSample || goto END
+xcopy Samples\OrderEntrySyncSample\*.cs %PACKAGE_DIR%\Samples\OrderEntrySyncSample || goto END
 
-mkdir %PACKAGE_DIR%\Samples\OrderEntrySample\Properties || goto END
-xcopy Samples\OrderEntrySample\Properties\*.cs %PACKAGE_DIR%\Samples\OrderEntrySample\Properties || goto END
+mkdir %PACKAGE_DIR%\Samples\OrderEntrySyncSample\Properties || goto END
+xcopy Samples\OrderEntrySyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\OrderEntrySyncSample\Properties || goto END
 
 mkdir %PACKAGE_DIR%\Samples\QuoteFeedAsyncSample || goto END
 xcopy Samples\QuoteFeedAsyncSample\QuoteFeedAsyncSample.csproj %PACKAGE_DIR%\Samples\QuoteFeedAsyncSample || goto END
@@ -85,12 +82,12 @@ xcopy Samples\QuoteFeedAsyncSample\*.cs %PACKAGE_DIR%\Samples\QuoteFeedAsyncSamp
 mkdir %PACKAGE_DIR%\Samples\QuoteFeedAsyncSample\Properties || goto END
 xcopy Samples\QuoteFeedAsyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteFeedAsyncSample\Properties || goto END
 
-mkdir %PACKAGE_DIR%\Samples\QuoteFeedSample || goto END
-xcopy Samples\QuoteFeedSample\QuoteFeedSample.csproj %PACKAGE_DIR%\Samples\QuoteFeedSample || goto END
-xcopy Samples\QuoteFeedSample\*.cs %PACKAGE_DIR%\Samples\QuoteFeedSample || goto END
+mkdir %PACKAGE_DIR%\Samples\QuoteFeedSyncSample || goto END
+xcopy Samples\QuoteFeedSyncSample\QuoteFeedSyncSample.csproj %PACKAGE_DIR%\Samples\QuoteFeedSyncSample || goto END
+xcopy Samples\QuoteFeedSyncSample\*.cs %PACKAGE_DIR%\Samples\QuoteFeedSyncSample || goto END
 
-mkdir %PACKAGE_DIR%\Samples\QuoteFeedSample\Properties || goto END
-xcopy Samples\QuoteFeedSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteFeedSample\Properties || goto END
+mkdir %PACKAGE_DIR%\Samples\QuoteFeedSyncSample\Properties || goto END
+xcopy Samples\QuoteFeedSyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteFeedSyncSample\Properties || goto END
 
 mkdir %PACKAGE_DIR%\Samples\QuoteStoreAsyncSample || goto END
 xcopy Samples\QuoteStoreAsyncSample\QuoteStoreAsyncSample.csproj %PACKAGE_DIR%\Samples\QuoteStoreAsyncSample || goto END
@@ -99,12 +96,12 @@ xcopy Samples\QuoteStoreAsyncSample\*.cs %PACKAGE_DIR%\Samples\QuoteStoreAsyncSa
 mkdir %PACKAGE_DIR%\Samples\QuoteStoreAsyncSample\Properties || goto END
 xcopy Samples\QuoteStoreAsyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteStoreAsyncSample\Properties || goto END
 
-mkdir %PACKAGE_DIR%\Samples\QuoteStoreSample || goto END
-xcopy Samples\QuoteStoreSample\QuoteStoreSample.csproj %PACKAGE_DIR%\Samples\QuoteStoreSample || goto END
-xcopy Samples\QuoteStoreSample\*.cs %PACKAGE_DIR%\Samples\QuoteStoreSample || goto END
+mkdir %PACKAGE_DIR%\Samples\QuoteStoreSyncSample || goto END
+xcopy Samples\QuoteStoreSyncSample\QuoteStoreSyncSample.csproj %PACKAGE_DIR%\Samples\QuoteStoreSyncSample || goto END
+xcopy Samples\QuoteStoreSyncSample\*.cs %PACKAGE_DIR%\Samples\QuoteStoreSyncSample || goto END
 
-mkdir %PACKAGE_DIR%\Samples\QuoteStoreSample\Properties || goto END
-xcopy Samples\QuoteStoreSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteStoreSample\Properties || goto END
+mkdir %PACKAGE_DIR%\Samples\QuoteStoreSyncSample\Properties || goto END
+xcopy Samples\QuoteStoreSyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\QuoteStoreSyncSample\Properties || goto END
 
 mkdir %PACKAGE_DIR%\Samples\StandardExamples || goto END
 xcopy Samples\StandardExamples\StandardExamples.csproj %PACKAGE_DIR%\Samples\StandardExamples || goto END
@@ -120,12 +117,12 @@ xcopy Samples\TradeCaptureAsyncSample\*.cs %PACKAGE_DIR%\Samples\TradeCaptureAsy
 mkdir %PACKAGE_DIR%\Samples\TradeCaptureAsyncSample\Properties || goto END
 xcopy Samples\TradeCaptureAsyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\TradeCaptureAsyncSample\Properties || goto END
 
-mkdir %PACKAGE_DIR%\Samples\TradeCaptureSample || goto END
-xcopy Samples\TradeCaptureSample\TradeCaptureSample.csproj %PACKAGE_DIR%\Samples\TradeCaptureSample || goto END
-xcopy Samples\TradeCaptureSample\*.cs %PACKAGE_DIR%\Samples\TradeCaptureSample || goto END
+mkdir %PACKAGE_DIR%\Samples\TradeCaptureSyncSample || goto END
+xcopy Samples\TradeCaptureSyncSample\TradeCaptureSyncSample.csproj %PACKAGE_DIR%\Samples\TradeCaptureSyncSample || goto END
+xcopy Samples\TradeCaptureSyncSample\*.cs %PACKAGE_DIR%\Samples\TradeCaptureSyncSample || goto END
 
-mkdir %PACKAGE_DIR%\Samples\TradeCaptureSample\Properties || goto END
-xcopy Samples\TradeCaptureSample\Properties\*.cs %PACKAGE_DIR%\Samples\TradeCaptureSample\Properties || goto END
+mkdir %PACKAGE_DIR%\Samples\TradeCaptureSyncSample\Properties || goto END
+xcopy Samples\TradeCaptureSyncSample\Properties\*.cs %PACKAGE_DIR%\Samples\TradeCaptureSyncSample\Properties || goto END
 
 mkdir %PACKAGE_DIR%\Samples\TradeFeedExamples || goto END
 xcopy Samples\TradeFeedExamples\TradeFeedExamples.csproj %PACKAGE_DIR%\Samples\TradeFeedExamples || goto END

@@ -44,10 +44,10 @@
     <Reference Include="System.Core" />
     <Reference Include="TickTrader.FDK.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Bin\$(Configuration)\TickTrader.FDK.Common.dll</HintPath>
+      <HintPath>..\..\Bin\TickTrader.FDK.Common.dll</HintPath>
     </Reference>
-    <Reference Include="TickTrader.FDK.TradeCapture">
-      <HintPath>..\..\Bin\$(Configuration)\TickTrader.FDK.TradeCapture.dll</HintPath>
+    <Reference Include="TickTrader.FDK.Client">
+      <HintPath>..\..\Bin\TickTrader.FDK.Client.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
