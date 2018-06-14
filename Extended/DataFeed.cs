@@ -69,6 +69,10 @@
             if (! connectionStringParser.TryGetIntValue("QuoteStorePort", out quoteStorePort))
                 quoteStorePort = 5050;
 
+            string serverCertificateName;
+            if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
+                serverCertificateName = "TickTraderManagerService";
+
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
 
@@ -101,7 +105,7 @@
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logMessages, quoteFeedPort, -1, -1, 10000, 10000, logDirectory);
+            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logMessages, quoteFeedPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             quoteFeedClient_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectResultEvent += new QuoteFeed.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -128,7 +132,7 @@
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.NotificationDelegate(this.OnNotification);
 
-            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logMessages, quoteStorePort, -1, -1, 10000, 10000, logDirectory);
+            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logMessages, quoteStorePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             quoteStoreClient_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectResultEvent += new QuoteStore.DisconnectResultDelegate(this.OnDisconnectResult);

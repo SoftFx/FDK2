@@ -46,6 +46,11 @@
         public int? TradeCapturePort { get; set; }
 
         /// <summary>
+        /// Gets or sets trading platform port of the trade capture interface.
+        /// </summary>
+        public string ServerCertificateName { get; set; }
+
+        /// <summary>
         /// Gets or sets the username of the data feed instance.
         /// Can not be modified, when the data feed is running.
         /// </summary>
@@ -138,6 +143,14 @@
                     stringBuilder.Append(";");
 
                 stringBuilder.AppendFormat("[Int32]TradeCapturePort={0}", TradeCapturePort);
+            }
+
+            if (ServerCertificateName != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[String]ServerCertificateNamee={0}", ServerCertificateName);
             }
 
             if (Username != null)

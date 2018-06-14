@@ -69,6 +69,10 @@
             if (! connectionStringParser.TryGetIntValue("TradeCapturePort", out tradeCapturePort))
                 tradeCapturePort = 5060;
 
+            string serverCertificateName;
+            if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
+                serverCertificateName = "TickTraderManagerService";
+
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
 
@@ -101,7 +105,7 @@
             
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logMessages, orderEntryPort, -1, -1, 10000, 10000, logDirectory);
+            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logMessages, orderEntryPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             orderEntryClient_.ConnectResultEvent += new OrderEntry.ConnectResultDelegate(this.OnConnectResult);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectResultEvent += new OrderEntry.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -145,7 +149,7 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logMessages, tradeCapturePort, -1, -1, 10000, 10000, logDirectory);
+            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logMessages, tradeCapturePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             tradeCaptureClient_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectResultEvent += new TradeCapture.DisconnectResultDelegate(this.OnDisconnectResult);

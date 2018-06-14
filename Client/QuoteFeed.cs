@@ -15,6 +15,7 @@ namespace TickTrader.FDK.Client
             string name,
             bool logMessages =  false,
             int port = 5030,
+            string serverCertificateName = "TickTraderManagerService",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
@@ -24,7 +25,7 @@ namespace TickTrader.FDK.Client
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.Secure;
-            options.ServerCertificateName = "TickTraderManagerService";
+            options.ServerCertificateName = serverCertificateName;
             options.ServerMinMinorVersion = Info.QuoteFeed.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
