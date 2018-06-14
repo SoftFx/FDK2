@@ -5,11 +5,11 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntryAsyncSample", "OrderEntryAsyncSample\OrderEntryAsyncSample.csproj", "{5601A56E-8752-4AEF-B6F1-5285E67DDD40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntrySample", "OrderEntrySample\OrderEntrySample.csproj", "{9138F823-7688-4A22-9C10-CA85166F9522}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntrySyncSample", "OrderEntrySyncSample\OrderEntrySyncSample.csproj", "{9138F823-7688-4A22-9C10-CA85166F9522}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeedAsyncSample", "QuoteFeedAsyncSample\QuoteFeedAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F436053B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeedSample", "QuoteFeedSample\QuoteFeedSample.csproj", "{CB691BEC-3A3C-4973-BC92-6D82D35BFD27}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeedSyncample", "QuoteFeedSyncSample\QuoteFeedSyncSample.csproj", "{CB691BEC-3A3C-4973-BC92-6D82D35BFD27}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTradeExamples", "DataTradeExamples\DataTradeExamples.csproj", "{AEBCFEF7-81B7-426C-A69F-019F09F5426C}"
 EndProject
@@ -21,9 +21,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StandardExamples", "Standar
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreAsyncSample", "QuoteStoreAsyncSample\QuoteStoreAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F434566B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreSample", "QuoteStoreSample\QuoteStoreSample.csproj", "{B33E4ADA-5980-43EA-80C4-15834434566B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreSyncSample", "QuoteStoreSyncSample\QuoteStoreSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15834434566B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCaptureSample", "TradeCaptureSample\TradeCaptureSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334434566B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCaptureSyncSample", "TradeCaptureSyncSample\TradeCaptureSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334434566B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCaptureAsyncSample", "TradeCaptureAsyncSample\TradeCaptureAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334578934B}"
 EndProject
