@@ -25,7 +25,7 @@ namespace TickTrader.FDK.Client
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port);
-            options.ConnectionType = SoftFX.Net.Core.ConnectionType.Secure;
+            options.ConnectionType = SoftFX.Net.Core.ConnectionType.SecureSocket;
             options.ServerCertificateName = serverCertificateName;
             options.ServerMinMinorVersion = Info.TradeCapture.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
@@ -933,9 +933,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -954,9 +954,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -984,9 +984,9 @@ namespace TickTrader.FDK.Client
                         connectAsyncContext.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1007,9 +1007,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1046,9 +1046,9 @@ namespace TickTrader.FDK.Client
                         disconnectAsyncContext.text_ = text;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1078,9 +1078,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1099,9 +1099,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1143,9 +1143,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1174,9 +1174,9 @@ namespace TickTrader.FDK.Client
                         context.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1220,9 +1220,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1307,9 +1307,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1340,9 +1340,9 @@ namespace TickTrader.FDK.Client
 
                     // the login procedure continues..
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1387,9 +1387,9 @@ namespace TickTrader.FDK.Client
                         loginContext.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1438,9 +1438,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1491,9 +1491,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1542,9 +1542,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1595,9 +1595,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1644,9 +1644,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 } 
             }
 
@@ -1675,9 +1675,9 @@ namespace TickTrader.FDK.Client
                         context.enumerator_.SetError(exception);
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1719,9 +1719,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1750,9 +1750,9 @@ namespace TickTrader.FDK.Client
                         context.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1801,9 +1801,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1854,9 +1854,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1903,9 +1903,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1934,9 +1934,9 @@ namespace TickTrader.FDK.Client
                         context.enumerator_.SetError(exception);
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -1978,9 +1978,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2009,9 +2009,9 @@ namespace TickTrader.FDK.Client
                         context.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2060,9 +2060,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2113,9 +2113,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2162,9 +2162,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2193,9 +2193,9 @@ namespace TickTrader.FDK.Client
                         context.enumerator_.SetError(exception);
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2237,9 +2237,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2268,9 +2268,9 @@ namespace TickTrader.FDK.Client
                         context.exception_ = exception;
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2293,9 +2293,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2318,9 +2318,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 
@@ -2345,9 +2345,9 @@ namespace TickTrader.FDK.Client
                         }
                     }
                 }
-                catch (Exception exception)
+                catch
                 {
-                    client_.session_.LogError(exception.Message);
+                    // client_.session_.LogError(exception.Message);
                 }
             }
 

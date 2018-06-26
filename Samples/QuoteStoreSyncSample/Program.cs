@@ -306,7 +306,7 @@ namespace QuoteStoreSyncSample
         }
 
         void Connect()
-        {
+        {            
             client_.Connect(address_, Timeout);
 
             try
