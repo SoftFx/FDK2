@@ -2,11 +2,11 @@
 {
     public class Version
     {
+        // TODO: how do we get build parameters here ????
+
         public const string Major = "2";
-        public const string Minor = "24";
+        public const string Minor = "0";
         public const string Build = "0";
-        public const string Revision = "0";
-        public const string Stage = "";
-        public const string Full = Major + "." + Minor + "." + Build + "." + Revision;
+        public const string Full = Major + "." + Minor + "." + Build;
     }
 }
