@@ -26,18 +26,18 @@ xcopy Bin\Release\TickTrader.FDK.Client.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Extended.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Calculator.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Standard.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteFeedAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteFeedSyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\OrderEntryAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\OrderEntrySyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteStoreAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\QuoteStoreSyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TradeCaptureAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TradeCaptureSyncSample.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\DataFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\DataTradeExamples.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\TradeFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\Release\StandardExamples.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\QuoteFeedAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\QuoteFeedSyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\OrderEntryAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\OrderEntrySyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\QuoteStoreAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\QuoteStoreSyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\TradeCaptureAsyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\TradeCaptureSyncSample.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\DataFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\DataTradeExamples.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\TradeFeedExamples.exe %PACKAGE_DIR%\Bin || goto END
+rem xcopy Bin\Release\StandardExamples.exe %PACKAGE_DIR%\Bin || goto END
 
 rem Doc
 
