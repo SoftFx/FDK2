@@ -13,7 +13,9 @@ namespace TickTrader.FDK.Client
         public QuoteFeed
         (
             string name,
-            bool logMessages =  false,
+            bool logEvents =  false,
+            bool logStates =  false,
+            bool logMessages = false,
             int port = 5030,
             string serverCertificateName = "TickTraderManagerService",
             int connectAttempts = -1,
@@ -32,15 +34,10 @@ namespace TickTrader.FDK.Client
             options.ConnectInterval = connectInterval;
             options.HeartbeatInterval = heartbeatInterval;
             options.Log.Directory = logDirectory;
-#if DEBUG
-            options.Log.Events = true;
-            options.Log.States = false;
-            options.Log.Messages = true;
-#else
-            options.Log.Events = false;
-            options.Log.States = false;
+            options.Log.Events = logEvents ;
+            options.Log.States = logStates;
             options.Log.Messages = logMessages;
-#endif
+
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
             session_.Listener = sessionListener_;

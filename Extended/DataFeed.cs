@@ -99,13 +99,21 @@
             if (! connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
                 logDirectory = "Logs";
 
+            bool logEvents;
+            if (! connectionStringParser.TryGetBoolValue("LogEvents", out logEvents))
+                logEvents = false;
+
+            bool logStates;
+            if (! connectionStringParser.TryGetBoolValue("LogStates", out logStates))
+                logStates = false;
+
             bool logMessages;
             if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
                 logMessages = false;
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logMessages, quoteFeedPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logEvents, logStates, logMessages, quoteFeedPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             quoteFeedClient_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectResultEvent += new QuoteFeed.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -132,7 +140,7 @@
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.NotificationDelegate(this.OnNotification);
 
-            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logMessages, quoteStorePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logEvents, logStates, logMessages, quoteStorePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             quoteStoreClient_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectResultEvent += new QuoteStore.DisconnectResultDelegate(this.OnDisconnectResult);

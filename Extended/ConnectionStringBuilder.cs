@@ -98,6 +98,16 @@
         public string LogDirectory { get; set; }
 
         /// <summary>
+        /// If true, the FDK logs events.
+        /// </summary>
+        public bool? LogEvents { get; set; }
+
+        /// <summary>
+        /// If true, the FDK logs states.
+        /// </summary>
+        public bool? LogStates { get; set; }
+
+        /// <summary>
         /// If true, the FDK logs messages.
         /// </summary>
         public bool? LogMessages { get; set; }
@@ -215,6 +225,22 @@
                     stringBuilder.Append(";");
 
                 stringBuilder.AppendFormat("[String]LogDirectory={0}", LogDirectory);
+            }
+
+            if (LogEvents != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Boolean]LogEvents={0}", LogEvents);
+            }
+
+            if (LogStates != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Boolean]LogStates={0}", LogStates);
             }
 
             if (LogMessages != null)

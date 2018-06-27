@@ -99,13 +99,21 @@
             if (! connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
                 logDirectory = "Logs";
 
+            bool logEvents;
+            if (! connectionStringParser.TryGetBoolValue("LogEvents", out logEvents))
+                logEvents = false;
+
+            bool logStates;
+            if (! connectionStringParser.TryGetBoolValue("LogStates", out logStates))
+                logStates = false;
+
             bool logMessages;
             if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
                 logMessages = false;
             
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logMessages, orderEntryPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logEvents, logStates, logMessages, orderEntryPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             orderEntryClient_.ConnectResultEvent += new OrderEntry.ConnectResultDelegate(this.OnConnectResult);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectResultEvent += new OrderEntry.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -149,7 +157,7 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logMessages, tradeCapturePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logEvents, logStates, logMessages, tradeCapturePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
             tradeCaptureClient_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectResultEvent += new TradeCapture.DisconnectResultDelegate(this.OnDisconnectResult);
