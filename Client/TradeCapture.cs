@@ -1503,7 +1503,7 @@ namespace TickTrader.FDK.Client
                     {
                         context.tradeTransactionReport_ = new TradeTransactionReport();
 
-                        if (client_.SubscribeTradesResultEvent != null)
+                        if (client_.SubscribeTradesResultBeginEvent != null)
                         {
                             try
                             {
@@ -1605,7 +1605,7 @@ namespace TickTrader.FDK.Client
 
                     try
                     {
-                        if (client_.SubscribeTradesResultEvent != null)
+                        if (client_.SubscribeTradesResultEndEvent != null)
                         {
                             try
                             {
