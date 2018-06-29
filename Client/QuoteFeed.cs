@@ -17,7 +17,7 @@ namespace TickTrader.FDK.Client
             bool logStates =  false,
             bool logMessages = false,
             int port = 5030,
-            string serverCertificateName = "TickTraderManagerService",
+            string serverCertificateName = null,
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
