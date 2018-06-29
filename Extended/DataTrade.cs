@@ -71,7 +71,7 @@
 
             string serverCertificateName;
             if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
-                serverCertificateName = null;
+                serverCertificateName = "TickTraderManagerService";
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");

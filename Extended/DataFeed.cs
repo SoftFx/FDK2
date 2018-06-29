@@ -70,8 +70,8 @@
                 quoteStorePort = 5050;
 
             string serverCertificateName;
-            if (!connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
-                serverCertificateName = null;
+            if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
+                serverCertificateName = "TickTraderManagerService";
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
