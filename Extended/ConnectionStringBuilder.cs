@@ -160,7 +160,7 @@
                 if (stringBuilder.Length != 0)
                     stringBuilder.Append(";");
 
-                stringBuilder.AppendFormat("[String]ServerCertificateNamee={0}", ServerCertificateName);
+                stringBuilder.AppendFormat("[String]ServerCertificateName={0}", ServerCertificateName);
             }
 
             if (Username != null)
