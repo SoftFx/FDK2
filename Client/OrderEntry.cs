@@ -2150,10 +2150,31 @@ namespace TickTrader.FDK.Client
                         resultTradeServerInfo.CompanyEmail = message.CompanyEmail;
                         resultTradeServerInfo.CompanyPhone = message.CompanyPhone;
                         resultTradeServerInfo.CompanyWebSite = message.CompanyWebSite;
-                        resultTradeServerInfo.ServerAddress = message.ServerAddress;
+                        resultTradeServerInfo.ServerName = message.ServerName;
                         resultTradeServerInfo.ServerFullName = message.ServerFullName;
                         resultTradeServerInfo.ServerDescription = message.ServerDescription;
-                        resultTradeServerInfo.ServerAddress = message.ServerAddress;
+                        resultTradeServerInfo.ServerAddress = message.GatewayAddress;
+
+                        TradeServerRestApi restApi = message.RestApi;
+                        resultTradeServerInfo.ServerRestPort = restApi.Port;
+
+                        TradeServerWsApi wsApi = message.WsApi;
+                        resultTradeServerInfo.ServerWebSocketFeedPort = wsApi.FeedPort;
+                        resultTradeServerInfo.ServerWebSocketTradePort = wsApi.TradePort;
+
+                        TradeServerSfxApi sfxApi = message.SfxApi;
+                        resultTradeServerInfo.ServerSfxQuoteFeedPort = sfxApi.QuoteFeedPort;
+                        resultTradeServerInfo.ServerSfxQuoteFeedPort = sfxApi.QuoteStorePort;
+                        resultTradeServerInfo.ServerSfxOrderEntryPort = sfxApi.OrderEntryPort;
+                        resultTradeServerInfo.ServerSfxTradeCapturePort = sfxApi.OrderEntryPort;
+
+                        TradeServerFixApi fixApi = message.FixApi;
+                        resultTradeServerInfo.ServerFixFeedSslPort = fixApi.FeedPort;
+                        resultTradeServerInfo.ServerFixTradeSslPort = fixApi.TradePort;
+
+                        resultTradeServerInfo.WebTerminalAddress = message.WebTerminalAddress;
+                        resultTradeServerInfo.WebCabinetAddress = message.WebCabinetAddress;
+                        resultTradeServerInfo.SupportCrmAddress = message.SupportCrmAddress;
 
                         if (client_.TradeServerInfoResultEvent != null)
                         {

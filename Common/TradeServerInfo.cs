@@ -22,11 +22,18 @@ namespace TickTrader.FDK.Common
         public string ServerFullName { get; set; }
         public string ServerDescription { get; set; }
         public string ServerAddress { get; set; }
-        public int? ServerFixFeedSslPort { get; set; }
-        public int? ServerFixTradeSslPort { get; set; }
+        public int? ServerRestPort { get; set; }
         public int? ServerWebSocketFeedPort { get; set; }
         public int? ServerWebSocketTradePort { get; set; }
-        public int? ServerRestPort { get; set; }
+        public int? ServerSfxQuoteFeedPort { get; set; }
+        public int? ServerSfxQuoteStorePort { get; set; }
+        public int? ServerSfxOrderEntryPort { get; set; }
+        public int? ServerSfxTradeCapturePort { get; set; }
+        public int? ServerFixFeedSslPort { get; set; }
+        public int? ServerFixTradeSslPort { get; set; }
+        public string WebTerminalAddress { get; set; }
+        public string WebCabinetAddress { get; set; }
+        public string SupportCrmAddress { get; set; }        
 
         public override string ToString()
         {
