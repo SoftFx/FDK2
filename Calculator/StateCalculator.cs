@@ -167,14 +167,14 @@
         void PrepareCalculator(Common.AccountInfo accountUpdate, IEnumerable<Common.CurrencyInfo> currencyUpdate, IEnumerable<Common.SymbolInfo> symbolsUpdate, IDictionary<string, Quote> quotesUpdate)
         {
             if (accountUpdate != null)
-            {
-                this.account.Balance = accountUpdate.Balance;
+            {               
                 this.account.Currency = accountUpdate.Currency;
                 this.account.Type = accountUpdate.Type;
 
                 if (this.account.Type != AccountType.Cash)
                 {
-                    this.account.Leverage = accountUpdate.Leverage;
+                    this.account.Balance = accountUpdate.Balance.Value;
+                    this.account.Leverage = accountUpdate.Leverage.Value;
 
                     if (this.feed.Cache.Currencies.Select(o => o.Name).Contains(account.Currency))
                     {
@@ -182,11 +182,13 @@
                         this.account.RoundingService = new AccountRoundingService(FinancialRounding.Instance, precisionProvider, account.Currency);
                     }
                 }
+                else
+                    this.account.Balance = 0;
             }
 
             if (this.account.Type != AccountType.Cash)
             {
-                this.account.Balance = this.trade.Cache.AccountInfo.Balance;
+                this.account.Balance = this.trade.Cache.AccountInfo.Balance.Value;
             }
 
             if (currencyUpdate != null)

@@ -25,16 +25,51 @@
         /// Gets account name.
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string FirtName { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string LastName { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Phone { get; set; }
 	
         /// <summary>
-        /// Gets account email.
+        /// 
         /// </summary>
-        public string Email { get; set; }
-	
+        public string Country { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string City { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string Address { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ZipCode { get; set; }
+
         /// <summary>
         /// Gets account comment.
         /// </summary>
         public string Comment { get; set; }
+
+        /// <summary>
+        /// Gets account email.
+        /// </summary>
+        public string Email { get; set; }
 	
         /// <summary>
         /// Gets the account balance currency.
@@ -49,32 +84,32 @@
         /// <summary>
         /// Gets the account leverage.
         /// </summary>
-        public int Leverage { get; set; }
+        public int? Leverage { get; set; }
 
         /// <summary>
         /// Gets the account balance.
         /// </summary>
-        public double Balance { get; set; }
+        public double? Balance { get; set; }
 
         /// <summary>
         /// Gets the account margin.
         /// </summary>
-        public double Margin { get; set; }
+        public double? Margin { get; set; }
 
         /// <summary>
         /// Gets the account equity.
         /// </summary>
-        public double Equity { get; set; }
+        public double? Equity { get; set; }
 
         /// <summary>
         /// Gets margin call level.
         /// </summary>
-        public double MarginCallLevel { get; set; }
+        public double? MarginCallLevel { get; set; }
 
         /// <summary>
         /// Get stop out level.7
         /// </summary>
-        public double StopOutLevel { get; set; }
+        public double? StopOutLevel { get; set; }
 
         /// <summary>
         /// Gets account state:
@@ -92,6 +127,11 @@
         /// Gets whether account is blocked or not.
         /// </summary>
         public bool IsBlocked { get; set; }
+
+        /// <summary>
+        /// Gets whether account is blocked or not.
+        /// </summary>
+        public bool IsWebApiEnabled { get; set; }
 
         /// <summary>
         /// Gets assets; this feature is available for cash accounts only.

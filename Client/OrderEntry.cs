@@ -2257,60 +2257,9 @@ namespace TickTrader.FDK.Client
                     try
                     {
                         TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
-                        SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
-                        resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();
-                        resultAccountInfo.Type = GetAccountType(reportAccountInfo.Type);
-                        resultAccountInfo.Name = reportAccountInfo.Name;
-                        resultAccountInfo.Email = reportAccountInfo.Email;
-                        resultAccountInfo.Comment = reportAccountInfo.Description;
-                        resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
-                        resultAccountInfo.Leverage = reportAccountInfo.Leverage;
 
-                        BalanceNull reportBalance = reportAccountInfo.Balance;
-
-                        if (reportBalance.HasValue)
-                        {
-                            resultAccountInfo.Currency = reportBalance.CurrId;
-                            resultAccountInfo.Balance = reportBalance.Total;
-                        }
-                        else
-                        {
-                            resultAccountInfo.Currency = "";     // TODO: something in the orderEntry calculator crashes if null
-                            resultAccountInfo.Balance = 0;
-                        }
-
-                        resultAccountInfo.Margin = reportAccountInfo.Margin;
-                        resultAccountInfo.Equity = reportAccountInfo.Equity;
-                        resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
-                        resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
-
-                        AccountFlags flags = reportAccountInfo.Flags;
-                        if ((flags & AccountFlags.Valid) != 0)
-                            resultAccountInfo.IsValid = true;
-                        if ((flags & AccountFlags.Blocked) != 0)
-                            resultAccountInfo.IsBlocked = true;
-                        if ((flags & AccountFlags.Investor) != 0)
-                            resultAccountInfo.IsReadOnly = true;
-
-                        AssetArray reportAssets = reportAccountInfo.Assets;
-
-                        int count = reportAssets.Length;
-                        AssetInfo[] resultAssets = new AssetInfo[count];
-
-                        for (int index = 0; index < count; ++index)
-                        {
-                            Asset reportAsset = reportAssets[index];
-
-                            AssetInfo resultAsset = new AssetInfo();
-                            resultAsset.Currency = reportAsset.CurrId;
-                            resultAsset.LockedAmount = reportAsset.Locked;
-                            resultAsset.Balance = reportAsset.Total;
-
-                            resultAssets[index] = resultAsset;
-                        }
-
-                        resultAccountInfo.Assets = resultAssets;
-
+                        FillAccountInfo(resultAccountInfo, message.AccountInfo);
+                        
                         if (client_.AccountInfoResultEvent != null)
                         {
                             try
@@ -4142,59 +4091,8 @@ namespace TickTrader.FDK.Client
                 try
                 {
                     TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
-                    SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo = message.AccountInfo;
-                    resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();                    
-                    resultAccountInfo.Type = GetAccountType(reportAccountInfo.Type);
-                    resultAccountInfo.Name = reportAccountInfo.Name;
-                    resultAccountInfo.Email = reportAccountInfo.Email;
-                    resultAccountInfo.Comment = reportAccountInfo.Description;
-                    resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
-                    resultAccountInfo.Leverage = reportAccountInfo.Leverage;
 
-                    BalanceNull reportBalance = reportAccountInfo.Balance;
-
-                    if (reportBalance.HasValue)
-                    {
-                        resultAccountInfo.Currency = reportBalance.CurrId;   
-                        resultAccountInfo.Balance = reportBalance.Total;
-                    }
-                    else
-                    {
-                        resultAccountInfo.Currency = "";     // TODO: something in the orderEntry calculator crashes if null
-                        resultAccountInfo.Balance = 0;
-                    }
-
-                    resultAccountInfo.Margin = reportAccountInfo.Margin;
-                    resultAccountInfo.Equity = reportAccountInfo.Equity;
-                    resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
-                    resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
-
-                    AccountFlags flags = reportAccountInfo.Flags;
-                    if ((flags & AccountFlags.Valid) != 0)
-                        resultAccountInfo.IsValid = true;
-                    if ((flags & AccountFlags.Blocked) != 0)
-                        resultAccountInfo.IsBlocked = true;
-                    if ((flags & AccountFlags.Investor) != 0)
-                        resultAccountInfo.IsReadOnly = true;
-
-                    AssetArray reportAssets = reportAccountInfo.Assets;                   
-
-                    int count = reportAssets.Length;
-                    AssetInfo[] resultAssets = new AssetInfo[count];
-
-                    for (int index = 0; index < count; ++index)
-                    {
-                        Asset reportAsset = reportAssets[index];
-
-                        AssetInfo resultAsset = new AssetInfo();
-                        resultAsset.Currency = reportAsset.CurrId;
-                        resultAsset.LockedAmount = reportAsset.Locked;
-                        resultAsset.Balance = reportAsset.Total;                        
-
-                        resultAssets[index] = resultAsset; 
-                    }
-
-                    resultAccountInfo.Assets = resultAssets;
+                    FillAccountInfo(resultAccountInfo, message.AccountInfo);
 
                     if (client_.AccountInfoUpdateEvent != null)
                     {
@@ -4342,6 +4240,71 @@ namespace TickTrader.FDK.Client
                 {
                     // client_.session_.LogError(exception.Message);
                 }
+            }
+
+            void FillAccountInfo(TickTrader.FDK.Common.AccountInfo resultAccountInfo, SoftFX.Net.OrderEntry.AccountInfo reportAccountInfo)
+            {
+                resultAccountInfo.AccountId = reportAccountInfo.Id.ToString();
+                resultAccountInfo.Type = GetAccountType(reportAccountInfo.Type);
+                resultAccountInfo.Name = reportAccountInfo.Name;
+                resultAccountInfo.FirtName = reportAccountInfo.FirstName;
+                resultAccountInfo.LastName = reportAccountInfo.LastName;
+                resultAccountInfo.Phone = reportAccountInfo.Phone;
+                resultAccountInfo.Country = reportAccountInfo.Country;
+                resultAccountInfo.City = reportAccountInfo.City;
+                resultAccountInfo.Address = reportAccountInfo.Address;
+                resultAccountInfo.ZipCode = reportAccountInfo.ZipCode;
+                resultAccountInfo.Comment = reportAccountInfo.Description;
+                resultAccountInfo.Email = reportAccountInfo.Email;                
+                resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;                
+
+                BalanceNull reportBalance = reportAccountInfo.Balance;
+
+                if (reportBalance.HasValue)
+                {
+                    resultAccountInfo.Currency = reportBalance.CurrId;
+                    resultAccountInfo.Balance = reportBalance.Total;
+                }
+                else
+                {
+                    resultAccountInfo.Currency = "";     // TODO: something in the orderEntry calculator crashes if null
+                    resultAccountInfo.Balance = 0;
+                }
+
+                resultAccountInfo.Leverage = reportAccountInfo.Leverage;
+                resultAccountInfo.Margin = reportAccountInfo.Margin;
+                resultAccountInfo.Equity = reportAccountInfo.Equity;
+                resultAccountInfo.MarginCallLevel = reportAccountInfo.MarginCallLevel;
+                resultAccountInfo.StopOutLevel = reportAccountInfo.StopOutLevel;
+
+                AccountFlags flags = reportAccountInfo.Flags;
+                if ((flags & AccountFlags.Valid) != 0)
+                    resultAccountInfo.IsValid = true;
+                if ((flags & AccountFlags.Blocked) != 0)
+                    resultAccountInfo.IsBlocked = true;
+                if ((flags & AccountFlags.Investor) != 0)
+                    resultAccountInfo.IsReadOnly = true;
+                if ((flags & AccountFlags.RestWsApiEnabled) != 0)
+                    resultAccountInfo.IsWebApiEnabled = true;
+
+                AssetArray reportAssets = reportAccountInfo.Assets;
+
+                int count = reportAssets.Length;
+                AssetInfo[] resultAssets = new AssetInfo[count];
+
+                for (int index = 0; index < count; ++index)
+                {
+                    Asset reportAsset = reportAssets[index];
+
+                    AssetInfo resultAsset = new AssetInfo();
+                    resultAsset.Currency = reportAsset.CurrId;
+                    resultAsset.LockedAmount = reportAsset.Locked;
+                    resultAsset.Balance = reportAsset.Total;
+
+                    resultAssets[index] = resultAsset;
+                }
+
+                resultAccountInfo.Assets = resultAssets;
             }
 
             void FillExecutionReport(TickTrader.FDK.Common.ExecutionReport result, SoftFX.Net.OrderEntry.ExecutionReport report)
