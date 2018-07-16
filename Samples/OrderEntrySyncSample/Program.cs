@@ -538,17 +538,22 @@ namespace OrderEntrySyncSample
         {
             AccountInfo accountInfo = client_.GetAccountInfo(Timeout);
 
-            Console.Error.WriteLine("Account : {0}, {1}, {2}, {3}, {4}, {5}, {6} ", accountInfo.AccountId, accountInfo.Type, accountInfo.Currency, accountInfo.Leverage, accountInfo.Balance, accountInfo.Margin, accountInfo.Equity);
-
-            AssetInfo[] accountAssets = accountInfo.Assets;
-
-            int count = accountAssets.Length;
-            for (int index = 0; index < count; ++index)
+            if (accountInfo.Type == AccountType.Cash)
             {
-                AssetInfo accountAsset = accountAssets[index];
+                Console.Error.WriteLine("Account : {0}, {1}", accountInfo.AccountId, accountInfo.Type);
 
-                Console.Error.WriteLine("    Asset : {0}, {1}, {2}", accountAsset.Currency, accountAsset.Balance, accountAsset.LockedAmount);
+                AssetInfo[] accountAssets = accountInfo.Assets;
+
+                int count = accountAssets.Length;
+                for (int index = 0; index < count; ++index)
+                {
+                    AssetInfo accountAsset = accountAssets[index];
+
+                    Console.Error.WriteLine("    Asset : {0}, {1}, {2}", accountAsset.Currency, accountAsset.Balance, accountAsset.LockedAmount);
+                }
             }
+            else
+                Console.Error.WriteLine("Account : {0}, {1}, {2}, {3}, {4}, {5}, {6}", accountInfo.AccountId, accountInfo.Type, accountInfo.Currency, accountInfo.Leverage, accountInfo.Balance, accountInfo.Margin, accountInfo.Equity);
         }
 
         void GetSessionInfo()
