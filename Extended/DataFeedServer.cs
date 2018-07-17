@@ -17,26 +17,6 @@
         }
 
         /// <summary>
-        /// The method send two factor response with one time password.
-        /// </summary>
-        /// <param name="reason">Two factor response reason</param>
-        /// <param name="otp">One time password</param>
-        /// <returns>can not be null.</returns>
-        public void SendTwoFactorResponse(TwoFactorReason reason, string otp)
-        {
-            if (reason == TwoFactorReason.ClientResponse)
-            {
-                dataFeed_.quoteFeedClient_.TwoFactorLoginResponseAsync(null, otp);
-            }
-            else if (reason == TwoFactorReason.ClientResume)
-            {
-                dataFeed_.quoteFeedClient_.TwoFactorLoginResumeAsync(null);
-            }
-            else
-                throw new Exception("Invalid two factor reason : " + reason);
-        }
-
-        /// <summary>
         /// The method returns list of currencies supported by server.
         /// </summary>
         /// <returns></returns>

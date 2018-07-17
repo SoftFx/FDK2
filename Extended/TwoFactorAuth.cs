@@ -14,11 +14,13 @@ namespace TickTrader.FDK.Extended
 
         /// <summary>
         /// Two factor auth details.
+        /// Reason == TwoFactorReason.ServerError
         /// </summary>
         public string Text { get; set; }
 
         /// <summary>
         /// Two factor auth session expiration time.
+        /// Reason == TwoFactorReason.ServerSuccess || Reason == TwoFactorReason.ServerResume
         /// </summary>
         public DateTime Expire { get; set; }
     }

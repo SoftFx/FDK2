@@ -71,9 +71,15 @@ namespace OrderEntryAsyncSample
             client_.ReconnectErrorEvent += new OrderEntry.ReconnectErrorDelegate(this.OnReconnectError);
             client_.LoginResultEvent += new OrderEntry.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new OrderEntry.LoginErrorDelegate(this.OnLoginError);
+            client_.TwoFactorLoginRequestEvent += new OrderEntry.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
+            client_.TwoFactorLoginResultEvent += new OrderEntry.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
+            client_.TwoFactorLoginErrorEvent += new OrderEntry.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
+            client_.TwoFactorLoginResumeEvent += new OrderEntry.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             client_.LogoutResultEvent += new OrderEntry.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutErrorEvent += new OrderEntry.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new OrderEntry.LogoutDelegate(this.OnLogout);            
+            client_.TradeServerInfoResultEvent += new OrderEntry.TradeServerInfoResultDelegate(this.OnTradeServerInfoResult);
+            client_.TradeServerInfoErrorEvent += new OrderEntry.TradeServerInfoErrorDelegate(this.OnTradeServerErrorResult);
             client_.AccountInfoResultEvent += new OrderEntry.AccountInfoResultDelegate(this.OnAccountInfoResult);
             client_.AccountInfoErrorEvent += new OrderEntry.AccountInfoErrorDelegate(this.OnAccountInfoError);
             client_.SessionInfoResultEvent += new OrderEntry.SessionInfoResultDelegate(this.OnSessionInfoResult);
@@ -146,11 +152,25 @@ namespace OrderEntryAsyncSample
                         {
                             PrintCommands();
                         }
-                        else if (command == "account_info" || command == "a")
+                        else if (command == "send_one_time_password" || command == "sotp")
+                        {
+                            string oneTimePassword = GetNextWord(line, ref pos);
+
+                            SendOneTimePassword(oneTimePassword);
+                        }
+                        else if (command == "resume_one_time_password" || command == "rotp")
+                        {
+                            ResumeOneTimePassword();
+                        }
+                        else if (command == "trade_server_info" || command == "tsi")
+                        {
+                            GetTradeServerInfo();
+                        }
+                        else if (command == "account_info" || command == "ai")
                         {
                             GetAccountInfo();
                         }
-                        else if (command == "session_info" || command == "i")
+                        else if (command == "session_info" || command == "si")
                         {
                             GetSessionInfo();
                         }
@@ -623,6 +643,18 @@ namespace OrderEntryAsyncSample
             }
         }
 
+        void OnTwoFactorLoginRequest(OrderEntry client, string message)
+        {
+            try
+            {
+                Console.WriteLine("Please send one time password");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
         void OnLogoutResult(OrderEntry client, object data, LogoutInfo logoutInfo)
         {
             try
@@ -666,8 +698,11 @@ namespace OrderEntryAsyncSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("account_info (a) - request account information");
-            Console.WriteLine("session_info (i) - request trading session information");
+            Console.WriteLine("send_one_time_password (sotp) <one_time_password> - send one time password");
+            Console.WriteLine("resume_one_time_password (rotp) - resume one time password");
+            Console.WriteLine("trade_sever_info (tsi) - request trade server information");
+            Console.WriteLine("account_info (ai) - request account information");
+            Console.WriteLine("session_info (si) - request trading session information");
             Console.WriteLine("orders (o) - request list of orders");
             Console.WriteLine("positions (p) - request list of positions");
             Console.WriteLine("new_order_market (nom) <symbol_id> <side> <qty> [<comment>] - send new market order");
@@ -680,6 +715,81 @@ namespace OrderEntryAsyncSample
             Console.WriteLine("cancel_order (co) <client_order_id> - send order cancel");
             Console.WriteLine("close_position (cp) <order_id> <qty> - send position close");
             Console.WriteLine("exit (e) - exit");
+        }
+
+        void SendOneTimePassword(string oneTimePassword)
+        {
+            client_.TwoFactorLoginResponseAsync(this, oneTimePassword);
+        }
+
+        void OnTwoFactorLoginResult(OrderEntry orderEntry, object data, DateTime expireTime)
+        {
+            try
+            {
+                Console.WriteLine("One time password expiration time : " + expireTime);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnTwoFactorLoginError(OrderEntry orderEntry, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void ResumeOneTimePassword()
+        {
+            client_.TwoFactorLoginResumeAsync(this);
+        }
+
+        void OnTwoFactorLoginResume(OrderEntry orderEntry, object data, DateTime expireTime)
+        {
+            try
+            {
+                Console.WriteLine("One time password expiration time : " + expireTime);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void GetTradeServerInfo()
+        {
+            client_.GetTradeServerInfoAsync(this);
+        }
+
+        void OnTradeServerInfoResult(OrderEntry client, object data, TradeServerInfo tradeServerInfo)
+        {
+            try
+            {
+                Console.WriteLine("Trade server info : {0}, {1}", tradeServerInfo.ServerName, tradeServerInfo.ServerDescription);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnTradeServerErrorResult(OrderEntry client, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
         void GetAccountInfo()
@@ -788,14 +898,14 @@ namespace OrderEntryAsyncSample
             {
                 if (executionReport.OrderType == OrderType.Stop)
                 {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5} @@{6}, {7}, {8}, \"{9}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.StopPrice, executionReport.OrderStatus, executionReport.LeavesVolume, executionReport.Comment);
                 }
                 else if (executionReport.OrderType == OrderType.StopLimit)
                 {
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}@{10}, \"{11}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6} @@{7}, {8}, {9}}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.StopPrice, executionReport.OrderStatus, executionReport.LeavesVolume, executionReport.Comment);
                 }
                 else
-                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}@{9}, \"{10}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.InitialVolume - executionReport.LeavesVolume, executionReport.AveragePrice, executionReport.Comment);
+                    Console.Error.WriteLine("    Order : {0}, {1}, {2}, {3} {4} {5}@{6}, {7}, {8}, \"{9}\"", executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.Symbol, executionReport.OrderSide, executionReport.InitialVolume, executionReport.Price, executionReport.OrderStatus, executionReport.LeavesVolume, executionReport.Comment);
             }
             catch (Exception exception)
             {

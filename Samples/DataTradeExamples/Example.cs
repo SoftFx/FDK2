@@ -67,6 +67,7 @@
             this.Trade.Initialize(this.builder.ToString());
             this.Trade.Logon += this.OnLogon;
             this.Trade.Logout += this.OnLogout;
+            this.Trade.TwoFactorAuth += this.OnTwoFactorAuth;
             this.Trade.SessionInfo += this.OnSessionInfo;
             this.Trade.AccountInfo += this.OnAccountInfo;
             this.Trade.ExecutionReport += this.OnExecutionReport;
@@ -102,6 +103,30 @@
         protected virtual void OnLogout(object sender, LogoutEventArgs e)
         {
             Console.WriteLine("OnLogout(): {0}", e);
+        }
+
+        protected virtual void OnTwoFactorAuth(object sender, TwoFactorAuthEventArgs e)
+        {
+            if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerRequest)
+            {
+                Console.WriteLine("Please enter one time password: ");
+                string otp = Console.ReadLine();
+                Trade.Server.SendTwoFactorLoginResponse(otp);
+            }
+            else if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerSuccess)
+            {
+                Console.WriteLine("Two factor success: {0}", e.TwoFactorAuth.Expire);
+            }
+            else if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerError)
+            {
+                Console.WriteLine("Two factor failed: {0}", e.TwoFactorAuth.Text);
+            }
+            else if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerResume)
+            {
+                Console.WriteLine("Two factor resume: {0}", e.TwoFactorAuth.Expire);
+            }
+            else
+                Console.WriteLine("Invalid two factor server response: {0} - {1}", e.TwoFactorAuth.Reason, e.TwoFactorAuth.Text);
         }
 
         protected virtual void OnAccountInfo(object sender, AccountInfoEventArgs e)

@@ -72,6 +72,10 @@ namespace TradeCaptureAsyncSample
             client_.ReconnectErrorEvent += new TradeCapture.ReconnectErrorDelegate(this.OnReconnectError);
             client_.LoginResultEvent += new TradeCapture.LoginResultDelegate(this.OnLoginResult);
             client_.LoginErrorEvent += new TradeCapture.LoginErrorDelegate(this.OnLoginError);
+            client_.TwoFactorLoginRequestEvent += new TradeCapture.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
+            client_.TwoFactorLoginResultEvent += new TradeCapture.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
+            client_.TwoFactorLoginErrorEvent += new TradeCapture.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
+            client_.TwoFactorLoginResumeEvent += new TradeCapture.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             client_.LogoutResultEvent += new TradeCapture.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutErrorEvent += new TradeCapture.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new TradeCapture.LogoutDelegate(this.OnLogout);
@@ -162,6 +166,16 @@ namespace TradeCaptureAsyncSample
                         if (command == "help" || command == "h")
                         {
                             PrintCommands();
+                        }
+                        else if (command == "send_one_time_password" || command == "sotp")
+                        {
+                            string oneTimePassword = GetNextWord(line, ref pos);
+
+                            SendOneTimePassword(oneTimePassword);
+                        }
+                        else if (command == "resume_one_time_password" || command == "rotp")
+                        {
+                            ResumeOneTimePassword();
                         }
                         else if (command == "subscribe_trades" || command == "st")
                         {
@@ -366,6 +380,18 @@ namespace TradeCaptureAsyncSample
             }
         }
 
+        void OnTwoFactorLoginRequest(TradeCapture client, string message)
+        {
+            try
+            {
+                Console.WriteLine("Please send one time password");
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
         void OnLogoutResult(TradeCapture client, object data, LogoutInfo info)
         {
             try
@@ -409,11 +435,59 @@ namespace TradeCaptureAsyncSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
+            Console.WriteLine("send_one_time_password (sotp) <one_time_password> - send one time password");
+            Console.WriteLine("resume_one_time_password (rotp) - resume one time password");
             Console.WriteLine("subscribe_trades (st) <from> - subscribe to trades updates");
             Console.WriteLine("unsubscribe_trades (ut) - unsubscribe from trades updates");
             Console.WriteLine("download_trade_reports (dt) <direction> <from> <to> - download trade reports");
             Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
             Console.WriteLine("exit (e) - exit");
+        }
+
+        void SendOneTimePassword(string oneTimePassword)
+        {
+            client_.TwoFactorLoginResponseAsync(this, oneTimePassword);
+        }
+
+        void OnTwoFactorLoginResult(TradeCapture orderEntry, object data, DateTime expireTime)
+        {
+            try
+            {
+                Console.WriteLine("One time password expiration time : " + expireTime);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnTwoFactorLoginError(TradeCapture orderEntry, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void ResumeOneTimePassword()
+        {
+            client_.TwoFactorLoginResumeAsync(this);
+        }
+
+        void OnTwoFactorLoginResume(TradeCapture orderEntry, object data, DateTime expireTime)
+        {
+            try
+            {
+                Console.WriteLine("One time password expiration time : " + expireTime);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
         void SubscribeTrades(DateTime from)

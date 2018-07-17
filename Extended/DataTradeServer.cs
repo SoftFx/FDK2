@@ -15,38 +15,76 @@
             dataTrade_ = dataTrade;
         }
 
-        /// <summary>
-        /// The method send two factor response with one time password.
-        /// </summary>
-        /// <param name="reason">Two factor response reason</param>
-        /// <param name="otp">One time password</param>
-        /// <returns>can not be null.</returns>
-        public void SendTwoFactorResponse(TwoFactorReason reason, string otp)
+        public DateTime SendTwoFactorLoginResponse(string oneTimePassword)
         {
-            if (reason == TwoFactorReason.ClientResponse)
-            {
-                lock (dataTrade_.synchronizer_)
-                {
-                    if (dataTrade_.orderEntryTwoFactorLogin_)
-                        dataTrade_.orderEntryClient_.TwoFactorLoginResponseAsync(null, otp);
+            return SendTwoFactorLoginResponseEx(oneTimePassword, dataTrade_.synchOperationTimeout_);
+        }
 
-                    if (dataTrade_.tradeCaptureTwoFactorLogin_)
-                        dataTrade_.tradeCaptureClient_.TwoFactorLoginResponseAsync(null, otp);
-                }
-            }
-            else if (reason == TwoFactorReason.ClientResume)
+        public DateTime SendTwoFactorLoginResponseEx(string oneTimePassword, int timeoutInMilliseconds)
+        {
+            lock (dataTrade_.synchronizer_)
             {
-                lock (dataTrade_.synchronizer_)
-                {
-                    if (dataTrade_.orderEntryTwoFactorLogin_)
-                        dataTrade_.orderEntryClient_.TwoFactorLoginResumeAsync(null);
-
-                    if (dataTrade_.tradeCaptureTwoFactorLogin_)
-                        dataTrade_.tradeCaptureClient_.TwoFactorLoginResumeAsync(null);
+                if (dataTrade_.orderEntryTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Request)
+                {                    
+                    dataTrade_.orderEntryClient_.TwoFactorLoginResponseAsync(null, oneTimePassword);
+                    dataTrade_.orderEntryTwoFactorLoginState_ = DataTrade.TwoFactorLoginState.Response;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", dataTrade_.orderEntryTwoFactorLoginState_);
                 }
+
+                if (dataTrade_.tradeCaptureTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Request)
+                {
+                    dataTrade_.tradeCaptureClient_.TwoFactorLoginResponseAsync(null, oneTimePassword);
+                    dataTrade_.tradeCaptureTwoFactorLoginState_ = DataTrade.TwoFactorLoginState.Response;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", dataTrade_.tradeCaptureTwoFactorLoginState_);
+                }
+
+                dataTrade_.twoFactorLoginState_ = DataTrade.TwoFactorLoginState.Response;
+                //Console.WriteLine("twoFactorLoginState_:{0}", dataTrade_.twoFactorLoginState_);
             }
-            else
-                throw new Exception("Invalid two factor reason : " + reason);
+
+            if (! dataTrade_.twoFactorLoginEvent_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (dataTrade_.twoFactorLoginException_ != null)
+                throw dataTrade_.twoFactorLoginException_;
+
+            return dataTrade_.twoFactorLoginExpiration_;
+        }
+
+        public DateTime SendTwoFactorLoginResume()
+        {
+            return SendTwoFactorLoginResumeEx(dataTrade_.synchOperationTimeout_);
+        }
+
+        public DateTime SendTwoFactorLoginResumeEx(int timeoutInMilliseconds)
+        {
+            lock (dataTrade_.synchronizer_)
+            {
+                if (dataTrade_.orderEntryTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Success)
+                {
+                    dataTrade_.orderEntryClient_.TwoFactorLoginResumeAsync(null);
+                    dataTrade_.orderEntryTwoFactorLoginState_ = DataTrade.TwoFactorLoginState.Resume;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", dataTrade_.orderEntryTwoFactorLoginState_);
+                }
+
+                if (dataTrade_.tradeCaptureTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Success)
+                {
+                    dataTrade_.tradeCaptureClient_.TwoFactorLoginResumeAsync(null);
+                    dataTrade_.tradeCaptureTwoFactorLoginState_ = DataTrade.TwoFactorLoginState.Resume;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", dataTrade_.tradeCaptureTwoFactorLoginState_);
+                }
+
+                dataTrade_.twoFactorLoginState_ = DataTrade.TwoFactorLoginState.Resume;
+                //Console.WriteLine("twoFactorLoginState_:{0}", dataTrade_.twoFactorLoginState_);
+            }
+
+            if (! dataTrade_.twoFactorLoginEvent_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (dataTrade_.twoFactorLoginException_ != null)
+                throw dataTrade_.twoFactorLoginException_;
+
+            return dataTrade_.twoFactorLoginExpiration_;
         }
 
         /// <summary>

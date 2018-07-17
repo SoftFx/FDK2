@@ -120,10 +120,6 @@
             quoteFeedClient_.DisconnectEvent += new QuoteFeed.DisconnectDelegate(this.OnDisconnect);
             quoteFeedClient_.ReconnectEvent += new QuoteFeed.ReconnectDelegate(this.OnReconnect);
             quoteFeedClient_.ReconnectErrorEvent += new QuoteFeed.ReconnectErrorDelegate(this.OnReconnectError);
-            quoteFeedClient_.TwoFactorLoginRequestEvent += new QuoteFeed.TwoFactorLoginRequestDelegate(this.OnTwoFactorLoginRequest);
-            quoteFeedClient_.TwoFactorLoginResultEvent += new QuoteFeed.TwoFactorLoginResultDelegate(this.OnTwoFactorLoginResult);
-            quoteFeedClient_.TwoFactorLoginErrorEvent += new QuoteFeed.TwoFactorLoginErrorDelegate(this.OnTwoFactorLoginError);
-            quoteFeedClient_.TwoFactorLoginResumeEvent += new QuoteFeed.TwoFactorLoginResumeDelegate(this.OnTwoFactorLoginResume);
             quoteFeedClient_.LoginResultEvent += new QuoteFeed.LoginResultDelegate(this.OnLoginResult);
             quoteFeedClient_.LoginErrorEvent += new QuoteFeed.LoginErrorDelegate(this.OnLoginError);
             quoteFeedClient_.LogoutResultEvent += new QuoteFeed.LogoutResultDelegate(this.OnLogoutResult);
@@ -242,11 +238,6 @@
         /// Occurs when data feed is logout.
         /// </summary>
         public event LogoutHandler Logout;
-
-        /// <summary>
-        /// Occurs when data feed is required two factor auth.
-        /// </summary>
-        public event TwoFactorAuthHandler TwoFactorAuth;
 
         /// <summary>
         /// Occurs when currencies information received or changed.
@@ -625,69 +616,6 @@
             try
             {
                 quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-            }
-            catch
-            {
-            }
-        }
-
-        void OnTwoFactorLoginRequest(QuoteFeed client, string text)
-        {
-            try
-            {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
-            }
-            catch
-            {
-            }
-        }
-
-        void OnTwoFactorLoginResult(QuoteFeed client, object data, DateTime expireTime)
-        {
-            try
-            {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
-            }
-            catch
-            {
-            }
-        }
-
-        void OnTwoFactorLoginError(QuoteFeed client, object data, Exception exception)
-        {
-            try
-            {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = exception.Message;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
-            }
-            catch
-            {
-            }
-        }
-
-        void OnTwoFactorLoginResume(QuoteFeed client, object data, DateTime expireTime)
-        {
-            try
-            {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
             }
             catch
             {
@@ -1617,24 +1545,6 @@
                     try
                     {
                         Logout(this, logoutEventArgs);
-                    }
-                    catch
-                    {
-                    }
-                }
-
-                return;
-            }
-
-            TwoFactorAuthEventArgs twoFactorAuthEventArgs = eventArgs as TwoFactorAuthEventArgs;
-
-            if (twoFactorAuthEventArgs != null)
-            {
-                if (TwoFactorAuth != null)
-                {
-                    try
-                    {
-                        TwoFactorAuth(this, twoFactorAuthEventArgs);
                     }
                     catch
                     {

@@ -83,8 +83,7 @@
         {
             this.Feed.Initialize(this.builder.ToString());
             this.Feed.Logon += this.OnLogon;
-            this.Feed.Logout += this.OnLogout;
-            this.Feed.TwoFactorAuth += this.OnTwoFactorAuth;
+            this.Feed.Logout += this.OnLogout;            
             this.Feed.Subscribed += this.OnSubscribed;
             this.Feed.Unsubscribed += this.OnUnsubscribed;
             this.Feed.SessionInfo += this.OnSessionInfo;
@@ -118,22 +117,6 @@
         protected virtual void OnLogout(object sender, LogoutEventArgs e)
         {
             Console.WriteLine("OnLogout(): {0}", e);
-        }
-
-        protected virtual void OnTwoFactorAuth(object sender, TwoFactorAuthEventArgs e)
-        {
-            if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerRequest)
-            {
-                Console.WriteLine("Two factor required! Please enter one time password: ");
-                var otp = Console.ReadLine();
-                Feed.Server.SendTwoFactorResponse(TwoFactorReason.ClientResponse, otp);
-            }
-            else if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerSuccess)
-                Console.WriteLine("Two factor success: {0}", e.TwoFactorAuth.Text);
-            else if (e.TwoFactorAuth.Reason == TwoFactorReason.ServerError)
-                Console.WriteLine("Two factor failed: {0}", e.TwoFactorAuth.Text);
-            else
-                Console.WriteLine("Invalid two factor server response: {0} - {1}", e.TwoFactorAuth.Reason, e.TwoFactorAuth.Text);
         }
 
         protected virtual void OnSubscribed(object sender, SubscribedEventArgs e)

@@ -6,16 +6,6 @@
     public enum TwoFactorReason
     {
         /// <summary>
-        /// None reason.
-        /// </summary>
-        None = -1,
-
-        /// <summary>
-        /// Unknown reason.
-        /// </summary>
-        Unknown = 0,
-
-        /// <summary>
         /// Server request two factor auth.
         /// </summary>
         ServerRequest = 1,
@@ -31,13 +21,8 @@
         ServerError = 3,
 
         /// <summary>
-        /// Client response two factor auth.
+        /// Server resume response two factor session.
         /// </summary>
-        ClientResponse = 4,
-
-        /// <summary>
-        /// Client resume two factor session.
-        /// </summary>
-        ClientResume = 5
+        ServerResume = 4
     }
 }

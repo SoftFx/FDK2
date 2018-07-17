@@ -175,6 +175,7 @@
             tradeCaptureClient_.TradeUpdateEvent += new TradeCapture.TradeUpdateDelegate(this.OnTradeUpdate);
             tradeCaptureClient_.NotificationEvent += new TradeCapture.NotificationDelegate(this.OnNotification);
 
+            twoFactorLoginEvent_ = new AutoResetEvent(false);
             loginEvent_ = new ManualResetEvent(false);
 
             eventQueue_ = new EventQueue(eventQueueSize);
@@ -318,8 +319,9 @@
                     if (started_)
                         throw new Exception(string.Format("Data trade is already started : {0}", name_));
 
-                    orderEntryTwoFactorLogin_ = false;
-                    tradeCaptureTwoFactorLogin_ = false;
+                    twoFactorLoginState_ = TwoFactorLoginState.None;                    
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.None;
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.None;                    
 
                     loginEvent_.Reset();
                     loginException_ = null;
@@ -655,14 +657,32 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryTwoFactorLogin_ = true;
-                }
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Request;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", orderEntryTwoFactorLoginState_);
 
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                    if (twoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Request;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);                        
+                    }
+                    else if (twoFactorLoginState_ == TwoFactorLoginState.Error)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Request;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
             }
             catch
             {
@@ -673,12 +693,46 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Success;
+                    orderEntryTwoFactorLoginException_ = null;
+                    orderEntryTwoFactorLoginExpiration_ = expireTime;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", orderEntryTwoFactorLoginState_);
+
+                    if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime < tradeCaptureTwoFactorLoginExpiration_ ? expireTime : tradeCaptureTwoFactorLoginExpiration_;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                        twoFactorAuth.Expire = twoFactorLoginExpiration_;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                        twoFactorAuth.Expire = expireTime;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -689,12 +743,58 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = exception.Message;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Error;                    
+                    orderEntryTwoFactorLoginException_ = exception;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", orderEntryTwoFactorLoginState_);
+
+                    if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Response)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -705,12 +805,46 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Success;
+                    orderEntryTwoFactorLoginException_ = null;
+                    orderEntryTwoFactorLoginExpiration_ = expireTime;
+                    //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", orderEntryTwoFactorLoginState_);
+
+                    if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime < tradeCaptureTwoFactorLoginExpiration_ ? expireTime : tradeCaptureTwoFactorLoginExpiration_;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerResume;
+                        twoFactorAuth.Expire = twoFactorLoginExpiration_;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerResume;
+                        twoFactorAuth.Expire = expireTime;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -1672,14 +1806,32 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureTwoFactorLogin_ = true;
-                }
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Request;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);
 
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                    if (twoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Request;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+                    }
+                    else if (twoFactorLoginState_ == TwoFactorLoginState.Error)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Request;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+                    }
+                }
             }
             catch
             {
@@ -1690,12 +1842,46 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Success;
+                    tradeCaptureTwoFactorLoginException_ = null;
+                    tradeCaptureTwoFactorLoginExpiration_ = expireTime;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+
+                    if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime < orderEntryTwoFactorLoginExpiration_ ? expireTime : orderEntryTwoFactorLoginExpiration_;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                        twoFactorAuth.Expire = twoFactorLoginExpiration_;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
+                        twoFactorAuth.Expire = expireTime;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -1706,12 +1892,58 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerError;
-                twoFactorAuth.Text = exception.Message;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Error;
+                    tradeCaptureTwoFactorLoginException_ = exception;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+
+                    if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Response)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
+                        twoFactorLoginException_ = exception;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerError;
+                        twoFactorAuth.Text = exception.Message;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -1722,12 +1954,46 @@
         {
             try
             {
-                TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
-                TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
-                twoFactorAuth.Reason = TwoFactorReason.ServerSuccess;
-                twoFactorAuth.Expire = expireTime;
-                args.TwoFactorAuth = twoFactorAuth;
-                eventQueue_.PushEvent(args);
+                lock (synchronizer_)
+                {
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Success;
+                    tradeCaptureTwoFactorLoginException_ = null;
+                    tradeCaptureTwoFactorLoginExpiration_ = expireTime;
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+
+                    if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Success)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime < orderEntryTwoFactorLoginExpiration_ ? expireTime : orderEntryTwoFactorLoginExpiration_;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerResume;
+                        twoFactorAuth.Expire = twoFactorLoginExpiration_;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                    else if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.None)
+                    {
+                        twoFactorLoginState_ = TwoFactorLoginState.Success;
+                        twoFactorLoginException_ = null;
+                        twoFactorLoginExpiration_ = expireTime;
+                        //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
+
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
+                        TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
+                        twoFactorAuth.Reason = TwoFactorReason.ServerResume;
+                        twoFactorAuth.Expire = expireTime;
+                        args.TwoFactorAuth = twoFactorAuth;
+                        eventQueue_.PushEvent(args);
+
+                        twoFactorLoginEvent_.Set();
+                    }
+                }
             }
             catch
             {
@@ -2395,6 +2661,16 @@
             return tradeRecord;
         }
 
+        internal enum TwoFactorLoginState
+        {
+            None,
+            Request,
+            Response,
+            Resume,
+            Success,
+            Error
+        }
+
         internal enum InitFlags
         {
             None = 0x00,
@@ -2433,12 +2709,22 @@
         internal OrderEntry orderEntryClient_;
         internal TradeCapture tradeCaptureClient_;
 
-        internal object synchronizer_;        
+        internal object synchronizer_;
         internal bool started_;
 
-        internal bool orderEntryTwoFactorLogin_;
-        internal bool tradeCaptureTwoFactorLogin_;
-        
+        internal TwoFactorLoginState twoFactorLoginState_;
+        internal DateTime twoFactorLoginExpiration_;
+        internal Exception twoFactorLoginException_;
+        internal AutoResetEvent twoFactorLoginEvent_;
+
+        internal TwoFactorLoginState orderEntryTwoFactorLoginState_;
+        internal DateTime orderEntryTwoFactorLoginExpiration_;
+        internal Exception orderEntryTwoFactorLoginException_;
+
+        internal TwoFactorLoginState tradeCaptureTwoFactorLoginState_;
+        internal DateTime tradeCaptureTwoFactorLoginExpiration_;
+        internal Exception tradeCaptureTwoFactorLoginException_;
+       
         internal ManualResetEvent loginEvent_;
         internal Exception loginException_;
         internal InitFlags initFlags_;
