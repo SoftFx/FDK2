@@ -24,6 +24,9 @@
         {
             lock (dataTrade_.synchronizer_)
             {
+                if (dataTrade_.twoFactorLoginState_ != DataTrade.TwoFactorLoginState.Request)
+                    throw new Exception("Two factor login is not requested");
+
                 if (dataTrade_.orderEntryTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Request)
                 {                    
                     dataTrade_.orderEntryClient_.TwoFactorLoginResponseAsync(null, oneTimePassword);
@@ -60,6 +63,9 @@
         {
             lock (dataTrade_.synchronizer_)
             {
+                if (dataTrade_.twoFactorLoginState_ != DataTrade.TwoFactorLoginState.Success)
+                    throw new Exception("Two factor login is not succeeded");
+
                 if (dataTrade_.orderEntryTwoFactorLoginState_ == DataTrade.TwoFactorLoginState.Success)
                 {
                     dataTrade_.orderEntryClient_.TwoFactorLoginResumeAsync(null);
