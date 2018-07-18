@@ -16,6 +16,16 @@
             bar_ = null;
         }
 
+        public DateTime AvailFrom
+        {
+            get { return barEnumerator_.AvailFrom; }
+        }
+
+        public DateTime AvailTo
+        {
+            get { return barEnumerator_.AvailTo; }
+        }
+
         public Bar Current
         {
             get { return bar_; }

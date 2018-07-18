@@ -16,6 +16,16 @@
             quote_ = null;
 		}
 
+        public DateTime AvailFrom
+        {
+            get { return quoteEnumerator_.AvailFrom; }
+        }
+
+        public DateTime AvailTo
+        {
+            get { return quoteEnumerator_.AvailTo; }
+        }
+
 		public Quote Current
 		{
 			get { return quote_; }

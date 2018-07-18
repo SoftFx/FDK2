@@ -22,6 +22,16 @@
             this.current = new PairBar();
         }
 
+        public DateTime AvailFrom
+        {
+            get { return bidEnumerator.AvailFrom < askEnumerator.AvailTo ? bidEnumerator.AvailFrom : askEnumerator.AvailFrom; }
+        }
+
+        public DateTime AvailTo
+        {
+            get { return bidEnumerator.AvailTo > askEnumerator.AvailTo ? bidEnumerator.AvailTo : askEnumerator.AvailTo; }
+        }
+
         public PairBar Current
         {
             get
