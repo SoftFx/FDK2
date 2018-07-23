@@ -71,7 +71,7 @@
 
             string serverCertificateName;
             if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
-                serverCertificateName = "*.soft-fx.com";
+                serverCertificateName = "CN=*.soft-fx.com";
 
             if (! connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
