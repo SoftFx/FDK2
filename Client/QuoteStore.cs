@@ -22,7 +22,7 @@ namespace TickTrader.FDK.Client
             bool logStates = false,
             bool logMessages = false,
             int port = 5050,
-            string serverCertificateName = "TickTraderManagerService",
+            string serverCertificateName = "*.soft-fx.com",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
