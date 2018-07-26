@@ -168,13 +168,13 @@
         {
             if (accountUpdate != null)
             {               
+                this.account.Balance = accountUpdate.Balance.GetValueOrDefault();
                 this.account.Currency = accountUpdate.Currency;
                 this.account.Type = accountUpdate.Type;
 
                 if (this.account.Type != AccountType.Cash)
                 {
-                    this.account.Balance = accountUpdate.Balance.Value;
-                    this.account.Leverage = accountUpdate.Leverage.Value;
+                    this.account.Leverage = accountUpdate.Leverage.GetValueOrDefault();
 
                     if (this.feed.Cache.Currencies.Select(o => o.Name).Contains(account.Currency))
                     {
@@ -182,13 +182,11 @@
                         this.account.RoundingService = new AccountRoundingService(FinancialRounding.Instance, precisionProvider, account.Currency);
                     }
                 }
-                else
-                    this.account.Balance = 0;
             }
 
             if (this.account.Type != AccountType.Cash)
             {
-                this.account.Balance = this.trade.Cache.AccountInfo.Balance.Value;
+                this.account.Balance = this.trade.Cache.AccountInfo.Balance.GetValueOrDefault();
             }
 
             if (currencyUpdate != null)
