@@ -14,9 +14,14 @@
 
         protected override void RunExample()
         {
-            var startTime = DateTime.Parse("06/01/2017 15:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
-            var endTime = DateTime.Parse("06/01/2017 15:59:59Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var historyInfo = this.Feed.Server.GetQuotesHistoryInfo("EURUSD", true);
+            Console.WriteLine("QuotesHistoryInfo: EURUSD, Level2");
+            Console.WriteLine(historyInfo);
 
+            var startTime = historyInfo.AvailFrom ?? DateTime.Parse("06/01/2017 15:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var endTime = startTime.AddHours(1);
+
+            Console.WriteLine("GetQuotesHistory: EURUSD, from {0} to {1}", startTime, endTime);
             var quotes = this.Feed.Server.GetQuotesHistory("EURUSD", startTime, endTime, 1);
 
             var sumSpread = 0D;

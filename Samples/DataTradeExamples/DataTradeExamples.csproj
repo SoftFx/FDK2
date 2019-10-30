@@ -34,14 +34,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
-    <Reference Include="TickTrader.FDK.Extended, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Bin\TickTrader.FDK.Extended.dll</HintPath>
-    </Reference>
-    <Reference Include="TickTrader.FDK.Common, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Bin\TickTrader.FDK.Common.dll</HintPath>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AccountHistoryExample.cs" />
@@ -62,6 +54,16 @@
     <Compile Include="TradeExample.cs" />
     <Compile Include="TradeHistoryExample.cs" />
     <Compile Include="TradeServerInfoExample.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Common\Common.csproj">
+      <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
+      <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Extended\Extended.csproj">
+      <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
+      <Name>Extended</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

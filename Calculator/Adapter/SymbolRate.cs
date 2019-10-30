@@ -23,12 +23,12 @@
 
         public decimal? NullableAsk
         {
-            get { return this.Ask; }
+            get { return (decimal?)this.price.Ask; }
         }
 
         public decimal? NullableBid
         {
-            get { return this.Bid; }
+            get { return (decimal?)this.price.Bid; }
         }
 
         public string Symbol

@@ -63,6 +63,11 @@
         /// <summary>
         /// 
         /// </summary>
-        PendingClose = 10
+        PendingClose = 10,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        Split = 11
     }
 }

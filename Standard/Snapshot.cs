@@ -234,8 +234,10 @@
                     Quote newQuote = new Quote();
                     newQuote.Symbol = element.Key;
                     newQuote.CreatingTime = quote.CreatingTime;
-                    newQuote.Bids.Add(new QuoteEntry { Price = element.Value.Bid, Volume = 0 });
-                    newQuote.Asks.Add(new QuoteEntry { Price = element.Value.Ask, Volume = 0 });
+                    if (element.Value.Bid != null)
+                        newQuote.Bids.Add(new QuoteEntry {Price = (double) element.Value.Bid, Volume = 0});
+                    if (element.Value.Ask != null)
+                        newQuote.Asks.Add(new QuoteEntry {Price = (double) element.Value.Ask, Volume = 0});
 
                     this.Quotes[element.Key] = newQuote;
                 }

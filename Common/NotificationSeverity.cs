@@ -6,6 +6,11 @@ namespace TickTrader.FDK.Common
     public enum NotificationSeverity
     {
         /// <summary>
+        /// Unknown.
+        /// </summary>
+        Unknown = -1,
+
+        /// <summary>
         /// Information message.
         /// </summary>
         Information = 1,

@@ -21,7 +21,7 @@ namespace QuoteStoreSyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5050;
+                int port = 5042;
 
                 var options = new OptionSet()
                 {
@@ -64,7 +64,8 @@ namespace QuoteStoreSyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteStore("QuoteStoreSyncSample", port : port, reconnectAttempts : 0, logMessages : true);
+            client_ = new QuoteStore("QuoteStoreSyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new QuoteStore.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new QuoteStore.DisconnectDelegate(this.OnDisconnect);
@@ -124,7 +125,7 @@ namespace QuoteStoreSyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -286,6 +287,115 @@ namespace QuoteStoreSyncSample
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
+                        else if (command == "vwap_quote_list" || command == "vwapql")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string degree = GetNextWord(line, ref pos);
+
+                            if (degree == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string count = GetNextWord(line, ref pos);
+
+                            if (count == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            GetVWAPQuoteList
+                            (
+                                symbol,
+                                short.Parse(degree),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                int.Parse(count)
+                            );
+                        }
+                        else if (command == "vwap_quote_download" || command == "vwapqd")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string degree = GetNextWord(line, ref pos);
+
+                            if (degree == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string to = GetNextWord(line, ref pos);
+
+                            if (to == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            DownloadQuotes
+                            (
+                                symbol,
+                                short.Parse(degree),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
+                            );
+                        }
+                        else if (command == "bars_history_info" || command == "bi")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+                            string periodicity = GetNextWord(line, ref pos);
+
+                            if (periodicity == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string pricetype = GetNextWord(line, ref pos);
+
+                            if (pricetype == null)
+                                throw new Exception("Invalid command : " + line);
+                            GetBarsHistoryInfo
+                            (
+                                symbol,
+                                periodicity,
+                                (PriceType)Enum.Parse(typeof(PriceType), pricetype)
+                            );
+                        }
+                        else if (command == "ticks_history_info" || command == "ti")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string level2 = GetNextWord(line, ref pos);
+
+                            GetTicksHistoryInfo
+                            (
+                                symbol,
+                                level2 != null && level2.ToLower() == "level2"
+                            );
+                        }
+                        else if (command == "vwap_ticks_history_info" || command == "vwapti")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string degree = GetNextWord(line, ref pos);
+
+                            GetVWAPTicksHistoryInfo
+                            (
+                                symbol,
+                                short.Parse(degree)
+                            );
+                        }
                         else if (command == "exit" || command == "e")
                         {
                             break;
@@ -306,7 +416,7 @@ namespace QuoteStoreSyncSample
         }
 
         void Connect()
-        {            
+        {
             client_.Connect(address_, Timeout);
 
             try
@@ -333,12 +443,12 @@ namespace QuoteStoreSyncSample
             try
             {
                 LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
-                
+
                 Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
             {
-            }            
+            }
 
             string text = client_.Disconnect("Client disconnect");
 
@@ -355,6 +465,11 @@ namespace QuoteStoreSyncSample
             Console.WriteLine("bar_download (bd) <symbol> <side> <periodicity> <from> <to> - download symbol bars");
             Console.WriteLine("quote_list (ql) <symbol> <depth> <from> <count> - request symbol quote list");
             Console.WriteLine("quote_download (qd) <symbol> <depth> <from> <to> - download symbol quotes");
+            Console.WriteLine("vwap_quote_list (vwapql) <symbol> <degree> <from> <count> - request symbol quote list");
+            Console.WriteLine("vwap_quote_download (vwapqd) <symbol> <degree> <from> <to> - download symbol quotes");
+            Console.WriteLine("bars_history_info (bi) <symbol> <periodicity> <pricetype> - request bars history info");
+            Console.WriteLine("ticks_history_info (ti) <symbol> <level2> - request ticks history info");
+            Console.WriteLine("vwap_ticks_history_info (vwapti) <symbol> <level2> - request ticks history info");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -436,6 +551,36 @@ namespace QuoteStoreSyncSample
                     Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
 
                 Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+                Console.Error.WriteLine();
+            }
+        }
+
+        void GetVWAPQuoteList(string symbol, short degree, DateTime from, int count)
+        {
+            Quote[] quotes = client_.GetVWAPQuoteList(symbol, degree, from, count, -1);
+
+            for (int index = 0; index < quotes.Length; ++index)
+            {
+                Quote quote = quotes[index];
+
+                Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
+                Console.Error.Write("    Bid :");
+
+                foreach (QuoteEntry entry in quote.Bids)
+                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Ask :");
+
+                foreach (QuoteEntry entry in quote.Asks)
+                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+                Console.Error.WriteLine();
             }
         }
 
@@ -461,15 +606,79 @@ namespace QuoteStoreSyncSample
                     foreach (QuoteEntry entry in quote.Asks)
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
 
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+
                     Console.Error.WriteLine();
                 }
 
-                Console.Error.WriteLine("--------------------------------------------------------------------------------");                
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
             }
             finally
             {
                 enumerator.Close();
             }
+        }
+        void DownloadQuotes(string symbol, short degree, DateTime from, DateTime to)
+        {
+            DownloadQuotesEnumerator enumerator = client_.DownloadVWAPQuotes(symbol, degree, from, to, -1);
+
+            try
+            {
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+
+                for (Quote quote = enumerator.Next(-1); quote != null; quote = enumerator.Next(-1))
+                {
+                    Console.Error.WriteLine("Quote : {0}", quote.CreatingTime);
+                    Console.Error.Write("    Bid :");
+
+                    foreach (QuoteEntry entry in quote.Bids)
+                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Ask :");
+
+                    foreach (QuoteEntry entry in quote.Asks)
+                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+                    Console.Error.WriteLine();
+                }
+
+                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+            }
+            finally
+            {
+                enumerator.Close();
+            }
+        }
+
+        void GetBarsHistoryInfo(string symbol, string periodicity, PriceType priceType)
+        {
+            HistoryInfo historyInfo = client_.GetBarsHistoryInfo(symbol, new BarPeriod(periodicity), priceType, -1);
+            Console.WriteLine("--------------------------------------------------------------------------------");
+            Console.WriteLine("Bars History Info: {0}", historyInfo);
+            Console.WriteLine("--------------------------------------------------------------------------------");
+        }
+
+        void GetTicksHistoryInfo(string symbol, bool level2)
+        {
+            HistoryInfo historyInfo = client_.GetQuotesHistoryInfo(symbol, level2, -1);
+            Console.WriteLine("--------------------------------------------------------------------------------");
+            Console.WriteLine("Ticks History Info: {0}", historyInfo);
+            Console.WriteLine("--------------------------------------------------------------------------------");
+        }
+
+        void GetVWAPTicksHistoryInfo(string symbol, short degree)
+        {
+            HistoryInfo historyInfo = client_.GetVWAPQuotesHistoryInfo(symbol, degree, -1);
+            Console.WriteLine("--------------------------------------------------------------------------------");
+            Console.WriteLine("VWAP Ticks History Info: {0}", historyInfo);
+            Console.WriteLine("--------------------------------------------------------------------------------");
         }
 
         void OnDisconnect(QuoteStore client, string text)

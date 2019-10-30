@@ -19,7 +19,7 @@ namespace TradeCaptureAsyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5060;
+                int port = 5044;
 
                 var options = new OptionSet()
                 {
@@ -62,7 +62,8 @@ namespace TradeCaptureAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new TradeCapture("TradeCaptureAsyncSample", port : port, logMessages : true);
+            client_ = new TradeCapture("TradeCaptureAsyncSample", port : port, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
             client_.ConnectErrorEvent += new TradeCapture.ConnectErrorDelegate(this.OnConnectError);
@@ -84,7 +85,7 @@ namespace TradeCaptureAsyncSample
             client_.SubscribeTradesResultEndEvent += new TradeCapture.SubscribeTradesResultEndDelegate(this.OnSubscribeTradesResultEnd);
             client_.SubscribeTradesErrorEvent += new TradeCapture.SubscribeTradesErrorDelegate(this.OnSubscribeTradesError);
             client_.UnsubscribeTradesResultEvent += new TradeCapture.UnsubscribeTradesResultDelegate(this.OnUnsubscribeTradesResult);
-            client_.UnsubscribeTradesErrorEvent += new TradeCapture.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);            
+            client_.UnsubscribeTradesErrorEvent += new TradeCapture.UnsubscribeTradesErrorDelegate(this.OnUnsubscribeTradesError);
             client_.DownloadTradesResultBeginEvent += new TradeCapture.DownloadTradesResultBeginDelegate(this.OnDownloadTradesResultBegin);
             client_.DownloadTradesResultEvent += new TradeCapture.DownloadTradesResultDelegate(this.OnDownloadTradesResult);
             client_.DownloadTradesResultEndEvent += new TradeCapture.DownloadTradesResultEndDelegate(this.OnDownloadTradesResultEnd);
@@ -150,7 +151,7 @@ namespace TradeCaptureAsyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -359,6 +360,11 @@ namespace TradeCaptureAsyncSample
             try
             {
                 Console.WriteLine("Login succeeded");
+
+                Console.WriteLine("Download trades for today");
+                DownloadTrades(TimeDirection.Forward, DateTime.UtcNow.Date, DateTime.UtcNow);
+                Console.WriteLine("Subscribe for trades");
+                SubscribeTrades(DateTime.UtcNow);
             }
             catch (Exception exception)
             {
@@ -534,7 +540,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}", 
+                        "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -611,7 +617,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+                Console.Error.WriteLine("Trade Reports:------------------------------------------------------------------");
             }
             catch (Exception exception)
             {
@@ -628,7 +634,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
+                        "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -642,11 +648,28 @@ namespace TradeCaptureAsyncSample
                         tradeTransactionReport.Comment
                     );
                 }
+                else if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.BalanceTransaction)
+                {
+                    Console.Error.WriteLine
+                    (
+                        "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}",
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason,
+                        tradeTransactionReport.Id,
+                        tradeTransactionReport.AccountBalance,
+                        tradeTransactionReport.TransactionAmount,
+                        tradeTransactionReport.Commission,
+                        tradeTransactionReport.Tax,
+                        tradeTransactionReport.Comment
+                    );
+                }
                 else
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade report : {0}, {1}, {2}, {3}", 
+                        "{0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -710,11 +733,11 @@ namespace TradeCaptureAsyncSample
                     "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
                     accountReport.Timestamp,
                     accountReport.AccountId,
-                    accountReport.Type,                    
-                    accountReport.BalanceCurrency, 
-                    accountReport.Leverage, 
-                    accountReport.Balance, 
-                    accountReport.Margin, 
+                    accountReport.Type,
+                    accountReport.BalanceCurrency,
+                    accountReport.Leverage,
+                    accountReport.Balance,
+                    accountReport.Margin,
                     accountReport.Equity
                 );
             }
@@ -757,7 +780,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}, {11}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -768,6 +791,24 @@ namespace TradeCaptureAsyncSample
                         tradeTransactionReport.OrderSide,
                         tradeTransactionReport.OrderLastFillAmount,
                         tradeTransactionReport.OrderFillPrice,
+                        tradeTransactionReport.Commission,
+                        tradeTransactionReport.Comment
+                    );
+                }
+                else if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.BalanceTransaction)
+                {
+                    Console.Error.WriteLine
+                    (
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}",
+                        tradeTransactionReport.TradeTransactionId,
+                        tradeTransactionReport.TransactionTime,
+                        tradeTransactionReport.TradeTransactionReportType,
+                        tradeTransactionReport.TradeTransactionReason,
+                        tradeTransactionReport.Id,
+                        tradeTransactionReport.AccountBalance,
+                        tradeTransactionReport.TransactionAmount,
+                        tradeTransactionReport.Commission,
+                        tradeTransactionReport.Tax,
                         tradeTransactionReport.Comment
                     );
                 }
@@ -775,7 +816,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}", 
+                        "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,

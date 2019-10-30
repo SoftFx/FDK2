@@ -5,6 +5,13 @@
     using System.Collections.Generic;
     using System.Diagnostics;
 
+    public enum ProxyType
+    {
+        None,
+        Socks4,
+        Socks5
+    }
+
     public class ConnectionStringBuilder
     {
         /// <summary>
@@ -111,6 +118,41 @@
         /// If true, the FDK logs messages.
         /// </summary>
         public bool? LogMessages { get; set; }
+
+        /// <summary>
+        /// If true, the FDK logs quote feed messages.
+        /// </summary>
+        public bool? LogQuoteFeedMessages { get; set; }
+
+        /// <summary>
+        /// If true, the FDK logs quote store messages.
+        /// </summary>
+        public bool? LogQuoteStoreMessages { get; set; }
+
+        /// <summary>
+        /// Gets or sets the proxy connection type of the data feed/trade instance. 
+        /// </summary>
+        public ProxyType ProxyType { get; set; }
+
+        /// <summary>
+        /// Gets or sets trading proxy address of the data feed/trade instance. 
+        /// </summary>
+        public string ProxyAddress { get; set; }
+
+        /// <summary>
+        /// Gets or sets proxy port. 
+        /// </summary>
+        public int? ProxyPort { get; set; }
+
+        /// <summary>
+        /// Gets or sets the username of the proxy connection.
+        /// </summary>
+        public string ProxyUsername { get; set; }
+
+        /// <summary>
+        /// Gets or sets the password of the proxy connection.
+        /// </summary>
+        public string ProxyPassword { get; set; }
 
         /// <summary>
         /// Makes and returns connection string.
@@ -249,6 +291,59 @@
                     stringBuilder.Append(";");
 
                 stringBuilder.AppendFormat("[Boolean]LogMessages={0}", LogMessages);
+            }
+
+            if (LogQuoteFeedMessages != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Boolean]LogQuoteFeedMessages={0}", LogQuoteFeedMessages);
+            }
+
+            if (LogQuoteStoreMessages != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Boolean]LogQuoteStoreMessages={0}", LogQuoteStoreMessages);
+            }
+
+            if (stringBuilder.Length != 0)
+                stringBuilder.Append(";");
+
+            stringBuilder.AppendFormat("[Int32]ProxyType={0}", (int)ProxyType);
+
+            if (ProxyAddress != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[String]ProxyAddress={0}", ProxyAddress);
+            }
+
+            if (ProxyPassword != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[String]ProxyPassword={0}", ProxyPassword);
+            }
+
+            if (ProxyUsername != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[String]ProxyUsername={0}", ProxyUsername);
+            }
+
+            if (ProxyPort != null)
+            {
+                if (stringBuilder.Length != 0)
+                    stringBuilder.Append(";");
+
+                stringBuilder.AppendFormat("[Int32]ProxyPort={0}", ProxyPort);
             }
 
             return stringBuilder.ToString();

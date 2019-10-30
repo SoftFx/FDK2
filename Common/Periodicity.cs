@@ -193,6 +193,11 @@ namespace TickTrader.FDK.Common
             }
         }
 
+        public DateTime GetPeriodEndTime(DateTime anyTimeFromPeriod)
+        {
+            return GetPeriodStartTime(anyTimeFromPeriod).Add(Interval, IntervalsCount);
+        }
+
         public DateTime Shift(DateTime timestamp, int count)
         {
             return timestamp.Add(Interval, IntervalsCount * count);

@@ -28,5 +28,16 @@
         /// Gets currency precision.
         /// </summary>
         public int Precision { get; set; }
+
+        /// <summary>
+        /// Gets currency type.
+        /// </summary>
+        public CurrencyType Type { get; set; }
+
+        /// <summary>
+        /// Gets currency Tax.
+        /// </summary>
+        public double Tax { get; set; }
+
     }
 }

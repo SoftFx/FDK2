@@ -183,6 +183,11 @@
         /// </summary>
         public int? Magic { get; set; }
 
+        /// <summary>
+        /// Gets slippage.
+        /// </summary>
+        public double? Slippage { get; set; }
+
         #endregion
 
         #region Computing properties
@@ -258,9 +263,9 @@
         /// <param name="newTag">A new comment</param>
         /// <param name="newMagic">A new comment</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord Modify(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic)
+        public TradeRecord Modify(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, bool? immediateOrCancelFlag, double? slippage)
         {
-            return ModifyEx(newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, newComment, newTag, newMagic, this.DataTrade.synchOperationTimeout_);
+            return ModifyEx(newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, newComment, newTag, newMagic, this.DataTrade.synchOperationTimeout_, immediateOrCancelFlag, slippage);
         }
 
         /// <summary>
@@ -276,9 +281,9 @@
         /// <param name="newMagic">A new comment</param>
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyEx(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
+        public TradeRecord ModifyEx(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(this.OrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, true, null, newComment, newTag, newMagic, timeoutInMilliseconds);
+            return DataTrade.Server.ModifyTradeRecordEx(this.OrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, false, null, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage);
         }
 
         /// <summary>
@@ -295,9 +300,9 @@
         /// <param name="newMagic">A new comment</param>
         /// <param name="timeoutInMilliseconds">Timeout of the operation in milliseconds.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyEx(string operationId, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds)
+        public TradeRecord ModifyEx(string operationId, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, this.ClientOrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, true, null, newComment, newTag, newMagic, timeoutInMilliseconds);
+            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, this.ClientOrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, false, null, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage);
         }
 
         /// <summary>

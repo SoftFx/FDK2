@@ -6,6 +6,10 @@
     public enum AccountType
     {
         /// <summary>
+        /// </summary>
+        None = -1,
+
+        /// <summary>
         /// Net accounting is similar to bank accounting.
         /// </summary>
         Net = 0,

@@ -26,7 +26,7 @@
                 OperationTimeout = 30000
             };
 
-            this.Trade = new DataTrade(dataTradeBuilder.ToString());
+            this.Trade = new DataTrade(dataTradeBuilder.ToString(), (sender, certificate, chain, errors, port) => true);
             this.Trade.Logon += this.OnDataTradeLogon;
             this.Trade.Logout += this.OnDataTradeLogout;
 
@@ -40,7 +40,7 @@
                 OperationTimeout = 30000
             };
             
-            this.Feed = new DataFeed(dataFeedBuilder.ToString());
+            this.Feed = new DataFeed(dataFeedBuilder.ToString(), (sender, certificate, chain, errors, port) => true);
             this.Feed.Logon += this.OnDataFeedLogon;
             this.Feed.Logout += this.OnDataFeedLogout;            
         }

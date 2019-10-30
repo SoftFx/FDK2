@@ -64,7 +64,7 @@
 
         public void Run()
         {
-            this.Trade.Initialize(this.builder.ToString());
+            this.Trade.Initialize(this.builder.ToString(), (sender, certificate, chain, errors, port) => true);
             this.Trade.Logon += this.OnLogon;
             this.Trade.Logout += this.OnLogout;
             this.Trade.TwoFactorAuth += this.OnTwoFactorAuth;

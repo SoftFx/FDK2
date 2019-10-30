@@ -5,6 +5,8 @@
     /// </summary>
     public enum OrderSide
     {
+        None = -1,
+
         /// <summary>
         /// Specifies 'Position buy', 'Limit buy' or 'Stop buy'.
         /// </summary>

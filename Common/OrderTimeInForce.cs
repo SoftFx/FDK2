@@ -2,6 +2,8 @@
 {
     public enum OrderTimeInForce
     {
+        Other = -1, 
+
         GoodTillCancel,
 
         ImmediateOrCancel,

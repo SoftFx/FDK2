@@ -131,6 +131,47 @@
         /// </summary>
         public double? UsdToProfitCurrencyConversionRate { get; set; }
 
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? BalanceCurrencyToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? ReportToBalanceCurrencyConversionRate { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? ProfitCurrencyToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public double? ReportToProfitCurrencyConversionRate { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public string ReportCurrency { get; set; }
+
+        /// <summary>
+        /// Token Commission Currency.
+        /// </summary>
+        public string TokenCommissionCurrency { get; set; }
+
+        /// <summary>
+        /// Token Commission Currency Discount
+        /// </summary>
+        public double? TokenCommissionCurrencyDiscount { get; set; }
+
+        /// <summary>
+        /// Gets whether token commission is enabled or not.
+        /// </summary>
+        public bool IsTokenCommissionEnabled { get; set; }
+
         public AccountReport Clone()
         {
             AccountReport accountReport = new AccountReport();
@@ -156,6 +197,14 @@
             accountReport.UsdToBalanceCurrencyConversionRate = UsdToBalanceCurrencyConversionRate;
             accountReport.ProfitCurrencyToUsdConversionRate = ProfitCurrencyToUsdConversionRate;
             accountReport.UsdToProfitCurrencyConversionRate = UsdToProfitCurrencyConversionRate;
+            accountReport.BalanceCurrencyToReportConversionRate = BalanceCurrencyToReportConversionRate;
+            accountReport.ReportToBalanceCurrencyConversionRate = ReportToBalanceCurrencyConversionRate;
+            accountReport.ProfitCurrencyToReportConversionRate = ProfitCurrencyToReportConversionRate;
+            accountReport.ReportToProfitCurrencyConversionRate = ReportToProfitCurrencyConversionRate;
+            accountReport.ReportCurrency = ReportCurrency;
+            accountReport.TokenCommissionCurrency = TokenCommissionCurrency;
+            accountReport.TokenCommissionCurrencyDiscount = TokenCommissionCurrencyDiscount;
+            accountReport.IsTokenCommissionEnabled = IsTokenCommissionEnabled;
 
             return accountReport;
         }

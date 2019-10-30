@@ -6,6 +6,10 @@
     public enum OrderType
     {
         /// <summary>
+        /// </summary>
+        None = -1, 
+
+        /// <summary>
         /// An order that an investor makes through a broker or brokerage service to buy or sell an investment immediately at the best available current price.
         /// </summary>
         Market = 0,

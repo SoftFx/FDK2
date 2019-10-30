@@ -42,6 +42,11 @@
         public DateTime CloseTime { get; set; }
 
         /// <summary>
+        /// Disabled features.
+        /// </summary>
+        public OffTimeDisabledFeatures DisabledFeatures { get; set; }
+
+        /// <summary>
         /// Returns string representation.
         /// </summary>
         public override string ToString()

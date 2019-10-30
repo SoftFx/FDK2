@@ -35,7 +35,7 @@
             var records = new List<TradeRecord>(account.Trades.Count);
             var positions = new List<Position>(account.Trades.Count);
 
-            ResetPositionsProfit(account.Trades);
+            ResetPositionsProfitAndMargin(account.Trades);
 
             foreach (var element in account.Trades)
             {
@@ -49,10 +49,13 @@
             this.Assets = new Dictionary<string, Asset>(assets);
         }
 
-        static void ResetPositionsProfit(IEnumerable<TradeEntry> entries)
+        static void ResetPositionsProfitAndMargin(IEnumerable<TradeEntry> entries)
         {
             foreach (var position in entries.Select(o => o.Tag).OfType<Position>())
+            {
                 position.Profit = null;
+                position.Margin = null;
+            }
         }
 
         static bool TryProcessAsTradeRecord(TradeEntry entry, ICollection<TradeRecord> records)
@@ -77,7 +80,8 @@
 
             if (entry.Profit.HasValue)
                 position.Profit = position.Profit.GetValueOrDefault() + entry.Profit;
-            position.Margin = entry.Margin;
+            if (entry.Margin.HasValue)
+                position.Margin = position.Margin.GetValueOrDefault() + entry.Margin;
 
             // some magic; see Calculate method of state calcualtor
             if (entry.Side == OrderSide.Buy)

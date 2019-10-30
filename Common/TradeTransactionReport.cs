@@ -376,6 +376,81 @@
         /// </summary>
         public double? MinCommissionConversionRate { get; set; }
 
+        /// <summary>
+        /// Gets ImmediateOrCancel flag.
+        /// </summary>
+        public bool ImmediateOrCancel { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? Slippage { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? MarginCurrencyToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? ReportToMarginCurrencyConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? ProfitCurrencyToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? ReportToProfitCurrencyConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? SrcAssetToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? ReportToSrcAssetConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? DstAssetToReportConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? ReportToDstAssetConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public string ReportCurrency { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public string TokenCommissionCurrency { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? TokenCommissionCurrencyDiscount { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? TokenCommissionConversionRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? SplitRatio { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? DividendGrossRate { get; set; }
+
+        /// <summary>
+        /// </summary>
+        public double? DividendToBalanceConversionRate { get; set; }
+
+        /// <summary>
+        /// Tax.
+        /// </summary>
+        public double Tax { get; set; }
+
+
         public TradeTransactionReport Clone()
         {
             TradeTransactionReport tradeTransactionReport = new TradeTransactionReport();
@@ -455,6 +530,20 @@
             tradeTransactionReport.UsdToDstAssetConversionRate = UsdToDstAssetConversionRate;
             tradeTransactionReport.MinCommissionCurrency = MinCommissionCurrency;
             tradeTransactionReport.MinCommissionConversionRate = MinCommissionConversionRate;
+            tradeTransactionReport.ImmediateOrCancel = ImmediateOrCancel;
+            tradeTransactionReport.Slippage = Slippage;
+            tradeTransactionReport.MarginCurrencyToReportConversionRate = MarginCurrencyToReportConversionRate;
+            tradeTransactionReport.ReportToMarginCurrencyConversionRate = ReportToMarginCurrencyConversionRate;
+            tradeTransactionReport.ProfitCurrencyToReportConversionRate = ProfitCurrencyToReportConversionRate;
+            tradeTransactionReport.ReportToProfitCurrencyConversionRate = ReportToProfitCurrencyConversionRate;
+            tradeTransactionReport.SrcAssetToReportConversionRate = SrcAssetToReportConversionRate;
+            tradeTransactionReport.ReportToSrcAssetConversionRate = ReportToSrcAssetConversionRate;
+            tradeTransactionReport.DstAssetToReportConversionRate = DstAssetToReportConversionRate;
+            tradeTransactionReport.ReportToDstAssetConversionRate = ReportToDstAssetConversionRate;
+            tradeTransactionReport.ReportCurrency = ReportCurrency;
+            tradeTransactionReport.TokenCommissionCurrency = TokenCommissionCurrency;
+            tradeTransactionReport.TokenCommissionCurrencyDiscount = TokenCommissionCurrencyDiscount;
+            tradeTransactionReport.TokenCommissionConversionRate = TokenCommissionConversionRate;
 
             return tradeTransactionReport;
         }

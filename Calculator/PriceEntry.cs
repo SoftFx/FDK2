@@ -14,12 +14,12 @@
         /// <summary>
         /// The best price of bids.
         /// </summary>
-        public double Bid { get; private set; }
+        public double? Bid { get; private set; }
 
         /// <summary>
         /// The best price of asks.
         /// </summary>
-        public double Ask { get; private set; }
+        public double? Ask { get; private set; }
 
         #endregion
 
@@ -30,7 +30,7 @@
         /// </summary>
         /// <param name="bid">a price for bid</param>
         /// <param name="ask">a price for ask</param>
-        internal PriceEntry(double bid, double ask)
+        internal PriceEntry(double? bid, double? ask)
             : this()
         {
             this.Bid = bid;
@@ -46,7 +46,7 @@
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double PriceFromSide(OrderSide side)
+        public double? PriceFromSide(OrderSide side)
         {
             if (side == OrderSide.Buy)
                 return this.Ask;
@@ -62,7 +62,7 @@
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double PriceFromOppositeSide(OrderSide side)
+        public double? PriceFromOppositeSide(OrderSide side)
         {
             switch (side)
             {
@@ -85,7 +85,7 @@
         /// </summary>
         /// <param name="profit">a converting profit</param>
         /// <returns></returns>
-        public double PriceMultiplierFromProfit(double profit)
+        public double? PriceMultiplierFromProfit(double profit)
         {
             // Price1 - ask if Py < 0, bid if Py >= 0;
             if (profit >= 0)
@@ -103,7 +103,7 @@
         /// </summary>
         /// <param name="profit">a converting profit</param>
         /// <returns></returns>
-        public double PriceDivisorFromProfit(double profit)
+        public double? PriceDivisorFromProfit(double profit)
         {
             // Price2 - bid if Py < 0, ask if Py >= 0;
             if (profit >= 0)
@@ -118,7 +118,7 @@
         /// </summary>
         /// <param name="asset">a converting asset</param>
         /// <returns></returns>
-        public double PriceMultiplierFromAsset(double asset)
+        public double? PriceMultiplierFromAsset(double asset)
         {
             if (asset >= 0)
                 return this.Bid;
@@ -132,7 +132,7 @@
         /// </summary>
         /// <param name="asset">a converting asset</param>
         /// <returns></returns>
-        public double PriceDivisorFromAsset(double asset)
+        public double? PriceDivisorFromAsset(double asset)
         {
             if (asset >= 0)
                 return this.Ask;

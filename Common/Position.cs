@@ -77,12 +77,23 @@
         public double? AskPrice { get; set; }
 
         /// <summary>
+        /// 
+        /// </summary>
+        public string PosId { get; set; }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public PosReportType PosReportType { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("Symbol = {0}; Buy Price = {1}; Buy Amount = {2}; Sell Price = {3}; Sell Amount = {4}", this.Symbol, this.BuyPrice, this.BuyAmount, this.SellPrice, this.SellAmount);
+            return
+                $"#{PosId}; Symbol = {Symbol}; Buy Price = {BuyPrice}; Buy Amount = {BuyAmount}; Sell Price = {SellPrice}; Sell Amount = {SellAmount}";
         }
     }
 }

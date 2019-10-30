@@ -20,8 +20,8 @@ namespace TickTrader.FDK.Client.Serialization
 
         public void Deserialize(Quote quote)
         {
-            int year, mon, day, hour, min, sec, msec;           
-            
+            int year, mon, day, hour, min, sec, msec;
+
             streamParser_.ReadInt32(out year);
             streamParser_.ValidateVerbatimChar('.');
             streamParser_.ReadInt32(out mon);
@@ -49,29 +49,43 @@ namespace TickTrader.FDK.Client.Serialization
 
             quote.CreatingTime = new DateTime(year, mon, day, hour, min, sec, msec, DateTimeKind.Utc);
 
+            bool haveIndicativeBid = false;
+            bool haveIndicativeAsk = false;
+
+            quote.Bids.Clear();
+            quote.Asks.Clear();
+
             if (quoteDepth_ == QuoteDepth.Top)
             {
+
                 double ask_price, ask_vol, bid_price, bid_vol;
 
                 streamParser_.ValidateVerbatimChar('\t');
-                streamParser_.ReadDouble(out bid_price);
-                streamParser_.ValidateVerbatimChar('\t');
-                streamParser_.ReadDouble(out bid_vol);
-                streamParser_.ValidateVerbatimChar('\t');
-                streamParser_.ReadDouble(out ask_price);
-                streamParser_.ValidateVerbatimChar('\t');
-                streamParser_.ReadDouble(out ask_vol);
 
-                quote.Bids.Clear();
-                quote.Bids.Add(new QuoteEntry { Price = bid_price, Volume = bid_vol });
+                if (!streamParser_.TryValidateVerbatimChar('\t'))
+                {
+                    streamParser_.ReadDouble(out bid_price);
+                    streamParser_.ValidateVerbatimChar('\t');
+                    streamParser_.ReadDouble(out bid_vol);
+                    if (bid_vol <= 0)
+                        haveIndicativeBid = true;
+                    quote.Bids.Add(new QuoteEntry { Price = bid_price, Volume = Math.Abs(bid_vol) });
+                }
 
-                quote.Asks.Clear();
-                quote.Asks.Add(new QuoteEntry { Price = ask_price, Volume = ask_vol });
+                streamParser_.ValidateVerbatimChar('\t');
+
+                if (!streamParser_.TryValidateVerbatimChar('\t'))
+                {
+                    streamParser_.ReadDouble(out ask_price);
+                    streamParser_.ValidateVerbatimChar('\t');
+                    streamParser_.ReadDouble(out ask_vol);
+                    if (ask_vol <= 0)
+                        haveIndicativeAsk = true;
+                    quote.Asks.Add(new QuoteEntry { Price = ask_price, Volume = Math.Abs(ask_vol) });
+                }
             }
             else
             {
-                quote.Bids.Clear();
-                quote.Asks.Clear();
 
                 PriceType recType = PriceType.Bid;
                 QuoteEntry l2R = new QuoteEntry();
@@ -92,17 +106,24 @@ namespace TickTrader.FDK.Client.Serialization
                         {
                             double pr;
                             double vl;
-                            
+
                             streamParser_.ReadDouble(out pr);
                             streamParser_.ValidateVerbatimChar('\t');
                             streamParser_.ReadDouble(out vl);
 
+                            if (vl <= 0)
+                            {
+                                if (recType == PriceType.Bid)
+                                    haveIndicativeBid = true;
+                                else haveIndicativeAsk = true;
+                            }
+
                             l2R.Price = pr;
-                            l2R.Volume = vl;
+                            l2R.Volume = Math.Abs(vl);
 
                             if (recType == PriceType.Bid)
                             {
-                                quote.Bids.Add(l2R);                                
+                                quote.Bids.Add(l2R);
                             }
                             else
                                 quote.Asks.Add(l2R);
@@ -117,6 +138,23 @@ namespace TickTrader.FDK.Client.Serialization
 
             streamParser_.ValidateVerbatimChar('\r');
             streamParser_.ValidateVerbatimChar('\n');
+
+            if (!haveIndicativeBid && !haveIndicativeAsk)
+            {
+                quote.IndicativeTick = false;
+                quote.TickType = TickTypes.Normal;
+            }
+            else
+            {
+                quote.IndicativeTick = true;
+
+                if (haveIndicativeBid && haveIndicativeAsk)
+                    quote.TickType = TickTypes.IndicativeBidAsk;
+                if (haveIndicativeBid && !haveIndicativeAsk)
+                    quote.TickType = TickTypes.IndicativeBid;
+                if (!haveIndicativeBid && haveIndicativeAsk)
+                    quote.TickType = TickTypes.IndicativeAsk;
+            }
         }
 
         QuoteDepth quoteDepth_;

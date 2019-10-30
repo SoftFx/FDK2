@@ -18,7 +18,7 @@ namespace QuoteFeedAsyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5030;
+                int port = 5041;
 
                 var options = new OptionSet()
                 {
@@ -61,7 +61,8 @@ namespace QuoteFeedAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteFeed("QuoteFeedAsyncSample", port : port, logMessages : true);
+            client_ = new QuoteFeed("QuoteFeedAsyncSample", port : port, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
             client_.ConnectErrorEvent += new QuoteFeed.ConnectErrorDelegate(this.OnConnectError);
@@ -85,7 +86,7 @@ namespace QuoteFeedAsyncSample
             client_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             client_.UnsubscribeQuotesErrorEvent += new QuoteFeed.UnsubscribeQuotesErrorDelegate(this.OnUnsubscribeQuotesError);
             client_.QuotesResultEvent += new QuoteFeed.QuotesResultDelegate(this.OnQuotesResult);
-            client_.QuotesErrorEvent += new QuoteFeed.QuotesErrorDelegate(this.OnQuotesError);            
+            client_.QuotesErrorEvent += new QuoteFeed.QuotesErrorDelegate(this.OnQuotesError);
             client_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
 
@@ -121,7 +122,7 @@ namespace QuoteFeedAsyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -398,7 +399,7 @@ namespace QuoteFeedAsyncSample
             Console.WriteLine("get_session_info (i) - request session info");
             Console.WriteLine("get_quotes (gq) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
             Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
-            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");            
+            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -476,7 +477,7 @@ namespace QuoteFeedAsyncSample
         {
             client_.GetSessionInfoAsync(null);
         }
-                
+
         void OnSessionInfoResult(QuoteFeed client, object data, SessionInfo sessionInfo)
         {
             try
@@ -514,6 +515,12 @@ namespace QuoteFeedAsyncSample
         void SubscribeQuotes(List<SymbolEntry> symbolEntries)
         {
             client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
         }
 
         void OnSubscribeQuotesResult(QuoteFeed client, object data, Quote[] quotes)
@@ -535,6 +542,9 @@ namespace QuoteFeedAsyncSample
 
                     foreach (QuoteEntry entry in quote.Asks)
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                     Console.Error.WriteLine();
                 }
@@ -611,6 +621,9 @@ namespace QuoteFeedAsyncSample
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
 
                     Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+                    Console.Error.WriteLine();
                 }
             }
             catch (Exception exception)
@@ -669,6 +682,9 @@ namespace QuoteFeedAsyncSample
 
                 foreach (QuoteEntry entry in quote.Asks)
                     Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                 Console.Error.WriteLine();
             }

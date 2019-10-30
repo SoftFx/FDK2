@@ -81,7 +81,7 @@
 
         public void Run()
         {
-            this.Feed.Initialize(this.builder.ToString());
+            this.Feed.Initialize(this.builder.ToString(), (sender, certificate, chain, errors, port) => true);
             this.Feed.Logon += this.OnLogon;
             this.Feed.Logout += this.OnLogout;            
             this.Feed.Subscribed += this.OnSubscribed;

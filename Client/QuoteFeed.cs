@@ -1,6 +1,5 @@
-﻿using System; 
-using System.Collections.Generic;
-using System.Runtime.ExceptionServices;
+﻿using System;
+using System.Net;
 using SoftFX.Net.QuoteFeed;
 using TickTrader.FDK.Common;
 
@@ -13,42 +12,58 @@ namespace TickTrader.FDK.Client
         public QuoteFeed
         (
             string name,
-            bool logEvents =  false,
-            bool logStates =  false,
+            bool logEvents = false,
+            bool logStates = false,
             bool logMessages = false,
-            int port = 5030,
+            int port = 5041,
             string serverCertificateName = "CN=*.soft-fx.com",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
-            int heartbeatInterval = 10000,
-            string logDirectory = "Logs"
+            int heartbeatInterval = 30000,
+            string logDirectory = "Logs",
+            SoftFX.Net.Core.ClientCertificateValidation validateClientCertificate = null,
+            SoftFX.Net.Core.ProxyType proxyType = SoftFX.Net.Core.ProxyType.None,
+            IPAddress proxyAddress = null,
+            int proxyPort = 0,
+            string proxyUsername = null,
+            string proxyPassword = null
         )
         {
-            ClientSessionOptions options = new ClientSessionOptions(port);
+            ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.SecureSocket;
             options.ServerCertificateName = serverCertificateName;
-            options.ServerMinMinorVersion = Info.QuoteFeed.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;
             options.HeartbeatInterval = heartbeatInterval;
+            options.SendBufferSize = 10 * 1024 * 1024;
             options.Log.Directory = logDirectory;
-            options.Log.Events = logEvents ;
+            options.Log.Events = logEvents;
             options.Log.States = logStates;
             options.Log.Messages = logMessages;
+            options.ProxyType = proxyType;
+            options.ProxyAddress = proxyAddress;
+            options.ProxyPort = proxyPort;
+            options.Username = proxyUsername;
+            options.Password = proxyPassword;
 
             session_ = new ClientSession(name, options);
-            sessionListener_ = new ClientSessionListener(this);
+            CompressedStreamHandler compressedStreamHandler = new CompressedStreamHandler(session_);
+            sessionListener_ = new ClientSessionListener(this, compressedStreamHandler);
             session_.Listener = sessionListener_;
+            protocolSpec_ = new ProtocolSpec();
         }
 
         ClientSession session_;
         ClientSessionListener sessionListener_;
+        ProtocolSpec protocolSpec_;
+
+        public ProtocolSpec ProtocolSpec => protocolSpec_;
 
         #endregion
 
-        #region IDisposable        
+        #region IDisposable
 
         public void Dispose()
         {
@@ -97,7 +112,7 @@ namespace TickTrader.FDK.Client
 
             ConnectInternal(context, address);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
             {
                 DisconnectInternal(null, "Connect timeout");
                 Join();
@@ -180,11 +195,13 @@ namespace TickTrader.FDK.Client
 
             LoginInternal(context, username, password, deviceId, appId, sessionId);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
                 throw context.exception_;
+
+
         }
 
         public void LoginAsync(object data, string username, string password, string deviceId, string appId, string sessionId)
@@ -197,6 +214,8 @@ namespace TickTrader.FDK.Client
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
         {
+            protocolSpec_.InitQuoteFeedVersion(new ProtocolVersion(session_.MajorVersion, session_.MinorVersion));
+
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
@@ -260,7 +279,7 @@ namespace TickTrader.FDK.Client
         public delegate void QuotesResultDelegate(QuoteFeed quoteFeed, object data, Quote[] quotes);
         public delegate void QuotesErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
         public delegate void SessionInfoUpdateDelegate(QuoteFeed quoteFeed, SessionInfo sessionInfo);
-        public delegate void QuoteUpdateDelegate(QuoteFeed quoteFeed, Quote quote);        
+        public delegate void QuoteUpdateDelegate(QuoteFeed quoteFeed, Quote quote);
         public delegate void NotificationDelegate(QuoteFeed quoteFeed, Common.Notification notification);
 
         public event CurrencyListResultDelegate CurrencyListResultEvent;
@@ -268,7 +287,7 @@ namespace TickTrader.FDK.Client
         public event SymbolListResultDelegate SymbolListResultEvent;
         public event SymbolListErrorDelegate SymbolListErrorEvent;
         public event SessionInfoResultDelegate SessionInfoResultEvent;
-        public event SessionInfoErrorDelegate SessionInfoErrorEvent;        
+        public event SessionInfoErrorDelegate SessionInfoErrorEvent;
         public event SubscribeQuotesResultDelegate SubscribeQuotesResultEvent;
         public event SubscribeQuotesErrorDelegate SubscribeQuotesErrorEvent;
         public event UnsubscribeQuotesResultDelegate UnsubscribeQuotesResultEvent;
@@ -453,7 +472,7 @@ namespace TickTrader.FDK.Client
             for (int index = 0; index < count; ++index)
                 requestSymbolIds[index] = symbolIds[index];
 
-           session_.SendMarketDataUnsubscribeRequest(context, request);
+            session_.SendMarketDataUnsubscribeRequest(context, request);
         }
 
         public Quote[] GetQuotes(SymbolEntry[] symbolEntries, int timeout)
@@ -716,7 +735,7 @@ namespace TickTrader.FDK.Client
         {
             public UnsubscribeQuotesAsyncContext(bool waitable) : base(waitable)
             {
-            }            
+            }
 
             public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
             {
@@ -776,10 +795,11 @@ namespace TickTrader.FDK.Client
 
         class ClientSessionListener : SoftFX.Net.QuoteFeed.ClientSessionListener
         {
-            public ClientSessionListener(QuoteFeed quoteFeed)
+            public ClientSessionListener(QuoteFeed quoteFeed, CompressedStreamHandler compressedStreamHandler)
             {
                 client_ = quoteFeed;
                 quote_ = new Quote();
+                compressedStreamHandler_ = compressedStreamHandler;
             }
 
             public override void OnConnect(ClientSession clientSession, ConnectClientContext connectContext)
@@ -787,7 +807,6 @@ namespace TickTrader.FDK.Client
                 try
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
-
                     if (client_.ConnectResultEvent != null)
                     {
                         try
@@ -827,10 +846,10 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {               
+            {
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
                     ConnectException exception = new ConnectException(text);
 
@@ -857,7 +876,7 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, string text)
-            {                
+            {
                 try
                 {
                     ConnectException exception = new ConnectException(text);
@@ -883,6 +902,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
+                    compressedStreamHandler_.Stop();
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
                     foreach (ClientContext context in contexts)
@@ -922,6 +942,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
+                    compressedStreamHandler_.Stop();
                     foreach (ClientContext context in contexts)
                     {
                         try
@@ -975,6 +996,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
+                    compressedStreamHandler_.Start(this);
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
                     try
@@ -1051,6 +1073,8 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
+                    compressedStreamHandler_.Stop();
+
                     LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
                     try
@@ -1121,6 +1145,8 @@ namespace TickTrader.FDK.Client
                             resultCurrency.Description = reportCurrency.Description;
                             resultCurrency.Precision = reportCurrency.Precision;
                             resultCurrency.SortOrder = reportCurrency.SortOrder;
+                            resultCurrency.Type = GetCurrencyType(reportCurrency.Type);
+                            resultCurrency.Tax = reportCurrency.Tax.GetValueOrDefault();
 
                             resultCurrencies[index] = resultCurrency;
                         }
@@ -1215,8 +1241,8 @@ namespace TickTrader.FDK.Client
                             TickTrader.FDK.Common.SymbolInfo resultSymbol = new TickTrader.FDK.Common.SymbolInfo();
 
                             resultSymbol.Name = reportSymbol.Id;
-                            resultSymbol.Currency = reportSymbol.MarginCurrId;
-                            resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrId;
+                            resultSymbol.Currency = reportSymbol.MarginCurrencyId;
+                            resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrencyId;
                             resultSymbol.Description = reportSymbol.Description;
                             resultSymbol.Precision = reportSymbol.Precision;
                             resultSymbol.RoundLot = reportSymbol.RoundLot;
@@ -1234,26 +1260,38 @@ namespace TickTrader.FDK.Client
                             resultSymbol.CommissionChargeMethod = GetCommissionChargeMethod(reportSymbol.CommissionChargeMethod);
                             resultSymbol.LimitsCommission = reportSymbol.LimitsCommission;
                             resultSymbol.Commission = reportSymbol.Commission;
-                            resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrId;
+                            resultSymbol.MinCommissionCurrency = reportSymbol.MinCommissionCurrencyId;
                             resultSymbol.MinCommission = reportSymbol.MinCommission;
                             resultSymbol.SwapType = GetSwapType(reportSymbol.SwapType);
                             resultSymbol.TripleSwapDay = reportSymbol.TripleSwapDay;
                             resultSymbol.SwapSizeShort = reportSymbol.SwapSizeShort;
                             resultSymbol.SwapSizeLong = reportSymbol.SwapSizeLong;
+                            resultSymbol.SwapEnabled = reportSymbol.SwapEnabled;
                             resultSymbol.DefaultSlippage = reportSymbol.DefaultSlippage;
                             resultSymbol.IsTradeEnabled = reportSymbol.TradeEnabled;
                             resultSymbol.GroupSortOrder = reportSymbol.SecuritySortOrder;
                             resultSymbol.SortOrder = reportSymbol.SortOrder;
-                            resultSymbol.CurrencySortOrder = reportSymbol.MarginCurrSortOrder;
-                            resultSymbol.SettlementCurrencySortOrder = reportSymbol.ProfitCurrSortOrder;
-                            resultSymbol.CurrencyPrecision = reportSymbol.MarginCurrPrecision;
-                            resultSymbol.SettlementCurrencyPrecision = reportSymbol.ProfitCurrPrecision;
+                            resultSymbol.CurrencySortOrder = reportSymbol.MarginCurrencySortOrder;
+                            resultSymbol.SettlementCurrencySortOrder = reportSymbol.ProfitCurrencySortOrder;
+                            resultSymbol.CurrencyPrecision = reportSymbol.MarginCurrencyPrecision;
+                            resultSymbol.SettlementCurrencyPrecision = reportSymbol.ProfitCurrencyPrecision;
                             resultSymbol.StatusGroupId = reportSymbol.StatusGroupId;
                             resultSymbol.SecurityName = reportSymbol.SecurityId;
                             resultSymbol.SecurityDescription = reportSymbol.SecurityDescription;
                             resultSymbol.StopOrderMarginReduction = reportSymbol.StopOrderMarginReduction;
                             resultSymbol.HiddenLimitOrderMarginReduction = reportSymbol.HiddenLimitOrderMarginReduction;
-
+                            resultSymbol.IsCloseOnly = reportSymbol.CloseOnly;
+                            resultSymbol.IsLongOnly = reportSymbol.LongOnly;
+                            if (reportSymbol.Subscription != null)
+                                resultSymbol.Subscription = new Common.SubscriptionInfo()
+                                {
+                                    Name = reportSymbol.Subscription.Value.Name,
+                                    FrequencyFilterMs = reportSymbol.Subscription.Value.FrequencyFilterMs,
+                                    TotalDepthLimit = reportSymbol.Subscription.Value.TotalDepthLimit,
+                                    Compression = GetQuoteStreamCompressionType(reportSymbol.Subscription.Value.Compression)
+                                };
+                            resultSymbol.ISIN = reportSymbol.ISIN;
+                            resultSymbol.SlippageType = GetSlippageType(reportSymbol.SlippageType);
                             resultSymbols[index] = resultSymbol;
                         }
 
@@ -1346,6 +1384,8 @@ namespace TickTrader.FDK.Client
                         resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
                         resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
+                        resultStatusInfo.DisabledFeatures = GetOffTimeDisabledFeatures(reportStatusInfo.DisabledFeatures, reportStatusInfo.Status == TradingSessionStatus.Close);
+
                         TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                         int count = reportGroups.Length;
                         TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
@@ -1362,6 +1402,8 @@ namespace TickTrader.FDK.Client
                             resultGroup.OpenTime = reportGroup.OpenTime;
                             resultGroup.CloseTime = reportGroup.CloseTime;
 
+                            resultGroup.DisabledFeatures = GetOffTimeDisabledFeatures(reportGroup.DisabledFeatures, reportGroup.Status == TradingSessionStatus.Close);
+                            
                             resultGroups[index] = resultGroup;
                         }
 
@@ -1459,6 +1501,8 @@ namespace TickTrader.FDK.Client
                             resultQuote.Symbol = reportSnapshot.SymbolId;
                             resultQuote.Id = reportSnapshot.Id;
                             resultQuote.CreatingTime = reportSnapshot.OrigTime;
+                            resultQuote.IndicativeTick = reportSnapshot.IndicativeTick;
+                            resultQuote.TickType = GetTickType(reportSnapshot.TickType);
 
                             MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
                             int count2 = reportSnapshotEntries.Length;
@@ -1479,7 +1523,9 @@ namespace TickTrader.FDK.Client
                                     resultQuote.Bids.Add(quoteEntry);
                                 }
                                 else
+                                {
                                     resultQuote.Asks.Add(quoteEntry);
+                                }
                             }
 
                             resultQuote.Bids.Reverse();
@@ -1654,6 +1700,8 @@ namespace TickTrader.FDK.Client
                             resultQuote.Symbol = reportSnapshot.SymbolId;
                             resultQuote.Id = reportSnapshot.Id;
                             resultQuote.CreatingTime = reportSnapshot.OrigTime;
+                            resultQuote.IndicativeTick = reportSnapshot.IndicativeTick;
+                            resultQuote.TickType = GetTickType(reportSnapshot.TickType);
 
                             MarketDataEntryArray reportSnapshotEntries = reportSnapshot.Entries;
                             int count2 = reportSnapshotEntries.Length;
@@ -1674,7 +1722,9 @@ namespace TickTrader.FDK.Client
                                     resultQuote.Bids.Add(quoteEntry);
                                 }
                                 else
+                                {
                                     resultQuote.Asks.Add(quoteEntry);
+                                }
                             }
 
                             resultQuote.Bids.Reverse();
@@ -1792,6 +1842,8 @@ namespace TickTrader.FDK.Client
                     resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
                     resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
+                    resultStatusInfo.DisabledFeatures = GetOffTimeDisabledFeatures(reportStatusInfo.DisabledFeatures, reportStatusInfo.Status == TradingSessionStatus.Close);
+
                     TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                     int count = reportGroups.Length;
                     TickTrader.FDK.Common.StatusGroupInfo[] resultGroups = new TickTrader.FDK.Common.StatusGroupInfo[count];
@@ -1808,6 +1860,8 @@ namespace TickTrader.FDK.Client
                         resultGroup.OpenTime = reportGroup.OpenTime;
                         resultGroup.CloseTime = reportGroup.CloseTime;
 
+                        resultGroup.DisabledFeatures = GetOffTimeDisabledFeatures(reportGroup.DisabledFeatures, reportGroup.Status == TradingSessionStatus.Close);
+                       
                         resultGroups[index] = resultGroup;
                     }
 
@@ -1839,6 +1893,8 @@ namespace TickTrader.FDK.Client
                     quote_.Symbol = snapshot.SymbolId;
                     quote_.Id = snapshot.Id;
                     quote_.CreatingTime = snapshot.OrigTime;
+                    quote_.IndicativeTick = snapshot.IndicativeTick;
+                    quote_.TickType = GetTickType(snapshot.TickType);
 
                     MarketDataEntryArray snapshotEntries = snapshot.Entries;
                     int count = snapshotEntries.Length;
@@ -1846,7 +1902,7 @@ namespace TickTrader.FDK.Client
                     quote_.Bids.Clear();
                     quote_.Asks.Clear();
 
-                    for (int index = 0; index < count; ++ index)
+                    for (int index = 0; index < count; ++index)
                     {
                         MarketDataEntry snapshotEntry = snapshotEntries[index];
 
@@ -1859,7 +1915,9 @@ namespace TickTrader.FDK.Client
                             quote_.Bids.Add(quoteEntry);
                         }
                         else
+                        {
                             quote_.Asks.Add(quoteEntry);
+                        }
                     }
 
                     quote_.Bids.Reverse();
@@ -1873,6 +1931,26 @@ namespace TickTrader.FDK.Client
                         catch
                         {
                         }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnMarketDataUpdateCompressedBlock(ClientSession session, MarketDataUpdateCompressedBlock message)
+            {
+                try
+                {
+                    //Console.WriteLine("Snappy Block Size: " + message.SnapshotBlock.Block.Length);
+                    var snap = message.SnapshotBlock;
+                    byte[] block = new byte[snap.Block.Length];
+                    for (int i = 0; i < snap.Block.Length; i++)
+                        block[i] = snap.Block[i];
+                    if (snap.CompressionType == MarketDataCompressionType.Snappy)
+                    {
+                        compressedStreamHandler_.Write(block);
                     }
                 }
                 catch
@@ -1919,10 +1997,8 @@ namespace TickTrader.FDK.Client
                         return Common.RejectReason.InternalServerError;
 
                     case SoftFX.Net.QuoteFeed.RejectReason.Other:
-                        return Common.RejectReason.Other;
-
                     default:
-                        throw new Exception("Invalid reject reason : " + reason);
+                        return Common.RejectReason.Other;
                 }
             }
 
@@ -1942,11 +2018,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.QuoteFeed.LoginRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.LogoutReason.ServerError;
 
-                    case SoftFX.Net.QuoteFeed.LoginRejectReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.QuoteFeed.LoginRejectReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.QuoteFeed.LoginRejectReason.Other:
                     default:
-                        throw new Exception("Invalid login reject reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -1969,11 +2046,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.QuoteFeed.LogoutReason.BlockedLogin:
                         return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
-                    case SoftFX.Net.QuoteFeed.LogoutReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.QuoteFeed.LogoutReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.QuoteFeed.LogoutReason.Other:
                     default:
-                        throw new Exception("Invalid logout reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -2111,7 +2189,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
                     default:
-                        throw new Exception("Invalid notification type : " + type);
+                        return TickTrader.FDK.Common.NotificationType.Unknown;
                 }
             }
 
@@ -2129,12 +2207,122 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
-                        throw new Exception("Invalid notification severity : " + severity);
+                        return TickTrader.FDK.Common.NotificationSeverity.Unknown;
+                }
+            }
+
+            TickTrader.FDK.Common.CurrencyType GetCurrencyType(SoftFX.Net.QuoteFeed.CurrencyType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Default:
+                        return TickTrader.FDK.Common.CurrencyType.Default;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Fiat:
+                        return TickTrader.FDK.Common.CurrencyType.Fiat;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Crypto:
+                        return TickTrader.FDK.Common.CurrencyType.Crypto;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Index:
+                        return TickTrader.FDK.Common.CurrencyType.Index;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Share:
+                        return TickTrader.FDK.Common.CurrencyType.Share;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Commodity:
+                        return TickTrader.FDK.Common.CurrencyType.Commodity;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Bond:
+                        return TickTrader.FDK.Common.CurrencyType.Bond;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.ETF:
+                        return TickTrader.FDK.Common.CurrencyType.ETF;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.MF:
+                        return TickTrader.FDK.Common.CurrencyType.MF;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Future:
+                        return TickTrader.FDK.Common.CurrencyType.Future;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.Option:
+                        return TickTrader.FDK.Common.CurrencyType.Option;
+
+                    case SoftFX.Net.QuoteFeed.CurrencyType.CFD:
+                        return TickTrader.FDK.Common.CurrencyType.CFD;
+
+                    default:
+                        return TickTrader.FDK.Common.CurrencyType.Default;
+                }
+            }
+
+
+            TickTrader.FDK.Common.SubscriptionInfo.QuoteStreamCompressionTypes GetQuoteStreamCompressionType(SoftFX.Net.QuoteFeed.MarketDataCompressionType type)
+            {
+                switch (type)
+                {
+                    case MarketDataCompressionType.WithoutCompression:
+                        return TickTrader.FDK.Common.SubscriptionInfo.QuoteStreamCompressionTypes.WithoutCompression;
+
+                    case MarketDataCompressionType.Snappy:
+                        return TickTrader.FDK.Common.SubscriptionInfo.QuoteStreamCompressionTypes.Snappy;
+
+                    default:
+                        return TickTrader.FDK.Common.SubscriptionInfo.QuoteStreamCompressionTypes.Unknown;
+                }
+            }
+
+            TickTrader.FDK.Common.OffTimeDisabledFeatures GetOffTimeDisabledFeatures(SoftFX.Net.QuoteFeed.OffTimeDisabledFeatures features, bool isClosed)
+            {
+                if (!client_.ProtocolSpec.SupportsOffTimeDisabledFeatures)
+                {
+                    if (isClosed)
+                        return Common.OffTimeDisabledFeatures.QuoteHistory | Common.OffTimeDisabledFeatures.Trade | Common.OffTimeDisabledFeatures.Feed;
+                    else return Common.OffTimeDisabledFeatures.None;
+                }
+                Common.OffTimeDisabledFeatures result = Common.OffTimeDisabledFeatures.None;
+                if (features.HasFlag(SoftFX.Net.QuoteFeed.OffTimeDisabledFeatures.QuoteHistory))
+                    result |= Common.OffTimeDisabledFeatures.QuoteHistory;
+                if (features.HasFlag(SoftFX.Net.QuoteFeed.OffTimeDisabledFeatures.Trade))
+                    result |= Common.OffTimeDisabledFeatures.Trade;
+                if (features.HasFlag(SoftFX.Net.QuoteFeed.OffTimeDisabledFeatures.Feed))
+                    result |= Common.OffTimeDisabledFeatures.Feed;
+
+                return result;
+            }
+
+            TickTrader.FDK.Common.TickTypes GetTickType(SoftFX.Net.QuoteFeed.TickType type)
+            {
+                switch (type)
+                {
+                    case TickType.IndicativeBid:
+                        return TickTypes.IndicativeBid;
+                    case TickType.IndicativeAsk:
+                        return TickTypes.IndicativeAsk;
+                    case TickType.IndicativeBidAsk:
+                        return TickTypes.IndicativeBidAsk;
+
+                    case TickType.Normal:
+                    default:
+                        return TickTypes.Normal;
+                }
+            }
+
+            TickTrader.FDK.Common.SlippageType GetSlippageType(SoftFX.Net.QuoteFeed.SlippageType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.QuoteFeed.SlippageType.Percent:
+                        return Common.SlippageType.Percent;
+                    case SoftFX.Net.QuoteFeed.SlippageType.Pips:
+                    default:
+                        return Common.SlippageType.Pips;
                 }
             }
 
             QuoteFeed client_;
             Quote quote_;
+            CompressedStreamHandler compressedStreamHandler_;
         }
 
         #endregion

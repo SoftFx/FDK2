@@ -32,12 +32,12 @@
         /// For internal usage only
         /// </summary>
         [XmlAttribute("Bid")]
-        public double Bid { get; set; }
+        public double? Bid { get; set; }
 
         /// <summary>
         /// For internal usage only
         /// </summary>
         [XmlAttribute("Ask")]
-        public double Ask { get; set; }
+        public double? Ask { get; set; }
     }
 }

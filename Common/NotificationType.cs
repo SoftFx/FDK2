@@ -6,6 +6,11 @@
     public enum NotificationType
     {
         /// <summary>
+        /// Unknown type.
+        /// </summary>
+        Unknown = -1,
+
+        /// <summary>
         /// Generic notification.
         /// </summary>
         None = 0,
@@ -33,6 +38,11 @@
         /// <summary>
         /// Configuration has been changed.
         /// </summary>
-        ConfigUpdated = 5
+        ConfigUpdated = 5,
+
+        /// <summary>
+        /// StockEvent has been added, removed or modified.
+        /// </summary>
+        StockEventUpdate = 6
     }
 }

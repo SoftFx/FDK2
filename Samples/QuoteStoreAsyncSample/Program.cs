@@ -19,7 +19,7 @@ namespace QuoteStoreAsyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5050;
+                int port = 5042;
 
                 var options = new OptionSet()
                 {
@@ -62,7 +62,8 @@ namespace QuoteStoreAsyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteStore("QuoteStoreAsyncSample", port : port, logMessages : true);
+            client_ = new QuoteStore("QuoteStoreAsyncSample", port : port, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
             client_.ConnectErrorEvent += new QuoteStore.ConnectErrorDelegate(this.OnConnectError);
@@ -90,8 +91,8 @@ namespace QuoteStoreAsyncSample
             client_.QuoteDownloadResultBeginEvent += new QuoteStore.QuoteDownloadResultBeginDelegate(this.OnQuoteDownloadBeginResult);
             client_.QuoteDownloadResultEvent += new QuoteStore.QuoteDownloadResultDelegate(this.OnQuoteDownloadResult);
             client_.QuoteDownloadResultEndEvent += new QuoteStore.QuoteDownloadResultEndDelegate(this.OnQuoteDownloadEndResult);
-            client_.QuoteDownloadErrorEvent += new QuoteStore.QuoteDownloadErrorDelegate(this.OnQuoteDownloadError);            
-            
+            client_.QuoteDownloadErrorEvent += new QuoteStore.QuoteDownloadErrorDelegate(this.OnQuoteDownloadError);
+
             address_ = address;
             login_ = login;
             password_ = password;
@@ -147,7 +148,7 @@ namespace QuoteStoreAsyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -279,6 +280,36 @@ namespace QuoteStoreAsyncSample
                                 int.Parse(count)
                             );
                         }
+                        else if (command == "vwap_quote_list" || command == "vwapql")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string degree = GetNextWord(line, ref pos);
+
+                            if (degree == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string count = GetNextWord(line, ref pos);
+
+                            if (count == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            GetVWAPQuoteList
+                            (
+                                symbol,
+                                short.Parse(degree),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                int.Parse(count)
+                            );
+                        }
                         else if (command == "quote_download" || command == "qd")
                         {
                             string symbol = GetNextWord(line, ref pos);
@@ -305,6 +336,36 @@ namespace QuoteStoreAsyncSample
                             (
                                 symbol,
                                 (QuoteDepth)Enum.Parse(typeof(QuoteDepth), quoteDepth),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
+                            );
+                        }
+                        else if (command == "vwap_quote_download" || command == "vwapqd")
+                        {
+                            string symbol = GetNextWord(line, ref pos);
+
+                            if (symbol == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string degree = GetNextWord(line, ref pos);
+
+                            if (degree == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string to = GetNextWord(line, ref pos);
+
+                            if (to == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            DownloadVWAPQuotes
+                            (
+                                symbol,
+                                short.Parse(degree),
                                 DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
@@ -502,6 +563,8 @@ namespace QuoteStoreAsyncSample
             Console.WriteLine("bar_download (bd) <symbol> <side> <periodicity> <from> <to> - download symbol bars");
             Console.WriteLine("quote_list (ql) <symbol> <depth> <from> <count> - request symbol quote list");
             Console.WriteLine("quote_download (qd) <symbol> <depth> <from> <to> - download symbol quotes");
+            Console.WriteLine("vwap_quote_list (vwapql) <symbol> <degree> <from> <count> - request symbol quote list");
+            Console.WriteLine("vwap_quote_download (vwapqd) <symbol> <degree> <from> <to> - download symbol quotes");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -607,7 +670,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
             }
-        }               
+        }
 
         void DownloadBars(string symbol, PriceType priceType, BarPeriod periodicity, DateTime from, DateTime to)
         {
@@ -667,6 +730,11 @@ namespace QuoteStoreAsyncSample
             client_.GetQuoteListAsync(this, symbol, depth, from, count);
         }
 
+        void GetVWAPQuoteList(string symbol, short degree, DateTime from, int count)
+        {
+            client_.GetVWAPQuoteListAsync(this, symbol, degree, from, count);
+        }
+
         void OnQuoteListResult(QuoteStore client, object data, Quote[] quotes)
         {
             try
@@ -686,6 +754,9 @@ namespace QuoteStoreAsyncSample
 
                     foreach (QuoteEntry entry in quote.Asks)
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                     Console.Error.WriteLine();
                 }
@@ -711,6 +782,11 @@ namespace QuoteStoreAsyncSample
         void DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
             client_.DownloadQuotesAsync(this, symbol, depth, from, to);
+        }
+
+        void DownloadVWAPQuotes(string symbol, short degree, DateTime from, DateTime to)
+        {
+            client_.DownloadVWAPQuotesAsync(this, symbol, degree, from, to);
         }
 
         void OnQuoteDownloadBeginResult(QuoteStore client, object data, string id, DateTime availFrom, DateTime availTo)
@@ -742,6 +818,9 @@ namespace QuoteStoreAsyncSample
                     Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
 
                 Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
+
+                Console.Error.WriteLine();
             }
             catch (Exception exception)
             {
@@ -758,7 +837,7 @@ namespace QuoteStoreAsyncSample
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
-            }            
+            }
         }
 
         void OnQuoteDownloadError(QuoteStore client, object data, Exception error)

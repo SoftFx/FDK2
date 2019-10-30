@@ -5,6 +5,11 @@
     using System.Collections.Generic;
     using Common;
     using Client;
+    using System.Security.Cryptography.X509Certificates;
+    using System.Net.Security;
+    using System.Net;
+
+    public delegate bool ClientCertificateValidation(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors, int port);
 
     /// <summary>
     /// This class connects to trading platform and receives quotes and other notifications.
@@ -16,7 +21,14 @@
         /// <summary>
         /// Creates a new data feed instance. You should use Initialize method to finish the instance initialization.
         /// </summary>
-        public DataFeed() : this(null, "DataFeed")
+        public DataFeed() : this(null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new data feed instance. You should use Initialize method to finish the instance initialization.
+        /// </summary>
+        public DataFeed(ClientCertificateValidation validateClientCertificate) : this(null, "DataFeed", validateClientCertificate)
         {
         }
 
@@ -24,7 +36,7 @@
         /// Creates and initializes a new data feed instance.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
-        public DataFeed(string connectionString) : this(connectionString, "DataFeed")
+        public DataFeed(string connectionString, ClientCertificateValidation validateClientCertificate) : this(connectionString, "DataFeed", validateClientCertificate)
         {
         }
 
@@ -32,7 +44,7 @@
         /// Creates and initializes a new data feed instance.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
-        public DataFeed(string connectionString, string name)
+        public DataFeed(string connectionString, string name, ClientCertificateValidation validateClientCertificate)
         {
             name_ = name;
             server_ = new DataFeedServer(this);
@@ -40,7 +52,7 @@
             network_ = new DataFeedNetwork(this);
 
             if (!string.IsNullOrEmpty(connectionString))
-                Initialize(connectionString);
+                Initialize(connectionString, validateClientCertificate);
         }
 
         /// <summary>
@@ -49,7 +61,7 @@
         /// <param name="connectionString">Can not be null.</param>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
         /// <exception cref="System.InvalidOperationException">If the instance is not stopped.</exception>
-        public void Initialize(string connectionString)
+        public void Initialize(string connectionString, ClientCertificateValidation validateClientCertificate)
         {
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentNullException(nameof(connectionString), "Connection string can not be null or empty.");
@@ -58,62 +70,107 @@
 
             connectionStringParser.Parse(connectionString);
 
-            if (! connectionStringParser.TryGetStringValue("Address", out address_))
+            if (!connectionStringParser.TryGetStringValue("Address", out address_))
                 throw new Exception("Address is not specified");
 
             int quoteFeedPort;
-            if (! connectionStringParser.TryGetIntValue("QuoteFeedPort", out quoteFeedPort))
-                quoteFeedPort = 5030;
+            if (!connectionStringParser.TryGetIntValue("QuoteFeedPort", out quoteFeedPort))
+                quoteFeedPort = 5041;
 
             int quoteStorePort;
-            if (! connectionStringParser.TryGetIntValue("QuoteStorePort", out quoteStorePort))
-                quoteStorePort = 5050;
+            if (!connectionStringParser.TryGetIntValue("QuoteStorePort", out quoteStorePort))
+                quoteStorePort = 5042;
 
             string serverCertificateName;
-            if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
+            if (!connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
                 serverCertificateName = "CN=*.soft-fx.com";
 
-            if (! connectionStringParser.TryGetStringValue("Username", out login_))
+            if (!connectionStringParser.TryGetStringValue("Username", out login_))
                 throw new Exception("Username is not specified");
 
-            if (! connectionStringParser.TryGetStringValue("Password", out password_))
+            if (!connectionStringParser.TryGetStringValue("Password", out password_))
                 throw new Exception("Password is not specified");
 
-            if (! connectionStringParser.TryGetStringValue("DeviceId", out deviceId_))
+            if (!connectionStringParser.TryGetStringValue("DeviceId", out deviceId_))
                 throw new Exception("DeviceId is not specified");
 
-            if (! connectionStringParser.TryGetStringValue("AppId", out appId_))
+            if (!connectionStringParser.TryGetStringValue("AppId", out appId_))
                 throw new Exception("AppId is not specified");
 
-            if (! connectionStringParser.TryGetStringValue("AppSessionId", out appSessionId_))
+            if (!connectionStringParser.TryGetStringValue("AppSessionId", out appSessionId_))
                 throw new Exception("AppSessionId is not specified");
 
             int eventQueueSize;
-            if (! connectionStringParser.TryGetIntValue("EventQueueSize", out eventQueueSize))
+            if (!connectionStringParser.TryGetIntValue("EventQueueSize", out eventQueueSize))
                 eventQueueSize = 1000;
 
-            if (! connectionStringParser.TryGetIntValue("OperationTimeout", out synchOperationTimeout_))
+            if (!connectionStringParser.TryGetIntValue("OperationTimeout", out synchOperationTimeout_))
                 synchOperationTimeout_ = 30000;
 
             string logDirectory;
-            if (! connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
+            if (!connectionStringParser.TryGetStringValue("LogDirectory", out logDirectory))
                 logDirectory = "Logs";
 
             bool logEvents;
-            if (! connectionStringParser.TryGetBoolValue("LogEvents", out logEvents))
+            if (!connectionStringParser.TryGetBoolValue("LogEvents", out logEvents))
                 logEvents = false;
 
             bool logStates;
-            if (! connectionStringParser.TryGetBoolValue("LogStates", out logStates))
+            if (!connectionStringParser.TryGetBoolValue("LogStates", out logStates))
                 logStates = false;
 
             bool logMessages;
-            if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
+            if (!connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
                 logMessages = false;
+
+            bool logQuoteFeedMessages;
+            if (!connectionStringParser.TryGetBoolValue("LogQuoteFeedMessages", out logQuoteFeedMessages))
+                logQuoteFeedMessages = logMessages;
+
+            bool logQuoteStoreMessages;
+            if (!connectionStringParser.TryGetBoolValue("LogQuoteStoreMessages", out logQuoteStoreMessages))
+                logQuoteStoreMessages = logMessages;
+
+            int proxyTypeFDKnumber;
+            if (!connectionStringParser.TryGetIntValue("ProxyType", out proxyTypeFDKnumber))
+                proxyTypeFDKnumber = (int)ProxyType.None;
+            ProxyType proxyTypeFDK = (ProxyType)proxyTypeFDKnumber;
+
+            string proxyAddressString;
+            if (!connectionStringParser.TryGetStringValue("ProxyAddress", out proxyAddressString))
+                proxyAddressString = null;
+            IPAddress proxyAddress = null;
+            IPAddress.TryParse(proxyAddressString, out proxyAddress);
+
+            int proxyPort;
+            if (!connectionStringParser.TryGetIntValue("ProxyPort", out proxyPort))
+                proxyPort = 0;
+
+            string proxyUsername;
+            if (!connectionStringParser.TryGetStringValue("ProxyUsername", out proxyUsername))
+                proxyUsername = null;
+
+            string proxyPassword;
+            if (!connectionStringParser.TryGetStringValue("ProxyPassword", out proxyPassword))
+                proxyPassword = null;
 
             synchronizer_ = new object();
 
-            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logEvents, logStates, logMessages, quoteFeedPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            SoftFX.Net.Core.ClientCertificateValidation quoteFeedClientCertificateValidation;
+            SoftFX.Net.Core.ClientCertificateValidation quoteStoreClientCertificateValidation;
+            if (validateClientCertificate == null)
+            {
+                quoteFeedClientCertificateValidation = null;
+                quoteStoreClientCertificateValidation = null;
+            }
+            else
+            {
+                quoteFeedClientCertificateValidation = (sender, cert, chain, ssl) => validateClientCertificate(sender, cert, chain, ssl, quoteFeedPort);
+                quoteStoreClientCertificateValidation = (sender, cert, chain, ssl) => validateClientCertificate(sender, cert, chain, ssl, quoteStorePort);
+            }
+
+            quoteFeedClient_ = new QuoteFeed(name_ + ".QuoteFeed", logEvents, logStates, logQuoteFeedMessages, quoteFeedPort, serverCertificateName, 1, -1, 10000, 10000, logDirectory,
+                quoteFeedClientCertificateValidation, (SoftFX.Net.Core.ProxyType)proxyTypeFDK, proxyAddress, proxyPort, proxyUsername, proxyPassword);
             quoteFeedClient_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
             quoteFeedClient_.ConnectErrorEvent += new QuoteFeed.ConnectErrorDelegate(this.OnConnectError);
             quoteFeedClient_.DisconnectResultEvent += new QuoteFeed.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -129,14 +186,15 @@
             quoteFeedClient_.CurrencyListResultEvent += new QuoteFeed.CurrencyListResultDelegate(this.OnCurrencyListResult);
             quoteFeedClient_.CurrencyListErrorEvent += new QuoteFeed.CurrencyListErrorDelegate(this.OnCurrencyListError);
             quoteFeedClient_.SymbolListResultEvent += new QuoteFeed.SymbolListResultDelegate(this.OnSymbolListResult);
-            quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.SymbolListErrorDelegate(this.OnSymbolListError);          
+            quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.SymbolListErrorDelegate(this.OnSymbolListError);
             quoteFeedClient_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             quoteFeedClient_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
             quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.NotificationDelegate(this.OnNotification);
 
-            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logEvents, logStates, logMessages, quoteStorePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logEvents, logStates, logQuoteStoreMessages, quoteStorePort, serverCertificateName, 1, -1, 10000, 10000, logDirectory,
+                quoteStoreClientCertificateValidation, (SoftFX.Net.Core.ProxyType)proxyTypeFDK, proxyAddress, proxyPort, proxyUsername, proxyPassword);
             quoteStoreClient_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
             quoteStoreClient_.ConnectErrorEvent += new QuoteStore.ConnectErrorDelegate(this.OnConnectError);
             quoteStoreClient_.DisconnectResultEvent += new QuoteStore.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -170,7 +228,7 @@
         /// </summary>
         public string Name
         {
-            get { return name_;  }
+            get { return name_; }
         }
 
         /// <summary>
@@ -198,6 +256,22 @@
         }
 
         /// <summary>
+        /// Returns quote feed protocol specification
+        /// </summary>
+        public ProtocolSpec QuoteFeedProtocolSpec
+        {
+            get { return quoteFeedClient_.ProtocolSpec; }
+        }
+
+        /// <summary>
+        /// Returns quote store protocol specification
+        /// </summary>
+        public ProtocolSpec QuoteStoreProtocolSpec
+        {
+            get { return quoteStoreClient_.ProtocolSpec; }
+        }
+
+        /// <summary>
         /// Returns true, the data trade/feed object is started, otherwise false.
         /// </summary>
         public bool IsStarted
@@ -220,13 +294,13 @@
             {
                 lock (synchronizer_)
                 {
-                    return ! started_;
+                    return !started_;
                 }
             }
         }
 
         #endregion
-        
+
         #region Events
 
         /// <summary>
@@ -282,7 +356,7 @@
         /// Starts data feed instance asynchronously.
         /// </summary>
         public void Start()
-        {            
+        {
             QuoteFeed quoteFeedClient = null;
             QuoteStore quoteStoreClient = null;
             Thread eventThread = null;
@@ -359,7 +433,7 @@
             lock (synchronizer_)
             {
                 if (started_)
-                {                    
+                {
                     started_ = false;
 
                     try
@@ -367,7 +441,7 @@
                         quoteStoreClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
-                    {                        
+                    {
                         quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
                     }
 
@@ -376,7 +450,7 @@
                         quoteFeedClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
-                    {                        
+                    {
                         quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                     }
                 }
@@ -396,7 +470,7 @@
 
                     eventQueue_.Close();
                 }
-            }           
+            }
 
             if (eventThread != null)
                 eventThread.Join();
@@ -418,7 +492,7 @@
         /// <returns></returns>
         public bool WaitForLogonEx(int timeoutInMilliseconds)
         {
-            if (! loginEvent_.WaitOne(timeoutInMilliseconds))
+            if (!loginEvent_.WaitOne(timeoutInMilliseconds))
                 return false;
 
             if (loginException_ != null)
@@ -465,7 +539,7 @@
         [Obsolete("Please use OperationTimeout connection string parameter")]
         public int SynchOperationTimeout
         {
-            set { synchOperationTimeout_ = value;  }
+            set { synchOperationTimeout_ = value; }
 
             get { return synchOperationTimeout_; }
         }
@@ -513,7 +587,7 @@
             catch
             {
                 quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -525,7 +599,7 @@
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -552,7 +626,7 @@
                 {
                     initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -579,8 +653,8 @@
                 {
                     initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
 
-                    if (! logout_)
-                    {                       
+                    if (!logout_)
+                    {
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
@@ -607,7 +681,7 @@
             catch
             {
                 quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -625,7 +699,7 @@
         void OnLoginResult(QuoteFeed client, object data)
         {
             try
-            {                
+            {
                 quoteFeedClient_.GetCurrencyListAsync(this);
                 quoteFeedClient_.GetSymbolListAsync(this);
                 quoteFeedClient_.GetSessionInfoAsync(this);
@@ -633,7 +707,7 @@
             catch
             {
                 quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                
+                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
             }
         }
 
@@ -643,9 +717,9 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -658,7 +732,7 @@
                         }
                         else
                             args.Reason = LogoutReason.Unknown;
-                        
+
                         args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
@@ -684,11 +758,9 @@
                         {
                             cache_.currencies_ = currencies;
                         }
-
                         if (initFlags_ != InitFlags.All)
                         {
                             initFlags_ |= InitFlags.Currencies;
-
                             if (initFlags_ == InitFlags.All)
                             {
                                 logout_ = false;
@@ -722,7 +794,7 @@
                 if (data == this)
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -742,11 +814,9 @@
                         {
                             cache_.symbols_ = symbols;
                         }
-
                         if (initFlags_ != InitFlags.All)
                         {
                             initFlags_ |= InitFlags.Symbols;
-
                             if (initFlags_ == InitFlags.All)
                             {
                                 logout_ = false;
@@ -780,7 +850,7 @@
                 if (data == this)
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -800,7 +870,6 @@
                         {
                             cache_.sessionInfo_ = sessionInfo;
                         }
-
                         if (initFlags_ != InitFlags.All)
                         {
                             initFlags_ |= InitFlags.SessionInfo;
@@ -838,7 +907,7 @@
                 if (data == this)
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");                    
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -901,7 +970,7 @@
                 {
                     quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -925,7 +994,7 @@
                 {
                     quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1034,7 +1103,7 @@
                 {
                     quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1061,7 +1130,7 @@
                 {
                     initFlags_ &= ~InitFlags.StoreLogin;
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1088,7 +1157,7 @@
                 {
                     initFlags_ &= ~InitFlags.StoreLogin;
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1140,7 +1209,6 @@
                     if (initFlags_ != InitFlags.All)
                     {
                         initFlags_ |= InitFlags.StoreLogin;
-
                         if (initFlags_ == InitFlags.All)
                         {
                             logout_ = false;
@@ -1165,9 +1233,9 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1180,7 +1248,7 @@
                         }
                         else
                             args.Reason = LogoutReason.Unknown;
-                        
+
                         args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
@@ -1202,7 +1270,7 @@
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1370,7 +1438,7 @@
                 {
                     quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
-                    if (! logout_)
+                    if (!logout_)
                     {
                         logout_ = true;
 
@@ -1399,7 +1467,7 @@
             }
             catch
             {
-            }            
+            }
         }
 
         void PushLoginEvents()
@@ -1407,13 +1475,13 @@
             LogonEventArgs args = new LogonEventArgs();
             args.ProtocolVersion = "";
             eventQueue_.PushEvent(args);
-                        
+
             CurrencyInfo[] currencies;
             SymbolInfo[] symbols;
             SessionInfo sessionInfo;
 
             lock (cache_)
-            {                
+            {
                 currencies = cache_.currencies_;
                 symbols = cache_.symbols_;
                 sessionInfo = cache_.sessionInfo_;
@@ -1446,13 +1514,13 @@
             args.Severity = NotificationSeverity.Information;
             args.Text = "Data feed configuration changed";
             eventQueue_.PushEvent(args);
-                        
+
             CurrencyInfo[] currencies;
             SymbolInfo[] symbols;
             SessionInfo sessionInfo;
 
             lock (cache_)
-            {                
+            {
                 currencies = cache_.currencies_;
                 symbols = cache_.symbols_;
                 sessionInfo = cache_.sessionInfo_;
@@ -1481,7 +1549,7 @@
                 while (true)
                 {
                     EventArgs eventArgs;
-                    if (! eventQueue_.PopEvent(out eventArgs))
+                    if (!eventQueue_.PopEvent(out eventArgs))
                         break;
 
                     try
@@ -1683,7 +1751,7 @@
 
         internal enum InitFlags
         {
-            None = 0x00,                        
+            None = 0x00,
             Currencies = 0x01,
             Symbols = 0x2,
             SessionInfo = 0x04,
@@ -1693,7 +1761,7 @@
 
         internal enum ReloadFlags
         {
-            None = 0x00,                        
+            None = 0x00,
             Currencies = 0x01,
             Symbols = 0x2,
             SessionInfo = 0x04,
@@ -1715,18 +1783,20 @@
         internal QuoteFeed quoteFeedClient_;
         internal QuoteStore quoteStoreClient_;
 
-        internal object synchronizer_;        
+        internal object synchronizer_;
         internal bool started_;
-        
+
         internal ManualResetEvent loginEvent_;
         internal Exception loginException_;
         internal InitFlags initFlags_;
         internal ReloadFlags reloadFlags_;
-        internal bool logout_;        
+        internal bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers
         internal Thread eventThread_;
         internal EventQueue eventQueue_;
+
+        internal ClientCertificateValidation validateClientCertificate_;
 
         #endregion
     }

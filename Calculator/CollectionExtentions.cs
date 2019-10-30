@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
-namespace System
+namespace TickTrader.FDK.Calculator
 {
     public static class CollectionExtentions
     {

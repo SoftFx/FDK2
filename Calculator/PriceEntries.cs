@@ -53,7 +53,7 @@
         /// <param name="symbol">an updating symbol</param>
         /// <param name="bid">a bid price</param>
         /// <param name="ask">an ask price</param>
-        public void Update(string symbol, double bid, double ask)
+        public void Update(string symbol, double? bid, double? ask)
         {
             this.entries[symbol] = new PriceEntry(bid, ask);
         }

@@ -22,7 +22,7 @@ namespace QuoteFeedSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5030;
+                int port = 5041;
 
                 var options = new OptionSet()
                 {
@@ -65,9 +65,10 @@ namespace QuoteFeedSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteFeed("QuoteFeedSyncSample", port : port, reconnectAttempts : 0, logMessages : true);
+            client_ = new QuoteFeed("QuoteFeedSyncSample", port: port, reconnectAttempts: 0, logMessages: true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
-            client_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);            
+            client_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new QuoteFeed.DisconnectDelegate(this.OnDisconnect);
             client_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
@@ -89,7 +90,7 @@ namespace QuoteFeedSample
         string GetNextWord(string line, ref int index)
         {
             while (index < line.Length && line[index] == ' ')
-                ++ index;
+                ++index;
 
             if (index == line.Length)
                 return null;
@@ -97,7 +98,7 @@ namespace QuoteFeedSample
             int startIndex = index;
 
             while (index < line.Length && line[index] != ' ')
-                ++ index;
+                ++index;
 
             return line.Substring(startIndex, index - startIndex);
         }
@@ -148,7 +149,7 @@ namespace QuoteFeedSample
 
                                 SymbolEntry symbolEntry = new SymbolEntry();
                                 symbolEntry.Id = symbolId;
-                                symbolEntry.MarketDepth = 5;
+                                symbolEntry.MarketDepth = 500;
 
                                 symbolEnries.Add(symbolEntry);
                             }
@@ -194,6 +195,13 @@ namespace QuoteFeedSample
                         else if (command == "exit" || command == "e")
                         {
                             break;
+                        }
+                        else if (command == "relogin" || command == "rl")
+                        {
+                            client_.Logout("relogin", Timeout);
+                            Console.WriteLine("Logout");
+                            client_.Login(login_, password_, "", "", "", Timeout);
+                            Console.WriteLine("Logon");
                         }
                         else
                             throw new Exception(string.Format("Invalid command : {0}", command));
@@ -243,7 +251,7 @@ namespace QuoteFeedSample
             }
             catch
             {
-            }            
+            }
 
             string text = client_.Disconnect("Client disconnect");
 
@@ -259,7 +267,7 @@ namespace QuoteFeedSample
             Console.WriteLine("get+session_info (i) - request session info");
             Console.WriteLine("get_quotes (gq) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
             Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
-            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");            
+            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -285,7 +293,7 @@ namespace QuoteFeedSample
             {
                 SymbolInfo symbol = symbols[index];
 
-                Console.Error.WriteLine("Symbol : {0}, {1}", symbol.Name, symbol.Description);
+                Console.Error.WriteLine("Symbol : {0}, {1}, Subscription: {2}", symbol.Name, symbol.Description, symbol.Subscription);
             }
         }
 
@@ -326,6 +334,9 @@ namespace QuoteFeedSample
 
                 foreach (QuoteEntry entry in quote.Asks)
                     Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                 Console.Error.WriteLine();
             }
@@ -369,7 +380,7 @@ namespace QuoteFeedSample
         {
             try
             {
-                Console.Error.WriteLine("Session info : {0}, {1}-{2}, {3}", info.Status, info.StartTime, info.EndTime, info.ServerTimeZoneOffset);
+                Console.Error.WriteLine("Session info : {0}, {1}, {2}-{3}, {4}", info.Status, info.DisabledFeatures, info.StartTime, info.EndTime, info.ServerTimeZoneOffset);
 
                 StatusGroupInfo[] groups = info.StatusGroups;
 
@@ -378,7 +389,7 @@ namespace QuoteFeedSample
                 {
                     StatusGroupInfo group = groups[index];
 
-                    Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
+                    Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}, {4}", group.StatusGroupId, group.DisabledFeatures, group.Status, group.StartTime, group.EndTime);
                 }
             }
             catch (Exception exception)
@@ -406,6 +417,9 @@ namespace QuoteFeedSample
 
                     foreach (QuoteEntry entry in quote.Asks)
                         Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                    Console.Error.WriteLine();
+                    Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                     Console.Error.WriteLine();
                 }
@@ -448,6 +462,9 @@ namespace QuoteFeedSample
 
                 foreach (QuoteEntry entry in quote.Asks)
                     Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
+
+                Console.Error.WriteLine();
+                Console.Error.Write("    Indicative Option: " + quote.TickType);
 
                 Console.Error.WriteLine();
             }

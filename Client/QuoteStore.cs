@@ -8,6 +8,11 @@ using SoftFX.Net.QuoteStore;
 using ICSharpCode.SharpZipLib;
 using ICSharpCode.SharpZipLib.Zip;
 using TickTrader.FDK.Common;
+using System.Net;
+using PriceType = TickTrader.FDK.Common.PriceType;
+using TickTrader.FDK.Client.Splits;
+using System.Collections.Concurrent;
+using System.Collections.ObjectModel;
 
 namespace TickTrader.FDK.Client
 {
@@ -21,39 +26,65 @@ namespace TickTrader.FDK.Client
             bool logEvents = false,
             bool logStates = false,
             bool logMessages = false,
-            int port = 5050,
+            int port = 5042,
             string serverCertificateName = "CN=*.soft-fx.com",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
-            int heartbeatInterval = 10000,
-            string logDirectory = "Logs"            
+            int heartbeatInterval = 30000,
+            string logDirectory = "Logs",
+            SoftFX.Net.Core.ClientCertificateValidation validateClientCertificate = null,
+            SoftFX.Net.Core.ProxyType proxyType = SoftFX.Net.Core.ProxyType.None,
+            IPAddress proxyAddress = null,
+            int proxyPort = 0,
+            string proxyUsername = null,
+            string proxyPassword = null
         )
         {
-            ClientSessionOptions options = new ClientSessionOptions(port);
+            ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.SecureSocket;
             options.ServerCertificateName = serverCertificateName;
-            options.ServerMinMinorVersion = Info.QuoteStore.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;
             options.HeartbeatInterval = heartbeatInterval;
+            options.SendBufferSize = 20 * 1024 * 1024;
             options.Log.Directory = logDirectory;
             options.Log.Events = logEvents;
             options.Log.States = logStates;
             options.Log.Messages = logMessages;
+            options.ProxyType = proxyType;
+            options.ProxyAddress = proxyAddress;
+            options.ProxyPort = proxyPort;
+            options.Username = proxyUsername;
+            options.Password = proxyPassword;
 
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
             session_.Listener = sessionListener_;
+            protocolSpec_ = new ProtocolSpec();
+
+            modifiedBarsCache_ = new SEModifiedBarsCache();
+            modifiedBarsSlowGetter_ = new SEModifiedBarsFromServerGetter(this);
+            historyModifier_ = new SEHistoryModifier(modifiedBarsSlowGetter_, modifiedBarsCache_);
+            symbolToLastEventId_ = new ConcurrentDictionary<string, long>();
         }
 
         ClientSession session_;
         ClientSessionListener sessionListener_;
+        ProtocolSpec protocolSpec_;
+
+        ConcurrentDictionary<string, long> symbolToLastEventId_;
+
+        SEModifiedBarsCache modifiedBarsCache_;
+        SEModifiedBarsFromServerGetter modifiedBarsSlowGetter_;
+        SEHistoryModifier historyModifier_;
+
+        public ProtocolSpec ProtocolSpec => protocolSpec_;
 
         #endregion
 
-        #region IDisposable        
+        #region IDisposable
 
         public void Dispose()
         {
@@ -102,7 +133,7 @@ namespace TickTrader.FDK.Client
 
             ConnectInternal(context, address);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
             {
                 DisconnectInternal(null, "Connect timeout");
                 Join();
@@ -185,7 +216,7 @@ namespace TickTrader.FDK.Client
 
             LoginInternal(context, username, password, deviceId, appId, sessionId);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -202,6 +233,8 @@ namespace TickTrader.FDK.Client
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
         {
+            protocolSpec_.InitQuoteStoreVersion(new ProtocolVersion(session_.MajorVersion, session_.MinorVersion));
+
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
@@ -256,10 +289,14 @@ namespace TickTrader.FDK.Client
         public delegate void SymbolListErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
         public delegate void PeriodicityListResultDelegate(QuoteStore quoteStore, object data, BarPeriod[] barPeriods);
         public delegate void PeriodicityListErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
+        public delegate void StockEventQHModifierListResultDelegate(QuoteStore quoteStore, object data, SEQHModifier[] symbols);
+        public delegate void StockEventQHModifierListErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
         public delegate void BarListResultDelegate(QuoteStore quoteStore, object data, TickTrader.FDK.Common.Bar[] bars);
         public delegate void BarListErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
         public delegate void QuoteListResultDelegate(QuoteStore quoteStore, object data, Quote[] bars);
         public delegate void QuoteListErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
+        public delegate void HistoryInfoResultDelegate(QuoteStore quoteStore, object data, HistoryInfo historyInfo);
+        public delegate void HistoryInfoErrorDelegate(QuoteStore quoteStore, object data, Exception exception);
 
         public delegate void BarDownloadResultBeginDelegate(QuoteStore quoteStore, object data, string id, DateTime availFrom, DateTime availTo);
         public delegate void BarDownloadResultDelegate(QuoteStore quoteStore, object data, TickTrader.FDK.Common.Bar bar);
@@ -277,6 +314,8 @@ namespace TickTrader.FDK.Client
 
         public event SymbolListResultDelegate SymbolListResultEvent;
         public event SymbolListErrorDelegate SymbolListErrorEvent;
+        public event StockEventQHModifierListResultDelegate StockEventQHModifierListResultEvent;
+        public event StockEventQHModifierListErrorDelegate StockEventQHModifierListErrorEvent;
         public event PeriodicityListResultDelegate PeriodicityListResultEvent;
         public event PeriodicityListErrorDelegate PeriodicityListErrorEvent;
         public event BarListResultDelegate BarListResultEvent;
@@ -294,8 +333,10 @@ namespace TickTrader.FDK.Client
         public event QuoteDownloadResultEndDelegate QuoteDownloadResultEndEvent;
         public event QuoteDownloadErrorDelegate QuoteDownloadErrorEvent;
         public event CancelDownloadQuotesResultDelegate CancelDownloadQuotesResultEvent;
-        public event CancelDownloadQuotesErrorDelegate CancelDownloadQuotesErrorEvent;        
+        public event CancelDownloadQuotesErrorDelegate CancelDownloadQuotesErrorEvent;
         public event NotificationDelegate NotificationEvent;
+        public event HistoryInfoResultDelegate HistoryInfoResultEvent;
+        public event HistoryInfoErrorDelegate HistoryInfoErrorEvent;
 
         public string[] GetSymbolList(int timeout)
         {
@@ -360,6 +401,43 @@ namespace TickTrader.FDK.Client
             session_.SendPeriodicityListRequest(context, request);
         }
 
+        public SEQHModifier[] GetStockEventQHModifierList(string symbol, int timeout)
+        {
+            //protocolSpec_.CheckSupportedStockEventQHModifierList();
+            if (!protocolSpec_.SupportsStockEventQHModifierList)
+                return new SEQHModifier[0];
+
+            StockEventQHModifierListAsyncContext context = new StockEventQHModifierListAsyncContext(true);
+
+            GetStockEventQHModifierListInternal(context, symbol);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.stockEvents_;
+        }
+
+        public void GetStockEventQHModifierListAsync(object data, string symbol)
+        {
+            protocolSpec_.CheckSupportedStockEventQHModifierList();
+
+            StockEventQHModifierListAsyncContext context = new StockEventQHModifierListAsyncContext(false);
+            context.Data = data;
+
+            GetStockEventQHModifierListInternal(context, symbol);
+        }
+
+        void GetStockEventQHModifierListInternal(StockEventQHModifierListAsyncContext context, string symbol)
+        {
+            StockEventQHModifierListRequest request = new StockEventQHModifierListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.Symbol = symbol;
+            session_.SendStockEventQHModifierListRequest(context, request);
+        }
+
         public TickTrader.FDK.Common.Bar[] GetBarList(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count, int timeout)
         {
             BarListAsyncContext context = new BarListAsyncContext(true);
@@ -404,7 +482,7 @@ namespace TickTrader.FDK.Client
 
             GetQuoteListInternal(context, symbol, depth, from, count);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -433,6 +511,43 @@ namespace TickTrader.FDK.Client
             session_.SendTickListRequest(context, request);
         }
 
+        public Quote[] GetVWAPQuoteList(string symbol, short degree, DateTime from, int count, int timeout)
+        {
+            VWAPQuoteListAsyncContext context = new VWAPQuoteListAsyncContext(true);
+
+            GetVWAPQuoteListInternal(context, symbol, degree, from, count);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.quotes_;
+        }
+
+        public void GetVWAPQuoteListAsync(object data, string symbol, short degree, DateTime from, int count)
+        {
+            VWAPQuoteListAsyncContext context = new VWAPQuoteListAsyncContext(false);
+            context.Data = data;
+
+            GetVWAPQuoteListInternal(context, symbol, degree, from, count);
+        }
+
+        void GetVWAPQuoteListInternal(VWAPQuoteListAsyncContext context, string symbol, short degree, DateTime from, int count)
+        {
+            protocolSpec_.CheckSupportedVWAPTickList();
+
+            VWAPTickListRequest request = new VWAPTickListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.Degree = degree;
+            request.From = from;
+            request.Count = count;
+
+            session_.SendVWAPTickListRequest(context, request);
+        }
+
         public DownloadBarsEnumerator DownloadBars(string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to, int timeout)
         {
             GetBarPeriodicity(ref from, ref to, barPeriod);
@@ -440,9 +555,13 @@ namespace TickTrader.FDK.Client
             long periodMilliseconds = barPeriod.ToMilliseconds();
             long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
 
+            var splits = GetStockEventQHModifierList(symbol, timeout);
+
+            var periodicity = Periodicity.Parse(barPeriod.ToString());
+
             if (periodMilliseconds >= m1PeriodMilliseconds)
             {
-                BarDownloadAsyncContext context = new BarDownloadAsyncContext(true);
+                BarDownloadAsyncContext context = new BarDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, periodicity, priceType, new ReadOnlyCollection<SEQHModifier>(splits)), true);
                 context.enumerartor_ = new DownloadBarsEnumerator(this);
 
                 DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
@@ -453,7 +572,7 @@ namespace TickTrader.FDK.Client
             }
             else
             {
-                BarQuoteDownloadAsyncContext context = new BarQuoteDownloadAsyncContext(true);
+                BarQuoteDownloadAsyncContext context = new BarQuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, periodicity, priceType, new ReadOnlyCollection<SEQHModifier>(splits)), true);
                 context.enumerartor_ = new DownloadBarsEnumerator(this);
 
                 DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
@@ -471,16 +590,20 @@ namespace TickTrader.FDK.Client
             long periodMilliseconds = barPeriod.ToMilliseconds();
             long m1PeriodMilliseconds = BarPeriod.M1.ToMilliseconds();
 
+            var splits = GetStockEventQHModifierList(symbol, 10000);
+
+            var periodicity = Periodicity.Parse(barPeriod.ToString());
+
             if (periodMilliseconds >= m1PeriodMilliseconds)
             {
-                BarDownloadAsyncContext context = new BarDownloadAsyncContext(false);
+                BarDownloadAsyncContext context = new BarDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, periodicity, priceType, new ReadOnlyCollection<SEQHModifier>(splits)), false);
                 context.Data = data;
 
                 DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
             }
             else
             {
-                BarQuoteDownloadAsyncContext context = new BarQuoteDownloadAsyncContext(false);
+                BarQuoteDownloadAsyncContext context = new BarQuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, periodicity, priceType, new ReadOnlyCollection<SEQHModifier>(splits)), false);
                 context.Data = data;
 
                 DownloadBarsInternal(context, symbol, priceType, barPeriod, from, to);
@@ -489,9 +612,9 @@ namespace TickTrader.FDK.Client
 
         void DownloadBarsInternal(BarDownloadAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
-            long calcRangeMilliseconds = (long) ((to - from).TotalMilliseconds);
-            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();                   
-            
+            long calcRangeMilliseconds = (long)((to - from).TotalMilliseconds);
+            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();
+
             string id = Guid.NewGuid().ToString();
 
             context.downloadId_ = id;
@@ -523,9 +646,9 @@ namespace TickTrader.FDK.Client
 
         void DownloadBarsInternal(BarQuoteDownloadAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, DateTime to)
         {
-            long calcRangeMilliseconds = (long) ((to - from).TotalMilliseconds);
-            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();                       
-            
+            long calcRangeMilliseconds = (long)((to - from).TotalMilliseconds);
+            long calcPeriodMilliseconds = barPeriod.ToMilliseconds();
+
             string id = Guid.NewGuid().ToString();
 
             context.downloadId_ = id;
@@ -550,7 +673,7 @@ namespace TickTrader.FDK.Client
 
             CancelDownloadBarsInternal(context, id);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -576,7 +699,9 @@ namespace TickTrader.FDK.Client
 
         public DownloadQuotesEnumerator DownloadQuotes(string symbol, QuoteDepth depth, DateTime from, DateTime to, int timeout)
         {
-            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(true);
+            var splits = GetStockEventQHModifierList(symbol, 10000);
+
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, Periodicity.None, new PriceType(), new ReadOnlyCollection<SEQHModifier>(splits)), true);
             context.enumerartor_ = new DownloadQuotesEnumerator(this);
 
             DownloadQuotesInternal(context, symbol, depth, from, to);
@@ -588,14 +713,37 @@ namespace TickTrader.FDK.Client
 
         public void DownloadQuotesAsync(object data, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
-            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(false);
+            var splits = GetStockEventQHModifierList(symbol, 10000);
+            QuoteDownloadAsyncContext context = new QuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, Periodicity.None, new PriceType(), new ReadOnlyCollection<SEQHModifier>(splits)), false);
             context.Data = data;
 
             DownloadQuotesInternal(context, symbol, depth, from, to);
         }
 
+        public DownloadQuotesEnumerator DownloadVWAPQuotes(string symbol, short degree, DateTime from, DateTime to, int timeout)
+        {
+            var splits = GetStockEventQHModifierList(symbol, 10000);
+            VWAPQuoteDownloadAsyncContext context = new VWAPQuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, Periodicity.None, new PriceType(), new ReadOnlyCollection<SEQHModifier>(splits)), true);
+            context.enumerartor_ = new DownloadQuotesEnumerator(this);
+
+            DownloadVWAPQuotesInternal(context, symbol, degree, from, to);
+
+            context.enumerartor_.Begin(timeout);
+
+            return context.enumerartor_;
+        }
+        public void DownloadVWAPQuotesAsync(object data, string symbol, short degree, DateTime from, DateTime to)
+        {
+            var splits = GetStockEventQHModifierList(symbol, 10000);
+            VWAPQuoteDownloadAsyncContext context = new VWAPQuoteDownloadAsyncContext(historyModifier_.GetRangeModifier(symbol, Periodicity.None, new PriceType(), new ReadOnlyCollection<SEQHModifier>(splits)), false);
+            context.Data = data;
+
+            DownloadVWAPQuotesInternal(context, symbol, degree, from, to);
+        }
+
         void DownloadQuotesInternal(QuoteDownloadAsyncContext context, string symbol, QuoteDepth depth, DateTime from, DateTime to)
         {
+
             string id = Guid.NewGuid().ToString();
 
             context.downloadId_ = id;
@@ -613,13 +761,34 @@ namespace TickTrader.FDK.Client
             session_.SendDownloadRequest(context, request);
         }
 
+        void DownloadVWAPQuotesInternal(VWAPQuoteDownloadAsyncContext context, string symbol, short degree, DateTime from, DateTime to)
+        {
+            protocolSpec_.CheckSupportedVWAPTickList();
+
+            string id = Guid.NewGuid().ToString();
+
+            context.downloadId_ = id;
+            context.degree_ = degree;
+            context.from_ = from;
+            context.to_ = to;
+
+            VWAPTickDownloadRequest request = new VWAPTickDownloadRequest(0);
+            request.Id = id;
+            request.SymbolId = symbol;
+            request.Degree = degree;
+            request.From = from;
+            request.To = to;
+
+            session_.SendDownloadRequest(context, request);
+        }
+
         public void CancelDownloadQuotes(string id, int timeout)
         {
             CancelDownloadQuotesAsyncContext context = new CancelDownloadQuotesAsyncContext(true);
 
             CancelDownloadQuotesInternal(context, id);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -641,6 +810,113 @@ namespace TickTrader.FDK.Client
             request.RequestId = id;
 
             session_.SendDownloadCancelRequest(context, request);
+        }
+
+        public HistoryInfo GetBarsHistoryInfo(string symbol, BarPeriod period, PriceType priceType, int timeout)
+        {
+            HistoryInfoAsyncContext context = new HistoryInfoAsyncContext(true);
+
+            HistoryInfoRequest request = new HistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.HistoryType = HistoryType.Bars;
+            request.Periodicity = period.ToString();
+            request.PriceType = GetPriceType(priceType);
+
+            session_.SendHistoryInfoRequest(context, request);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.historyInfo_;
+        }
+
+        public void GetBarsHistoryInfoAsync(object data, string symbol, BarPeriod period, PriceType priceType)
+        {
+            HistoryInfoAsyncContext context = new HistoryInfoAsyncContext(true);
+            context.Data = data;
+
+            HistoryInfoRequest request = new HistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.HistoryType = HistoryType.Bars;
+            request.Periodicity = period.ToString();
+            request.PriceType = GetPriceType(priceType);
+
+            session_.SendHistoryInfoRequest(context, request);
+        }
+
+        public HistoryInfo GetQuotesHistoryInfo(string symbol, bool level2, int timeout)
+        {
+            HistoryInfoAsyncContext context = new HistoryInfoAsyncContext(true);
+
+            HistoryInfoRequest request = new HistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.HistoryType = level2 ? HistoryType.TicksLevel2 : HistoryType.Ticks;
+
+            session_.SendHistoryInfoRequest(context, request);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.historyInfo_;
+        }
+
+        public void GetQuotesHistoryInfoAsync(object data, string symbol, bool level2)
+        {
+            HistoryInfoAsyncContext context = new HistoryInfoAsyncContext(true);
+            context.Data = data;
+
+            HistoryInfoRequest request = new HistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.HistoryType = level2 ? HistoryType.TicksLevel2 : HistoryType.Ticks;
+
+            session_.SendHistoryInfoRequest(context, request);
+        }
+
+        public HistoryInfo GetVWAPQuotesHistoryInfo(string symbol, short degree, int timeout)
+        {
+            protocolSpec_.CheckSupportedVWAPTickList();
+
+            VWAPHistoryInfoAsyncContext context = new VWAPHistoryInfoAsyncContext(true);
+
+            VWAPHistoryInfoRequest request = new VWAPHistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.Degree = degree;
+
+            session_.SendVWAPHistoryInfoRequest(context, request);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.historyInfo_;
+        }
+
+        public void GetQuotesHistoryInfoAsync(object data, string symbol, short degree)
+        {
+            protocolSpec_.CheckSupportedVWAPTickList();
+
+            VWAPHistoryInfoAsyncContext context = new VWAPHistoryInfoAsyncContext(true);
+            context.Data = data;
+
+            VWAPHistoryInfoRequest request = new VWAPHistoryInfoRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.SymbolId = symbol;
+            request.Degree = degree;
+
+            session_.SendVWAPHistoryInfoRequest(context, request);
         }
 
         #endregion
@@ -823,6 +1099,38 @@ namespace TickTrader.FDK.Client
             public BarPeriod[] barPeriods_;
         }
 
+        class StockEventQHModifierListAsyncContext : StockEventQHModifierListRequestClientContext, IAsyncContext
+        {
+            public StockEventQHModifierListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.SymbolListErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.SymbolListErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public SEQHModifier[] stockEvents_;
+        }
+
+
         class BarListAsyncContext : BarListRequestClientContext, IAsyncContext
         {
             public BarListAsyncContext(bool waitable) : base(waitable)
@@ -851,7 +1159,7 @@ namespace TickTrader.FDK.Client
             }
 
             public BarPeriod barPeriod_;
-            public Exception exception_;            
+            public Exception exception_;
             public TickTrader.FDK.Common.Bar[] bars_;
         }
 
@@ -886,9 +1194,50 @@ namespace TickTrader.FDK.Client
             public Quote[] quotes_;
         }
 
-        class BarDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
+        class VWAPQuoteListAsyncContext : VWAPTickListRequestClientContext, IAsyncContext
         {
-            public BarDownloadAsyncContext(bool waitable) : base(waitable)
+            public VWAPQuoteListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.QuoteListErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.QuoteListErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public Quote[] quotes_;
+        }
+
+        class HistoryModifyingDownloadContext : DownloadRequestClientContext
+        {
+            public SEHistoryRangeModifier modifier_;
+            public HistoryModifyingDownloadContext(SEHistoryRangeModifier modifier, bool waitable) : base(waitable)
+            {
+                modifier_ = modifier;
+            }
+        }
+
+
+        class BarDownloadAsyncContext : HistoryModifyingDownloadContext, IAsyncContext
+        {
+            public BarDownloadAsyncContext(SEHistoryRangeModifier modifier, bool waitable) : base(modifier, waitable)
             {
             }
 
@@ -914,21 +1263,21 @@ namespace TickTrader.FDK.Client
             }
 
             public string downloadId_;
-            public TickTrader.FDK.Common.PriceType priceType_;            
+            public TickTrader.FDK.Common.PriceType priceType_;
             public BarPeriod calcBarPeriod_;
             public BarPeriod barPeriod_;
             public DateTime from_;
-            public DateTime to_;            
+            public DateTime to_;
             public byte[] fileData_;
-            public int fileSize_;            
+            public int fileSize_;
             public TickTrader.FDK.Common.Bar calcBar_;
             public TickTrader.FDK.Common.Bar bar_;
             public DownloadBarsEnumerator enumerartor_;
         }
 
-        class BarQuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
+        class BarQuoteDownloadAsyncContext : HistoryModifyingDownloadContext, IAsyncContext
         {
-            public BarQuoteDownloadAsyncContext(bool waitable) : base(waitable)
+            public BarQuoteDownloadAsyncContext(SEHistoryRangeModifier modifier, bool waitable) : base(modifier, waitable)
             {
             }
 
@@ -1011,9 +1360,9 @@ namespace TickTrader.FDK.Client
             public Exception exception_;
         }
 
-        class QuoteDownloadAsyncContext : DownloadRequestClientContext, IAsyncContext
+        class QuoteDownloadAsyncContext : HistoryModifyingDownloadContext, IAsyncContext
         {
-            public QuoteDownloadAsyncContext(bool waitable) : base(waitable)
+            public QuoteDownloadAsyncContext(SEHistoryRangeModifier modifier, bool waitable) : base(modifier, waitable)
             {
             }
 
@@ -1037,7 +1386,7 @@ namespace TickTrader.FDK.Client
                     enumerartor_.SetError(exception);
                 }
             }
-                        
+
             public string downloadId_;
             public QuoteDepth quoteDepth_;
             public DateTime from_;
@@ -1045,8 +1394,45 @@ namespace TickTrader.FDK.Client
             public byte[] fileData_;
             public int fileSize_;
             public Quote quote_;
-            public DownloadQuotesEnumerator enumerartor_;            
-        }       
+            public DownloadQuotesEnumerator enumerartor_;
+        }
+
+        class VWAPQuoteDownloadAsyncContext : HistoryModifyingDownloadContext, IAsyncContext
+        {
+            public VWAPQuoteDownloadAsyncContext(SEHistoryRangeModifier modifier, bool waitable) : base(modifier, waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.QuoteDownloadErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.QuoteDownloadErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    enumerartor_.SetError(exception);
+                }
+            }
+
+            public string downloadId_;
+            public short degree_;
+            public DateTime from_;
+            public DateTime to_;
+            public byte[] fileData_;
+            public int fileSize_;
+            public Quote quote_;
+            public DownloadQuotesEnumerator enumerartor_;
+        }
 
         class CancelDownloadQuotesAsyncContext : DownloadCancelRequestClientContext, IAsyncContext
         {
@@ -1076,6 +1462,89 @@ namespace TickTrader.FDK.Client
             }
 
             public Exception exception_;
+        }
+
+        class HistoryInfoAsyncContext : HistoryInfoRequestClientContext, IAsyncContext
+        {
+            public HistoryInfoAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.HistoryInfoErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.HistoryInfoErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public HistoryInfo historyInfo_;
+        }
+
+        class VWAPHistoryInfoAsyncContext : VWAPHistoryInfoRequestClientContext, IAsyncContext
+        {
+            public VWAPHistoryInfoAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.HistoryInfoErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.HistoryInfoErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public HistoryInfo historyInfo_;
+        }
+
+        class SEModifiedBarsFromServerGetter : IModifiedBarSlowGetter
+        {
+            QuoteStore client_;
+
+            public SEModifiedBarsFromServerGetter(QuoteStore client)
+            {
+                client_ = client;
+            }
+
+            public bool TryGetBar(DateTime time, string symbol, Periodicity periodicity, PriceType priceType, ref Common.Bar bar)
+            {
+                var res = client_.GetBarList(symbol, priceType, new BarPeriod(periodicity.ToString()), time, 1, 10000);
+                if (res.Length > 0 && res[0].From == time)
+                {
+                    bar = res[0];
+                    return true;
+                }
+                return false;
+            }
         }
 
         class ClientSessionListener : SoftFX.Net.QuoteStore.ClientSessionListener
@@ -1130,10 +1599,10 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {               
+            {
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
                     ConnectException exception = new ConnectException(text);
 
@@ -1160,7 +1629,7 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, string text)
-            {                
+            {
                 try
                 {
                     ConnectException exception = new ConnectException(text);
@@ -1186,7 +1655,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
+                    DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
                     foreach (ClientContext context in contexts)
                     {
@@ -1353,7 +1822,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    LogoutAsyncContext context = (LogoutAsyncContext) LogoutClientContext;
+                    LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
                     try
                     {
@@ -1583,11 +2052,108 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnStockEventQHModifierListReport(ClientSession session, StockEventQHModifierListRequestClientContext stockEventListRequestClientContext, StockEventQHModifierListReport message)
+            {
+                try
+                {
+                    StockEventQHModifierListAsyncContext context = (StockEventQHModifierListAsyncContext)stockEventListRequestClientContext;
+
+                    try
+                    {
+                        StockEventQHModifierArray reportStockEventQHModifiers = message.StockEventQHModifierList;
+                        int count = reportStockEventQHModifiers.Length;
+                        SEQHModifier[] resultStockEventQHModifiers = new SEQHModifier[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            StockEventQHModifier reportStockEventQHModifier = reportStockEventQHModifiers[index];
+                            SEQHModifier resultStockEventQHModifier = new SEQHModifier()
+                            {
+                                Id = reportStockEventQHModifier.Id,
+                                StartTime = reportStockEventQHModifier.StartTime,
+                                Ratio = reportStockEventQHModifier.Ratio
+                            };
+
+                            resultStockEventQHModifiers[index] = resultStockEventQHModifier;
+                        }
+
+                        if (client_.StockEventQHModifierListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.StockEventQHModifierListResultEvent(client_, context.Data, resultStockEventQHModifiers);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.stockEvents_ = resultStockEventQHModifiers;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.StockEventQHModifierListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.StockEventQHModifierListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnStockEventQHModifierListReject(ClientSession session, StockEventQHModifierListRequestClientContext PeriodicityListRequestClientContext, Reject message)
+            {
+                try
+                {
+                    StockEventQHModifierListAsyncContext context = (StockEventQHModifierListAsyncContext)PeriodicityListRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.StockEventQHModifierListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.StockEventQHModifierListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnBarListReport(ClientSession session, BarListRequestClientContext BarListRequestClientContext, BarListReport message)
             {
                 try
                 {
-                    BarListAsyncContext context = (BarListAsyncContext) BarListRequestClientContext;
+                    BarListAsyncContext context = (BarListAsyncContext)BarListRequestClientContext;
 
                     try
                     {
@@ -1688,6 +2254,138 @@ namespace TickTrader.FDK.Client
                 try
                 {
                     QuoteListAsyncContext context = (QuoteListAsyncContext)TickListRequestClientContext;
+
+                    try
+                    {
+                        SoftFX.Net.QuoteStore.TickArray reportTicks = message.Ticks;
+                        int count = reportTicks.Length;
+                        TickTrader.FDK.Common.Quote[] resultQuotes = new TickTrader.FDK.Common.Quote[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            SoftFX.Net.QuoteStore.Tick reportTick = reportTicks[index];
+                            TickTrader.FDK.Common.Quote resultQuote = new TickTrader.FDK.Common.Quote();
+
+                            DateTime time = reportTick.Time;
+
+                            if (reportTick.Index != 0)
+                            {
+                                resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}-{7}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond, reportTick.Index);
+                            }
+                            else
+                                resultQuote.Id = string.Format("{0}.{1}.{2} {3}:{4}:{5}.{6}", time.Year, time.Month, time.Day, time.Hour, time.Minute, time.Second, time.Millisecond);
+
+                            resultQuote.CreatingTime = time;
+
+                            SoftFX.Net.QuoteStore.PriceLevelArray reportBids = reportTick.Bids;
+                            int bidCount = reportBids.Length;
+                            List<QuoteEntry> resultBids = new List<QuoteEntry>(bidCount);
+
+                            QuoteEntry resultBid = new QuoteEntry();
+
+                            bool haveIndicativeBid = false;
+                            bool haveIndicativeAsk = false;
+
+                            for (int bidIndex = 0; bidIndex < bidCount; ++bidIndex)
+                            {
+                                SoftFX.Net.QuoteStore.PriceLevel reportBid = reportBids[bidIndex];
+
+                                resultBid.Price = reportBid.Price;
+                                resultBid.Volume = Math.Abs(reportBid.Size);
+
+                                if (reportBid.Size <= 0)
+                                    haveIndicativeBid = true;
+
+                                resultBids.Add(resultBid);
+                            }
+
+                            SoftFX.Net.QuoteStore.PriceLevelArray reportAsks = reportTick.Asks;
+                            int askCount = reportAsks.Length;
+                            List<QuoteEntry> resultAsks = new List<QuoteEntry>(askCount);
+
+                            QuoteEntry resultAsk = new QuoteEntry();
+
+                            for (int askIndex = 0; askIndex < askCount; ++askIndex)
+                            {
+                                SoftFX.Net.QuoteStore.PriceLevel reportAsk = reportAsks[askIndex];
+
+                                resultAsk.Price = reportAsk.Price;
+                                resultAsk.Volume = Math.Abs(reportAsk.Size);
+
+                                if (reportAsk.Size <= 0)
+                                    haveIndicativeAsk = true;
+
+                                resultAsks.Add(resultAsk);
+                            }
+
+                            resultQuote.Bids = resultBids;
+                            resultQuote.Asks = resultAsks;
+
+                            if (!(resultQuote.IndicativeTick || haveIndicativeBid || haveIndicativeAsk))
+                                resultQuote.TickType = TickTypes.Normal;
+                            else
+                            {
+                                if (resultQuote.IndicativeTick || (haveIndicativeBid && haveIndicativeAsk))
+                                    resultQuote.TickType = TickTypes.IndicativeBidAsk;
+
+                                if (haveIndicativeBid || haveIndicativeAsk)
+                                    resultQuote.IndicativeTick = true;
+
+                                if (haveIndicativeBid && !haveIndicativeAsk)
+                                    resultQuote.TickType = TickTypes.IndicativeBid;
+                                if (!haveIndicativeBid && haveIndicativeAsk)
+                                    resultQuote.TickType = TickTypes.IndicativeAsk;
+                            }
+
+                            resultQuotes[index] = resultQuote;
+                        }
+
+                        if (client_.QuoteListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.QuoteListResultEvent(client_, context.Data, resultQuotes);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.quotes_ = resultQuotes;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.QuoteListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.QuoteListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTickListReport(ClientSession session, VWAPTickListRequestClientContext VWAPTickListRequestClientContext, TickListReport message)
+            {
+                try
+                {
+                    VWAPQuoteListAsyncContext context = (VWAPQuoteListAsyncContext)VWAPTickListRequestClientContext;
 
                     try
                     {
@@ -1821,6 +2519,37 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnTickListReject(ClientSession session, VWAPTickListRequestClientContext VWAPTickListRequestClientContext, Reject message)
+            {
+                try
+                {
+                    VWAPQuoteListAsyncContext context = (VWAPQuoteListAsyncContext)VWAPTickListRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.QuoteListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.QuoteListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnDownloadBeginReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadBeginReport message)
             {
                 try
@@ -1887,9 +2616,71 @@ namespace TickTrader.FDK.Client
                             }
                         }
                     }
+                    else
+                    if (DownloadRequestClientContext is VWAPQuoteDownloadAsyncContext)
+                    {
+                        VWAPQuoteDownloadAsyncContext context = (VWAPQuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
+                        {
+                            ulong maxFileSize = 0;
+
+                            FileInfoArray files = message.Files;
+                            int count = files.Length;
+                            for (int index = 0; index < count; ++index)
+                            {
+                                SoftFX.Net.QuoteStore.FileInfo file = files[index];
+
+                                if (file.Size > maxFileSize)
+                                    maxFileSize = file.Size;
+                            }
+
+                            context.fileData_ = new byte[maxFileSize];
+                            context.fileSize_ = 0;
+                            context.quote_ = new Quote();
+
+                            string requestId = message.RequestId;
+                            DateTime availFrom = message.AvailFrom;
+                            DateTime availTo = message.AvailTo;
+
+                            if (client_.QuoteDownloadResultBeginEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadResultBeginEvent(client_, context.Data, requestId, availFrom, availTo);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.enumerartor_.SetBegin(requestId, availFrom, availTo);
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.enumerartor_.SetError(exception);
+                            }
+                        }
+                    }
                     else if (DownloadRequestClientContext is BarQuoteDownloadAsyncContext)
                     {
-                        BarQuoteDownloadAsyncContext context = (BarQuoteDownloadAsyncContext) DownloadRequestClientContext;
+                        BarQuoteDownloadAsyncContext context = (BarQuoteDownloadAsyncContext)DownloadRequestClientContext;
 
                         try
                         {
@@ -2057,6 +2848,43 @@ namespace TickTrader.FDK.Client
                             }
                         }
                     }
+                    else
+                    if (DownloadRequestClientContext is VWAPQuoteDownloadAsyncContext)
+                    {
+                        VWAPQuoteDownloadAsyncContext context = (VWAPQuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
+                        {
+                            int chunkSize = message.GetChunkSize();
+                            message.GetChunk(context.fileData_, context.fileSize_);
+                            context.fileSize_ += chunkSize;
+
+                            if (message.Last)
+                            {
+                                ProcessVWAPQuoteDownloadFile(context, message.RequestId);
+
+                                context.fileSize_ = 0;
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.enumerartor_.SetError(exception);
+                            }
+                        }
+                    }
                     else if (DownloadRequestClientContext is BarQuoteDownloadAsyncContext)
                     {
                         BarQuoteDownloadAsyncContext context = (BarQuoteDownloadAsyncContext)DownloadRequestClientContext;
@@ -2138,10 +2966,10 @@ namespace TickTrader.FDK.Client
 
             void ProcessBarDownloadFile(BarDownloadAsyncContext context, string downloadId)
             {
-                if (context.fileSize_ >= 4 && 
-                    context.fileData_[0] == 0x50 && 
-                    context.fileData_[1] == 0x4b && 
-                    context.fileData_[2] == 0x03 && 
+                if (context.fileSize_ >= 4 &&
+                    context.fileData_[0] == 0x50 &&
+                    context.fileData_[1] == 0x4b &&
+                    context.fileData_[2] == 0x03 &&
                     context.fileData_[3] == 0x04)
                 {
                     using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
@@ -2174,9 +3002,11 @@ namespace TickTrader.FDK.Client
             {
                 Serialization.BarFormatter barFormatter = new Serialization.BarFormatter(stream);
 
-                long calcPeriodMilliseconds = context.calcBarPeriod_.ToMilliseconds();
+                Periodicity periodicitty = Periodicity.Parse(context.calcBarPeriod_.ToString());
 
-                while (! barFormatter.IsEnd)
+                long calcPeriodMilliseconds = context.calcBarPeriod_.ToMilliseconds();
+                DateTime calcFrom = context.from_;
+                while (!barFormatter.IsEnd)
                 {
                     barFormatter.Deserialize(context.barPeriod_, context.bar_);
 
@@ -2185,10 +3015,17 @@ namespace TickTrader.FDK.Client
 
                     if (context.bar_.From >= context.to_)
                         break;
-                                                                        
-                    long milliseconds = (long) ((context.bar_.From - context.from_).TotalMilliseconds);
-                    milliseconds = milliseconds / calcPeriodMilliseconds * calcPeriodMilliseconds;
-                    DateTime calcFrom = context.from_.AddMilliseconds(milliseconds);
+
+                    if (context.calcBarPeriod_.Prefix == BarPeriodPrefix.MN)
+                    {
+                        calcFrom = context.from_.AddMonths(context.bar_.From.Month - context.from_.Month + 12 * (context.bar_.From.Year - context.from_.Year));
+                    }
+                    else
+                    {
+                        long milliseconds = (long)((context.bar_.From - context.from_).TotalMilliseconds);
+                        milliseconds = milliseconds / calcPeriodMilliseconds * calcPeriodMilliseconds;
+                        calcFrom = context.from_.AddMilliseconds(milliseconds);
+                    }
 
                     if (context.calcBar_.From == new DateTime())
                     {
@@ -2218,6 +3055,7 @@ namespace TickTrader.FDK.Client
                         {
                             try
                             {
+                                context.modifier_.ModifyBar(ref context.calcBar_);
                                 client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
                             }
                             catch
@@ -2228,7 +3066,7 @@ namespace TickTrader.FDK.Client
                         if (context.Waitable)
                         {
                             TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
-
+                            context.modifier_.ModifyBar(ref bar);
                             context.enumerartor_.SetResult(bar);
                         }
 
@@ -2240,14 +3078,15 @@ namespace TickTrader.FDK.Client
                         context.calcBar_.High = context.bar_.High;
                         context.calcBar_.Volume = context.bar_.Volume;
                     }
-                }                                    
+                }
 
-                if (context.calcBar_.From != new DateTime())
+                if (context.calcBar_.From != new DateTime() && !(context.calcBarPeriod_.Prefix == BarPeriodPrefix.W && context.calcBar_.To.Month != context.bar_.From.Month))
                 {
                     if (client_.BarDownloadResultEvent != null)
                     {
                         try
                         {
+                            context.modifier_.ModifyBar(ref context.calcBar_);
                             client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
                         }
                         catch
@@ -2258,18 +3097,21 @@ namespace TickTrader.FDK.Client
                     if (context.Waitable)
                     {
                         TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
+                        context.modifier_.ModifyBar(ref bar);
 
                         context.enumerartor_.SetResult(bar);
                     }
+
+                    context.calcBar_.From = new DateTime();
                 }
             }
 
             void ProcessBarQuoteDownloadFile(BarQuoteDownloadAsyncContext context, string downloadId)
             {
-                if (context.fileSize_ >= 4 && 
-                    context.fileData_[0] == 0x50 && 
-                    context.fileData_[1] == 0x4b && 
-                    context.fileData_[2] == 0x03 && 
+                if (context.fileSize_ >= 4 &&
+                    context.fileData_[0] == 0x50 &&
+                    context.fileData_[1] == 0x4b &&
+                    context.fileData_[2] == 0x03 &&
                     context.fileData_[3] == 0x04)
                 {
                     using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
@@ -2299,11 +3141,12 @@ namespace TickTrader.FDK.Client
 
             void ProcessBarQuoteDownloadStream(BarQuoteDownloadAsyncContext context, string downloadId, Stream stream)
             {
+                Periodicity periodicitty = Periodicity.Parse(context.calcBarPeriod_.ToString());
                 Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(QuoteDepth.Top, stream);
 
                 long calcPeriodMilliseconds = context.calcBarPeriod_.ToMilliseconds();
 
-                while (! tickFormatter.IsEnd)
+                while (!tickFormatter.IsEnd)
                 {
                     tickFormatter.Deserialize(context.quote_);
 
@@ -2312,8 +3155,8 @@ namespace TickTrader.FDK.Client
 
                     if (context.quote_.CreatingTime >= context.to_)
                         break;
-                                                                        
-                    long milliseconds = (long) ((context.quote_.CreatingTime - context.from_).TotalMilliseconds);
+
+                    long milliseconds = (long)((context.quote_.CreatingTime - context.from_).TotalMilliseconds);
                     milliseconds = milliseconds / calcPeriodMilliseconds * calcPeriodMilliseconds;
                     DateTime calcFrom = context.from_.AddMilliseconds(milliseconds);
                     List<QuoteEntry> quoteEntryList = context.priceType_ == Common.PriceType.Ask ? context.quote_.Asks : context.quote_.Bids;
@@ -2330,7 +3173,7 @@ namespace TickTrader.FDK.Client
                             context.calcBar_.Close = quoteEntry.Price;
                             context.calcBar_.Low = quoteEntry.Price;
                             context.calcBar_.High = quoteEntry.Price;
-                            context.calcBar_.Volume = 0;
+                            context.calcBar_.Volume = Math.Abs(quoteEntry.Volume);
                         }
                     }
                     else if (calcFrom == context.calcBar_.From)
@@ -2346,6 +3189,8 @@ namespace TickTrader.FDK.Client
 
                             if (quoteEntry.Price > context.calcBar_.High)
                                 context.calcBar_.High = quoteEntry.Price;
+
+                            context.calcBar_.Volume += Math.Abs(quoteEntry.Volume);
                         }
                     }
                     else
@@ -2356,6 +3201,7 @@ namespace TickTrader.FDK.Client
                             {
                                 try
                                 {
+                                    context.modifier_.ModifyBar(ref context.calcBar_);
                                     client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
                                 }
                                 catch
@@ -2366,7 +3212,7 @@ namespace TickTrader.FDK.Client
                             if (context.Waitable)
                             {
                                 TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
-
+                                context.modifier_.ModifyBar(ref bar);
                                 context.enumerartor_.SetResult(bar);
                             }
 
@@ -2378,10 +3224,10 @@ namespace TickTrader.FDK.Client
                             context.calcBar_.Close = quoteEntry.Price;
                             context.calcBar_.Low = quoteEntry.Price;
                             context.calcBar_.High = quoteEntry.Price;
-                            context.calcBar_.Volume = 0;
+                            context.calcBar_.Volume = Math.Abs(quoteEntry.Volume);
                         }
                     }
-                }                                    
+                }
 
                 if (context.calcBar_.From != new DateTime())
                 {
@@ -2389,6 +3235,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
+                            context.modifier_.ModifyBar(ref context.calcBar_);
                             client_.BarDownloadResultEvent(client_, context.Data, context.calcBar_);
                         }
                         catch
@@ -2399,18 +3246,20 @@ namespace TickTrader.FDK.Client
                     if (context.Waitable)
                     {
                         TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
-
+                        context.modifier_.ModifyBar(ref bar);
                         context.enumerartor_.SetResult(bar);
                     }
+
+                    context.calcBar_.From = new DateTime();
                 }
             }
 
             void ProcessQuoteDownloadFile(QuoteDownloadAsyncContext context, string downloadId)
             {
-                if (context.fileSize_ >= 4 && 
-                    context.fileData_[0] == 0x50 && 
-                    context.fileData_[1] == 0x4b && 
-                    context.fileData_[2] == 0x03 && 
+                if (context.fileSize_ >= 4 &&
+                    context.fileData_[0] == 0x50 &&
+                    context.fileData_[1] == 0x4b &&
+                    context.fileData_[2] == 0x03 &&
                     context.fileData_[3] == 0x04)
                 {
                     using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
@@ -2443,7 +3292,76 @@ namespace TickTrader.FDK.Client
             {
                 Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(context.quoteDepth_, stream);
 
-                while (! tickFormatter.IsEnd)
+                while (!tickFormatter.IsEnd)
+                {
+                    tickFormatter.Deserialize(context.quote_);
+
+                    if (context.quote_.CreatingTime < context.from_)
+                        continue;
+
+                    if (context.quote_.CreatingTime >= context.to_)
+                        break;
+
+                    if (client_.QuoteDownloadResultEvent != null)
+                    {
+                        try
+                        {
+                            context.modifier_.ModifyTick(ref context.quote_);
+                            client_.QuoteDownloadResultEvent(client_, context.Data, context.quote_);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        Quote quote = context.quote_.Clone();
+                        context.modifier_.ModifyTick(ref quote);
+                        context.enumerartor_.SetResult(quote);
+                    }
+                }
+            }
+
+            void ProcessVWAPQuoteDownloadFile(VWAPQuoteDownloadAsyncContext context, string downloadId)
+            {
+                if (context.fileSize_ >= 4 &&
+                    context.fileData_[0] == 0x50 &&
+                    context.fileData_[1] == 0x4b &&
+                    context.fileData_[2] == 0x03 &&
+                    context.fileData_[3] == 0x04)
+                {
+                    using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
+                    {
+                        using (ZipFile zipFile = new ZipFile(memoryStream))
+                        {
+                            string fileName = ("ticks vwap 1e" + context.degree_.ToString("+00;-00")) + ".txt";
+                            ZipEntry zipEntry = zipFile.GetEntry(fileName);
+
+                            if (zipEntry == null)
+                                throw new Exception(string.Format("Could not find file {0} inside zip archive", fileName));
+
+                            using (Stream zipInputStream = zipFile.GetInputStream(zipEntry))
+                            {
+                                ProcessVWAPQuoteDownloadStream(context, downloadId, zipInputStream);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    using (MemoryStream memoryStream = new MemoryStream(context.fileData_, 0, context.fileSize_))
+                    {
+                        ProcessVWAPQuoteDownloadStream(context, downloadId, memoryStream);
+                    }
+                }
+            }
+
+            void ProcessVWAPQuoteDownloadStream(VWAPQuoteDownloadAsyncContext context, string downloadId, Stream stream)
+            {
+                Serialization.TickFormatter tickFormatter = new Serialization.TickFormatter(QuoteDepth.Top, stream);
+
+                while (!tickFormatter.IsEnd)
                 {
                     tickFormatter.Deserialize(context.quote_);
 
@@ -2472,6 +3390,7 @@ namespace TickTrader.FDK.Client
                     }
                 }
             }
+
 
             public override void OnDownloadEndReport(ClientSession session, DownloadRequestClientContext DownloadRequestClientContext, DownloadEndReport message)
             {
@@ -2506,6 +3425,47 @@ namespace TickTrader.FDK.Client
                                 try
                                 {
                                     client_.BarDownloadErrorEvent(client_, context.Data, exception);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.enumerartor_.SetError(exception);
+                            }
+                        }
+                    }
+                    else if (DownloadRequestClientContext is VWAPQuoteDownloadAsyncContext)
+                    {
+                        VWAPQuoteDownloadAsyncContext context = (VWAPQuoteDownloadAsyncContext)DownloadRequestClientContext;
+
+                        try
+                        {
+                            if (client_.QuoteDownloadResultEndEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadResultEndEvent(client_, context.Data);
+                                }
+                                catch
+                                {
+                                }
+                            }
+
+                            if (context.Waitable)
+                            {
+                                context.enumerartor_.SetEnd();
+                            }
+                        }
+                        catch (Exception exception)
+                        {
+                            if (client_.QuoteDownloadErrorEvent != null)
+                            {
+                                try
+                                {
+                                    client_.QuoteDownloadErrorEvent(client_, context.Data, exception);
                                 }
                                 catch
                                 {
@@ -2694,7 +3654,7 @@ namespace TickTrader.FDK.Client
                 {
                     if (DownloadCancelRequestClientContext is CancelDownloadBarsAsyncContext)
                     {
-                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
+                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext)DownloadCancelRequestClientContext;
 
                         try
                         {
@@ -2730,7 +3690,7 @@ namespace TickTrader.FDK.Client
                     }
                     else
                     {
-                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
+                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext)DownloadCancelRequestClientContext;
 
                         try
                         {
@@ -2777,7 +3737,7 @@ namespace TickTrader.FDK.Client
                 {
                     if (DownloadCancelRequestClientContext is CancelDownloadBarsAsyncContext)
                     {
-                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext) DownloadCancelRequestClientContext;
+                        CancelDownloadBarsAsyncContext context = (CancelDownloadBarsAsyncContext)DownloadCancelRequestClientContext;
 
                         Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
@@ -2800,7 +3760,7 @@ namespace TickTrader.FDK.Client
                     }
                     else
                     {
-                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext) DownloadCancelRequestClientContext;
+                        CancelDownloadQuotesAsyncContext context = (CancelDownloadQuotesAsyncContext)DownloadCancelRequestClientContext;
 
                         Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                         RejectException exception = new RejectException(rejectReason, message.Text);
@@ -2880,6 +3840,180 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnHistoryInfoReport(ClientSession session, HistoryInfoRequestClientContext HistoryInfoRequestClientContext, HistoryInfoReport message)
+            {
+                HistoryInfoAsyncContext context = (HistoryInfoAsyncContext)HistoryInfoRequestClientContext;
+
+                try
+                {
+                    try
+                    {
+                        HistoryInfo historyInfo = new HistoryInfo();
+                        historyInfo.Symbol = message.SymbolId;
+                        historyInfo.AvailFrom = message.AvailFrom;
+                        historyInfo.AvailTo = message.AvailTo;
+                        historyInfo.LastTickId = message.LastTickId;
+
+                        if (client_.HistoryInfoResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.HistoryInfoResultEvent(client_, context.Data, historyInfo);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.historyInfo_ = historyInfo;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.HistoryInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.HistoryInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnHistoryInfoReport(ClientSession session, VWAPHistoryInfoRequestClientContext HistoryInfoRequestClientContext, HistoryInfoReport message)
+            {
+                VWAPHistoryInfoAsyncContext context = (VWAPHistoryInfoAsyncContext)HistoryInfoRequestClientContext;
+
+                try
+                {
+                    try
+                    {
+                        HistoryInfo historyInfo = new HistoryInfo();
+                        historyInfo.Symbol = message.SymbolId;
+                        historyInfo.AvailFrom = message.AvailFrom;
+                        historyInfo.AvailTo = message.AvailTo;
+                        historyInfo.LastTickId = message.LastTickId;
+
+                        if (client_.HistoryInfoResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.HistoryInfoResultEvent(client_, context.Data, historyInfo);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.historyInfo_ = historyInfo;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.HistoryInfoErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.HistoryInfoErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnHistoryInfoReject(ClientSession session, HistoryInfoRequestClientContext HistoryInfoRequestClientContext, Reject message)
+            {
+                try
+                {
+                    HistoryInfoAsyncContext context = (HistoryInfoAsyncContext)HistoryInfoRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.HistoryInfoErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.HistoryInfoErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnHistoryInfoReject(ClientSession session, VWAPHistoryInfoRequestClientContext VWAPHistoryInfoRequestClientContext, Reject message)
+            {
+                try
+                {
+                    VWAPHistoryInfoAsyncContext context = (VWAPHistoryInfoAsyncContext)VWAPHistoryInfoRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.HistoryInfoErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.HistoryInfoErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             TickTrader.FDK.Common.LogoutReason GetLogoutReason(SoftFX.Net.QuoteStore.LoginRejectReason reason)
             {
                 switch (reason)
@@ -2896,11 +4030,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.QuoteStore.LoginRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.LogoutReason.ServerError;
 
-                    case SoftFX.Net.QuoteStore.LoginRejectReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.Other:
                     default:
-                        throw new Exception("Invalid login reject reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -2923,11 +4058,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.QuoteStore.LogoutReason.BlockedLogin:
                         return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
-                    case SoftFX.Net.QuoteStore.LogoutReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.QuoteStore.LogoutReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.QuoteStore.LogoutReason.Other:
                     default:
-                        throw new Exception("Invalid logout reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -2945,10 +4081,8 @@ namespace TickTrader.FDK.Client
                         return Common.RejectReason.InternalServerError;
 
                     case SoftFX.Net.QuoteStore.RejectReason.Other:
-                        return Common.RejectReason.Other;
-
                     default:
-                        throw new Exception("Invalid reject reason : " + reason);
+                        return Common.RejectReason.Other;
                 }
             }
 
@@ -2960,7 +4094,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
                     default:
-                        throw new Exception("Invalid notification type : " + type);
+                        return TickTrader.FDK.Common.NotificationType.Unknown;
                 }
             }
 
@@ -2978,10 +4112,10 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
-                        throw new Exception("Invalid notification severity : " + severity);
+                        return TickTrader.FDK.Common.NotificationSeverity.Unknown;
                 }
             }
-            
+
             QuoteStore client_;
         }
 
@@ -2994,11 +4128,12 @@ namespace TickTrader.FDK.Client
                 from = to;
                 to = temp;
             }
-                
+
             Periodicity periodicity = new Periodicity();
             Periodicity.TryParse(barPeriod.ToString(), out periodicity);
             from = periodicity.GetPeriodStartTime(from);
-            to = periodicity.GetPeriodStartTime(periodicity.Shift(to, 1));
+            if (to != periodicity.GetPeriodStartTime(to))
+                to = periodicity.GetPeriodStartTime(periodicity.Shift(to, 1));
         }
 
         #endregion

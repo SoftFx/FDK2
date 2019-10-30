@@ -195,6 +195,26 @@ namespace TickTrader.FDK.Client.Serialization
             }
         }
 
+        public void ReadDecimal(out decimal value)
+        {
+            Int64 cel;
+            ReadInt64(out cel);
+            value = cel;
+
+            if (!eof_)
+            {
+                if (ch_ == '.')
+                {
+                    NextChar();
+
+                    int oldPos = pos_;
+                    Int64 drob;
+                    ReadInt64(out drob);
+                    value += (decimal)drob / Pow10(pos_ - oldPos);
+                }
+            }
+        }
+
         void NextChar()
         {
             int i = streamReader_.Read();

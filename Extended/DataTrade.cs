@@ -5,6 +5,7 @@
     using System.Threading;
     using Common;
     using Client;
+    using System.Net;
 
     /// <summary>
     /// This class connects to trading platform and provides trading functionality.
@@ -16,7 +17,14 @@
         /// <summary>
         /// Creates a new data trade instance.
         /// </summary>
-        public DataTrade() : this(null, "DataTrade")
+        public DataTrade() : this(null)
+        {
+        }
+
+        /// <summary>
+        /// Creates a new data trade instance.
+        /// </summary>
+        public DataTrade(ClientCertificateValidation validateClientCertificate) : this(null, "DataTrade", validateClientCertificate)
         {
         }
 
@@ -24,7 +32,7 @@
         /// Creates and initializes a new data trade instance.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
-        public DataTrade(string connectionString) : this(connectionString, "DataTrade")
+        public DataTrade(string connectionString, ClientCertificateValidation validateClientCertificate) : this(connectionString, "DataTrade", validateClientCertificate)
         {
         }
 
@@ -32,7 +40,7 @@
         /// Creates and initializes a new data trade instance.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
-        public DataTrade(string connectionString, string name)
+        public DataTrade(string connectionString, string name, ClientCertificateValidation validateClientCertificate)
         {
             name_ = name;
             server_ = new DataTradeServer(this);
@@ -40,7 +48,7 @@
             network_ = new DataTradeNetwork(this);
 
             if (!string.IsNullOrEmpty(connectionString))
-                Initialize(connectionString);
+                Initialize(connectionString, validateClientCertificate);
         }
 
         /// <summary>
@@ -49,7 +57,7 @@
         /// <param name="connectionString">Can not be null.</param>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
         /// <exception cref="System.InvalidOperationException">If the instance is not stopped.</exception>
-        public void Initialize(string connectionString)
+        public void Initialize(string connectionString, ClientCertificateValidation validateClientCertificate)
         {
             if (string.IsNullOrEmpty(connectionString))
                 throw new ArgumentNullException(nameof(connectionString), "Connection string can not be null or empty.");
@@ -63,11 +71,11 @@
 
             int orderEntryPort;
             if (! connectionStringParser.TryGetIntValue("OrderEntryPort", out orderEntryPort))
-                orderEntryPort = 5040;
+                orderEntryPort = 5043;
 
             int tradeCapturePort;
             if (! connectionStringParser.TryGetIntValue("TradeCapturePort", out tradeCapturePort))
-                tradeCapturePort = 5060;
+                tradeCapturePort = 5044;
 
             string serverCertificateName;
             if (! connectionStringParser.TryGetStringValue("ServerCertificateName", out serverCertificateName))
@@ -110,10 +118,47 @@
             bool logMessages;
             if (! connectionStringParser.TryGetBoolValue("LogMessages", out logMessages))
                 logMessages = false;
-            
+
+            int proxyTypeFDKnumber;
+            if (!connectionStringParser.TryGetIntValue("ProxyType", out proxyTypeFDKnumber))
+                proxyTypeFDKnumber = (int)ProxyType.None;
+            ProxyType proxyTypeFDK = (ProxyType)proxyTypeFDKnumber;
+
+            string proxyAddressString;
+            if (!connectionStringParser.TryGetStringValue("ProxyAddress", out proxyAddressString))
+                proxyAddressString = null;
+            IPAddress proxyAddress = null;
+            IPAddress.TryParse(proxyAddressString, out proxyAddress);
+
+            int proxyPort;
+            if (!connectionStringParser.TryGetIntValue("ProxyPort", out proxyPort))
+                proxyPort = 0;
+
+            string proxyUsername;
+            if (!connectionStringParser.TryGetStringValue("ProxyUsername", out proxyUsername))
+                proxyUsername = null;
+
+            string proxyPassword;
+            if (!connectionStringParser.TryGetStringValue("ProxyPassword", out proxyPassword))
+                proxyPassword = null;
+
             synchronizer_ = new object();
 
-            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logEvents, logStates, logMessages, orderEntryPort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            SoftFX.Net.Core.ClientCertificateValidation orderEntryClientCertificateValidation;
+            SoftFX.Net.Core.ClientCertificateValidation tradeCaptureClientCertificateValidation;
+            if (validateClientCertificate == null)
+            {
+                orderEntryClientCertificateValidation = null;
+                tradeCaptureClientCertificateValidation = null;
+            }
+            else
+            {
+                orderEntryClientCertificateValidation = (sender, cert, chain, ssl) => validateClientCertificate(sender, cert, chain, ssl, orderEntryPort);
+                tradeCaptureClientCertificateValidation = (sender, cert, chain, ssl) => validateClientCertificate(sender, cert, chain, ssl, tradeCapturePort);
+            }
+
+            orderEntryClient_ = new OrderEntry(name_ + ".OrderEntry", logEvents, logStates, logMessages, orderEntryPort, serverCertificateName, 1, -1, 10000, 10000, logDirectory,
+                orderEntryClientCertificateValidation, (SoftFX.Net.Core.ProxyType)proxyTypeFDK, proxyAddress, proxyPort, proxyUsername, proxyPassword);
             orderEntryClient_.ConnectResultEvent += new OrderEntry.ConnectResultDelegate(this.OnConnectResult);
             orderEntryClient_.ConnectErrorEvent += new OrderEntry.ConnectErrorDelegate(this.OnConnectError);
             orderEntryClient_.DisconnectResultEvent += new OrderEntry.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -157,7 +202,8 @@
             orderEntryClient_.BalanceUpdateEvent += new OrderEntry.BalanceUpdateDelegate(this.OnBalanceUpdate);
             orderEntryClient_.NotificationEvent += new OrderEntry.NotificationDelegate(this.OnNotification);
 
-            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logEvents, logStates, logMessages, tradeCapturePort, serverCertificateName, -1, -1, 10000, 10000, logDirectory);
+            tradeCaptureClient_ = new TradeCapture(name_ + ".TradeCapture", logEvents, logStates, logMessages, tradeCapturePort, serverCertificateName, 1, -1, 10000, 10000, logDirectory,
+                tradeCaptureClientCertificateValidation, (SoftFX.Net.Core.ProxyType)proxyTypeFDK, proxyAddress, proxyPort, proxyUsername, proxyPassword);
             tradeCaptureClient_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
             tradeCaptureClient_.ConnectErrorEvent += new TradeCapture.ConnectErrorDelegate(this.OnConnectError);
             tradeCaptureClient_.DisconnectResultEvent += new TradeCapture.DisconnectResultDelegate(this.OnDisconnectResult);
@@ -218,6 +264,22 @@
         }
 
         /// <summary>
+        /// Returns order entry protocol specification
+        /// </summary>
+        public ProtocolSpec OrderEntryProtocolSpec
+        {
+            get { return orderEntryClient_.ProtocolSpec; }
+        }
+
+        /// <summary>
+        /// Returns trade capture protocol specification
+        /// </summary>
+        public ProtocolSpec TradeCaptureProtocolSpec
+        {
+            get { return tradeCaptureClient_.ProtocolSpec; }
+        }
+
+        /// <summary>
         /// Returns true, the data trade/feed object is started, otherwise false.
         /// </summary>
         public bool IsStarted
@@ -246,7 +308,7 @@
         }
 
         #endregion
-        
+
         #region Events
 
         /// <summary>
@@ -319,9 +381,9 @@
                     if (started_)
                         throw new Exception(string.Format("Data trade is already started : {0}", name_));
 
-                    twoFactorLoginState_ = TwoFactorLoginState.None;                    
+                    twoFactorLoginState_ = TwoFactorLoginState.None;
                     orderEntryTwoFactorLoginState_ = TwoFactorLoginState.None;
-                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.None;                    
+                    tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.None;
 
                     loginEvent_.Reset();
                     loginException_ = null;
@@ -393,20 +455,20 @@
 
                     try
                     {
-                        tradeCaptureClient_.LogoutAsync(this, "Client logout");
+                        orderEntryClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
-                    {                        
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    {
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                     }
 
                     try
                     {
-                        orderEntryClient_.LogoutAsync(this, "Client logout");
+                        tradeCaptureClient_.LogoutAsync(this, "Client logout");
                     }
                     catch
-                    {                        
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
                     }
                 }
             }
@@ -425,7 +487,7 @@
 
                     eventQueue_.Close();
                 }
-            }           
+            }
 
             if (eventThread != null)
                 eventThread.Join();
@@ -504,7 +566,7 @@
         /// Occurs when local cache initialized.
         /// </summary>
         [Obsolete("Please use Logon event")]
-        public event CacheHandler CacheInitialized;        
+        public event CacheHandler CacheInitialized;
 
         /// <summary>
         /// Starts data feed/trade instance and waits for logon event.
@@ -559,7 +621,7 @@
                         logout_ = true;
 
                         LogoutEventArgs args = new LogoutEventArgs();
-                        args.Reason = LogoutReason.Unknown; 
+                        args.Reason = LogoutReason.Unknown;
                         args.Text = exception.Message;
                         eventQueue_.PushEvent(args);
 
@@ -665,18 +727,18 @@
                         twoFactorLoginState_ = TwoFactorLoginState.Request;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
                         args.TwoFactorAuth = twoFactorAuth;
-                        eventQueue_.PushEvent(args);                        
+                        eventQueue_.PushEvent(args);
                     }
                     else if (twoFactorLoginState_ == TwoFactorLoginState.Error)
                     {
                         twoFactorLoginState_ = TwoFactorLoginState.Request;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
                         args.TwoFactorAuth = twoFactorAuth;
@@ -745,13 +807,13 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Error;                    
+                    orderEntryTwoFactorLoginState_ = TwoFactorLoginState.Error;
                     orderEntryTwoFactorLoginException_ = exception;
                     //Console.WriteLine("orderEntryTwoFactorLoginState_:{0}", orderEntryTwoFactorLoginState_);
 
                     if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Response)
                     {
-                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
                         twoFactorLoginException_ = exception;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
@@ -766,11 +828,11 @@
                     }
                     else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.Success)
                     {
-                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
                         twoFactorLoginException_ = exception;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerError;
                         twoFactorAuth.Text = exception.Message;
@@ -781,11 +843,11 @@
                     }
                     else if (tradeCaptureTwoFactorLoginState_ == TwoFactorLoginState.None)
                     {
-                        twoFactorLoginState_ = TwoFactorLoginState.Error;                        
+                        twoFactorLoginState_ = TwoFactorLoginState.Error;
                         twoFactorLoginException_ = exception;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerError;
                         twoFactorAuth.Text = exception.Message;
@@ -855,7 +917,7 @@
         {
             try
             {
-                orderEntryClient_.GetTradeServerInfoAsync(this);                
+                orderEntryClient_.GetTradeServerInfoAsync(this);
                 orderEntryClient_.GetAccountInfoAsync(this);
                 orderEntryClient_.GetSessionInfoAsync(this);
                 orderEntryClient_.GetOrdersAsync(this);
@@ -951,8 +1013,20 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    string reason = null;
+                    if (exception is RejectException)
+                        reason = ((RejectException)exception).Reason.ToString();
+
+                    if (reason == null)
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    }
+                    else
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                    }
                 }
             }
             catch
@@ -1027,8 +1101,20 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    string reason = null;
+                    if (exception is RejectException)
+                        reason = ((RejectException)exception).Reason.ToString();
+
+                    if (reason == null)
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    }
+                    else
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                    }
                 }
             }
             catch
@@ -1085,8 +1171,20 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    string reason = null;
+                    if (exception is RejectException)
+                        reason = ((RejectException)exception).Reason.ToString();
+
+                    if (reason == null)
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    }
+                    else
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                    }
                 }
             }
             catch
@@ -1146,8 +1244,20 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    string reason = null;
+                    if (exception is RejectException)
+                        reason = ((RejectException)exception).Reason.ToString();
+
+                    if (reason == null)
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    }
+                    else
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                    }
                 }
             }
             catch
@@ -1235,8 +1345,20 @@
             {
                 if (data == this)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    string reason = null;
+                    if (exception is RejectException)
+                        reason = ((RejectException)exception).Reason.ToString();
+
+                    if (reason == null)
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    }
+                    else
+                    {
+                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                    }
                 }
             }
             catch
@@ -1327,9 +1449,27 @@
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
                 }
+                else if (exception is RejectException)
+                {
+                    RejectException rejectException = (RejectException)exception;
+
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ClientOrderId = rejectException.ClientOrderId;
+                    executionReport.OrigClientOrderId = rejectException.ClientOrderId;
+                    executionReport.ExecutionType = ExecutionType.Rejected;
+                    executionReport.OrderStatus = OrderStatus.Rejected;
+                    executionReport.RejectReason = rejectException.Reason;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
                 else
                 {
                     Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ExecutionType = ExecutionType.None;
+                    executionReport.OrderStatus = OrderStatus.None;
                     executionReport.RejectReason = Common.RejectReason.Other;
                     executionReport.Text = exception.Message;
 
@@ -1378,9 +1518,27 @@
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
                 }
+                else if (exception is RejectException)
+                {
+                    RejectException rejectException = (RejectException)exception;
+
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ClientOrderId = rejectException.ClientOrderId;
+                    executionReport.OrigClientOrderId = rejectException.ClientOrderId;
+                    executionReport.ExecutionType = ExecutionType.Rejected;
+                    executionReport.OrderStatus = OrderStatus.Calculated;
+                    executionReport.RejectReason = rejectException.Reason;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
                 else
                 {
                     Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ExecutionType = ExecutionType.None;
+                    executionReport.OrderStatus = OrderStatus.None;
                     executionReport.RejectReason = Common.RejectReason.Other;
                     executionReport.Text = exception.Message;
 
@@ -1429,9 +1587,27 @@
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
                 }
+                else if (exception is RejectException)
+                {
+                    RejectException rejectException = (RejectException)exception;
+
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ClientOrderId = rejectException.ClientOrderId;
+                    executionReport.OrigClientOrderId = rejectException.ClientOrderId;
+                    executionReport.ExecutionType = ExecutionType.Rejected;
+                    executionReport.OrderStatus = OrderStatus.Calculated;
+                    executionReport.RejectReason = rejectException.Reason;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
                 else
                 {
                     Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ExecutionType = ExecutionType.None;
+                    executionReport.OrderStatus = OrderStatus.None;
                     executionReport.RejectReason = Common.RejectReason.Other;
                     executionReport.Text = exception.Message;
 
@@ -1480,9 +1656,27 @@
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
                 }
+                else if (exception is RejectException)
+                {
+                    RejectException rejectException = (RejectException)exception;
+
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ClientOrderId = rejectException.ClientOrderId;
+                    executionReport.OrigClientOrderId = rejectException.ClientOrderId;
+                    executionReport.ExecutionType = ExecutionType.Rejected;
+                    executionReport.OrderStatus = OrderStatus.Calculated;
+                    executionReport.RejectReason = rejectException.Reason;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
                 else
                 {
                     Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ExecutionType = ExecutionType.None;
+                    executionReport.OrderStatus = OrderStatus.None;
                     executionReport.RejectReason = Common.RejectReason.Other;
                     executionReport.Text = exception.Message;
 
@@ -1531,9 +1725,27 @@
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
                 }
+                else if (exception is RejectException)
+                {
+                    RejectException rejectException = (RejectException)exception;
+
+                    Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ClientOrderId = rejectException.ClientOrderId;
+                    executionReport.OrigClientOrderId = rejectException.ClientOrderId;
+                    executionReport.ExecutionType = ExecutionType.Rejected;
+                    executionReport.OrderStatus = OrderStatus.Calculated;
+                    executionReport.RejectReason = rejectException.Reason;
+                    executionReport.Text = exception.Message;
+
+                    ExecutionReportEventArgs args = new ExecutionReportEventArgs();
+                    args.Report = executionReport;
+                    eventQueue_.PushEvent(args);
+                }
                 else
                 {
                     Common.ExecutionReport executionReport = new Common.ExecutionReport();
+                    executionReport.ExecutionType = ExecutionType.None;
+                    executionReport.OrderStatus = OrderStatus.None;
                     executionReport.RejectReason = Common.RejectReason.Other;
                     executionReport.Text = exception.Message;
 
@@ -1591,7 +1803,7 @@
                 {
                     UpdateCacheData(executionReport);
                 }
-                
+
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = executionReport;
                 eventQueue_.PushEvent(args);
@@ -1605,15 +1817,23 @@
         {
             try
             {
+                Position previous = null;
+
                 lock (cache_.mutex_)
                 {
                     if (cache_.positions_ != null)
                     {
+                        if (cache_.positions_.ContainsKey(position.Symbol))
+                            previous = cache_.positions_[position.Symbol];
                         cache_.positions_[position.Symbol] = position;
+
+                        if (position.BuyAmount == 0 && position.SellAmount == 0)
+                            cache_.positions_.Remove(position.Symbol);
                     }
                 }
 
                 PositionReportEventArgs args = new PositionReportEventArgs();
+                args.Previous = (previous != null) ? previous : position;
                 args.Report = position;
                 eventQueue_.PushEvent(args);
             }
@@ -1656,7 +1876,7 @@
 
                         try
                         {
-                            orderEntryClient_.GetTradeServerInfoAsync(this);                
+                            orderEntryClient_.GetTradeServerInfoAsync(this);
                             orderEntryClient_.GetAccountInfoAsync(this);
                             orderEntryClient_.GetSessionInfoAsync(this);
                             orderEntryClient_.GetOrdersAsync(this);
@@ -1666,7 +1886,7 @@
                             tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
                             orderEntryClient_.DisconnectAsync(this, "Client disconnect");
                         }
-                    }                    
+                    }
 
                     return;
                 }
@@ -1814,7 +2034,7 @@
                         twoFactorLoginState_ = TwoFactorLoginState.Request;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
                         args.TwoFactorAuth = twoFactorAuth;
@@ -1825,7 +2045,7 @@
                         twoFactorLoginState_ = TwoFactorLoginState.Request;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerRequest;
                         args.TwoFactorAuth = twoFactorAuth;
@@ -1847,7 +2067,7 @@
                     tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Success;
                     tradeCaptureTwoFactorLoginException_ = null;
                     tradeCaptureTwoFactorLoginExpiration_ = expireTime;
-                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);
 
                     if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Success)
                     {
@@ -1896,7 +2116,7 @@
                 {
                     tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Error;
                     tradeCaptureTwoFactorLoginException_ = exception;
-                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);
 
                     if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Response)
                     {
@@ -1919,7 +2139,7 @@
                         twoFactorLoginException_ = exception;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerError;
                         twoFactorAuth.Text = exception.Message;
@@ -1934,7 +2154,7 @@
                         twoFactorLoginException_ = exception;
                         //Console.WriteLine("twoFactorLoginState_:{0}", twoFactorLoginState_);
 
-                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();                    
+                        TwoFactorAuthEventArgs args = new TwoFactorAuthEventArgs();
                         TwoFactorAuth twoFactorAuth = new TwoFactorAuth();
                         twoFactorAuth.Reason = TwoFactorReason.ServerError;
                         twoFactorAuth.Text = exception.Message;
@@ -1959,7 +2179,7 @@
                     tradeCaptureTwoFactorLoginState_ = TwoFactorLoginState.Success;
                     tradeCaptureTwoFactorLoginException_ = null;
                     tradeCaptureTwoFactorLoginExpiration_ = expireTime;
-                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);                    
+                    //Console.WriteLine("tradeCaptureTwoFactorLoginState_:{0}", tradeCaptureTwoFactorLoginState_);
 
                     if (orderEntryTwoFactorLoginState_ == TwoFactorLoginState.Success)
                     {
@@ -2143,19 +2363,28 @@
             {
                 if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled)
                 {
-                    cache_.tradeRecords_.Remove(executionReport.OrderId);
+                    if (cache_.tradeRecords_.ContainsKey(executionReport.OrderId))
+                        cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Activated)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
-                else if (executionReport.ExecutionType == ExecutionType.Canceled) 
+                else if (executionReport.ExecutionType == ExecutionType.Canceled)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Expired)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
+                }
+                else if (executionReport.ExecutionType == ExecutionType.Rejected)
+                {
+                    // Do nothing here...
+                }
+                else if (executionReport.ExecutionType == ExecutionType.New && executionReport.OrderStatus == OrderStatus.New)
+                {
+                    // Do nothing here...
                 }
                 else if (executionReport.LeavesVolume == 0)
                 {
@@ -2306,10 +2535,10 @@
 
             AccountInfo accountInfo;
             SessionInfo sessionInfo;
-            Position[] positions;            
+            Position[] positions;
 
             lock (cache_)
-            {                
+            {
                 accountInfo = cache_.accountInfo_;
                 sessionInfo = cache_.sessionInfo_;
 
@@ -2337,10 +2566,11 @@
 
             // For backward comapatibility
             if (positions != null)
-            {                
+            {
                 for (int index = 0; index < positions.Length; ++ index)
                 {
                     PositionReportEventArgs positionArgs = new PositionReportEventArgs();
+                    positionArgs.Previous = positions[index];
                     positionArgs.Report = positions[index];
                     eventQueue_.PushEvent(positionArgs);
                 }
@@ -2361,10 +2591,10 @@
 
             AccountInfo accountInfo;
             SessionInfo sessionInfo;
-            Position[] positions;            
+            Position[] positions;
 
             lock (cache_)
-            {                
+            {
                 accountInfo = cache_.accountInfo_;
                 sessionInfo = cache_.sessionInfo_;
 
@@ -2392,10 +2622,11 @@
 
             // For backward comapatibility
             if (positions != null)
-            {                
+            {
                 for (int index = 0; index < positions.Length; ++ index)
                 {
                     PositionReportEventArgs positionArgs = new PositionReportEventArgs();
+                    positionArgs.Previous = positions[index];
                     positionArgs.Report = positions[index];
                     eventQueue_.PushEvent(positionArgs);
                 }
@@ -2649,7 +2880,6 @@
             tradeRecord.Side = executionReport.OrderSide;
             tradeRecord.IsReducedOpenCommission = executionReport.ReducedOpenCommission;
             tradeRecord.IsReducedCloseCommission = executionReport.ReducedCloseCommission;
-            tradeRecord.ImmediateOrCancel = executionReport.OrderTimeInForce == OrderTimeInForce.ImmediateOrCancel;
             tradeRecord.MarketWithSlippage = executionReport.MarketWithSlippage;
             tradeRecord.Expiration = executionReport.Expiration;
             tradeRecord.Created = executionReport.Created;
@@ -2657,6 +2887,8 @@
             tradeRecord.Comment = executionReport.Comment;
             tradeRecord.Tag = executionReport.Tag;
             tradeRecord.Magic = executionReport.Magic;
+            tradeRecord.ImmediateOrCancel = executionReport.ImmediateOrCancelFlag;
+            tradeRecord.Slippage = executionReport.Slippage;
 
             return tradeRecord;
         }
@@ -2674,7 +2906,7 @@
         internal enum InitFlags
         {
             None = 0x00,
-            TradeServerInfo = 0x01,            
+            TradeServerInfo = 0x01,
             AccountInfo = 0x02,
             SessionInfo = 0x04,
             TradeRecords = 0x08,
@@ -2686,7 +2918,7 @@
         internal enum ReloadFlags
         {
             None = 0x00,
-            TradeServerInfo = 0x01,            
+            TradeServerInfo = 0x01,
             AccountInfo = 0x02,
             SessionInfo = 0x04,
             TradeRecords = 0x08,
@@ -2724,12 +2956,12 @@
         internal TwoFactorLoginState tradeCaptureTwoFactorLoginState_;
         internal DateTime tradeCaptureTwoFactorLoginExpiration_;
         internal Exception tradeCaptureTwoFactorLoginException_;
-       
+
         internal ManualResetEvent loginEvent_;
         internal Exception loginException_;
         internal InitFlags initFlags_;
         internal ReloadFlags reloadFlags_;
-        internal bool logout_;        
+        internal bool logout_;
 
         // We employ a queue to allow the client call sync functions from event handlers
         internal Thread eventThread_;

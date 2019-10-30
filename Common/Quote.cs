@@ -2,6 +2,19 @@
 {
     using System;
     using System.Collections.Generic;
+    using System.Text;
+
+    /// <summary>
+    /// Options for indicative tick.
+    /// </summary>
+    public enum TickTypes
+    {
+        Normal,
+        IndicativeBid,
+        IndicativeAsk,
+        IndicativeBidAsk
+    }
+
 
     /// <summary>
     /// Tick class contains bid/ask quotes for a symbol.
@@ -43,12 +56,13 @@
         /// Gets the best price for selling.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">If off quotes for selling.</exception>
-        public double Bid
+        public double? Bid
         {
             get
             {
                 if (!this.HasBid)
-                    throw new InvalidOperationException("Off bid quotes.");
+                    //throw new InvalidOperationException("Off bid quotes.");
+                    return null;
 
                 return this.Bids[0].Price;
             }
@@ -58,12 +72,13 @@
         /// Gets the best price for buying.
         /// </summary>
         /// <exception cref="System.InvalidOperationException">If off quotes for buying.</exception>
-        public double Ask
+        public double? Ask
         {
             get
             {
                 if (!this.HasAsk)
-                    throw new InvalidOperationException("Off ask quotes.");
+                    //throw new InvalidOperationException("Off ask quotes.");
+                    return null;
 
                 return this.Asks[0].Price;
             }
@@ -76,7 +91,9 @@
         {
             get
             {
-                return this.Ask - this.Bid;
+                if (this.Ask != null && this.Bid != null)
+                    return (double) this.Ask - (double) this.Bid;
+                return double.NaN;
             }
         }
 
@@ -106,6 +123,18 @@
         public string Id { get; set; }
 
         /// <summary>
+        /// Check if the tick is indicative.
+        /// </summary>
+        public bool IndicativeTick { get; set; }
+
+
+        /// <summary>
+        /// Indicative Tick Option
+        /// </summary>
+        public TickTypes TickType { get; set; }
+
+
+        /// <summary>
         /// 
         /// </summary>
         public Quote Clone()
@@ -116,6 +145,8 @@
             quote.CreatingTime = CreatingTime;
             quote.Asks = new List<QuoteEntry>(Asks);
             quote.Bids = new List<QuoteEntry>(Bids);
+            quote.IndicativeTick = IndicativeTick;
+            quote.TickType = TickType;
 
             return quote;
         }
@@ -149,12 +180,15 @@
             if (!Equals(first.Asks, second.Asks))
                 return false;
 
+            if (!Equals(first.IndicativeTick, second.IndicativeTick))
+                return false;
+
             return true;
         }
 
         static bool Equals(QuoteEntry[] first, QuoteEntry[] second)
         {
-            if(ReferenceEquals(first,second))
+            if (ReferenceEquals(first, second))
             {
                 return true;
             }
@@ -187,7 +221,14 @@
             var bid = HasBid ? Bid.ToString() : "None";
             var ask = HasAsk ? Ask.ToString() : "None";
 
-            return string.Format("Symbol = {0}; Bid = {1}; Ask = {2}", this.Symbol, bid, ask);
+            StringBuilder sb = new StringBuilder();
+            sb.AppendFormat("Symbol = {0}; Bid = {1}; Ask = {2}", this.Symbol, bid, ask);
+            if (IndicativeTick)
+                sb.Append(", IndicativeTick=True");
+            sb.AppendFormat(", TickType={0}", TickType);
+
+
+            return sb.ToString();
         }
     }
 }

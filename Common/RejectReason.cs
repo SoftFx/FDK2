@@ -76,6 +76,16 @@
         InternalServerError = 17,
 
         /// <summary>
+        /// 
+        /// </summary>
+        CloseOnly = 18,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        LongOnly = 19,
+
+        /// <summary>
         /// Unknown error.
         /// </summary>
         Other = 99

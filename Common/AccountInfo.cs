@@ -139,6 +139,31 @@
         public AssetInfo[] Assets { get; set; }
 
         /// <summary>
+        /// Gets throttling account's information.
+        /// </summary>
+        public ThrottlingInfo Throttling { get; set; }
+
+        /// <summary>
+        /// Gets account report currency.
+        /// </summary>
+        public string ReportCurrency { get; set; }
+
+        /// <summary>
+        /// Token Commission Currency.
+        /// </summary>
+        public string TokenCommissionCurrency { get; set; }
+
+        /// <summary>
+        /// Token Commission Currency Discount
+        /// </summary>
+        public double? TokenCommissionCurrencyDiscount { get; set; }
+
+        /// <summary>
+        /// Gets whether token commission is enabled or not.
+        /// </summary>
+        public bool IsTokenCommissionEnabled { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>can not be null</returns>

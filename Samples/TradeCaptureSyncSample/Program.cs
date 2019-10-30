@@ -21,7 +21,7 @@ namespace TradeCaptureSyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5060;
+                int port = 5044;
 
                 var options = new OptionSet()
                 {
@@ -64,7 +64,8 @@ namespace TradeCaptureSyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new TradeCapture("TradeCaptureSyncSample", port : port, reconnectAttempts : 0, logMessages : true);
+            client_ = new TradeCapture("TradeCaptureSyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new TradeCapture.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new TradeCapture.DisconnectDelegate(this.OnDisconnect);
@@ -128,7 +129,7 @@ namespace TradeCaptureSyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -252,13 +253,13 @@ namespace TradeCaptureSyncSample
         {
             try
             {
-                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);                
+                LogoutInfo logoutInfo = client_.Logout("Client logout", Timeout);
 
                 Console.WriteLine("Logout : " + logoutInfo.Message);
             }
             catch
-            {                
-            }            
+            {
+            }
 
             string text = client_.Disconnect("Client disconnect");
 
@@ -304,7 +305,7 @@ namespace TradeCaptureSyncSample
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-                
+
                 for
                 (
                     TradeTransactionReport tradeTransactionReport = downloadTradesEnumerator.Next(-1);
@@ -334,7 +335,7 @@ namespace TradeCaptureSyncSample
                     {
                         Console.Error.WriteLine
                         (
-                            "Trade report : {0}, {1}, {2}, {3}", 
+                            "Trade report : {0}, {1}, {2}, {3}",
                             tradeTransactionReport.TradeTransactionId,
                             tradeTransactionReport.TransactionTime,
                             tradeTransactionReport.TradeTransactionReportType,
@@ -358,7 +359,7 @@ namespace TradeCaptureSyncSample
             try
             {
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
-                
+
                 for
                 (
                     AccountReport accountReport = downloadAccountReportsEnumerator.Next(-1);
@@ -371,11 +372,11 @@ namespace TradeCaptureSyncSample
                         "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
                         accountReport.Timestamp,
                         accountReport.AccountId,
-                        accountReport.Type,                    
-                        accountReport.BalanceCurrency, 
-                        accountReport.Leverage, 
-                        accountReport.Balance, 
-                        accountReport.Margin, 
+                        accountReport.Type,
+                        accountReport.BalanceCurrency,
+                        accountReport.Leverage,
+                        accountReport.Balance,
+                        accountReport.Margin,
                         accountReport.Equity
                     );
                 }
@@ -450,7 +451,7 @@ namespace TradeCaptureSyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}", 
+                        "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -502,7 +503,7 @@ namespace TradeCaptureSyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}", 
+                        "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,

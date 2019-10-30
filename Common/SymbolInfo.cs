@@ -380,6 +380,21 @@
         }
 
         /// <summary>
+        /// Gets whether swap is enabled for symbol.
+        /// </summary>
+        public bool SwapEnabled
+        {
+            get
+            {
+                return this.swapEnabled;
+            }
+            set
+            {
+                this.swapEnabled = value;
+            }
+        }
+
+        /// <summary>
         /// Gets swap type.
         /// </summary>
         public SwapType SwapType
@@ -616,6 +631,50 @@
             }
         }
 
+        /// <summary>
+        /// </summary>
+        public SubscriptionInfo Subscription
+        {
+            get
+            {
+                return this.subscription;
+            }
+            set
+            {
+                this.subscription = value;
+            }
+        }
+
+        /// <summary>
+        /// ISIN for symbol
+        /// </summary>
+        public string ISIN
+        {
+            get
+            {
+                return this.isin;
+            }
+            set
+            {
+                this.isin = value;
+            }
+        }
+
+        /// <summary>
+        /// Slippage type
+        /// </summary>
+        public SlippageType SlippageType
+        {
+            get
+            {
+                return this.slippageType;
+            }
+            set
+            {
+                this.slippageType = value;
+            }
+        }
+
         #endregion
 
         /// <summary>
@@ -625,7 +684,7 @@
         /// <returns>True if swap is enabled.</returns>
         public bool IsSwapEnabled()
         {
-            return SwapSizeShort.HasValue && SwapSizeLong.HasValue;
+            return SwapEnabled;
         }
 
         /// <summary>
@@ -639,6 +698,36 @@
                 return MarginFactorFractional.Value;
 
             return MarginFactor / 100D;
+        }
+
+        /// <summary>
+        /// Close-only trade mode.
+        /// </summary>
+        public bool IsCloseOnly
+        {
+            get
+            {
+                return this.isCloseOnly;
+            }
+            set
+            {
+                this.isCloseOnly = value;
+            }
+        }
+
+        /// <summary>
+        /// Close-only trade mode.
+        /// </summary>
+        public bool IsLongOnly
+        {
+            get
+            {
+                return this.isLongOnly;
+            }
+            set
+            {
+                this.isLongOnly = value;
+            }
         }
 
         /// <summary>
@@ -675,6 +764,7 @@
         CommissionChargeMethod commChargeMethod;
         double minCommission;
         string minCommissionCurrency;
+        bool swapEnabled;
         SwapType swapType;
         int tripleSwapDay;
         double? swapSizeShort;
@@ -692,6 +782,11 @@
         string securityDescription;
         double? stopOrderMarginReduction;
         double? hiddenLimitOrderMarginReduction;
+        bool isCloseOnly;
+        bool isLongOnly;
+        SubscriptionInfo subscription;
+        string isin;
+        SlippageType slippageType;
 
         #endregion
     }

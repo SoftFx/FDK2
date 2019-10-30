@@ -31,9 +31,33 @@ namespace TickTrader.FDK.Common
         public int? ServerSfxTradeCapturePort { get; set; }
         public int? ServerFixFeedSslPort { get; set; }
         public int? ServerFixTradeSslPort { get; set; }
-        public string WebTerminalAddress { get; set; }
-        public string WebCabinetAddress { get; set; }
-        public string SupportCrmAddress { get; set; }        
+
+        public string WebTerminalAddress
+        {
+            get { return Properties.ContainsKey("WebTerminalUrl") ? Properties["WebTerminalUrl"] : null; }
+        }
+
+        public string WebCabinetAddress
+        {
+            get { return Properties.ContainsKey("CabinetUrl") ? Properties["CabinetUrl"] : null; }
+        }
+
+        public string SupportCrmAddress
+        {
+            get { return Properties.ContainsKey("SupportCrmUrl") ? Properties["SupportCrmUrl"] : null; }
+        }
+
+        public string ServerRestAPIAddress
+        {
+            get { return Properties.ContainsKey("WebRestApiAddress") ? Properties["WebRestApiAddress"] : null; }
+        }
+
+        public string ServerWebSocketAPIAddress
+        {
+            get { return Properties.ContainsKey("WebSocketApiAddress") ?  Properties["WebSocketApiAddress"] : null; }
+        }
+
+        public Dictionary<string, string> Properties { get; set; }
 
         public override string ToString()
         {

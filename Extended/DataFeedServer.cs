@@ -343,18 +343,66 @@
             return GetCurrenciesEx(timeoutInMilliseconds);
         }
 
+        /// <summary>
+        /// The method gets bars history information of a symbol from server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="priceType">A required price type: Bid or Ask.</param>
+        /// <param name="period">Bar period instance; can not be null.</param>
+        /// <returns></returns>
+        public HistoryInfo GetBarsHistoryInfo(string symbol, PriceType priceType, BarPeriod period)
+        {
+            return GetBarsHistoryInfoEx(symbol, priceType, period, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method gets bars history information of a symbol from server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="priceType">A required price type: Bid or Ask.</param>
+        /// <param name="period">Bar period instance; can not be null.</param>
+        /// <param name="timeoutInMilliseconds">Timeout in milliseconds</param>
+        /// <returns></returns>
+        public HistoryInfo GetBarsHistoryInfoEx(string symbol, PriceType priceType, BarPeriod period, int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteStoreClient_.GetBarsHistoryInfo(symbol, period, priceType, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// The method gets quotes history information of a symbol from server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="level2">Level2 history if true</param>
+        /// <returns></returns>
+        public HistoryInfo GetQuotesHistoryInfo(string symbol, bool level2)
+        {
+            return GetQuotesHistoryInfoEx(symbol, level2, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method gets quotes history information of a symbol from server.
+        /// </summary>
+        /// <param name="symbol">A required symbol; can not be null.</param>
+        /// <param name="level2">Level2 history if true</param>
+        /// <param name="timeoutInMilliseconds">Timeout in milliseconds</param>
+        /// <returns></returns>
+        public HistoryInfo GetQuotesHistoryInfoEx(string symbol, bool level2, int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteStoreClient_.GetQuotesHistoryInfo(symbol, level2, timeoutInMilliseconds);
+        }
+
         TickTrader.FDK.Common.PairBar[] GetPairBarList(TickTrader.FDK.Common.Bar[] bidBars, TickTrader.FDK.Common.Bar[] askBars, int count)
         {
             int absCount = Math.Abs(count);
             List<PairBar> pairBars = new List<PairBar>(absCount);
-                
-            int bidIndex = 0;
-            int askIndex = 0;
+
+            int bidIndex = (count < 0) ? (bidBars.Length - 1) : 0;
+            int askIndex = (count < 0) ? (askBars.Length - 1) : 0;
 
             while (pairBars.Count < absCount)
             {
-                TickTrader.FDK.Common.Bar bidBar = bidIndex < bidBars.Length ? bidBars[bidIndex] : null;
-                TickTrader.FDK.Common.Bar askBar = askIndex < askBars.Length ? askBars[askIndex] : null;
+                TickTrader.FDK.Common.Bar bidBar = (bidIndex >= 0) && (bidIndex < bidBars.Length) ? bidBars[bidIndex] : null;
+                TickTrader.FDK.Common.Bar askBar = (askIndex >= 0) && (askIndex < askBars.Length) ? askBars[askIndex] : null;
 
                 PairBar pairBar;
 
@@ -364,33 +412,36 @@
                     {
                         int i = DateTime.Compare(bidBar.From, askBar.From);
 
+                        if (count < 0)
+                            i = -i;
+
                         if (i < 0)
                         {
                             pairBar = new PairBar(bidBar, null);
-                            ++bidIndex;
+                            bidIndex += (count < 0) ? -1 : 1;
                         }
                         else if (i > 0)
                         {
                             pairBar = new PairBar(null, askBar);
-                            ++askIndex;
+                            askIndex += (count < 0) ? -1 : 1;
                         }
                         else
                         {
                             pairBar = new PairBar(bidBar, askBar);
-                            ++bidIndex;
-                            ++askIndex;
+                            bidIndex += (count < 0) ? -1 : 1;
+                            askIndex += (count < 0) ? -1 : 1;
                         }
                     }
                     else
                     {
                         pairBar = new PairBar(bidBar, null);
-                        ++bidIndex;
+                        bidIndex += (count < 0) ? -1 : 1;
                     }
                 }
                 else if (askBar != null)
                 {
                     pairBar = new PairBar(null, askBar);
-                    ++askIndex;
+                    askIndex += (count < 0) ? -1 : 1;
                 }
                 else
                     break;

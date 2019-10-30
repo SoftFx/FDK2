@@ -86,6 +86,13 @@
         public StatusGroupInfo[] StatusGroups { get; set; }
 
         /// <summary>
+        /// Disabled features.
+        /// </summary>
+        public OffTimeDisabledFeatures DisabledFeatures { get; set; }
+
+
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>

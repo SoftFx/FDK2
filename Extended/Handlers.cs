@@ -20,7 +20,7 @@
 
         /// <summary>
         /// Returns formated string for the instance.
-        /// </summary>								
+        /// </summary>
         /// <returns>can not be null</returns>
         public override string ToString()
         {
@@ -196,7 +196,7 @@
     /// <param name="sender">The source of the event.</param>
     /// <param name="e">Unsubscribed nformation.</param>
     public delegate void UnsubscribedHandler(object sender, UnsubscribedEventArgs e);
-    
+
     /// <summary>
     /// Contains data for the tick event.
     /// </summary>
@@ -329,7 +329,7 @@
     /// Contains data for currency info event.
     /// </summary>
     public class CurrencyInfoEventArgs : EventArgs
-    {        
+    {
         /// <summary>
         /// Gets currencies information; can not be null.
         /// </summary>
@@ -413,6 +413,11 @@
     /// </summary>
     public class PositionReportEventArgs : EventArgs
     {
+        /// <summary>
+        /// Gets previous position report; can not be null.
+        /// </summary>
+        public Position Previous { get; set; }
+
         /// <summary>
         /// Gets a position report; can not be null.
         /// </summary>

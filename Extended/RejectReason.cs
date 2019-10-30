@@ -6,7 +6,7 @@
     public enum RejectReason
     {
         /// <summary>
-        /// 
+        ///
         /// </summary>
         None = -1,
 
@@ -59,6 +59,21 @@
         /// Trade Not Allowed.
         /// </summary>
         TradeNotAllowed = 14,
+
+        /// <summary>
+        ///
+        /// </summary>
+        ThrottlingLimits = 15,
+
+        /// <summary>
+        ///
+        /// </summary>
+        RequestCancelled = 16,
+
+        /// <summary>
+        ///
+        /// </summary>
+        InternalServerError = 17,
 
         /// <summary>
         /// Unknown error.

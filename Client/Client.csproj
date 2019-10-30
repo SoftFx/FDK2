@@ -34,34 +34,35 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.4.369, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\ICSharpCode.SharpZipLib.dll</HintPath>
+    <Reference Include="Crc32C.NET">
+      <HintPath>..\Lib\Crc32C.NET.dll</HintPath>
     </Reference>
-    <Reference Include="SoftFX.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f93e83ea42ea164d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\SoftFX.Net.Core.dll</HintPath>
+    <Reference Include="ICSharpCode.SharpZipLib">
+      <HintPath>..\Lib\ICSharpCode.SharpZipLib.dll</HintPath>
     </Reference>
-    <Reference Include="SoftFX.Net.OrderEntry, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\SoftFX.Net.OrderEntry.dll</HintPath>
+    <Reference Include="Snappy.NET">
+      <HintPath>..\Lib\Snappy.NET.dll</HintPath>
     </Reference>
-    <Reference Include="SoftFX.Net.QuoteFeed, Version=2.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\SoftFX.Net.QuoteFeed.dll</HintPath>
+    <Reference Include="SoftFX.Net.Core">
+      <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
     </Reference>
-    <Reference Include="SoftFX.Net.QuoteStore, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\SoftFX.Net.QuoteStore.dll</HintPath>
+    <Reference Include="SoftFX.Net.OrderEntry">
+      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
     </Reference>
-    <Reference Include="SoftFX.Net.TradeCapture, Version=6.4.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bin\SoftFX.Net.TradeCapture.dll</HintPath>
+    <Reference Include="SoftFX.Net.QuoteFeed">
+      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteStore">
+      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.TradeCapture">
+      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CompressedStreamHandler.cs" />
     <Compile Include="DownloadAccountReportsEnumerator.cs" />
     <Compile Include="DownloadBarsEnumerator.cs" />
     <Compile Include="DownloadQuotesEnumerator.cs" />
@@ -69,13 +70,17 @@
     <Compile Include="GetOrdersEnumerator.cs" />
     <Compile Include="OrderEntry.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtocolSpec.cs" />
     <Compile Include="QuoteFeed.cs" />
     <Compile Include="QuoteStore.cs" />
     <Compile Include="Serialization\BarFormatter.cs" />
     <Compile Include="Serialization\StreamParser.cs" />
     <Compile Include="Serialization\TickFormatter.cs" />
+    <Compile Include="StockEvents\SEHistoryModifier.cs" />
+    <Compile Include="StockEvents\SEModifiedBarsCache.cs" />
     <Compile Include="SubscribeTradesEnumerator.cs" />
     <Compile Include="TradeCapture.cs" />
+    <Compile Include="WaitStream.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj">

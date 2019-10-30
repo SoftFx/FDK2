@@ -4,9 +4,14 @@ using System.Collections.Generic;
 using System.Runtime.ExceptionServices;
 using SoftFX.Net.OrderEntry;
 using TickTrader.FDK.Common;
+using System.Security.Cryptography.X509Certificates;
+using System.Net.Security;
+using System.Net;
+using ThrottlingInfo = SoftFX.Net.OrderEntry.ThrottlingInfo;
 
 namespace TickTrader.FDK.Client
 {
+
     public class OrderEntry : IDisposable
     {
         #region Constructors
@@ -14,42 +19,57 @@ namespace TickTrader.FDK.Client
         public OrderEntry
         (
             string name,
-            bool logEvents =  false,
-            bool logStates =  false,
+            bool logEvents = false,
+            bool logStates = false,
             bool logMessages = false,
-            int port = 5040, 
+            int port = 5043,
             string serverCertificateName = "CN=*.soft-fx.com",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
-            int heartbeatInterval = 10000,
-            string logDirectory = "Logs"            
+            int heartbeatInterval = 30000,
+            string logDirectory = "Logs",
+            SoftFX.Net.Core.ClientCertificateValidation validateClientCertificate = null,
+            SoftFX.Net.Core.ProxyType proxyType = SoftFX.Net.Core.ProxyType.None,
+            IPAddress proxyAddress = null,
+            int proxyPort = 0,
+            string proxyUsername = null,
+            string proxyPassword = null
         )
         {
-            ClientSessionOptions options = new ClientSessionOptions(port);
+            ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.SecureSocket;
             options.ServerCertificateName = serverCertificateName;
-            options.ServerMinMinorVersion = Info.OrderEntry.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;
             options.HeartbeatInterval = heartbeatInterval;
+            options.SendBufferSize = 20 * 1024 * 1024;
             options.Log.Directory = logDirectory;
             options.Log.Events = logEvents;
             options.Log.States = logStates;
             options.Log.Messages = logMessages;
+            options.ProxyType = proxyType;
+            options.ProxyAddress = proxyAddress;
+            options.ProxyPort = proxyPort;
+            options.Username = proxyUsername;
+            options.Password = proxyPassword;
 
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
             session_.Listener = sessionListener_;
+            protocolSpec_ = new ProtocolSpec();
         }
 
         ClientSession session_;
         ClientSessionListener sessionListener_;
+        ProtocolSpec protocolSpec_;
+
+        public ProtocolSpec ProtocolSpec => protocolSpec_;
 
         #endregion
 
-        #region IDisposable        
+        #region IDisposable
 
         public void Dispose()
         {
@@ -98,7 +118,7 @@ namespace TickTrader.FDK.Client
 
             ConnectInternal(context, address);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
             {
                 DisconnectInternal(null, "Connect timeout");
                 Join();
@@ -189,7 +209,7 @@ namespace TickTrader.FDK.Client
 
             LoginInternal(context, username, password, deviceId, appId, sessionId);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -206,6 +226,8 @@ namespace TickTrader.FDK.Client
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
         {
+            protocolSpec_.InitOrderEntryVersion(new ProtocolVersion(session_.MajorVersion, session_.MinorVersion));
+
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
@@ -225,7 +247,7 @@ namespace TickTrader.FDK.Client
 
             TwoFactorLoginResponseInternal(context, oneTimePassword);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -257,7 +279,7 @@ namespace TickTrader.FDK.Client
 
             TwoFactorLoginResumeInternal(context);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -318,7 +340,7 @@ namespace TickTrader.FDK.Client
         #endregion
 
         #region Order Entry
-                
+
         public delegate void TradeServerInfoResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.TradeServerInfo tradeServerInfo);
         public delegate void TradeServerInfoErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
         public delegate void AccountInfoResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.AccountInfo accountInfo);
@@ -333,6 +355,10 @@ namespace TickTrader.FDK.Client
         public delegate void CancelOrdersErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
         public delegate void PositionsResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.Position[] positions);
         public delegate void PositionsErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
+        public delegate void SplitListResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.Split[] splits);
+        public delegate void SplitListErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
+        public delegate void DividendListResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.Dividend[] dividends);
+        public delegate void DividendListErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
         public delegate void NewOrderResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
         public delegate void NewOrderErrorDelegate(OrderEntry orderEntry, object data, Exception exception);
         public delegate void ReplaceOrderResultDelegate(OrderEntry orderEntry, object data, TickTrader.FDK.Common.ExecutionReport executionReport);
@@ -349,7 +375,7 @@ namespace TickTrader.FDK.Client
         public delegate void SessionInfoUpdateDelegate(OrderEntry orderEntry, SessionInfo sessionInfo);
         public delegate void BalanceUpdateDelegate(OrderEntry orderEntry, BalanceOperation balanceOperation);
         public delegate void NotificationDelegate(OrderEntry orderEntry, TickTrader.FDK.Common.Notification notification);
-                
+
         public event TradeServerInfoResultDelegate TradeServerInfoResultEvent;
         public event TradeServerInfoErrorDelegate TradeServerInfoErrorEvent;
         public event AccountInfoResultDelegate AccountInfoResultEvent;
@@ -364,6 +390,10 @@ namespace TickTrader.FDK.Client
         public event CancelOrdersErrorDelegate CancelOrdersErrorEvent;
         public event PositionsResultDelegate PositionsResultEvent;
         public event PositionsErrorDelegate PositionsErrorEvent;
+        public event SplitListResultDelegate SplitListResultEvent;
+        public event SplitListErrorDelegate SplitListErrorEvent;
+        public event DividendListResultDelegate DividendListResultEvent;
+        public event DividendListErrorDelegate DividendListErrorEvent;
         public event NewOrderResultDelegate NewOrderResultEvent;
         public event NewOrderErrorDelegate NewOrderErrorEvent;
         public event ReplaceOrderResultDelegate ReplaceOrderResultEvent;
@@ -510,7 +540,7 @@ namespace TickTrader.FDK.Client
 
             CancelOrdersInternal(context, id);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -540,7 +570,7 @@ namespace TickTrader.FDK.Client
 
             GetPositionsInternal(context);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -566,6 +596,68 @@ namespace TickTrader.FDK.Client
             session_.SendPositionListRequest(context, request);
         }
 
+        public TickTrader.FDK.Common.Split[] GetSplitList(int timeout)
+        {
+            SplitListAsyncContext context = new SplitListAsyncContext(true);
+
+            GetSplitListInternal(context);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.splits_;
+        }
+
+        public void GetSplitListAsync(object data)
+        {
+            SplitListAsyncContext context = new SplitListAsyncContext(false);
+            context.Data = data;
+
+            GetSplitListInternal(context);
+        }
+
+        void GetSplitListInternal(SplitListAsyncContext context)
+        {
+            SplitListRequest request = new SplitListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+
+            session_.SendSplitListRequest(context, request);
+        }
+
+        public TickTrader.FDK.Common.Dividend[] GetDividendList(int timeout)
+        {
+            DividendListAsyncContext context = new DividendListAsyncContext(true);
+
+            GetDividendListInternal(context);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.dividends_;
+        }
+
+        public void GetDividendListAsync(object data)
+        {
+            DividendListAsyncContext context = new DividendListAsyncContext(false);
+            context.Data = data;
+
+            GetDividendListInternal(context);
+        }
+
+        void GetDividendListInternal(DividendListAsyncContext context)
+        {
+            DividendListRequest request = new DividendListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+
+            session_.SendDividendListRequest(context, request);
+        }
+
         public TickTrader.FDK.Common.ExecutionReport[] NewOrder
         (
             string clientOrderId,
@@ -583,7 +675,9 @@ namespace TickTrader.FDK.Client
             string comment,
             string tag,
             int? magic,
-            int timeout
+            int timeout,
+            bool immediateOrCancelFlag,
+            double? slippage
         )
         {
             NewOrderAsyncContext context = new NewOrderAsyncContext(true);
@@ -607,10 +701,12 @@ namespace TickTrader.FDK.Client
                 takeProfit,
                 comment,
                 tag,
-                magic
+                magic,
+                immediateOrCancelFlag,
+                slippage
             );
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -636,7 +732,9 @@ namespace TickTrader.FDK.Client
             double? takeProfit,
             string comment,
             string tag,
-            int? magic
+            int? magic,
+            bool immediateOrCancelFlag,
+            double? slippage
         )
         {
             NewOrderAsyncContext context = new NewOrderAsyncContext(false);
@@ -659,7 +757,9 @@ namespace TickTrader.FDK.Client
                 takeProfit,
                 comment,
                 tag,
-                magic
+                magic,
+                immediateOrCancelFlag,
+                slippage
             );
         }
 
@@ -667,26 +767,28 @@ namespace TickTrader.FDK.Client
         (
             NewOrderAsyncContext context,
             string clientOrderId,
-            string symbol, 
-            TickTrader.FDK.Common.OrderType type, 
-            TickTrader.FDK.Common.OrderSide side,            
-            double qty, 
-            double? maxVisibleQty, 
-            double? price, 
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
             double? stopPrice,
-            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,      
-            DateTime? expireTime, 
-            double? stopLoss, 
-            double? takeProfit, 
-            string comment, 
-            string tag, 
-            int? magic
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic,
+            bool immediateOrCancelFlag,
+            double? slippage
         )
         {
             NewOrderSingle message = new NewOrderSingle(0);
             message.ClOrdId = clientOrderId;
             message.SymbolId = symbol;
-            message.Type = GetOrderType(type);            
+            message.Type = GetOrderType(type);
             message.Side = GetOrderSide(side);
             message.Qty = qty;
             message.MaxVisibleQty = maxVisibleQty;
@@ -706,10 +808,14 @@ namespace TickTrader.FDK.Client
             message.Comment = comment;
             message.Tag = tag;
             message.Magic = magic;
+            if (immediateOrCancelFlag)
+                message.Flags = OrderFlags.ImmediateOrCancel;
+            message.Slippage = slippage;
 
             session_.SendNewOrderSingle(context, message);
         }
 
+        [Obsolete]
         public TickTrader.FDK.Common.ExecutionReport[] ReplaceOrder
         (
             string clientOrderId,
@@ -726,12 +832,14 @@ namespace TickTrader.FDK.Client
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
-            bool inFlightMitigation,
+            bool? inFlightMitigation,
             double? currentQty,
             string comment,
             string tag,
             int? magic,
-            int timeout
+            int timeout,
+            bool? immediateOrCancelFlag,
+            double? slippage
         )
         {
             ReplaceOrderAsyncContext context = new ReplaceOrderAsyncContext(true);
@@ -759,10 +867,13 @@ namespace TickTrader.FDK.Client
                 currentQty,
                 comment,
                 tag,
-                magic
+                magic,
+                immediateOrCancelFlag,
+                slippage,
+                null
             );
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -771,6 +882,70 @@ namespace TickTrader.FDK.Client
             return context.executionReportList_.ToArray();
         }
 
+        public TickTrader.FDK.Common.ExecutionReport[] ReplaceOrder
+        (
+            string clientOrderId,
+            string origClientOrderId,
+            string orderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double? qtyChange,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic,
+            int timeout,
+            bool? immediateOrCancelFlag,
+            double? slippage
+        )
+        {
+            protocolSpec_.CheckSupportedOrderReplaceQtyChange();
+
+            ReplaceOrderAsyncContext context = new ReplaceOrderAsyncContext(true);
+
+            context.executionReportList_ = new List<Common.ExecutionReport>();
+
+            ReplaceOrderInternal
+            (
+                context,
+                clientOrderId,
+                origClientOrderId,
+                orderId,
+                symbol,
+                type,
+                side,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                timeInForce,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic,
+                immediateOrCancelFlag,
+                slippage,
+                qtyChange
+            );
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.executionReportList_.ToArray();
+        }
+
+        [Obsolete]
         public void ReplaceOrderAsync
         (
             object data,
@@ -788,11 +963,13 @@ namespace TickTrader.FDK.Client
             DateTime? expireTime,
             double? stopLoss,
             double? takeProfit,
-            bool inFlightMitigation,
+            bool? inFlightMitigation,
             double? currentQty,
             string comment,
             string tag,
-            int? magic
+            int? magic,
+            bool? immediateOrCancelFlag,
+            double? slippage
         )
         {
             ReplaceOrderAsyncContext context = new ReplaceOrderAsyncContext(false);
@@ -819,32 +996,93 @@ namespace TickTrader.FDK.Client
                 currentQty,
                 comment,
                 tag,
-                magic
+                magic,
+                immediateOrCancelFlag,
+                slippage,
+                null
             );
         }
 
+        public void ReplaceOrderAsync
+        (
+            object data,
+            string clientOrderId,
+            string origClientOrderId,
+            string orderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double? qtyChange,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic,
+            bool? immediateOrCancelFlag,
+            double? slippage
+        )
+        {
+            protocolSpec_.CheckSupportedOrderReplaceQtyChange();
+
+            ReplaceOrderAsyncContext context = new ReplaceOrderAsyncContext(false);
+            context.Data = data;
+
+            ReplaceOrderInternal
+            (
+                context,
+                clientOrderId,
+                origClientOrderId,
+                orderId,
+                symbol,
+                type,
+                side,
+                maxVisibleQty,
+                price,
+                stopPrice,
+                timeInForce,
+                expireTime,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic,
+                immediateOrCancelFlag,
+                slippage,
+                qtyChange
+            );
+        }
+
+        [Obsolete]
         void ReplaceOrderInternal
         (
             ReplaceOrderAsyncContext context,
             string clientOrderId,
             string origClientOrderId,
             string orderId,
-            string symbol, 
-            TickTrader.FDK.Common.OrderType type, 
-            TickTrader.FDK.Common.OrderSide side,            
-            double qty, 
-            double? maxVisibleQty, 
-            double? price, 
-            double? stopPrice,       
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double qty,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
             TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
-            DateTime? expireTime, 
-            double? stopLoss, 
-            double? takeProfit, 
-            bool inFlightMitigation,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            bool? inFlightMitigation,
             double? currentQty,
-            string comment, 
-            string tag, 
-            int? magic
+            string comment,
+            string tag,
+            int? magic,
+            bool? immediateOrCancelFlag,
+            double? slippage,
+            double? qtyChange
         )
         {
             OrderCancelReplaceRequest message = new OrderCancelReplaceRequest(0);
@@ -859,7 +1097,7 @@ namespace TickTrader.FDK.Client
                 message.OrderId = null;
 
             message.SymbolId = symbol;
-            message.Type = GetOrderType(type);            
+            message.Type = GetOrderType(type);
             message.Side = GetOrderSide(side);
             message.Qty = qty;
             message.MaxVisibleQty = maxVisibleQty;
@@ -882,6 +1120,73 @@ namespace TickTrader.FDK.Client
             message.InFlightMitigationFlag = inFlightMitigation;
             message.LeavesQty = currentQty;
 
+            message.ImmediateOrCancelFlag = immediateOrCancelFlag;
+            message.Slippage = slippage;
+            message.QtyChange = qtyChange;
+
+            session_.SendOrderCancelReplaceRequest(context, message);
+        }
+
+        void ReplaceOrderInternal
+        (
+            ReplaceOrderAsyncContext context,
+            string clientOrderId,
+            string origClientOrderId,
+            string orderId,
+            string symbol,
+            TickTrader.FDK.Common.OrderType type,
+            TickTrader.FDK.Common.OrderSide side,
+            double? maxVisibleQty,
+            double? price,
+            double? stopPrice,
+            TickTrader.FDK.Common.OrderTimeInForce? timeInForce,
+            DateTime? expireTime,
+            double? stopLoss,
+            double? takeProfit,
+            string comment,
+            string tag,
+            int? magic,
+            bool? immediateOrCancelFlag,
+            double? slippage,
+            double? qtyChange
+        )
+        {
+            OrderCancelReplaceRequest message = new OrderCancelReplaceRequest(0);
+            message.ClOrdId = clientOrderId;
+            message.OrigClOrdId = origClientOrderId;
+
+            if (orderId != null)
+            {
+                message.OrderId = long.Parse(orderId);
+            }
+            else
+                message.OrderId = null;
+
+            message.SymbolId = symbol;
+            message.Type = GetOrderType(type);
+            message.Side = GetOrderSide(side);
+            message.MaxVisibleQty = maxVisibleQty;
+            message.Price = price;
+            message.StopPrice = stopPrice;
+
+            if (timeInForce.HasValue)
+            {
+                message.TimeInForce = GetOrderTimeInForce(timeInForce.Value);
+            }
+            else
+                message.TimeInForce = null;
+
+            message.ExpireTime = expireTime;
+            message.StopLoss = stopLoss;
+            message.TakeProfit = takeProfit;
+            message.Comment = comment;
+            message.Tag = tag;
+            message.Magic = magic;
+
+            message.ImmediateOrCancelFlag = immediateOrCancelFlag;
+            message.Slippage = slippage;
+            message.QtyChange = qtyChange;
+
             session_.SendOrderCancelReplaceRequest(context, message);
         }
 
@@ -893,7 +1198,7 @@ namespace TickTrader.FDK.Client
 
             CancelOrderInternal(context, clientOrderId, origClientOrderId, orderId);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -934,7 +1239,7 @@ namespace TickTrader.FDK.Client
 
             ClosePositionInternal(context, clientOrderId, orderId, qty);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -970,7 +1275,7 @@ namespace TickTrader.FDK.Client
 
             ClosePositionByInternal(context, clientOrderId, orderId, byOrderId);
 
-            if (! context.Wait(timeout))
+            if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
 
             if (context.exception_ != null)
@@ -986,7 +1291,7 @@ namespace TickTrader.FDK.Client
 
             ClosePositionByInternal(context, clientOrderId, orderId, byOrderId);
         }
-        
+
         void ClosePositionByInternal(ClosePositionByAsyncContext context, string clientOrderId, string orderId, string byOrderId)
         {
             ClosePositionRequest message = new ClosePositionRequest(0);
@@ -1324,7 +1629,7 @@ namespace TickTrader.FDK.Client
                     enumerator_.SetError(exception);
                 }
             }
-                        
+
             public TickTrader.FDK.Common.ExecutionReport executionReport_;
             public GetOrdersEnumerator enumerator_;
         }
@@ -1388,6 +1693,69 @@ namespace TickTrader.FDK.Client
 
             public Exception exception_;
             public TickTrader.FDK.Common.Position[] positions_;
+        }
+
+
+        class SplitListAsyncContext : SplitListRequestClientContext, IAsyncContext
+        {
+            public SplitListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(OrderEntry orderEntry, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (orderEntry.PositionsErrorEvent != null)
+                {
+                    try
+                    {
+                        orderEntry.PositionsErrorEvent(orderEntry, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public TickTrader.FDK.Common.Split[] splits_;
+        }
+
+        class DividendListAsyncContext : DividendListRequestClientContext, IAsyncContext
+        {
+            public DividendListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(OrderEntry orderEntry, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (orderEntry.PositionsErrorEvent != null)
+                {
+                    try
+                    {
+                        orderEntry.PositionsErrorEvent(orderEntry, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public TickTrader.FDK.Common.Dividend[] dividends_;
         }
 
         class NewOrderAsyncContext : NewOrderSingleClientContext, IAsyncContext
@@ -1597,10 +1965,10 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {               
+            {
                 try
                 {
-                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
+                    ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
                     ConnectException exception = new ConnectException(text);
 
@@ -1627,7 +1995,7 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, string text)
-            {                
+            {
                 try
                 {
                     ConnectException exception = new ConnectException(text);
@@ -1954,7 +2322,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    LoginAsyncContext loginContext = (LoginAsyncContext) LoginRequestClientContext;
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
                     TwoFactorLoginResponseAsyncContext responseContext = (TwoFactorLoginResponseAsyncContext)TwoFactorLoginResponseClientContext;
 
                     Exception exception = new Exception(message.Text);
@@ -2034,7 +2402,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext) TwoFactorLoginResumeClientContext;
+                    TwoFactorLoginResumeAsyncContext context = (TwoFactorLoginResumeAsyncContext)TwoFactorLoginResumeClientContext;
 
                     try
                     {
@@ -2134,11 +2502,59 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnLogout(ClientSession session, LoginRequestClientContext LoginRequestClientContext, Logout message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
+                    {
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = GetLogoutReason(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, loginContext.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, loginContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (loginContext.Waitable)
+                        {
+                            loginContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnTradeServerInfoReport(ClientSession session, TradeServerInfoRequestClientContext TradeServerInfoRequestClientContext, TradeServerInfoReport message)
             {
                 try
                 {
-                    TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext) TradeServerInfoRequestClientContext;
+                    TradeServerInfoAsyncContext context = (TradeServerInfoAsyncContext)TradeServerInfoRequestClientContext;
 
                     try
                     {
@@ -2164,17 +2580,20 @@ namespace TickTrader.FDK.Client
 
                         TradeServerSfxApi sfxApi = message.SfxApi;
                         resultTradeServerInfo.ServerSfxQuoteFeedPort = sfxApi.QuoteFeedPort;
-                        resultTradeServerInfo.ServerSfxQuoteFeedPort = sfxApi.QuoteStorePort;
+                        resultTradeServerInfo.ServerSfxQuoteStorePort = sfxApi.QuoteStorePort;
                         resultTradeServerInfo.ServerSfxOrderEntryPort = sfxApi.OrderEntryPort;
-                        resultTradeServerInfo.ServerSfxTradeCapturePort = sfxApi.OrderEntryPort;
+                        resultTradeServerInfo.ServerSfxTradeCapturePort = sfxApi.TradeCapturePort;
 
                         TradeServerFixApi fixApi = message.FixApi;
                         resultTradeServerInfo.ServerFixFeedSslPort = fixApi.FeedPort;
                         resultTradeServerInfo.ServerFixTradeSslPort = fixApi.TradePort;
 
-                        resultTradeServerInfo.WebTerminalAddress = message.WebTerminalAddress;
-                        resultTradeServerInfo.WebCabinetAddress = message.WebCabinetAddress;
-                        resultTradeServerInfo.SupportCrmAddress = message.SupportCrmAddress;
+                        PropertiesArray properties = message.Properties;
+                        Dictionary<string, string> propertiesFDK = new Dictionary<string, string>(properties.Length);
+                        for (int i = 0; i < properties.Length; i++)
+                            propertiesFDK.Add(properties[i].PropertyKey, properties[i].PropertyValue);
+
+                        resultTradeServerInfo.Properties = propertiesFDK;
 
                         if (client_.TradeServerInfoResultEvent != null)
                         {
@@ -2259,7 +2678,7 @@ namespace TickTrader.FDK.Client
                         TickTrader.FDK.Common.AccountInfo resultAccountInfo = new TickTrader.FDK.Common.AccountInfo();
 
                         FillAccountInfo(resultAccountInfo, message.AccountInfo);
-                        
+
                         if (client_.AccountInfoResultEvent != null)
                         {
                             try
@@ -2305,7 +2724,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    AccountInfoAsyncContext context = (AccountInfoAsyncContext) AccountInfoRequestClientContext;
+                    AccountInfoAsyncContext context = (AccountInfoAsyncContext)AccountInfoRequestClientContext;
 
                     TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
@@ -2349,6 +2768,9 @@ namespace TickTrader.FDK.Client
                         resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
                         resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
+
+                        resultStatusInfo.DisabledFeatures = GetOffTimeDisabledFeatures(reportStatusInfo.DisabledFeatures, reportStatusInfo.Status == TradingSessionStatus.Close);
+
                         TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                         int count = reportGroups.Length;
                         StatusGroupInfo[] resultGroups = new StatusGroupInfo[count];
@@ -2364,6 +2786,8 @@ namespace TickTrader.FDK.Client
                             resultGroup.EndTime = reportGroup.EndTime;
                             resultGroup.OpenTime = reportGroup.OpenTime;
                             resultGroup.CloseTime = reportGroup.CloseTime;
+
+                            resultGroup.DisabledFeatures = GetOffTimeDisabledFeatures(reportGroup.DisabledFeatures, reportGroup.Status == TradingSessionStatus.Close);
 
                             resultGroups[index] = resultGroup;
                         }
@@ -2476,7 +2900,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    OrdersAsyncContext context = (OrdersAsyncContext) OrderMassStatusRequestClientContext;
+                    OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
                     TickTrader.FDK.Common.ExecutionReport resultExecutionReport = context.executionReport_;
 
                     resultExecutionReport.ExecutionType = Common.ExecutionType.OrderStatus;
@@ -2521,6 +2945,8 @@ namespace TickTrader.FDK.Client
                     resultExecutionReport.Comment = message.Comment;
                     resultExecutionReport.Tag = message.Tag;
                     resultExecutionReport.Magic = message.Magic;
+                    resultExecutionReport.ImmediateOrCancelFlag = (message.Flags & OrderFlags.ImmediateOrCancel) != 0;
+                    resultExecutionReport.Slippage = message.Slippage;
 
                     if (client_.OrdersResultEvent != null)
                     {
@@ -2581,7 +3007,7 @@ namespace TickTrader.FDK.Client
                     OrdersAsyncContext context = (OrdersAsyncContext)OrderMassStatusRequestClientContext;
 
                     TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                    RejectException exception = new RejectException(rejectReason, message.Text);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
 
                     if (client_.OrdersErrorEvent != null)
                     {
@@ -2596,7 +3022,7 @@ namespace TickTrader.FDK.Client
 
                     if (context.Waitable)
                     {
-                        context.enumerator_.SetError(exception);                            
+                        context.enumerator_.SetError(exception);
                     }
                 }
                 catch
@@ -2609,7 +3035,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext) OrderMassStatusCancelRequestClientContext;
+                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext)OrderMassStatusCancelRequestClientContext;
 
                     try
                     {
@@ -2653,10 +3079,10 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext) OrderMassStatusCancelRequestClientContext;
+                    CancelOrdersAsyncContext context = (CancelOrdersAsyncContext)OrderMassStatusCancelRequestClientContext;
 
                     TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                    RejectException exception = new RejectException(rejectReason, message.Text);                    
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
 
                     if (client_.CancelOrdersErrorEvent != null)
                     {
@@ -2701,6 +3127,9 @@ namespace TickTrader.FDK.Client
                             resultPosition.Commission = reportPosition.Commission;
                             resultPosition.AgentCommission = reportPosition.AgentCommission;
                             resultPosition.Swap = reportPosition.Swap;
+                            resultPosition.PosReportType = GetPosReportType(message.Type);
+                            resultPosition.PosId = reportPosition.Id.ToString();
+                            resultPosition.Modified = reportPosition.Modified;
 
                             PosType reportPosType = reportPosition.Type;
 
@@ -2772,7 +3201,7 @@ namespace TickTrader.FDK.Client
                     PositionsAsyncContext context = (PositionsAsyncContext)PositionListRequestClientContext;
 
                     TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
-                    RejectException exception = new RejectException(rejectReason, message.Text);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
 
                     if (client_.PositionsErrorEvent != null)
                     {
@@ -2796,11 +3225,250 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnSplitListReport(ClientSession session, SplitListRequestClientContext SplitListRequestClientContext, SplitListReport message)
+            {
+                try
+                {
+                    SplitListAsyncContext context = (SplitListAsyncContext)SplitListRequestClientContext;
+
+                    try
+                    {
+                        SoftFX.Net.OrderEntry.SplitArray reportSplitList = message.SplitList;
+                        int count = reportSplitList.Length;
+                        TickTrader.FDK.Common.Split[] resultSplitList = new TickTrader.FDK.Common.Split[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            SoftFX.Net.OrderEntry.Split reportSplit = reportSplitList[index];
+
+                            TickTrader.FDK.Common.Split resultSplit = new TickTrader.FDK.Common.Split();
+
+                            resultSplit.Id = reportSplit.Id;
+                            resultSplit.Ratio = reportSplit.Ratio;
+                            resultSplit.StartTime = reportSplit.StartTime;
+
+                            resultSplit.Symbols = new List<string>(reportSplit.Symbols.Length);
+                            for (int i = 0; i < reportSplit.Symbols.Length; i++)
+                                resultSplit.Symbols.Add(reportSplit.Symbols[i]);
+
+                            resultSplit.Currencies= new List<string>(reportSplit.Currencies.Length);
+                            for (int i = 0; i < reportSplit.Currencies.Length; i++)
+                                resultSplit.Currencies.Add(reportSplit.Currencies[i]);
+
+                            resultSplit.SymbolsNotAffectQH= new List<string>(reportSplit.SymbolsNotAffectQH.Length);
+                            for (int i = 0; i < reportSplit.SymbolsNotAffectQH.Length; i++)
+                                resultSplit.SymbolsNotAffectQH.Add(reportSplit.SymbolsNotAffectQH[i]);
+
+                            resultSplitList[index] = resultSplit;
+                        }
+
+                        if (client_.SplitListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SplitListResultEvent(client_, context.Data, resultSplitList);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.splits_ = resultSplitList;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SplitListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SplitListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnSplitListReject(ClientSession session, SplitListRequestClientContext SplitListRequestClientContext, Reject message)
+            {
+                try
+                {
+                    SplitListAsyncContext context = (SplitListAsyncContext)SplitListRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.SplitListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.SplitListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+
+            public override void OnDividendListReport(ClientSession session, DividendListRequestClientContext DividendListRequestClientContext, DividendListReport message)
+            {
+                try
+                {
+                    DividendListAsyncContext context = (DividendListAsyncContext)DividendListRequestClientContext;
+
+                    try
+                    {
+                        SoftFX.Net.OrderEntry.DividendArray reportDividendList = message.DividendList;
+                        int count = reportDividendList.Length;
+                        TickTrader.FDK.Common.Dividend[] resultDividendList = new TickTrader.FDK.Common.Dividend[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            SoftFX.Net.OrderEntry.Dividend reportDividend = reportDividendList[index];
+
+                            TickTrader.FDK.Common.Dividend resultDividend = new TickTrader.FDK.Common.Dividend();
+
+                            resultDividend.Id = reportDividend.Id;
+                            resultDividend.Symbol = reportDividend.Symbol;
+                            resultDividend.Time = reportDividend.Time;
+                            resultDividend.GrossRate = reportDividend.GrossRate;
+                            resultDividend.Fee = reportDividend.Fee.GetValueOrDefault();
+                            resultDividendList[index] = resultDividend;
+                        }
+
+                        if (client_.DividendListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.DividendListResultEvent(client_, context.Data, resultDividendList);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.dividends_ = resultDividendList;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DividendListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DividendListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnDividendListReject(ClientSession session, DividendListRequestClientContext DividendListRequestClientContext, Reject message)
+            {
+                try
+                {
+                    DividendListAsyncContext context = (DividendListAsyncContext)DividendListRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.DividendListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.DividendListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnNewOrderSingleReject(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, Reject message)
+            {
+                try
+                {
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.NewOrderErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.NewOrderErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnNewOrderSingleMarketNewReport(ClientSession session, NewOrderSingleClientContext NewOrderSingleClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -2854,7 +3522,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -2962,7 +3630,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3016,7 +3684,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3070,7 +3738,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3124,7 +3792,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3178,7 +3846,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3321,7 +3989,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    NewOrderAsyncContext context = (NewOrderAsyncContext) NewOrderSingleClientContext;
+                    NewOrderAsyncContext context = (NewOrderAsyncContext)NewOrderSingleClientContext;
 
                     try
                     {
@@ -3514,6 +4182,37 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnOrderCancelReplaceReject(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, Reject message)
+            {
+                try
+                {
+                    ReplaceOrderAsyncContext context = (ReplaceOrderAsyncContext)OrderCancelReplaceRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.ReplaceOrderErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ReplaceOrderErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnOrderCancelReplaceRejectReport(ClientSession session, OrderCancelReplaceRequestClientContext OrderCancelReplaceRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 try
@@ -3657,6 +4356,37 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnOrderCancelReject(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, Reject message)
+            {
+                try
+                {
+                    CancelOrderAsyncContext context = (CancelOrderAsyncContext)OrderCancelRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.CancelOrderErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.CancelOrderErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnOrderCancelRejectReport(ClientSession session, OrderCancelRequestClientContext OrderCancelRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 try
@@ -3750,7 +4480,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    ClosePositionAsyncContext context = (ClosePositionAsyncContext) ClosePositionRequestClientContext;
+                    ClosePositionAsyncContext context = (ClosePositionAsyncContext)ClosePositionRequestClientContext;
 
                     try
                     {
@@ -3792,6 +4522,37 @@ namespace TickTrader.FDK.Client
                         {
                             context.exception_ = exception;
                         }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnClosePositionReject(ClientSession session, ClosePositionRequestClientContext ClosePositionRequestClientContext, Reject message)
+            {
+                try
+                {
+                    ClosePositionAsyncContext context = (ClosePositionAsyncContext)ClosePositionRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.ClosePositionErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
                     }
                 }
                 catch
@@ -3943,6 +4704,37 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnClosePositionByReject(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, Reject message)
+            {
+                try
+                {
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext)ClosePositionByRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text, message.RequestId);
+
+                    if (client_.ClosePositionByErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.ClosePositionByErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnClosePositionByRejectReport1(ClientSession session, ClosePositionByRequestClientContext ClosePositionByRequestClientContext, SoftFX.Net.OrderEntry.ExecutionReport message)
             {
                 try
@@ -3982,7 +4774,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext) ClosePositionByRequestClientContext;
+                    ClosePositionByAsyncContext context = (ClosePositionByAsyncContext)ClosePositionByRequestClientContext;
 
                     TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
                     result.Last = true;
@@ -4020,7 +4812,7 @@ namespace TickTrader.FDK.Client
                     TickTrader.FDK.Common.ExecutionReport result = new Common.ExecutionReport();
 
                     FillExecutionReport(result, message);
-                                 
+
                     if (client_.OrderUpdateEvent != null)
                     {
                         try
@@ -4049,6 +4841,9 @@ namespace TickTrader.FDK.Client
                     resultPosition.Commission = reportPosition.Commission;
                     resultPosition.AgentCommission = reportPosition.AgentCommission;
                     resultPosition.Swap = reportPosition.Swap;
+                    resultPosition.PosReportType = GetPosReportType(message.Type);
+                    resultPosition.PosId = reportPosition.Id.ToString();
+                    resultPosition.Modified = reportPosition.Modified;
 
                     PosType reportPosType = reportPosition.Type;
 
@@ -4124,6 +4919,8 @@ namespace TickTrader.FDK.Client
                     resultStatusInfo.OpenTime = reportStatusInfo.OpenTime;
                     resultStatusInfo.CloseTime = reportStatusInfo.CloseTime;
 
+                    resultStatusInfo.DisabledFeatures = GetOffTimeDisabledFeatures(reportStatusInfo.DisabledFeatures, reportStatusInfo.Status == TradingSessionStatus.Close);
+
                     TradingSessionStatusGroupArray reportGroups = reportStatusInfo.Groups;
                     int count = reportGroups.Length;
                     StatusGroupInfo[] resultGroups = new StatusGroupInfo[count];
@@ -4139,6 +4936,8 @@ namespace TickTrader.FDK.Client
                         resultGroup.EndTime = reportGroup.EndTime;
                         resultGroup.OpenTime = reportGroup.OpenTime;
                         resultGroup.CloseTime = reportGroup.CloseTime;
+
+                        resultGroup.DisabledFeatures = GetOffTimeDisabledFeatures(reportGroup.DisabledFeatures, reportGroup.Status == TradingSessionStatus.Close);
 
                         resultGroups[index] = resultGroup;
                     }
@@ -4169,7 +4968,7 @@ namespace TickTrader.FDK.Client
                     TickTrader.FDK.Common.BalanceOperation result = new TickTrader.FDK.Common.BalanceOperation();
 
                     SoftFX.Net.OrderEntry.Balance updateBalance = update.Balance;
-                    result.TransactionCurrency = updateBalance.CurrId;
+                    result.TransactionCurrency = updateBalance.CurrencyId;
                     result.TransactionAmount = updateBalance.Move.Value;
                     result.Balance = updateBalance.Total;
 
@@ -4255,14 +5054,14 @@ namespace TickTrader.FDK.Client
                 resultAccountInfo.Address = reportAccountInfo.Address;
                 resultAccountInfo.ZipCode = reportAccountInfo.ZipCode;
                 resultAccountInfo.Comment = reportAccountInfo.Description;
-                resultAccountInfo.Email = reportAccountInfo.Email;                
-                resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;                
+                resultAccountInfo.Email = reportAccountInfo.Email;
+                resultAccountInfo.RegistredDate = reportAccountInfo.RegistDate;
 
                 BalanceNull reportBalance = reportAccountInfo.Balance;
 
                 if (reportBalance.HasValue)
                 {
-                    resultAccountInfo.Currency = reportBalance.CurrId;
+                    resultAccountInfo.Currency = reportBalance.CurrencyId;
                     resultAccountInfo.Balance = reportBalance.Total;
                 }
                 else
@@ -4297,7 +5096,7 @@ namespace TickTrader.FDK.Client
                     Asset reportAsset = reportAssets[index];
 
                     AssetInfo resultAsset = new AssetInfo();
-                    resultAsset.Currency = reportAsset.CurrId;
+                    resultAsset.Currency = reportAsset.CurrencyId;
                     resultAsset.LockedAmount = reportAsset.Locked;
                     resultAsset.Balance = reportAsset.Total;
 
@@ -4305,6 +5104,28 @@ namespace TickTrader.FDK.Client
                 }
 
                 resultAccountInfo.Assets = resultAssets;
+
+                ThrottlingInfo resultThrottlingInfo = reportAccountInfo.Throttling;
+                Common.ThrottlingInfo throttlingInfo = new Common.ThrottlingInfo();
+                throttlingInfo.SessionsPerAccount = resultThrottlingInfo.SessionsPerAccount;
+                throttlingInfo.RequestsPerSecond = resultThrottlingInfo.RequestsPerSecond;
+
+                ThrottlingMethodInfoArray resultThrottlingMethods = resultThrottlingInfo.ThrottlingMethods;
+                List<Common.ThrottlingMethodInfo> throttlingMethods = new List<Common.ThrottlingMethodInfo>(resultThrottlingInfo.ThrottlingMethods.Length);
+                for (int i = 0; i < resultThrottlingInfo.ThrottlingMethods.Length; i++)
+                {
+                    Common.ThrottlingMethodInfo resultMethodInfo = new Common.ThrottlingMethodInfo();
+                    resultMethodInfo.Method = GetThrottlingMethod(resultThrottlingMethods[i].Method);
+                    resultMethodInfo.RequestsPerSecond = resultThrottlingMethods[i].RequestsPerSecond;
+                    throttlingMethods.Add(resultMethodInfo);
+                }
+
+                throttlingInfo.ThrottlingMethods = throttlingMethods;
+                resultAccountInfo.Throttling = throttlingInfo;
+                resultAccountInfo.ReportCurrency = reportAccountInfo.ReportCurrency;
+                resultAccountInfo.TokenCommissionCurrency = reportAccountInfo.TokenCommissionCurrency;
+                resultAccountInfo.TokenCommissionCurrencyDiscount = reportAccountInfo.TokenCommissionCurrencyDiscount;
+                resultAccountInfo.IsTokenCommissionEnabled = reportAccountInfo.TokenCommissionEnabled;
             }
 
             void FillExecutionReport(TickTrader.FDK.Common.ExecutionReport result, SoftFX.Net.OrderEntry.ExecutionReport report)
@@ -4340,10 +5161,13 @@ namespace TickTrader.FDK.Client
                 result.StopLoss = report.StopLoss;
                 result.MarketWithSlippage = (report.Flags & OrderFlags.Slippage) != 0;
                 result.OrderStatus = GetOrderStatus(report.Status);
-                result.InitialOrderType = GetOrderType(report.ReqType);
+                if (report.ParentOrderType.HasValue)
+                    result.InitialOrderType = GetOrderType(report.ParentOrderType.Value);
+                else
+                    result.InitialOrderType = GetOrderType(report.ReqType);
                 result.InitialVolume = report.ReqQty;
                 result.InitialPrice = report.ReqPrice;
-                result.ExecutedVolume = report.CumQty;                
+                result.ExecutedVolume = report.CumQty;
                 result.LeavesVolume = report.LeavesQty;
                 result.TradeAmount = report.LastQty;
                 result.TradePrice = report.LastPrice;
@@ -4351,8 +5175,8 @@ namespace TickTrader.FDK.Client
                 result.AgentCommission = report.AgentCommission;
                 result.ReducedOpenCommission = (report.CommissionFlags & OrderCommissionFlags.OpenReduced) != 0;
                 result.ReducedCloseCommission = (report.CommissionFlags & OrderCommissionFlags.CloseReduced) != 0;
-                result.Swap = report.Swap;                
-                result.AveragePrice = report.AvgPrice;                
+                result.Swap = report.Swap;
+                result.AveragePrice = report.AvgPrice;
                 result.Created = report.Created;
                 result.Modified = report.Modified;
 
@@ -4367,6 +5191,8 @@ namespace TickTrader.FDK.Client
                 result.Comment = report.Comment;
                 result.Tag = report.Tag;
                 result.Magic = report.Magic;
+                result.ImmediateOrCancelFlag = (report.Flags & OrderFlags.ImmediateOrCancel) != 0; ;
+                result.Slippage = report.Slippage;
 
                 BalanceNull reportBalance = report.Balance;
 
@@ -4383,26 +5209,45 @@ namespace TickTrader.FDK.Client
 
                 SoftFX.Net.OrderEntry.AssetNull reportAsset1 = report.Asset1;
                 SoftFX.Net.OrderEntry.AssetNull reportAsset2 = report.Asset2;
+                SoftFX.Net.OrderEntry.AssetNull? reportAsset3 = report.Asset3;
 
                 if (reportAsset1.HasValue && reportAsset2.HasValue)
                 {
                     TickTrader.FDK.Common.AssetInfo resultAsset1 = new AssetInfo();
-                    resultAsset1.Currency = reportAsset1.CurrId;
+                    resultAsset1.Currency = reportAsset1.CurrencyId;
                     resultAsset1.TradeAmount = reportAsset1.Move.Value;
                     resultAsset1.LockedAmount = reportAsset1.Locked;
                     resultAsset1.Balance = reportAsset1.Total;
 
                     TickTrader.FDK.Common.AssetInfo resultAsset2 = new AssetInfo();
-                    resultAsset2.Currency = reportAsset2.CurrId;
+                    resultAsset2.Currency = reportAsset2.CurrencyId;
                     resultAsset2.TradeAmount = reportAsset2.Move.Value;
                     resultAsset2.LockedAmount = reportAsset2.Locked;
                     resultAsset2.Balance = reportAsset2.Total;
 
-                    result.Assets = new TickTrader.FDK.Common.AssetInfo[]
+                    if (!reportAsset3.HasValue || !reportAsset3.Value.HasValue)
                     {
-                        resultAsset1,
-                        resultAsset2
-                    };
+                        result.Assets = new TickTrader.FDK.Common.AssetInfo[]
+                        {
+                            resultAsset1,
+                            resultAsset2,
+                        };
+                    }
+                    else
+                    {
+                        TickTrader.FDK.Common.AssetInfo resultAsset3 = new AssetInfo();
+                        resultAsset3.Currency = reportAsset3.Value.CurrencyId;
+                        resultAsset3.TradeAmount = reportAsset3.Value.Move ?? 0.0;
+                        resultAsset3.LockedAmount = reportAsset3.Value.Locked;
+                        resultAsset3.Balance = reportAsset3.Value.Total;
+
+                        result.Assets = new TickTrader.FDK.Common.AssetInfo[]
+                        {
+                            resultAsset1,
+                            resultAsset2,
+                            resultAsset3
+                        };
+                    }
                 }
                 else if (!reportAsset1.HasValue && !reportAsset2.HasValue)
                 {
@@ -4428,11 +5273,13 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.OrderEntry.LoginRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.LogoutReason.ServerError;
 
+                    case SoftFX.Net.OrderEntry.LoginRejectReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
+
                     case SoftFX.Net.OrderEntry.LoginRejectReason.Other:
+                    default:
                         return TickTrader.FDK.Common.LogoutReason.Unknown;
 
-                    default:
-                        throw new Exception("Invalid login reject reason : " + reason);
                 }
             }
 
@@ -4455,11 +5302,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.OrderEntry.LogoutReason.BlockedLogin:
                         return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
-                    case SoftFX.Net.OrderEntry.LogoutReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.OrderEntry.LogoutReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.OrderEntry.LogoutReason.Other:
                     default:
-                        throw new Exception("Invalid logout reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -4477,10 +5325,8 @@ namespace TickTrader.FDK.Client
                         return Common.RejectReason.InternalServerError;
 
                     case SoftFX.Net.OrderEntry.RejectReason.Other:
-                        return Common.RejectReason.Other;
-
                     default:
-                        throw new Exception("Invalid reject reason : " + reason);
+                        return Common.RejectReason.Other;
                 }
             }
 
@@ -4498,7 +5344,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.AccountType.Cash;
 
                     default:
-                        throw new Exception("Invalid account type : " + type);
+                        return TickTrader.FDK.Common.AccountType.None;
                 }
             }
 
@@ -4555,7 +5401,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderStatus.Activated;
 
                     default:
-                        throw new Exception("Invalid order status : " + status);
+                        return TickTrader.FDK.Common.OrderStatus.None;
                 }
             }
 
@@ -4579,7 +5425,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderType.StopLimit;
 
                     default:
-                        throw new Exception("Invalid order type : " + type);
+                        return TickTrader.FDK.Common.OrderType.None;
                 }
             }
 
@@ -4594,7 +5440,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderSide.Sell;
 
                     default:
-                        throw new Exception("Invalid order side : " + side);
+                        return TickTrader.FDK.Common.OrderSide.None;
                 }
             }
 
@@ -4612,7 +5458,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderTimeInForce.GoodTillDate;
 
                     default:
-                        throw new Exception("Invalid order time in force : " + timeInForce);
+                        return TickTrader.FDK.Common.OrderTimeInForce.Other;
                 }
             }
 
@@ -4653,8 +5499,11 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.OrderEntry.ExecutionType.PendingClose:
                         return TickTrader.FDK.Common.ExecutionType.PendingClose;
 
+                    case SoftFX.Net.OrderEntry.ExecutionType.Split:
+                        return TickTrader.FDK.Common.ExecutionType.Split;
+
                     default:
-                        throw new Exception("Invalid exec type : " + type);
+                        return TickTrader.FDK.Common.ExecutionType.None;
                 }
             }
 
@@ -4689,17 +5538,23 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.OrderEntry.ExecutionRejectReason.IncorrectQty:
                         return TickTrader.FDK.Common.RejectReason.IncorrectQuantity;
 
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.Throttling:
+                        return TickTrader.FDK.Common.RejectReason.ThrottlingLimits;
+
                     case SoftFX.Net.OrderEntry.ExecutionRejectReason.TooLate:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
                     case SoftFX.Net.OrderEntry.ExecutionRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.RejectReason.Other;
 
-                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.Other:
-                        return TickTrader.FDK.Common.RejectReason.Other;
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.CloseOnly:
+                        return TickTrader.FDK.Common.RejectReason.CloseOnly;
+
+                    case SoftFX.Net.OrderEntry.ExecutionRejectReason.LongOnly:
+                        return TickTrader.FDK.Common.RejectReason.LongOnly;
 
                     default:
-                        throw new Exception("Invalid order reject reason : " + reason);
+                        return TickTrader.FDK.Common.RejectReason.Other;
                 }
             }
 
@@ -4719,8 +5574,11 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.OrderEntry.NotificationType.ConfigUpdate:
                         return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
+                    case SoftFX.Net.OrderEntry.NotificationType.StockEventUpdate:
+                        return TickTrader.FDK.Common.NotificationType.StockEventUpdate;
+
                     default:
-                        throw new Exception("Invalid notification type : " + type);
+                        return TickTrader.FDK.Common.NotificationType.Unknown;
                 }
             }
 
@@ -4738,8 +5596,135 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
-                        throw new Exception("Invalid notification severity : " + severity);
+                        return TickTrader.FDK.Common.NotificationSeverity.Unknown;
                 }
+            }
+
+            TickTrader.FDK.Common.ThrottlingMethod GetThrottlingMethod(SoftFX.Net.OrderEntry.ThrottlingMethod method)
+            {
+                switch (method)
+                {
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Account:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Account;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Assets:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Assets;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Currencies:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Currencies;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.DailyAccountSnapshots:
+                        return TickTrader.FDK.Common.ThrottlingMethod.DailyAccountSnapshots;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.FeedSubscribe:
+                        return TickTrader.FDK.Common.ThrottlingMethod.FeedSubscribe;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Level2:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Level2;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Login:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Login;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Positions:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Positions;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.QuoteHistory:
+                        return TickTrader.FDK.Common.ThrottlingMethod.QuoteHistory;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.QuoteHistoryCache:
+                        return TickTrader.FDK.Common.ThrottlingMethod.QuoteHistoryCache;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.SessionInfo:
+                        return TickTrader.FDK.Common.ThrottlingMethod.SessionInfo;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Symbols:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Symbols;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Tickers:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Tickers;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Ticks:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Ticks;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeCreate:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeCreate;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeDelete:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeDelete;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeHistory:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeHistory;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeModify:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeModify;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeServerInfo:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeServerInfo;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TradeSessionInfo:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TradeSessionInfo;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.Trades:
+                        return TickTrader.FDK.Common.ThrottlingMethod.Trades;
+
+                    case SoftFX.Net.OrderEntry.ThrottlingMethod.TwoFactor:
+                        return TickTrader.FDK.Common.ThrottlingMethod.TwoFactor;
+
+                    default:
+                        return TickTrader.FDK.Common.ThrottlingMethod.UnknownMethod;
+                }
+            }
+
+            TickTrader.FDK.Common.PosReportType GetPosReportType(SoftFX.Net.OrderEntry.PositionReportType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.OrderEntry.PositionReportType.Login:
+                        return TickTrader.FDK.Common.PosReportType.Login;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Response:
+                        return TickTrader.FDK.Common.PosReportType.Response;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Rollover:
+                        return TickTrader.FDK.Common.PosReportType.Rollover;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Open:
+                        return TickTrader.FDK.Common.PosReportType.CreatePosition;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Modify:
+                        return TickTrader.FDK.Common.PosReportType.ModifyPosition;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Cancel:
+                        return TickTrader.FDK.Common.PosReportType.CancelPosition;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Close:
+                        return TickTrader.FDK.Common.PosReportType.ClosePosition;
+
+                    case SoftFX.Net.OrderEntry.PositionReportType.Split:
+                        return TickTrader.FDK.Common.PosReportType.Split;
+
+                    default:
+                        return TickTrader.FDK.Common.PosReportType.Unknown;
+                }
+            }
+
+            TickTrader.FDK.Common.OffTimeDisabledFeatures GetOffTimeDisabledFeatures(SoftFX.Net.OrderEntry.OffTimeDisabledFeatures features, bool isClosed)
+            {
+                if (!client_.ProtocolSpec.SupportsOffTimeDisabledFeatures)
+                {
+                    if (isClosed)
+                        return Common.OffTimeDisabledFeatures.QuoteHistory | Common.OffTimeDisabledFeatures.Trade | Common.OffTimeDisabledFeatures.Feed;
+                    else return Common.OffTimeDisabledFeatures.None;
+                }
+                Common.OffTimeDisabledFeatures result = Common.OffTimeDisabledFeatures.None;
+                if (features.HasFlag(SoftFX.Net.OrderEntry.OffTimeDisabledFeatures.QuoteHistory))
+                    result |= Common.OffTimeDisabledFeatures.QuoteHistory;
+                if (features.HasFlag(SoftFX.Net.OrderEntry.OffTimeDisabledFeatures.Trade))
+                    result |= Common.OffTimeDisabledFeatures.Trade;
+                if (features.HasFlag(SoftFX.Net.OrderEntry.OffTimeDisabledFeatures.Feed))
+                    result |= Common.OffTimeDisabledFeatures.Feed;
+
+                return result;
             }
 
             OrderEntry client_;

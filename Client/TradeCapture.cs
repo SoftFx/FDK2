@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Threading;
 using SoftFX.Net.TradeCapture;
@@ -17,38 +18,54 @@ namespace TickTrader.FDK.Client
             bool logEvents = false,
             bool logStates = false,
             bool logMessages = false,
-            int port = 5060,
+            int port = 5044,
             string serverCertificateName = "CN=*.soft-fx.com",
             int connectAttempts = -1,
             int reconnectAttempts = -1,
             int connectInterval = 10000,
-            int heartbeatInterval = 10000,
-            string logDirectory = "Logs"            
+            int heartbeatInterval = 30000,
+            string logDirectory = "Logs",
+            SoftFX.Net.Core.ClientCertificateValidation validateClientCertificate = null,
+            SoftFX.Net.Core.ProxyType proxyType = SoftFX.Net.Core.ProxyType.None,
+            IPAddress proxyAddress = null,
+            int proxyPort = 0,
+            string proxyUsername = null,
+            string proxyPassword = null
         )
         {
-            ClientSessionOptions options = new ClientSessionOptions(port);
+            ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
             options.ConnectionType = SoftFX.Net.Core.ConnectionType.SecureSocket;
             options.ServerCertificateName = serverCertificateName;
-            options.ServerMinMinorVersion = Info.TradeCapture.MinorVersion;
             options.ConnectMaxCount = connectAttempts;
             options.ReconnectMaxCount = reconnectAttempts;
             options.ConnectInterval = connectInterval;
             options.HeartbeatInterval = heartbeatInterval;
+            options.SendBufferSize = 20 * 1024 * 1024;
             options.Log.Directory = logDirectory;
             options.Log.Events = logEvents;
             options.Log.States = logStates;
             options.Log.Messages = logMessages;
+            options.ProxyType = proxyType;
+            options.ProxyAddress = proxyAddress;
+            options.ProxyPort = proxyPort;
+            options.Username = proxyUsername;
+            options.Password = proxyPassword;
+
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
             session_.Listener = sessionListener_;
+            protocolSpec_ = new ProtocolSpec();
         }
 
         ClientSession session_;
         ClientSessionListener sessionListener_;
+        ProtocolSpec protocolSpec_;
+
+        public ProtocolSpec ProtocolSpec => protocolSpec_;
 
         #endregion
 
-        #region IDisposable        
+        #region IDisposable
 
         public void Dispose()
         {
@@ -205,6 +222,8 @@ namespace TickTrader.FDK.Client
 
         void LoginInternal(LoginAsyncContext context, string username, string password, string deviceId, string appId, string sessionId)
         {
+            protocolSpec_.InitTradeCaptureVersion(new ProtocolVersion(session_.MajorVersion, session_.MinorVersion));
+
             if (string.IsNullOrEmpty(appId))
                 appId = "FDK2";
 
@@ -317,8 +336,8 @@ namespace TickTrader.FDK.Client
         #endregion
 
         #region Trade Capture
-        
-        public delegate void SubscribeTradesResultBeginDelegate(TradeCapture tradeCapture, object data, int count);        
+
+        public delegate void SubscribeTradesResultBeginDelegate(TradeCapture tradeCapture, object data, int count);
         public delegate void SubscribeTradesResultDelegate(TradeCapture tradeCapture, object data, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void SubscribeTradesResultEndDelegate(TradeCapture tradeCapture, object data);
         public delegate void SubscribeTradesErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
@@ -338,7 +357,7 @@ namespace TickTrader.FDK.Client
         public delegate void CancelDownloadAccountReportsErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
         public delegate void TradeUpdateDelegate(TradeCapture tradeCapture, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void NotificationDelegate(TradeCapture tradeCapture, TickTrader.FDK.Common.Notification notification);
-        
+
         public event SubscribeTradesResultBeginDelegate SubscribeTradesResultBeginEvent;
         public event SubscribeTradesResultDelegate SubscribeTradesResultEvent;
         public event SubscribeTradesResultEndDelegate SubscribeTradesResultEndEvent;
@@ -750,7 +769,7 @@ namespace TickTrader.FDK.Client
             }
 
             public TradeTransactionReport tradeTransactionReport_;
-            public SubscribeTradesEnumerator enumerator_;            
+            public SubscribeTradesEnumerator enumerator_;
         }
 
         class UnsubscribeTradesAsyncContext : TradeUnsubscribeRequestClientContext, IAsyncContext
@@ -811,7 +830,7 @@ namespace TickTrader.FDK.Client
             }
 
             public TradeTransactionReport tradeTransactionReport_;
-            public DownloadTradesEnumerator enumerator_;            
+            public DownloadTradesEnumerator enumerator_;
         }
 
         class CancelDownloadTradesAsyncContext : TradeDownloadCancelRequestClientContext, IAsyncContext
@@ -957,7 +976,7 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
-            {               
+            {
                 try
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
@@ -987,7 +1006,7 @@ namespace TickTrader.FDK.Client
             }
 
             public override void OnConnectError(ClientSession clientSession, string text)
-            {                
+            {
                 try
                 {
                     ConnectException exception = new ConnectException(text);
@@ -1493,6 +1512,54 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnLogout(ClientSession session, LoginRequestClientContext LoginRequestClientContext, Logout message)
+            {
+                try
+                {
+                    LoginAsyncContext loginContext = (LoginAsyncContext)LoginRequestClientContext;
+
+                    try
+                    {
+                        LogoutInfo result = new LogoutInfo();
+                        result.Reason = GetLogoutReason(message.Reason);
+                        result.Message = message.Text;
+
+                        if (client_.LogoutResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutResultEvent(client_, loginContext.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.LogoutErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.LogoutErrorEvent(client_, loginContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (loginContext.Waitable)
+                        {
+                            loginContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnTradeSubscribeBeginReport(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, TradeSubscribeBeginReport message)
             {
                 try
@@ -1643,7 +1710,7 @@ namespace TickTrader.FDK.Client
                 catch
                 {
                     // client_.session_.LogError(exception.Message);
-                } 
+                }
             }
 
             public override void OnTradeSubscribeReject(ClientSession session, TradeSubscribeRequestClientContext TradeSubscribeRequestClientContext, Reject message)
@@ -2358,7 +2425,7 @@ namespace TickTrader.FDK.Client
                 {
                     tradeTransactionReport.AccountBalance = balance.Total;
                     tradeTransactionReport.TransactionAmount = balance.Move;
-                    tradeTransactionReport.TransactionCurrency = balance.CurrId;
+                    tradeTransactionReport.TransactionCurrency = balance.CurrencyId;
                 }
                 else
                 {
@@ -2442,15 +2509,15 @@ namespace TickTrader.FDK.Client
                 }
                 else
                     tradeTransactionReport.PosRemainingSide = Common.OrderSide.Buy;
-                
+
                 tradeTransactionReport.ReqOpenQuantity = trade.ReqOpenQty;
                 tradeTransactionReport.ReqOpenPrice = trade.ReqOpenPrice;
                 tradeTransactionReport.ReqClosePrice = trade.ReqClosePrice;
-                tradeTransactionReport.ReqCloseQuantity = trade.ReqCloseQty;               
+                tradeTransactionReport.ReqCloseQuantity = trade.ReqCloseQty;
                 tradeTransactionReport.Commission = trade.Commission.GetValueOrDefault();
                 tradeTransactionReport.AgentCommission = trade.AgentCommission.GetValueOrDefault();
-                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault();                
-                tradeTransactionReport.CommCurrency = trade.CommissionCurrId;
+                tradeTransactionReport.Swap = trade.Swap.GetValueOrDefault();
+                tradeTransactionReport.CommCurrency = trade.CommissionCurrencyId;
                 tradeTransactionReport.StopLoss = trade.StopLoss.GetValueOrDefault();
                 tradeTransactionReport.TakeProfit = trade.TakeProfit.GetValueOrDefault();
                 tradeTransactionReport.TransactionTime = trade.TransactTime;
@@ -2458,14 +2525,17 @@ namespace TickTrader.FDK.Client
                 tradeTransactionReport.OrderLastFillAmount = trade.LastQty;
                 tradeTransactionReport.ActionId = trade.ActionId.GetValueOrDefault();
                 tradeTransactionReport.Expiration = trade.ExpireTime;
-                tradeTransactionReport.MarginCurrency = trade.MarginCurrId;
-                tradeTransactionReport.ProfitCurrency = trade.ProfitCurrId;
-                tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrId;
+                tradeTransactionReport.MarginCurrency = trade.MarginCurrencyId;
+                tradeTransactionReport.ProfitCurrency = trade.ProfitCurrencyId;
+                tradeTransactionReport.MinCommissionCurrency = trade.MinCommissionCurrencyId;
+                tradeTransactionReport.ImmediateOrCancel = (trade.OrderFlags & OrderFlags.ImmediateOrCancel) != 0;
+                tradeTransactionReport.Slippage = trade.Slippage;
+                tradeTransactionReport.Tax = trade.Tax.GetValueOrDefault();
 
-                TradeAssetNull asset1 = trade.Asset1;
+                TradeAssetNull asset1 = trade.SrcAsset;
                 if (asset1.HasValue)
                 {
-                    tradeTransactionReport.SrcAssetCurrency = asset1.CurrId;
+                    tradeTransactionReport.SrcAssetCurrency = asset1.CurrencyId;
                     tradeTransactionReport.SrcAssetAmount = asset1.Total;
                     tradeTransactionReport.SrcAssetMovement = asset1.Move;
                 }
@@ -2476,10 +2546,10 @@ namespace TickTrader.FDK.Client
                     tradeTransactionReport.SrcAssetMovement = null;
                 }
 
-                TradeAssetNull asset2 = trade.Asset2;
+                TradeAssetNull asset2 = trade.DstAsset;
                 if (asset2.HasValue)
                 {
-                    tradeTransactionReport.DstAssetCurrency = asset2.CurrId;
+                    tradeTransactionReport.DstAssetCurrency = asset2.CurrencyId;
                     tradeTransactionReport.DstAssetAmount = asset2.Total;
                     tradeTransactionReport.DstAssetMovement = asset2.Move;
                 }
@@ -2502,60 +2572,80 @@ namespace TickTrader.FDK.Client
                 tradeTransactionReport.UsdToDstAssetConversionRate = null;
                 tradeTransactionReport.MinCommissionConversionRate = null;
 
-                ConversionArray conversions = trade.Conversions;
-                int conversionCount = conversions.Length;
+                if (trade.OpenConversionRate.HasValue)
+                    tradeTransactionReport.OpenConversionRate = trade.OpenConversionRate.Value;
 
-                for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
-                {
-                    Conversion conversion = conversions[conversionIndex];
+                if (trade.CloseConversionRate.HasValue)
+                    tradeTransactionReport.CloseConversionRate = trade.CloseConversionRate.Value;
 
-                    switch (conversion.Type)
-                    {
-                        case ConversionType.MarginToBalance:
-                            tradeTransactionReport.OpenConversionRate = conversion.Rate;
-                            break;
+                if (trade.MarginCurrencyToUsdConversionRate.HasValue)
+                    tradeTransactionReport.MarginCurrencyToUsdConversionRate = trade.MarginCurrencyToUsdConversionRate.Value;
 
-                        case ConversionType.MarginToUsd:
-                            tradeTransactionReport.MarginCurrencyToUsdConversionRate = conversion.Rate;
-                            break;
+                if (trade.UsdToMarginCurrencyConversionRate.HasValue)
+                    tradeTransactionReport.UsdToMarginCurrencyConversionRate = trade.UsdToMarginCurrencyConversionRate.Value;
 
-                        case ConversionType.ProfitToBalance:
-                            tradeTransactionReport.CloseConversionRate = conversion.Rate;
-                            break;
+                if (trade.ProfitCurrencyToUsdConversionRate.HasValue)
+                    tradeTransactionReport.ProfitCurrencyToUsdConversionRate = trade.ProfitCurrencyToUsdConversionRate.Value;
 
-                        case ConversionType.ProfitToUsd:
-                            tradeTransactionReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
-                            break;
+                if (trade.UsdToProfitCurrencyConversionRate.HasValue)
+                    tradeTransactionReport.UsdToProfitCurrencyConversionRate = trade.UsdToProfitCurrencyConversionRate.Value;
 
-                        case ConversionType.Asset1ToUsd:
-                            tradeTransactionReport.SrcAssetToUsdConversionRate = conversion.Rate;
-                            break;
+                if (trade.SrcAssetToUsdConversionRate.HasValue)
+                    tradeTransactionReport.SrcAssetToUsdConversionRate = trade.SrcAssetToUsdConversionRate.Value;
 
-                        case ConversionType.Asset2ToUsd:
-                            tradeTransactionReport.DstAssetToUsdConversionRate = conversion.Rate;
-                            break;
+                if (trade.UsdToSrcAssetConversionRate.HasValue)
+                    tradeTransactionReport.UsdToSrcAssetConversionRate = trade.UsdToSrcAssetConversionRate.Value;
 
-                        case ConversionType.MinCommissionToBalance:
-                            tradeTransactionReport.MinCommissionConversionRate = conversion.Rate;
-                            break;
+                if (trade.DstAssetToUsdConversionRate.HasValue)
+                    tradeTransactionReport.DstAssetToUsdConversionRate = trade.DstAssetToUsdConversionRate.Value;
 
-                        case ConversionType.UsdToMargin:
-                            tradeTransactionReport.UsdToMarginCurrencyConversionRate = conversion.Rate;
-                            break;
+                if (trade.UsdToDstAssetConversionRate.HasValue)
+                    tradeTransactionReport.UsdToDstAssetConversionRate = trade.UsdToDstAssetConversionRate.Value;
 
-                        case ConversionType.UsdToProfit:
-                            tradeTransactionReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
-                            break;
+                if (trade.MinCommissionConversionRate.HasValue)
+                    tradeTransactionReport.MinCommissionConversionRate = trade.MinCommissionConversionRate.Value;
 
-                        case ConversionType.UsdToAsset1:
-                            tradeTransactionReport.UsdToSrcAssetConversionRate = conversion.Rate;
-                            break;
+                if (trade.MarginCurrencyToReportConversionRate.HasValue)
+                    tradeTransactionReport.MarginCurrencyToReportConversionRate = trade.MarginCurrencyToReportConversionRate.Value;
 
-                        case ConversionType.UsdToAsset2:
-                            tradeTransactionReport.UsdToDstAssetConversionRate = conversion.Rate;
-                            break;
-                    }
-                }
+                if (trade.ReportToMarginCurrencyConversionRate.HasValue)
+                    tradeTransactionReport.ReportToMarginCurrencyConversionRate = trade.ReportToMarginCurrencyConversionRate.Value;
+
+                if (trade.ProfitCurrencyToReportConversionRate.HasValue)
+                    tradeTransactionReport.ProfitCurrencyToReportConversionRate = trade.ProfitCurrencyToReportConversionRate.Value;
+
+                if (trade.ReportToProfitCurrencyConversionRate.HasValue)
+                    tradeTransactionReport.ReportToProfitCurrencyConversionRate = trade.ReportToProfitCurrencyConversionRate.Value;
+
+                if (trade.SrcAssetToReportConversionRate.HasValue)
+                    tradeTransactionReport.SrcAssetToReportConversionRate = trade.SrcAssetToReportConversionRate.Value;
+
+                if (trade.ReportToSrcAssetConversionRate.HasValue)
+                    tradeTransactionReport.ReportToSrcAssetConversionRate = trade.ReportToSrcAssetConversionRate.Value;
+
+                if (trade.DstAssetToReportConversionRate.HasValue)
+                    tradeTransactionReport.DstAssetToReportConversionRate = trade.DstAssetToReportConversionRate.Value;
+
+                if (trade.ReportToDstAssetConversionRate.HasValue)
+                    tradeTransactionReport.ReportToDstAssetConversionRate = trade.ReportToDstAssetConversionRate.Value;
+
+                tradeTransactionReport.ReportCurrency = trade.ReportCurrency;
+                tradeTransactionReport.TokenCommissionCurrency = trade.TokenCommissionCurrency;
+
+                if (trade.TokenCommissionCurrencyDiscount.HasValue)
+                    tradeTransactionReport.TokenCommissionCurrencyDiscount = trade.TokenCommissionCurrencyDiscount.Value;
+
+                if (trade.TokenCommissionConversionRate.HasValue)
+                    tradeTransactionReport.TokenCommissionConversionRate = trade.TokenCommissionConversionRate.Value;
+
+                if (trade.SplitRatio.HasValue)
+                    tradeTransactionReport.SplitRatio = trade.SplitRatio;
+
+                if (trade.DividendGrossRate.HasValue)
+                    tradeTransactionReport.DividendGrossRate = trade.DividendGrossRate;
+
+                if (trade.DividendToBalanceConversionRate.HasValue)
+                    tradeTransactionReport.DividendToBalanceConversionRate = trade.DividendToBalanceConversionRate;
             }
 
             void FillAccountReport(TickTrader.FDK.Common.AccountReport accountReport, SoftFX.Net.TradeCapture.Account account)
@@ -2569,7 +2659,7 @@ namespace TickTrader.FDK.Client
 
                 if (balance.HasValue)
                 {
-                    accountReport.BalanceCurrency = balance.CurrId;
+                    accountReport.BalanceCurrency = balance.CurrencyId;
                     accountReport.Balance = balance.Total;
                 }
                 else
@@ -2601,6 +2691,7 @@ namespace TickTrader.FDK.Client
                     TickTrader.FDK.Common.Position accountPosition = new TickTrader.FDK.Common.Position();
 
                     accountPosition.Symbol = position.SymbolId;
+                    accountPosition.PosReportType = PosReportType.Response;
                     if (position.Type == PosType.Long)
                     {
                         accountPosition.BuyAmount = position.Qty;
@@ -2616,12 +2707,14 @@ namespace TickTrader.FDK.Client
                         accountPosition.SellPrice = position.Price;
                     }
                     accountPosition.Margin = position.Margin;
-                    accountPosition.Profit = position.Profit;                    
+                    accountPosition.Profit = position.Profit;
                     accountPosition.Swap = position.Swap;
                     accountPosition.Commission = position.Commission;
                     accountPosition.Modified = position.Modified;
                     accountPosition.BidPrice = position.Bid;
                     accountPosition.AskPrice = position.Ask;
+                    accountPosition.PosId = position.PosId;
+                    accountPosition.Modified = position.Modified;
 
                     accountReport.Positions[index] = accountPosition;
                 }
@@ -2631,14 +2724,20 @@ namespace TickTrader.FDK.Client
 
                 accountReport.Assets = new AssetInfo[assetCount];
 
-                for (int index = 0; index < assetCount; ++ index)
+                for (int index = 0; index < assetCount; ++index)
                 {
                     AccountAsset asset = assets[index];
                     AssetInfo assetInfo = new AssetInfo();
 
-                    assetInfo.Currency = asset.CurrId;
+                    assetInfo.Currency = asset.CurrencyId;
                     assetInfo.LockedAmount = asset.Locked;
                     assetInfo.Balance = asset.Total;
+                    assetInfo.SrcAssetToUsdConversionRate = asset.SrcAssetToUsdConversionRate;
+                    assetInfo.UsdToSrcAssetConversionRate = asset.UsdToSrcAssetConversionRate;
+                    if (asset.SrcAssetToReportConversionRate.HasValue)
+                        assetInfo.SrcAssetToReportConversionRate = asset.SrcAssetToReportConversionRate;
+                    if (asset.ReportToSrcAssetConversionRate.HasValue)
+                        assetInfo.ReportToSrcAssetConversionRate = asset.ReportToSrcAssetConversionRate;
 
                     accountReport.Assets[index] = assetInfo;
                 }
@@ -2648,32 +2747,37 @@ namespace TickTrader.FDK.Client
                 accountReport.ProfitCurrencyToUsdConversionRate = null;
                 accountReport.UsdToProfitCurrencyConversionRate = null;
 
-                ConversionArray conversions = account.Conversions;
-                int conversionCount = conversions.Length;
+                if (account.ProfitCurrencyToUsdConversionRate.HasValue)
+                    accountReport.ProfitCurrencyToUsdConversionRate = account.ProfitCurrencyToUsdConversionRate.Value;
 
-                for (int conversionIndex = 0; conversionIndex < conversionCount; ++conversionIndex)
-                {
-                    Conversion conversion = conversions[conversionIndex];
+                if (account.UsdToProfitCurrencyConversionRate.HasValue)
+                    accountReport.UsdToProfitCurrencyConversionRate = account.UsdToProfitCurrencyConversionRate.Value;
 
-                    switch (conversion.Type)
-                    {
-                        case ConversionType.ProfitToUsd:
-                            accountReport.ProfitCurrencyToUsdConversionRate = conversion.Rate;
-                            break;
+                if (account.BalanceCurrencyToUsdConversionRate.HasValue)
+                    accountReport.BalanceCurrencyToUsdConversionRate = account.BalanceCurrencyToUsdConversionRate.Value;
 
-                        case ConversionType.UsdToProfit:
-                            accountReport.UsdToProfitCurrencyConversionRate = conversion.Rate;
-                            break;
+                if (account.UsdToBalanceCurrencyConversionRate.HasValue)
+                    accountReport.UsdToBalanceCurrencyConversionRate = account.UsdToBalanceCurrencyConversionRate.Value;
 
-                        case ConversionType.BalanceToUsd:
-                            accountReport.BalanceCurrencyToUsdConversionRate = conversion.Rate;
-                            break;
+                if (account.ProfitCurrencyToReportConversionRate.HasValue)
+                    accountReport.ProfitCurrencyToReportConversionRate = account.ProfitCurrencyToReportConversionRate.Value;
 
-                        case ConversionType.UsdToBalance:
-                            accountReport.UsdToBalanceCurrencyConversionRate = conversion.Rate;
-                            break;
-                    }
-                }
+                if (account.ReportToProfitCurrencyConversionRate.HasValue)
+                    accountReport.ReportToProfitCurrencyConversionRate = account.ReportToProfitCurrencyConversionRate.Value;
+
+                if (account.BalanceCurrencyToReportConversionRate.HasValue)
+                    accountReport.BalanceCurrencyToReportConversionRate = account.BalanceCurrencyToReportConversionRate.Value;
+
+                if (account.ReportToBalanceCurrencyConversionRate.HasValue)
+                    accountReport.ReportToBalanceCurrencyConversionRate = account.ReportToBalanceCurrencyConversionRate.Value;
+
+                accountReport.ReportCurrency = account.ReportCurrency;
+                accountReport.TokenCommissionCurrency = account.TokenCommissionCurrency;
+
+                if (account.TokenCommissionCurrencyDiscount.HasValue)
+                    accountReport.TokenCommissionCurrencyDiscount = account.TokenCommissionCurrencyDiscount.Value;
+
+                accountReport.IsTokenCommissionEnabled = account.TokenCommissionEnabled;
             }
 
             TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.TradeCapture.RejectReason reason)
@@ -2690,10 +2794,8 @@ namespace TickTrader.FDK.Client
                         return Common.RejectReason.InternalServerError;
 
                     case SoftFX.Net.TradeCapture.RejectReason.Other:
-                        return Common.RejectReason.Other;
-
                     default:
-                        throw new Exception("Invalid reject reason : " + reason);
+                        return Common.RejectReason.Other;
                 }
             }
 
@@ -2713,11 +2815,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.LoginRejectReason.InternalServerError:
                         return TickTrader.FDK.Common.LogoutReason.ServerError;
 
-                    case SoftFX.Net.TradeCapture.LoginRejectReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.Other:
                     default:
-                        throw new Exception("Invalid login reject reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -2740,11 +2843,12 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.LogoutReason.BlockedLogin:
                         return TickTrader.FDK.Common.LogoutReason.BlockedAccount;
 
-                    case SoftFX.Net.TradeCapture.LogoutReason.Other:
-                        return TickTrader.FDK.Common.LogoutReason.Unknown;
+                    case SoftFX.Net.TradeCapture.LogoutReason.MustChangePassword:
+                        return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.TradeCapture.LogoutReason.Other:
                     default:
-                        throw new Exception("Invalid logout reason : " + reason);
+                        return TickTrader.FDK.Common.LogoutReason.Unknown;
                 }
             }
 
@@ -2770,8 +2874,11 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.TradeType.Balance:
                         return TickTrader.FDK.Common.TradeTransactionReportType.BalanceTransaction;
 
+                    case SoftFX.Net.TradeCapture.TradeType.TradeModified:
+                        return TickTrader.FDK.Common.TradeTransactionReportType.TradeModified;
+
                     default:
-                        throw new Exception("Invalid trade type : " + type);
+                        return TickTrader.FDK.Common.TradeTransactionReportType.None;
                 }
             }
 
@@ -2800,15 +2907,23 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.TradeReason.StopOut:
                         return TickTrader.FDK.Common.TradeTransactionReason.StopOut;
 
-
                     case SoftFX.Net.TradeCapture.TradeReason.Rollover:
                         return TickTrader.FDK.Common.TradeTransactionReason.Rollover;
 
                     case SoftFX.Net.TradeCapture.TradeReason.AccountDeleted:
                         return TickTrader.FDK.Common.TradeTransactionReason.DeleteAccount;
 
+                    case SoftFX.Net.TradeCapture.TradeReason.TransferMoney:
+                        return TickTrader.FDK.Common.TradeTransactionReason.TransferMoney;
+
+                    case SoftFX.Net.TradeCapture.TradeReason.Split:
+                        return TickTrader.FDK.Common.TradeTransactionReason.Split;
+
+                    case SoftFX.Net.TradeCapture.TradeReason.Dividend:
+                        return TickTrader.FDK.Common.TradeTransactionReason.Dividend;
+
                     default:
-                        throw new Exception("Invalid trade reason : " + reason);
+                        return TickTrader.FDK.Common.TradeTransactionReason.None;
                 }
             }
 
@@ -2832,7 +2947,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderType.StopLimit;
 
                     default:
-                        throw new Exception("Invalid order type : " + type);
+                        return TickTrader.FDK.Common.OrderType.None;
                 }
             }
 
@@ -2847,7 +2962,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderSide.Sell;
 
                     default:
-                        throw new Exception("Invalid order side : " + side);
+                        return TickTrader.FDK.Common.OrderSide.None;
                 }
             }
 
@@ -2865,7 +2980,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderTimeInForce.GoodTillDate;
 
                     default:
-                        throw new Exception("Invalid order time in force : " + timeInForce);
+                        return TickTrader.FDK.Common.OrderTimeInForce.Other;
                 }
             }
 
@@ -2880,7 +2995,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.OrderSide.Sell;
 
                     default:
-                        throw new Exception("Invalid position type : " + posType);
+                        return TickTrader.FDK.Common.OrderSide.None;
                 }
             }
 
@@ -2892,7 +3007,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationType.ConfigUpdated;
 
                     default:
-                        throw new Exception("Invalid notification type : " + type);
+                        return TickTrader.FDK.Common.NotificationType.Unknown;
                 }
             }
 
@@ -2910,7 +3025,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationSeverity.Error;
 
                     default:
-                        throw new Exception("Invalid notification severity : " + severity);
+                        return TickTrader.FDK.Common.NotificationSeverity.Unknown;
                 }
             }
 
@@ -2928,7 +3043,7 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.AccountType.Cash;
 
                     default:
-                        throw new Exception("Invalid account type : " + type);
+                        return TickTrader.FDK.Common.AccountType.None;
                 }
             }
 

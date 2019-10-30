@@ -36,8 +36,8 @@
 
             try
             {
-                this.feed = new DataFeed(feedConnectionString);
-                this.trade = new DataTrade(tradeConnectionString);
+                this.feed = new DataFeed(feedConnectionString, null);
+                this.trade = new DataTrade(tradeConnectionString, null);
 
                 var path = Path.Combine(location, "Quotes");
 //                this.storage = new DataFeedStorage(path, StorageProvider.Ntfs, feed, false);

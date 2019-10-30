@@ -13,7 +13,7 @@
 
         protected override void RunExample()
         {
-            var record = this.Trade.Server.SendOrder("EURUSD", OrderType.Market, OrderSide.Buy, 10000, null, null, null, null, null, null, null, null, null, null);
+            var record = this.Trade.Server.SendOrder("EURUSD", OrderType.Market, OrderSide.Buy, 10000, null, null, null, null, null, null, null, null, null, null, false, null);
             Console.WriteLine(record);
         }        
     }

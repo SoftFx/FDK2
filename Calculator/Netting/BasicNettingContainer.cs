@@ -23,12 +23,9 @@
 
         void AddToSummary(OrderLightClone clone)
         {
-            if (clone.OrderModelRef.IsCalculated)
-            {
-                this.Margin += clone.OrderModelRef.Margin.GetValueOrDefault();
-                this.Profit += clone.OrderModelRef.Profit.GetValueOrDefault();
-            }
-            else
+            this.Margin += clone.OrderModelRef.Margin.GetValueOrDefault();
+            this.Profit += clone.OrderModelRef.Profit.GetValueOrDefault();
+            if (!clone.OrderModelRef.Margin.HasValue || !clone.OrderModelRef.Profit.HasValue)
             {
                 InvalidOrdersCount++;
             }

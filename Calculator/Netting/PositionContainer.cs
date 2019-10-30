@@ -80,15 +80,32 @@ namespace TickTrader.FDK.Calculator.Netting
                 if (PosRef != null)
                 {
                     PosRef.Margin = this.Calculator.CalculateMargin(Amount, AccountData.Leverage, OrderTypes.Position, Side, false);
-                    PosRef.Profit = this.Calculator.CalculateProfit(Price, Amount, Side);
                     Margin = PosRef.Margin;
+                }
+            }
+            catch (BusinessLogicException ex)
+            {
+                if (Amount != 0)
+                {
+                    InvalidOrdersCount = 1;
+                    WorstError = ex.CalcError;
+                }
+            }
+            try
+            {
+                if (PosRef != null)
+                {
+                    PosRef.Profit = this.Calculator.CalculateProfit(Price, Amount, Side);
                     Profit = PosRef.Profit;
                 }
             }
             catch (BusinessLogicException ex)
             {
-                InvalidOrdersCount = 1;
-                WorstError = ex.CalcError;
+                if (Amount != 0)
+                {
+                    InvalidOrdersCount = 1;
+                    WorstError = ex.CalcError;
+                }
             }
         }
     }

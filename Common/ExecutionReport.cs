@@ -218,6 +218,16 @@
         public double? BalanceTradeAmount { get; set; }
 
         /// <summary>
+        /// Immediate Or Cancel Flag.
+        /// </summary>
+        public bool ImmediateOrCancelFlag { get; set; }
+
+        /// <summary>
+        /// Optional Slippage.
+        /// </summary>
+        public double? Slippage { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
         public bool Last { get; set; }
@@ -269,6 +279,8 @@
             executionReport.Balance = Balance;
             executionReport.BalanceTradeAmount = BalanceTradeAmount;
             executionReport.Last = Last;
+            executionReport.ImmediateOrCancelFlag = ImmediateOrCancelFlag;
+            executionReport.Slippage = Slippage;
 
             return executionReport;
         }

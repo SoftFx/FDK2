@@ -53,6 +53,11 @@
         /// <summary>
         ///
         /// </summary>
-        OrderActivated = 8
+        OrderActivated = 8,
+
+        /// <summary>
+        /// 
+        /// </summary>
+        TradeModified = 9
     }
 }

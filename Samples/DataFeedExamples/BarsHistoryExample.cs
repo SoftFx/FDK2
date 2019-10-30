@@ -14,9 +14,14 @@
 
         protected override void RunExample()
         {
-            var startTime = DateTime.Parse("06/01/2017 08:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
-            var endTime = DateTime.Parse("06/30/2017 07:59:59Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var historyInfo = this.Feed.Server.GetBarsHistoryInfo("EURUSD", PriceType.Bid, BarPeriod.M1);
+            Console.WriteLine("BarsHistoryInfo: EURUSD, Bid, M1");
+            Console.WriteLine(historyInfo);
 
+            var startTime = historyInfo.AvailFrom ?? DateTime.Parse("06/01/2017 08:00:00Z", CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal);
+            var endTime = startTime.AddHours(1);
+
+            Console.WriteLine("GetBarsHistory: EURUSD, M1 from {0} to {1}", startTime, endTime);
             var bars = this.Feed.Server.GetBarsHistory("EURUSD", BarPeriod.M1, startTime, endTime);
 
             var bidSumDeviation = 0D;

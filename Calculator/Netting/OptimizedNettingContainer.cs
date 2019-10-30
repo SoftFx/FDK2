@@ -33,6 +33,14 @@ namespace TickTrader.FDK.Calculator.Netting
             try
             {
                 Margin = this.Calculator.CalculateMargin(TotalAmount, AccountData.Leverage, Type, Side, _hidden);
+            }
+            catch (BusinessLogicException ex)
+            {
+                InvalidOrdersCount = TotalCount;
+                WorstError = ex.CalcError;
+            }
+            try
+            {
                 if (Type == OrderTypes.Position && TotalAmount != 0)
                     Profit = this.Calculator.CalculateProfit(WeightedAveragePrice, TotalAmount, Side);
                 else

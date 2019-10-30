@@ -20,7 +20,7 @@ namespace OrderEntrySyncSample
                 string address = "localhost";
                 string login = "5";
                 string password = "123qwe!";
-                int port = 5040;
+                int port = 5043;
 
                 var options = new OptionSet()
                 {
@@ -63,7 +63,8 @@ namespace OrderEntrySyncSample
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new OrderEntry("OrderEntrySyncSample", port : port, reconnectAttempts : 0, logMessages : true);
+            client_ = new OrderEntry("OrderEntrySyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+                validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new OrderEntry.LogoutDelegate(this.OnLogout);
             client_.DisconnectEvent += new OrderEntry.DisconnectDelegate(this.OnDisconnect);
@@ -84,7 +85,7 @@ namespace OrderEntrySyncSample
 
             GC.SuppressFinalize(this);
         }
-        
+
         string GetNextWord(string line, ref int index)
         {
             while (index < line.Length && line[index] == ' ')
@@ -105,7 +106,7 @@ namespace OrderEntrySyncSample
         {
             PrintCommands();
 
-            Connect();            
+            Connect();
 
             try
             {
@@ -455,6 +456,14 @@ namespace OrderEntrySyncSample
 
                             ClosePosition(orderId, double.Parse(qty));
                         }
+                        else if (command == "split_list" || command == "sl")
+                        {
+                            GetSplits();
+                        }
+                        else if (command == "dividend_list" || command == "dl")
+                        {
+                            GetDividends();
+                        }
                         else if (command == "exit" || command == "e")
                         {
                             break;
@@ -485,6 +494,8 @@ namespace OrderEntrySyncSample
                 client_.Login(login_, password_, "", "", "", Timeout);
 
                 Console.WriteLine("Login succeeded");
+
+                SessionInfo info =  client_.GetSessionInfo(Timeout);
             }
             catch
             {
@@ -507,7 +518,7 @@ namespace OrderEntrySyncSample
             }
             catch
             {
-            }            
+            }
 
             string text = client_.Disconnect("Client disconnect");
 
@@ -531,6 +542,8 @@ namespace OrderEntrySyncSample
             Console.WriteLine("replace_order_stop_limit (rosl) <client_order_id> <symbol_id> <side> <qty> <price> <stop_price> [<comment>] - send stop limit order replace");
             Console.WriteLine("cancel_order (co) <client_order_id> - send order cancel");
             Console.WriteLine("close_position (cp) <order_id> <qty> - send position close");
+            Console.WriteLine("split_list (sl) - get account split list");
+            Console.WriteLine("dividend_list (dl) - get account dividend list");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -572,7 +585,7 @@ namespace OrderEntrySyncSample
                 Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
             }
         }
-        
+
         void GetOrders()
         {
             GetOrdersEnumerator enumerator = client_.GetOrders(Timeout);
@@ -618,9 +631,41 @@ namespace OrderEntrySyncSample
             }
         }
 
+        void GetSplits()
+        {
+            Split[] splits = client_.GetSplitList(Timeout);
+
+            int count = splits.Length;
+
+            Console.Error.WriteLine("Total splits : {0}", count);
+
+            for (int index = 0; index < count; ++index)
+            {
+                Split split = splits[index];
+
+                Console.WriteLine($"{split.Id}\t{split.StartTime}\t Ratio={split.Ratio}\tSymbols=[{string.Join(",", split.Symbols.ToArray())}]\tCurrencies=[{string.Join(",", split.Currencies.ToArray())}]");
+            }
+        }
+
+        void GetDividends()
+        {
+            Dividend[] dividends = client_.GetDividendList(Timeout);
+
+            int count = dividends.Length;
+
+            Console.Error.WriteLine("Total dividends : {0}", count);
+
+            for (int index = 0; index < count; ++index)
+            {
+                Dividend dividend = dividends[index];
+
+                Console.WriteLine($"{dividend.Id}\t{dividend.Time}\t GrossRate={dividend.GrossRate}\tSymbol={dividend.Symbol}");
+            }
+        }
+
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -628,7 +673,7 @@ namespace OrderEntrySyncSample
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -636,7 +681,7 @@ namespace OrderEntrySyncSample
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -644,7 +689,7 @@ namespace OrderEntrySyncSample
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId,  OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -652,7 +697,7 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -660,7 +705,7 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -668,7 +713,7 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, true, null, comment, null, null, Timeout);
+            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
