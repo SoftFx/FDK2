@@ -4971,6 +4971,7 @@ namespace TickTrader.FDK.Client
                     result.TransactionCurrency = updateBalance.CurrencyId;
                     result.TransactionAmount = updateBalance.Move.Value;
                     result.Balance = updateBalance.Total;
+                    result.TransactionType = GetBalanceTransactionType(update.Type);
 
                     if (client_.BalanceUpdateEvent != null)
                     {
@@ -5725,6 +5726,20 @@ namespace TickTrader.FDK.Client
                     result |= Common.OffTimeDisabledFeatures.Feed;
 
                 return result;
+            }
+
+            TickTrader.FDK.Common.BalanceTransactionType GetBalanceTransactionType(SoftFX.Net.OrderEntry.BalanceUpdateType type)
+            {
+                switch (type)
+                {
+                    case BalanceUpdateType.DepositWithdrawal:
+                        return BalanceTransactionType.DepositWithdrawal;
+                    case BalanceUpdateType.Dividend:
+                        return BalanceTransactionType.Dividend;
+
+                    default:
+                        return BalanceTransactionType.DepositWithdrawal;
+                }
             }
 
             OrderEntry client_;

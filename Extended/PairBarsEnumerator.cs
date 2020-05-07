@@ -138,11 +138,11 @@
             else
             {
                 var status = DateTime.Compare(this.bid.From, this.ask.From);
-                if ((this.pairBars.positive && (status <= 0)) || (!this.pairBars.positive && (status >= 0)))
+                if ((this.pairBars.isPositiveTimeRange && (status <= 0)) || (!this.pairBars.isPositiveTimeRange && (status >= 0)))
                 {
                     this.bid = null;
                 }
-                if ((this.pairBars.positive && (status >= 0)) || (!this.pairBars.positive && (status <= 0)))
+                if ((this.pairBars.isPositiveTimeRange && (status >= 0)) || (!this.pairBars.isPositiveTimeRange && (status <= 0)))
                 {
                     this.ask = null;
                 }
@@ -162,17 +162,16 @@
         {
             var bid = this.bid;
             var ask = this.ask;
+
             if (bid != null && ask != null)
             {
                 var status = DateTime.Compare(bid.From, ask.From);
-                if ((this.pairBars.positive && (status < 0)) || (!this.pairBars.positive && (status > 0)))
+                if ((this.pairBars.isPositiveTimeRange && (status < 0)) || (!this.pairBars.isPositiveTimeRange && (status > 0)))
                 {
-                    // TODO: check this
                     ask = null;
                 }
-                if ((this.pairBars.positive && (status > 0)) || (!this.pairBars.positive && (status < 0)))
+                if ((this.pairBars.isPositiveTimeRange && (status > 0)) || (!this.pairBars.isPositiveTimeRange && (status < 0)))
                 {
-                    // TODO: check this
                     bid = null;
                 }
             }

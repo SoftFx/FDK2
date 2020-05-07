@@ -60,6 +60,22 @@
         }
 
         /// <summary>
+        /// Gets extended name of the symbol.
+        /// </summary>
+        /// <exception cref="SoftFX.Extended.Errors.UnsupportedFeatureException">If the feature is not supported by used protocol version.</exception>
+        public string ExtendedName
+        {
+            get
+            {
+                return this.extendedName;
+            }
+            set
+            {
+                this.extendedName = value;
+            }
+        }
+
+        /// <summary>
         /// Gets description of the symbol.
         /// </summary>
         /// <exception cref="SoftFX.Extended.Errors.UnsupportedFeatureException">If the feature is not supported by used protocol version.</exception>
@@ -745,6 +761,7 @@
         string currency;
         string settlementCurrency;
         string description;
+        string extendedName;
         int precision;
         double roundLot;
         double minTradeVolume;

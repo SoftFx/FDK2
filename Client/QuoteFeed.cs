@@ -1244,6 +1244,7 @@ namespace TickTrader.FDK.Client
                             resultSymbol.Currency = reportSymbol.MarginCurrencyId;
                             resultSymbol.SettlementCurrency = reportSymbol.ProfitCurrencyId;
                             resultSymbol.Description = reportSymbol.Description;
+                            resultSymbol.ExtendedName = reportSymbol.ExtendedName;
                             resultSymbol.Precision = reportSymbol.Precision;
                             resultSymbol.RoundLot = reportSymbol.RoundLot;
                             resultSymbol.MinTradeVolume = reportSymbol.MinTradeVol;

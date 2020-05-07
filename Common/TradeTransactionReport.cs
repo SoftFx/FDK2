@@ -544,6 +544,10 @@
             tradeTransactionReport.TokenCommissionCurrency = TokenCommissionCurrency;
             tradeTransactionReport.TokenCommissionCurrencyDiscount = TokenCommissionCurrencyDiscount;
             tradeTransactionReport.TokenCommissionConversionRate = TokenCommissionConversionRate;
+            tradeTransactionReport.SplitRatio = SplitRatio;
+            tradeTransactionReport.DividendGrossRate = DividendGrossRate;
+            tradeTransactionReport.DividendToBalanceConversionRate = DividendToBalanceConversionRate;
+            tradeTransactionReport.Tax = Tax;
 
             return tradeTransactionReport;
         }

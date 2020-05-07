@@ -2321,20 +2321,28 @@ namespace TickTrader.FDK.Client
                             resultQuote.Bids = resultBids;
                             resultQuote.Asks = resultAsks;
 
-                            if (!(resultQuote.IndicativeTick || haveIndicativeBid || haveIndicativeAsk))
-                                resultQuote.TickType = TickTypes.Normal;
+                            if (client_.protocolSpec_.SupportsQuoteStoreTickType)
+                            {
+                                resultQuote.TickType = GetTickType(reportTick.Type);
+                                resultQuote.IndicativeTick = resultQuote.TickType > TickTypes.Normal;
+                            }
                             else
                             {
-                                if (resultQuote.IndicativeTick || (haveIndicativeBid && haveIndicativeAsk))
-                                    resultQuote.TickType = TickTypes.IndicativeBidAsk;
+                                if (!(resultQuote.IndicativeTick || haveIndicativeBid || haveIndicativeAsk))
+                                    resultQuote.TickType = TickTypes.Normal;
+                                else
+                                {
+                                    if (resultQuote.IndicativeTick || (haveIndicativeBid && haveIndicativeAsk))
+                                        resultQuote.TickType = TickTypes.IndicativeBidAsk;
 
-                                if (haveIndicativeBid || haveIndicativeAsk)
-                                    resultQuote.IndicativeTick = true;
+                                    if (haveIndicativeBid || haveIndicativeAsk)
+                                        resultQuote.IndicativeTick = true;
 
-                                if (haveIndicativeBid && !haveIndicativeAsk)
-                                    resultQuote.TickType = TickTypes.IndicativeBid;
-                                if (!haveIndicativeBid && haveIndicativeAsk)
-                                    resultQuote.TickType = TickTypes.IndicativeAsk;
+                                    if (haveIndicativeBid && !haveIndicativeAsk)
+                                        resultQuote.TickType = TickTypes.IndicativeBid;
+                                    if (!haveIndicativeBid && haveIndicativeAsk)
+                                        resultQuote.TickType = TickTypes.IndicativeAsk;
+                                }
                             }
 
                             resultQuotes[index] = resultQuote;
@@ -4115,6 +4123,24 @@ namespace TickTrader.FDK.Client
                         return TickTrader.FDK.Common.NotificationSeverity.Unknown;
                 }
             }
+
+            TickTrader.FDK.Common.TickTypes GetTickType(SoftFX.Net.QuoteStore.TickType type)
+            {
+                switch (type)
+                {
+                    case TickType.IndicativeBid:
+                        return TickTypes.IndicativeBid;
+                    case TickType.IndicativeAsk:
+                        return TickTypes.IndicativeAsk;
+                    case TickType.IndicativeBidAsk:
+                        return TickTypes.IndicativeBidAsk;
+
+                    case TickType.Normal:
+                    default:
+                        return TickTypes.Normal;
+                }
+            }
+
 
             QuoteStore client_;
         }

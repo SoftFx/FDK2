@@ -57,7 +57,7 @@
             startTime_ = startTime;
             endTime_ = endTime;
             timeout_ = timeout;
-            positive = DateTime.Compare(startTime, endTime) >= 0;
+            isPositiveTimeRange = startTime <= endTime;
         }
 
         /// <summary>
@@ -144,6 +144,6 @@
         internal DateTime startTime_;
         internal DateTime endTime_;
         internal int timeout_;
-        internal bool positive;
+        internal bool isPositiveTimeRange;
     }
 }

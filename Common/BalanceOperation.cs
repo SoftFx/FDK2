@@ -1,6 +1,21 @@
 ﻿namespace TickTrader.FDK.Common
 {
     /// <summary>
+    /// The type of balance transaction
+    /// </summary>
+    public enum BalanceTransactionType
+    {
+        /// <summary>
+        /// Deposit or Withdrawal (depends on the sign of TransactionAmount)
+        /// </summary>
+        DepositWithdrawal,
+        /// <summary>
+        /// Dividend
+        /// </summary>
+        Dividend
+    }
+
+    /// <summary>
     /// The class contains details of balance operation.
     /// </summary>
     public class BalanceOperation
@@ -25,12 +40,17 @@
         public double Balance { get; set; }
 
         /// <summary>
+        /// Type of transaction
+        /// </summary>
+        public BalanceTransactionType TransactionType { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("Transaction currency = {0}; Balance = {1}; Transaction amount = {2}", this.TransactionCurrency, this.Balance, this.TransactionAmount);
+            return $"{nameof(TransactionType)}={TransactionType}; {nameof(TransactionCurrency)}={TransactionCurrency}; {nameof(TransactionAmount)}={TransactionAmount}; {nameof(Balance)}={Balance}";
         }
     }
 }

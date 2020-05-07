@@ -717,7 +717,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (!logout_)
                     {
@@ -1233,7 +1233,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
 
                     if (!logout_)
                     {
