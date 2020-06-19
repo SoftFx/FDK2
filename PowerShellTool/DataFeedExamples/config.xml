@@ -1,0 +1,7 @@
+<root>
+  <address>localhost</address>
+  <username>100000</username>
+  <password>1</password>
+  <modulePath>..\FDK2module.psm1</modulePath>
+  <libPath>..\..\Bin\Debug\</libPath>
+</root>

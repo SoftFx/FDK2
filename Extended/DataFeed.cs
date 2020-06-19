@@ -44,6 +44,14 @@
         /// Creates and initializes a new data feed instance.
         /// </summary>
         /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
+        public DataFeed(string connectionString, bool validateClientCertificate = true) : this(connectionString, (sender, certificate, chain, errors, port) => validateClientCertificate)
+        {
+        }
+
+        /// <summary>
+        /// Creates and initializes a new data feed instance.
+        /// </summary>
+        /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
         public DataFeed(string connectionString, string name, ClientCertificateValidation validateClientCertificate)
         {
             name_ = name;
@@ -53,6 +61,17 @@
 
             if (!string.IsNullOrEmpty(connectionString))
                 Initialize(connectionString, validateClientCertificate);
+        }
+
+        /// <summary>
+        /// Initializes the data feed instance; it must be stopped.
+        /// </summary>
+        /// <param name="connectionString">Can not be null.</param>
+        /// <exception cref="System.ArgumentNullException">If connectionString is null.</exception>
+        /// <exception cref="System.InvalidOperationException">If the instance is not stopped.</exception>
+        public void Initialize(string connectionString)
+        {
+            this.Initialize(connectionString, (sender, certificate, chain, errors, port) => true);
         }
 
         /// <summary>
