@@ -225,15 +225,11 @@
                 this.TradeRecords = tradeRecords;
                 this.Positions = positions;
 
-                foreach (var element in info.Prices)
+                foreach (var element in info.Quotes)
                 {
-                    Quote quote;
-                    if (!info.Quotes.TryGetValue(element.Key, out quote))
-                        continue;
-
                     Quote newQuote = new Quote();
                     newQuote.Symbol = element.Key;
-                    newQuote.CreatingTime = quote.CreatingTime;
+                    newQuote.CreatingTime = element.Value.CreatingTime;
                     if (element.Value.Bid != null)
                         newQuote.Bids.Add(new QuoteEntry {Price = (double) element.Value.Bid, Volume = 0});
                     if (element.Value.Ask != null)

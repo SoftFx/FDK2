@@ -2,7 +2,6 @@
 {
     using System;
     using TickTrader.FDK.Common;
-    using TickTrader.FDK.Extended;
 
     /// <summary>
     /// Represents bid/ask prices entry.
@@ -14,12 +13,17 @@
         /// <summary>
         /// The best price of bids.
         /// </summary>
-        public double? Bid { get; private set; }
+        public decimal? Bid { get; private set; }
 
         /// <summary>
         /// The best price of asks.
         /// </summary>
-        public double? Ask { get; private set; }
+        public decimal? Ask { get; private set; }
+
+        /// <summary>
+        /// Tick type info
+        /// </summary>
+        public TickTypes TickType { get; private set; }
 
         #endregion
 
@@ -30,11 +34,27 @@
         /// </summary>
         /// <param name="bid">a price for bid</param>
         /// <param name="ask">a price for ask</param>
-        internal PriceEntry(double? bid, double? ask)
+        /// <param name="tickType">tick type info</param>
+        internal PriceEntry(decimal? bid, decimal? ask, TickTypes tickType)
             : this()
         {
             this.Bid = bid;
             this.Ask = ask;
+            this.TickType = tickType;
+        }
+
+        /// <summary>
+        /// Creates a new price entry instance.
+        /// </summary>
+        /// <param name="bid">a price for bid</param>
+        /// <param name="ask">a price for ask</param>
+        /// <param name="tickType">tick type info</param>
+        internal PriceEntry(double? bid, double? ask, TickTypes tickType)
+            : this()
+        {
+            this.Bid = bid == null || double.IsNaN(bid.Value) ? null : (decimal?)bid;
+            this.Ask = ask == null || double.IsNaN(ask.Value) ? null : (decimal?)ask;
+            this.TickType = tickType;
         }
 
         #endregion
@@ -42,11 +62,24 @@
         #region Methods
 
         /// <summary>
+        /// Update price entry instance.
+        /// </summary>
+        /// <param name="bid">a price for bid</param>
+        /// <param name="ask">a price for ask</param>
+        /// <param name="tickType">tick type info</param>
+        internal void Update(decimal? bid, decimal? ask, TickTypes tickType)
+        {
+            this.Bid = bid;
+            this.Ask = ask;
+            this.TickType = tickType;
+        }
+
+        /// <summary>
         /// Returns ask for buy and bid for sell
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double? PriceFromSide(OrderSide side)
+        public decimal? PriceFromSide(OrderSide side)
         {
             if (side == OrderSide.Buy)
                 return this.Ask;
@@ -62,7 +95,7 @@
         /// </summary>
         /// <param name="side">trade entry side</param>
         /// <returns></returns>
-        public double? PriceFromOppositeSide(OrderSide side)
+        public decimal? PriceFromOppositeSide(OrderSide side)
         {
             switch (side)
             {
@@ -85,7 +118,7 @@
         /// </summary>
         /// <param name="profit">a converting profit</param>
         /// <returns></returns>
-        public double? PriceMultiplierFromProfit(double profit)
+        public decimal? PriceMultiplierFromProfit(double profit)
         {
             // Price1 - ask if Py < 0, bid if Py >= 0;
             if (profit >= 0)
@@ -103,7 +136,7 @@
         /// </summary>
         /// <param name="profit">a converting profit</param>
         /// <returns></returns>
-        public double? PriceDivisorFromProfit(double profit)
+        public decimal? PriceDivisorFromProfit(double profit)
         {
             // Price2 - bid if Py < 0, ask if Py >= 0;
             if (profit >= 0)
@@ -118,7 +151,7 @@
         /// </summary>
         /// <param name="asset">a converting asset</param>
         /// <returns></returns>
-        public double? PriceMultiplierFromAsset(double asset)
+        public decimal? PriceMultiplierFromAsset(double asset)
         {
             if (asset >= 0)
                 return this.Bid;
@@ -132,7 +165,7 @@
         /// </summary>
         /// <param name="asset">a converting asset</param>
         /// <returns></returns>
-        public double? PriceDivisorFromAsset(double asset)
+        public decimal? PriceDivisorFromAsset(double asset)
         {
             if (asset >= 0)
                 return this.Ask;

@@ -747,6 +747,21 @@
         }
 
         /// <summary>
+        /// Quote history store VWAP minimal degree
+        /// </summary>
+        public short VWAPMinDegree { get; set; }
+
+        /// <summary>
+        /// Quote history store VWAP maximal degree
+        /// </summary>
+        public short VWAPMaxDegree { get; set; }
+
+        /// <summary>
+        /// Rebate percentage value
+        /// </summary>
+        public double Rebate { get; set; }
+
+        /// <summary>
         /// Converts SymbolInfo to string; format is 'Name = {0}; ContractMultiplier = {1}'
         /// </summary>
         /// <returns></returns>

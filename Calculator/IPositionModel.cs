@@ -6,12 +6,11 @@ namespace TickTrader.FDK.Calculator
     {
         string Symbol { get; }
         decimal Commission { get; }
-        decimal AgentCommission { get; }
-        decimal Swap { get;  }
+        decimal Swap { get; }
         IPositionSide Long { get; } // buy
         IPositionSide Short { get; } //sell
-        DateTime? Modified { get; }
         OrderCalculator Calculator { get; set; }
+        ISymbolInfo SymbolInfo { get; }
     }
 
     public interface IPositionSide
@@ -20,11 +19,5 @@ namespace TickTrader.FDK.Calculator
         decimal Price { get; }
         decimal Margin { get; set; }
         decimal Profit { get; set; }
-    }
-
-    public enum PositionChageTypes
-    {
-        AddedModified,
-        Removed
     }
 }

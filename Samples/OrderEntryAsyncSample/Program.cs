@@ -107,6 +107,8 @@ namespace OrderEntryAsyncSample
             client_.SplitListErrorEvent += new OrderEntry.SplitListErrorDelegate(this.OnSplitListError);
             client_.DividendListResultEvent += new OrderEntry.DividendListResultDelegate(this.OnDividendListResult);
             client_.DividendListErrorEvent += new OrderEntry.DividendListErrorDelegate(this.OnDividendListError);
+            client_.MergerAndAcquisitionListResultEvent += new OrderEntry.MergerAndAcquisitionListResultDelegate(this.OnMergerAndAcquisitionListResult);
+            client_.MergerAndAcquisitionListErrorEvent += new OrderEntry.MergerAndAcquisitionListErrorDelegate(this.OnMergerAndAcquisitionListError);
 
             address_ = address;
             login_ = login;
@@ -236,6 +238,11 @@ namespace OrderEntryAsyncSample
                             if (price == null)
                                 throw new Exception("Invalid command : " + line);
 
+                            string ioc = GetNextWord(line, ref pos);
+
+                            if (ioc == null)
+                                throw new Exception("Invalid command : " + line);
+
                             string comment = GetNextWord(line, ref pos);
 
                             NewOrderLimit
@@ -244,6 +251,7 @@ namespace OrderEntryAsyncSample
                                 (OrderSide)Enum.Parse(typeof(OrderSide), side),
                                 double.Parse(qty),
                                 double.Parse(price),
+                                bool.Parse(ioc),
                                 comment
                             );
                         }
@@ -337,9 +345,13 @@ namespace OrderEntryAsyncSample
                                 throw new Exception("Invalid command : " + line);
 
                             string sls = GetNextWord(line, ref pos);
+                            if (sls == null)
+                                throw new Exception("Invalid command : " + line);
                             double? sl = double.TryParse(sls, out var sld) ? sld : default(double?);
 
                             string tps = GetNextWord(line, ref pos);
+                            if (tps == null)
+                                throw new Exception("Invalid command : " + line);
                             double? tp = double.TryParse(tps, out var tpd) ? tpd : default(double?);
 
                             string comment = GetNextWord(line, ref pos);
@@ -507,6 +519,10 @@ namespace OrderEntryAsyncSample
                         else if (command == "dividends" || command == "di")
                         {
                             GetDividends();
+                        }
+                        else if (command == "mergersandacquisitions" || command == "ma")
+                        {
+                            GetMergersAndAcquisitions();
                         }
                         else if (command == "exit" || command == "e")
                         {
@@ -706,27 +722,28 @@ namespace OrderEntryAsyncSample
 
         void PrintCommands()
         {
-            Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("send_one_time_password (sotp) <one_time_password> - send one time password");
-            Console.WriteLine("resume_one_time_password (rotp) - resume one time password");
-            Console.WriteLine("trade_sever_info (tsi) - request trade server information");
-            Console.WriteLine("account_info (ai) - request account information");
-            Console.WriteLine("session_info (si) - request trading session information");
-            Console.WriteLine("orders (o) - request list of orders");
-            Console.WriteLine("positions (p) - request list of positions");
-            Console.WriteLine("new_order_market (nom) <symbol_id> <side> <qty> [<comment>] - send new market order");
-            Console.WriteLine("new_order_limit (nol) <symbol_id> <side> <qty> <price> [<comment>] - send new limit order");
-            Console.WriteLine("new_order_stop (nos) <symbol_id> <side> <qty> <stop_price> [<comment>] - send new stop order");
-            Console.WriteLine("new_order_stop_limit (nosl) <symbol_id> <side> <qty> <price> <stop_price> [<comment>] - send new stop limit order");
-            Console.WriteLine("replace_position (rp) <client_order_id> <symbol_id> <side> [<sl>]  [<tp>] [<comment>] - send position replace");
-            Console.WriteLine("replace_order_limit (rol) <client_order_id> <symbol_id> <side> <qty> <price> [<comment>] - send limit order replace");
-            Console.WriteLine("replace_order_stop (ros) <client_order_id> <symbol_id> <side> <qty> <stop_price> [<comment>] - send stop order replace");
-            Console.WriteLine("replace_order_stop_limit (rosl) <client_order_id> <symbol_id> <side> <qty> <price> <stop_price> [<comment>] - send stop limit order replace");
-            Console.WriteLine("cancel_order (co) <client_order_id> - send order cancel");
-            Console.WriteLine("close_position (cp) <order_id> <qty> - send position close");
-            Console.WriteLine("splits (sp) - request list of splits");
-            Console.WriteLine("dividends (di) - request list of dividends");
-            Console.WriteLine("exit (e) - exit");
+            Console.WriteLine("h - print commands");
+            Console.WriteLine("sotp <oneTimePassword> - send one time password");
+            Console.WriteLine("rotp - resume one time password");
+            Console.WriteLine("tsi - request trade server information");
+            Console.WriteLine("ai - request account information");
+            Console.WriteLine("si - request trading session information");
+            Console.WriteLine("o - request list of orders");
+            Console.WriteLine("p - request list of positions");
+            Console.WriteLine("nom <symbol> <side> <qty> [<comment>] - send new market order");
+            Console.WriteLine("nol <symbol> <side> <qty> <price> <ioc:true|false> [<comment>] - send new limit order");
+            Console.WriteLine("nos <symbol> <side> <qty> <stopPrice> [<comment>] - send new stop order");
+            Console.WriteLine("nosl <symbol> <side> <qty> <price> <stopPrice> [<comment>] - send new stop limit order");
+            Console.WriteLine("rp <clientOrderId> <symbol> <side> <sl> <tp> [<comment>] - send position replace");
+            Console.WriteLine("rol <clientOrderId> <symbol> <side> <qty> <price> [<comment>] - send limit order replace");
+            Console.WriteLine("ros <clientOrderId> <symbol> <side> <qty> <stopPrice> [<comment>] - send stop order replace");
+            Console.WriteLine("rosl <clientOrderId> <symbol> <side> <qty> <price> <stopPrice> [<comment>] - send stop limit order replace");
+            Console.WriteLine("co <clientOrderId> - send order cancel");
+            Console.WriteLine("cp <orderId> <qty> - send position close");
+            Console.WriteLine("sp - request list of splits");
+            Console.WriteLine("di - request list of dividends");
+            Console.WriteLine("ma - request list of mergers and acquisitions");
+            Console.WriteLine("e - exit");
         }
 
         void SendOneTimePassword(string oneTimePassword)
@@ -954,8 +971,10 @@ namespace OrderEntryAsyncSample
                 {
                     Position position = positions[index];
 
-                    double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
-                    Console.Error.WriteLine("    Position : {0}, {1}", position.Symbol, qty);
+                    string posDetails = position.BuyAmount != 0
+                        ? $"Buy, {position.BuyAmount}, {position.BuyPrice}"
+                        : $"Sell, {position.SellAmount}, {position.SellPrice}";
+                    Console.Error.WriteLine($"{position.PosId}, {position.Symbol}, {posDetails}");
                 }
             }
             catch (Exception exception)
@@ -981,9 +1000,9 @@ namespace OrderEntryAsyncSample
             client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId,  OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, false, null);
         }
 
-        void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
+        void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, bool ioc, string comment)
         {
-            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, false, null);
+            client_.NewOrderAsync(null, Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, ioc, null);
         }
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
@@ -1095,7 +1114,7 @@ namespace OrderEntryAsyncSample
 
         void ClosePosition(string orderId, double qty)
         {
-            client_.ClosePositionAsync(null, Guid.NewGuid().ToString(), orderId, qty);
+            client_.ClosePositionAsync(null, Guid.NewGuid().ToString(), orderId, qty, null);
         }
 
         void OnClosePositionResult(OrderEntry client, object data, ExecutionReport executionReport)
@@ -1148,8 +1167,10 @@ namespace OrderEntryAsyncSample
         {
             try
             {
-                double qty = position.BuyAmount != 0 ? position.BuyAmount : - position.SellAmount;
-                Console.Error.WriteLine("Position report : {0}, {1}", position.Symbol, qty);
+                string posDetails = position.BuyAmount != 0
+                    ? $"Buy, {position.BuyAmount}, {position.BuyPrice}"
+                    : $"Sell, {position.SellAmount}, {position.SellPrice}";
+                Console.Error.WriteLine($"Position report : {position.PosId}, {position.Symbol}, {posDetails}");
             }
             catch (Exception exception)
             {
@@ -1223,6 +1244,11 @@ namespace OrderEntryAsyncSample
             client_.GetDividendListAsync(this);
         }
 
+        void GetMergersAndAcquisitions()
+        {
+            client_.GetMergerAndAcquisitionListAsync(this);
+        }
+
         private void OnSplitListResult(OrderEntry orderentry, object data, Split[] splits)
         {
             try
@@ -1278,6 +1304,39 @@ namespace OrderEntryAsyncSample
         }
 
         private void OnDividendListError(OrderEntry orderentry, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        private void OnMergerAndAcquisitionListResult(OrderEntry orderentry, object data, MergerAndAcquisition[] dividends)
+        {
+            try
+            {
+                int count = dividends.Length;
+
+                Console.Error.WriteLine("Total MergerAndAcquisitions : {0}", count);
+
+                for (int index = 0; index < count; ++index)
+                {
+                    MergerAndAcquisition dividend = dividends[index];
+
+                    Console.Error.WriteLine($"MergerAndAcquisition: {dividend}");
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        private void OnMergerAndAcquisitionListError(OrderEntry orderentry, object data, Exception error)
         {
             try
             {

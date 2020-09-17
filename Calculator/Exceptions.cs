@@ -4,12 +4,42 @@ namespace TickTrader.FDK.Calculator
 {
     public abstract class BusinessLogicException : Exception
     {
-        public BusinessLogicException(string msg)
+        public BusinessLogicException(string msg, bool count = true)
             : base(msg)
         {
+            if (count)
+                _count++;
         }
 
-        public abstract OrderErrorCode CalcError { get; }
+        public abstract CalcErrorCode CalcError { get; }
+
+        private static volatile int _count;
+
+        public static int GetCount()
+        {
+            return _count;
+        }
+
+        //[Obsolete("We should get rid of exceptions in TradeServer!")]
+        public static void ThrowIfError(CalcError error)
+        {
+            if (error == null)
+                return;
+
+            if (error.Code == CalcErrorCode.OffQuotes)
+            {
+                var offQuoteError = (OffQuoteError)error;
+                if (offQuoteError.CausedByCrossSymbol)
+                    throw new OffCrossQuoteException(offQuoteError.Symbol, offQuoteError.Side);
+                else
+                    throw new OffQuoteException(offQuoteError.Symbol, offQuoteError.Side);
+            }
+            else if (error.Code == CalcErrorCode.Misconfiguration)
+            {
+                var mError = (MisconfigurationError)error;
+                throw new MarketConfigurationException(mError.Description);
+            }
+        }
     }
 
     public class MarketConfigurationException : BusinessLogicException
@@ -19,35 +49,27 @@ namespace TickTrader.FDK.Calculator
         {
         }
 
-        public override OrderErrorCode CalcError { get { return OrderErrorCode.Misconfiguration; } }
+        public override CalcErrorCode CalcError { get { return CalcErrorCode.Misconfiguration; } }
     }
 
     public class OffQuoteException : BusinessLogicException
     {
         public string Symbol { get; private set; }
 
-        public OffQuoteException(string msg, string symbol)
-            : base(msg)
+        public OffQuoteException(string msg, string symbol, bool count = true)
+            : base(msg, false)
         {
             this.Symbol = symbol;
+            if (count)
+                _count++;
         }
 
-        public OffQuoteException(string symbol)
-            : this("Off Quotes: " + symbol, symbol)
+        public OffQuoteException(string symbol, FxPriceType? price = null)
+            : this("Off Quotes: " + symbol + CreatePostfix(price), symbol)
         {
         }
 
-        public override OrderErrorCode CalcError { get { return OrderErrorCode.OffQuotes; } }
-    }
-
-    public class OffCrossQuoteException : OffQuoteException
-    {
-        public OffCrossQuoteException(string symbol, FxPriceType ? price = null)
-            : base("Off Cross Quotes: " + symbol + CreatePostfix(price), symbol)
-        {
-        }
-
-        private static string CreatePostfix(FxPriceType? price)
+        protected static string CreatePostfix(FxPriceType? price)
         {
             if (!price.HasValue)
                 return string.Empty;
@@ -56,6 +78,31 @@ namespace TickTrader.FDK.Calculator
                 return " (Ask)";
             else
                 return " (Bid)";
+        }
+
+        public override CalcErrorCode CalcError { get { return CalcErrorCode.OffQuotes; } }
+
+        private static volatile int _count;
+
+        public static int GetCount()
+        {
+            return _count;
+        }
+    }
+
+    public class OffCrossQuoteException : OffQuoteException
+    {
+        public OffCrossQuoteException(string symbol, FxPriceType? price = null)
+            : base("Off Cross Quotes: " + symbol + CreatePostfix(price), symbol, false)
+        {
+            _count++;
+        }
+
+        private static volatile int _count;
+
+        new public static int GetCount()
+        {
+            return _count;
         }
     }
 
@@ -69,7 +116,7 @@ namespace TickTrader.FDK.Calculator
             this.Symbol = symbol;
         }
 
-        public override OrderErrorCode CalcError { get { return OrderErrorCode.Misconfiguration; } }
+        public override CalcErrorCode CalcError { get { return CalcErrorCode.Misconfiguration; } }
     }
 
     public class SymbolConfigException : MarketConfigurationException

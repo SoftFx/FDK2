@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
 {
@@ -11,12 +12,12 @@ namespace TickTrader.FDK.Calculator
         /// <summary>
         /// Account Id.
         /// </summary>
-        long Id { get; }
+        //long Id { get; }
 
         /// <summary>
         /// Account type.
         /// </summary>
-        AccountingTypes AccountingType { get; }
+        AccountType AccountingType { get; }
 
         /// <summary>
         /// Account orders.
@@ -41,22 +42,7 @@ namespace TickTrader.FDK.Calculator
         /// <summary>
         /// Fired when order was replaced.
         /// </summary>
-        event Action<IOrderModel> OrderReplaced;
-
-        /// <summary>
-        /// Log info message from the account info.
-        /// </summary>
-        void LogInfo(string message);
-
-        /// <summary>
-        /// Log warning message from the account info.
-        /// </summary>
-        void LogWarn(string message);
-
-        /// <summary>
-        /// Log error message from the account info.
-        /// </summary>
-        void LogError(string message);
+        //event Action<IOrderModel2> OrderReplaced;
     }
 
     /// <summary>
@@ -87,7 +73,7 @@ namespace TickTrader.FDK.Calculator
         /// <summary>
         /// Fired when position changed.
         /// </summary>
-        event Action<IPositionModel, PositionChageTypes> PositionChanged;
+        event Action<PositionEssentialsChangeArgs> PositionChanged;
     }
 
     /// <summary>
@@ -104,5 +90,23 @@ namespace TickTrader.FDK.Calculator
         /// Fired when underlying assests list was changed.
         /// </summary>
         event Action<IAssetModel, AssetChangeTypes> AssetsChanged;
+    }
+
+    public struct PositionEssentialsChangeArgs
+    {
+        public PositionEssentialsChangeArgs(IPositionModel position, decimal? oldLongAmount, decimal? oldLongPrice, decimal? oldShortAmount, decimal? oldShortPrice)
+        {
+            Position = position;
+            OldLongAmount = oldLongAmount;
+            OldLongPrice = oldLongPrice;
+            OldShortAmount = oldShortAmount;
+            OldShortPrice = oldShortPrice;
+        }
+
+        public IPositionModel Position { get; }
+        public decimal? OldLongAmount { get; }
+        public decimal? OldLongPrice { get; }
+        public decimal? OldShortAmount { get; }
+        public decimal? OldShortPrice { get; }
     }
 }

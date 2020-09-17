@@ -1,7 +1,7 @@
+using TickTrader.FDK.Common;
+
 namespace TickTrader.FDK.Calculator
 {
-    using System;
-
     public interface ISymbolRate
     {
         decimal Ask { get; }
@@ -9,5 +9,6 @@ namespace TickTrader.FDK.Calculator
         string Symbol { get; }
         decimal? NullableAsk { get; }
         decimal? NullableBid { get; }
+        TickTypes TickType { get; }
     }
 }

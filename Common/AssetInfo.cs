@@ -55,6 +55,25 @@
         public double? ReportToSrcAssetConversionRate { get; set; }
 
         /// <summary>
+        /// Gets copy of AssetInfo instance.
+        /// </summary>
+        /// <returns>AssetInfo instance</returns>
+        public AssetInfo Clone()
+        {
+            AssetInfo assetInfo = new AssetInfo();
+            assetInfo.Currency = Currency;
+            assetInfo.Balance = Balance;
+            assetInfo.LockedAmount = LockedAmount;
+            assetInfo.TradeAmount = TradeAmount;
+            assetInfo.SrcAssetToUsdConversionRate = SrcAssetToUsdConversionRate;
+            assetInfo.UsdToSrcAssetConversionRate = UsdToSrcAssetConversionRate;
+            assetInfo.SrcAssetToReportConversionRate = SrcAssetToReportConversionRate;
+            assetInfo.ReportToSrcAssetConversionRate = ReportToSrcAssetConversionRate;
+
+            return assetInfo;
+        }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>

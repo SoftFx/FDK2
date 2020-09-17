@@ -4,6 +4,7 @@ using System.Diagnostics;
 using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
+using System.Linq;
 
 namespace OrderEntrySyncSample
 {
@@ -464,6 +465,10 @@ namespace OrderEntrySyncSample
                         {
                             GetDividends();
                         }
+                        else if (command == "mergersandacquisitions" || command == "ma")
+                        {
+                            GetMergersAndAcquisitions();
+                        }
                         else if (command == "exit" || command == "e")
                         {
                             break;
@@ -544,6 +549,7 @@ namespace OrderEntrySyncSample
             Console.WriteLine("close_position (cp) <order_id> <qty> - send position close");
             Console.WriteLine("split_list (sl) - get account split list");
             Console.WriteLine("dividend_list (dl) - get account dividend list");
+            Console.WriteLine("mergersandacquisitions (ma) - request list of mergers and acquisitions");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -663,6 +669,22 @@ namespace OrderEntrySyncSample
             }
         }
 
+        void GetMergersAndAcquisitions()
+        {
+            MergerAndAcquisition[] mergersAndAcquisitions = client_.GetMergerAndAcquisitionList(Timeout);
+
+            int count = mergersAndAcquisitions.Length;
+
+            Console.Error.WriteLine("Total mergersAndAcquisitions : {0}", count);
+
+            for (int index = 0; index < count; ++index)
+            {
+                MergerAndAcquisition mergerAndAcquisition = mergersAndAcquisitions[index];
+
+                Console.WriteLine($"Id={mergerAndAcquisition.Id}\t{string.Join("\t", mergerAndAcquisition.Values.Select(it => $"{it.Key}={it.Value}"))}");
+            }
+        }
+
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
             ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, Timeout, false, null);
@@ -729,7 +751,7 @@ namespace OrderEntrySyncSample
 
         void ClosePosition(string orderId, double qty)
         {
-            ExecutionReport[] executionReports = client_.ClosePosition(Guid.NewGuid().ToString(), orderId, qty, Timeout);
+            ExecutionReport[] executionReports = client_.ClosePosition(Guid.NewGuid().ToString(), orderId, qty, null, Timeout);
 
             foreach (ExecutionReport executionReport in executionReports)
             {

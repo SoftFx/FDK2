@@ -68,6 +68,11 @@
         public double Volume { get; set; }
 
         /// <summary>
+        /// Gets bar symbol
+        /// </summary>
+        public string Symbol { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
         /// <returns></returns>

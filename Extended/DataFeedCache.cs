@@ -1,6 +1,7 @@
 ﻿namespace TickTrader.FDK.Extended
 {
     using System;
+    using System.Linq;
     using System.Collections.Generic;
     using Common;
 
@@ -61,6 +62,19 @@
             }
         }
 
+        /// <summary>
+        /// Gets latest quotes. Returned value can not be null.
+        /// </summary>
+        public Quote[] Quotes
+        {
+            get
+            {
+                lock (mutex_)
+                {
+                    return quotes_.Values.ToArray();
+                }
+            }
+        }
 
         /// <summary>
         /// The method gets the best bid price by symbol.
@@ -240,6 +254,7 @@
         DataFeed dataFeed_;
 
         internal object mutex_;        
+        internal CurrencyTypeInfo[] currencyTypes_;
         internal CurrencyInfo[] currencies_;
         internal SymbolInfo[] symbols_;
         internal SessionInfo sessionInfo_;

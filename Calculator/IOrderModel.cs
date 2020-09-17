@@ -1,42 +1,73 @@
 ﻿using System;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
 {
-    public interface ICommonOrder
+    public interface IOrderCalcInfo
     {
-        long OrderId { get; }
         string Symbol { get; }
-        string ProfitCurrency { get; set; }
-        string MarginCurrency { get; set; }
-        OrderTypes Type { get; set; }
-        OrderSides Side { get; set; }
-        decimal? Price { get; set; }
-        decimal? StopPrice { get; set; }
-        decimal Amount { get; set; }
-        decimal RemainingAmount { get; set; }
+        decimal? Price { get; }
+        decimal? StopPrice { get; }
+        OrderSide Side { get; }
+        OrderType Type { get; }
+        decimal RemainingAmount { get; }
+        decimal Commission { get; }
+        decimal Swap { get; }
         bool IsHidden { get; }
-        bool IsIceberg { get; }
     }
 
     /// <summary>
     /// Defines methods and properties for order which is subject of market summary calculations.
+    /// Properties Profit, Margin and CalculationError are updated only in NettingCalculationTypes.OneByOne mode.
     /// </summary>
-    public interface IOrderModel : ICommonOrder
+    public interface IOrderModel : IOrderCalcInfo
     {
-        decimal? AgentCommision { get; }
-
-        OrderError CalculationError { get; set; }
+        string OrderId { get; }
         OrderCalculator Calculator { get; set; }
 
-        event Action<IOrderModel> EssentialParametersChanged;
+        decimal CashMargin { get; set; }
+        ISymbolInfo SymbolInfo { get; }
 
-        bool IsCalculated { get; }
+        decimal Profit { get; set; }
+        decimal Margin { get; set; }
+        CalcError CalculationError { get; set; }
 
-        decimal? Margin { get; set; }
-        decimal? MarginRateCurrent { get; set; }
-        decimal? Profit { get; set; }
-        decimal? Swap { get; }
-        decimal? Commission { get; }
-        decimal? CurrentPrice { get; set; }
+        event Action<OrderEssentialsChangeArgs> EssentialsChanged;
+        event Action<OrderPropArgs<decimal>> SwapChanged;
+        event Action<OrderPropArgs<decimal>> CommissionChanged;
+    }
+
+    public struct OrderEssentialsChangeArgs
+    {
+        public OrderEssentialsChangeArgs(IOrderModel order, decimal oldRemAmount, decimal? oldPrice, decimal? oldStopPrice, OrderType oldType, bool oldIsHidden)
+        {
+            Order = order;
+            OldRemAmount = oldRemAmount;
+            OldPrice = oldPrice;
+            OldStopPrice = oldStopPrice;
+            OldType = oldType;
+            OldIsHidden = oldIsHidden;
+        }
+
+        public IOrderModel Order { get; }
+        public decimal OldRemAmount { get; }
+        public decimal? OldPrice { get; }
+        public decimal? OldStopPrice { get; }
+        public OrderType OldType { get; }
+        public bool OldIsHidden { get; }
+    }
+
+    public struct OrderPropArgs<T>
+    {
+        public OrderPropArgs(IOrderModel order, T oldVal, T newVal)
+        {
+            Order = order;
+            OldVal = oldVal;
+            NewVal = newVal;
+        }
+
+        public IOrderModel Order { get; }
+        public T OldVal { get; }
+        public T NewVal { get; }
     }
 }

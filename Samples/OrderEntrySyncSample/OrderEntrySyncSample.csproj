@@ -37,13 +37,8 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="NDesk.Options, Version=0.2.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="NDesk.Options">
       <HintPath>..\..\Lib\NDesk.Options.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f93e83ea42ea164d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\..\Lib\SoftFX.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -60,6 +55,10 @@
     <ProjectReference Include="..\..\Common\Common.csproj">
       <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
       <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\modules\Sfx\DotNet\Core\Core.csproj">
+      <Project>{2a4856e5-8d40-41f7-88d1-57d1888db660}</Project>
+      <Name>Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

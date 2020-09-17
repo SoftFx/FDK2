@@ -1,17 +1,21 @@
-﻿namespace TickTrader.FDK.Calculator
-{
-    using System;
-    using TickTrader.FDK.Common;
-    using TickTrader.FDK.Extended;
+﻿using System;
+using TickTrader.FDK.Common;
+using TickTrader.FDK.Extended;
 
-    sealed class UpdateHandler
+namespace TickTrader.FDK.Calculator
+{
+    internal delegate void UpdateCallbackHandler(bool? tradeConnected, bool? feedConnected, AccountInfo accountInfoUpdate, Quote quote, TradeUpdate tradeUpdate, NetPositionUpdate positionUpdate, bool? configUpdated);
+
+    sealed class UpdateHandler : IDisposable
     {
+        readonly DataTrade trade;
+        readonly DataFeed feed;
         readonly Processor processor;
-        readonly Action<Common.CurrencyInfo[], Common.SymbolInfo[], Common.AccountInfo, Quote> updateCallback;
+        readonly UpdateCallbackHandler updateCallback;
 
         public object SyncRoot { get; private set; }
 
-        public UpdateHandler(DataTrade trade, DataFeed feed, Action<Common.CurrencyInfo[], Common.SymbolInfo[], Common.AccountInfo, Quote> updateCallback, Processor processor)
+        public UpdateHandler(DataTrade trade, DataFeed feed, UpdateCallbackHandler updateCallback, Processor processor)
         {
             if (trade == null)
                 throw new ArgumentNullException(nameof(trade));
@@ -25,89 +29,139 @@
             if (processor == null)
                 throw new ArgumentNullException(nameof(processor));
 
+            this.trade = trade;
+            this.feed = feed;
             this.updateCallback = updateCallback;
             this.processor = processor;
 
             this.SyncRoot = new object();
 
             feed.Logon += this.OnFeedLogon;
+            feed.Logout += this.OnFeedLogout;
             feed.Tick += this.OnTick;
+            feed.Notify += this.OnFeedNotify;
 
             trade.Logon += this.OnTradeLogon;
+            trade.Logout += this.OnTradeLogout;
             trade.AccountInfo += this.OnAccountInfo;
-            trade.BalanceOperation += this.OnBalanceOperation;
-            trade.ExecutionReport += this.OnExecutionReport;
+            trade.TradeUpdate += this.OnTradeUpdate;
             trade.PositionReport += this.OnPositionReport;
+            trade.Notify += this.OnTradeNotify;
         }
 
         #region Events Handlers
 
-        void OnFeedLogon(object sender, LogonEventArgs e)
+        private void OnFeedLogon(object sender, LogonEventArgs e)
         {
-            DataFeed feed = (DataFeed) sender;
-
             lock (this.SyncRoot)
             {
-                this.updateCallback(feed.Cache.Currencies, feed.Cache.Symbols, null, null);
+                this.updateCallback(null, true, null, null, null, null, null);
+                this.processor.WakeUp();
+            }
+        }
+
+        private void OnFeedLogout(object sender, LogoutEventArgs e)
+        {
+            lock (this.SyncRoot)
+            {
+                this.updateCallback(null, false, null, null, null, null, null);
                 this.processor.WakeUp();
             }
         }
 
         void OnTradeLogon(object sender, LogonEventArgs e)
         {
-            DataTrade trade = (DataTrade) sender;
-
             lock (this.SyncRoot)
             {
-                this.updateCallback(null, null, trade.Cache.AccountInfo, null);
+                this.updateCallback(true, null, null, null, null, null, null);
                 this.processor.WakeUp();
             }
         }
 
-        void OnTick(object sender, TickEventArgs e)
+        private void OnTradeLogout(object sender, LogoutEventArgs e)
+        {
+            lock (this.SyncRoot)
+            {
+                this.updateCallback(false, null, null, null, null, null, null);
+                this.processor.WakeUp();
+            }
+        }
+
+        private void OnTick(object sender, TickEventArgs e)
         {
             var quote = e.Tick;
 
             lock (this.SyncRoot)
             {
-                this.updateCallback(null, null, null, quote);
+                this.updateCallback(null, null, null, quote, null, null, null);
                 this.processor.WakeUp();
             }
         }
 
-        void OnAccountInfo(object sender, AccountInfoEventArgs e)
+        private void OnAccountInfo(object sender, AccountInfoEventArgs e)
         {
             lock (this.SyncRoot)
             {
-                this.updateCallback(null, null, e.Information, null);
+                this.updateCallback(null, null, e.Information, null, null, null, null);
                 this.processor.WakeUp();
             }
         }
 
-        void OnBalanceOperation(object sender, NotificationEventArgs<BalanceOperation> e)
+        private void OnTradeUpdate(object sender, TradeUpdateEventArgs e)
         {
-            lock (this.SyncRoot)
+            if (e != null)
             {
-                this.processor.WakeUp();
+                lock (this.SyncRoot)
+                {
+                    this.updateCallback(null, null, null, null, e.Update, null, null);
+                    this.processor.WakeUp();
+                }
             }
         }
 
-        void OnExecutionReport(object sender, ExecutionReportEventArgs e)
+        private void OnPositionReport(object sender, PositionReportEventArgs e)
         {
-            lock (this.SyncRoot)
+            if (e != null)
             {
-                this.processor.WakeUp();
+                lock (this.SyncRoot)
+                {
+                    this.updateCallback(null, null, null, null, null, new NetPositionUpdate {PreviousPosition = e.Previous, NewPosition = e.Report}, null);
+                    this.processor.WakeUp();
+                }
             }
         }
 
-        void OnPositionReport(object sender, PositionReportEventArgs e)
+        private void OnFeedNotify(object sender, NotificationEventArgs e)
         {
-            lock (this.SyncRoot)
+            if (e.Type == NotificationType.ConfigUpdated)
             {
-                this.processor.WakeUp();
+                this.updateCallback(null, null, null, null, null, null, true);
+            }
+        }
+
+        private void OnTradeNotify(object sender, NotificationEventArgs e)
+        {
+            if (e.Type == NotificationType.ConfigUpdated)
+            {
+                this.updateCallback(null, null, null, null, null, null, true);
             }
         }
 
         #endregion
+
+        public void Dispose()
+        {
+            feed.Logon -= this.OnFeedLogon;
+            feed.Logout -= this.OnFeedLogout;
+            feed.Tick -= this.OnTick;
+            feed.Notify -= this.OnFeedNotify;
+
+            trade.Logon -= this.OnTradeLogon;
+            trade.Logout -= this.OnTradeLogout;
+            trade.AccountInfo -= this.OnAccountInfo;
+            trade.TradeUpdate -= this.OnTradeUpdate;
+            trade.PositionReport -= this.OnPositionReport;
+            trade.Notify -= this.OnTradeNotify;
+        }
     }
 }

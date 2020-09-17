@@ -2,6 +2,7 @@
 {
     using System;
     using System.Threading;
+    using System.Linq;
     using System.Collections.Generic;
     using Common;
     using Client;
@@ -202,12 +203,15 @@
             quoteFeedClient_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);
             quoteFeedClient_.SessionInfoResultEvent += new QuoteFeed.SessionInfoResultDelegate(this.OnSessionInfoResult);
             quoteFeedClient_.SessionInfoErrorEvent += new QuoteFeed.SessionInfoErrorDelegate(this.OnSessionInfoError);
+            quoteFeedClient_.CurrencyTypeListResultEvent += new QuoteFeed.CurrencyTypeListResultDelegate(this.OnCurrencyTypeListResult);
+            quoteFeedClient_.CurrencyTypeListErrorEvent += new QuoteFeed.CurrencyTypeListErrorDelegate(this.OnCurrencyTypeListError);
             quoteFeedClient_.CurrencyListResultEvent += new QuoteFeed.CurrencyListResultDelegate(this.OnCurrencyListResult);
             quoteFeedClient_.CurrencyListErrorEvent += new QuoteFeed.CurrencyListErrorDelegate(this.OnCurrencyListError);
             quoteFeedClient_.SymbolListResultEvent += new QuoteFeed.SymbolListResultDelegate(this.OnSymbolListResult);
             quoteFeedClient_.SymbolListErrorEvent += new QuoteFeed.SymbolListErrorDelegate(this.OnSymbolListError);
             quoteFeedClient_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             quoteFeedClient_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
+            quoteFeedClient_.SubscribeQuotesErrorEvent += new QuoteFeed.SubscribeQuotesErrorDelegate(this.OnSubscribeQuotesError);
             quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.NotificationDelegate(this.OnNotification);
@@ -643,7 +647,7 @@
             {
                 lock (synchronizer_)
                 {
-                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
+                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo | InitFlags.Quotes | InitFlags.CurrencyTypes);
 
                     if (!logout_)
                     {
@@ -670,7 +674,7 @@
             {
                 lock (synchronizer_)
                 {
-                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo);
+                    initFlags_ &= ~(InitFlags.Currencies | InitFlags.Symbols | InitFlags.SessionInfo | InitFlags.Quotes | InitFlags.CurrencyTypes);
 
                     if (!logout_)
                     {
@@ -719,9 +723,16 @@
         {
             try
             {
-                quoteFeedClient_.GetCurrencyListAsync(this);
-                quoteFeedClient_.GetSymbolListAsync(this);
-                quoteFeedClient_.GetSessionInfoAsync(this);
+                lock (synchronizer_)
+                {
+                    quoteFeedClient_.GetCurrencyListAsync(this);
+                    quoteFeedClient_.GetSymbolListAsync(this);
+                    quoteFeedClient_.GetSessionInfoAsync(this);
+                    if (quoteFeedClient_.ProtocolSpec.SupportsCurrencyTypeInfo)
+                        quoteFeedClient_.GetCurrencyTypeListAsync(this);
+                    else
+                        initFlags_ |= InitFlags.CurrencyTypes;
+                }
             }
             catch
             {
@@ -758,6 +769,62 @@
                         loginException_ = new LogoutException(exception.Message);
                         loginEvent_.Set();
                     }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCurrencyTypeListResult(QuoteFeed client, object data, CurrencyTypeInfo[] currencyTypes)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        lock (cache_.mutex_)
+                        {
+                            cache_.currencyTypes_ = currencyTypes;
+                        }
+                        if (initFlags_ != InitFlags.All)
+                        {
+                            initFlags_ |= InitFlags.CurrencyTypes;
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                        else if (reloadFlags_ != ReloadFlags.All)
+                        {
+                            reloadFlags_ |= ReloadFlags.CurrencyTypes;
+
+                            if (reloadFlags_ == ReloadFlags.All)
+                            {
+                                PushConfigUpdateEvents();
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+        }
+
+        void OnCurrencyTypeListError(QuoteFeed client, object data, Exception exception)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -829,8 +896,10 @@
                 {
                     lock (synchronizer_)
                     {
+                        SymbolInfo[] previousSymbols;
                         lock (cache_.mutex_)
                         {
+                            previousSymbols = cache_.symbols_;
                             cache_.symbols_ = symbols;
                         }
                         if (initFlags_ != InitFlags.All)
@@ -844,6 +913,19 @@
                                 loginException_ = null;
                                 loginEvent_.Set();
                             }
+                            else
+                            {
+                                List<SymbolEntry> symbolEntryList = new List<SymbolEntry>(symbols.Length);
+                                foreach (SymbolInfo symbol in symbols)
+                                {
+                                    SymbolEntry symbolEntry = new SymbolEntry();
+                                    symbolEntry.Id = symbol.Name;
+                                    symbolEntry.MarketDepth = 1;
+
+                                    symbolEntryList.Add(symbolEntry);
+                                }
+                                quoteFeedClient_.SubscribeQuotesAsync(this, symbolEntryList.ToArray());
+                            }
                         }
                         else if (reloadFlags_ != ReloadFlags.All)
                         {
@@ -852,6 +934,20 @@
                             if (reloadFlags_ == ReloadFlags.All)
                             {
                                 PushConfigUpdateEvents();
+                            }
+
+                            try
+                            {
+                                HashSet<string> symbolsSet = new HashSet<string>(symbols.Select(s => s.Name));
+                                var unsubscribeSymbols = previousSymbols.Where(s => !symbolsSet.Contains(s.Name))
+                                    .Select(s => s.Name).ToArray();
+                                if (unsubscribeSymbols.Length > 0)
+                                {
+                                    quoteFeedClient_.UnsubscribeQuotesAsync(this, unsubscribeSymbols);
+                                }
+                            }
+                            catch
+                            {
                             }
                         }
                     }
@@ -947,17 +1043,53 @@
                     }
                 }
 
+                if (data == this)
+                {
+                    lock (synchronizer_)
+                    {
+                        if (initFlags_ != InitFlags.All)
+                        {
+                            initFlags_ |= InitFlags.Quotes;
+                            if (initFlags_ == InitFlags.All)
+                            {
+                                logout_ = false;
+                                PushLoginEvents();
+
+                                loginException_ = null;
+                                loginEvent_.Set();
+                            }
+                        }
+                    }
+                }
+
+                string[] symbols = new string[quotes.Length];
                 for (int index = 0; index < quotes.Length; ++index)
                 {
                     Quote quote = quotes[index];
-
-                    SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
-                    subscribedArgs.Symbol = quote.Symbol;
-                    eventQueue_.PushEvent(subscribedArgs);
+                    symbols[index] = quote.Symbol;
 
                     TickEventArgs tickArgs = new TickEventArgs();
                     tickArgs.Tick = quote;
                     eventQueue_.PushEvent(tickArgs);
+                }
+
+                SubscribedEventArgs subscribedArgs = new SubscribedEventArgs();
+                subscribedArgs.Symbols = symbols;
+                eventQueue_.PushEvent(subscribedArgs);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSubscribeQuotesError(QuoteFeed quoteFeed, object data, Exception exception)
+        {
+            try
+            {
+                if (data == this)
+                {
+                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
                 }
             }
             catch
@@ -1011,7 +1143,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
 
                     if (!logout_)
                     {
@@ -1072,13 +1204,17 @@
                     {
                         // reload everything that might have changed
 
-                        reloadFlags_ &= ~(ReloadFlags.Currencies | ReloadFlags.Symbols | ReloadFlags.SessionInfo);
+                        reloadFlags_ &= ~(ReloadFlags.Currencies | ReloadFlags.Symbols | ReloadFlags.SessionInfo | ReloadFlags.CurrencyTypes);
 
                         try
                         {
                             quoteFeedClient_.GetCurrencyListAsync(this);
                             quoteFeedClient_.GetSymbolListAsync(this);
                             quoteFeedClient_.GetSessionInfoAsync(this);
+                            if (quoteFeedClient_.ProtocolSpec.SupportsCurrencyTypeInfo)
+                                quoteFeedClient_.GetCurrencyTypeListAsync(this);
+                            else
+                                reloadFlags_ |= ReloadFlags.CurrencyTypes;
                         }
                         catch
                         {
@@ -1455,7 +1591,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
 
                     if (!logout_)
                     {
@@ -1775,7 +1911,9 @@
             Symbols = 0x2,
             SessionInfo = 0x04,
             StoreLogin = 0x08,
-            All = SessionInfo | Currencies | Symbols | StoreLogin
+            Quotes = 0x10,
+            CurrencyTypes = 0x20,
+            All = SessionInfo | Currencies | Symbols | StoreLogin | Quotes | CurrencyTypes
         }
 
         internal enum ReloadFlags
@@ -1784,7 +1922,8 @@
             Currencies = 0x01,
             Symbols = 0x2,
             SessionInfo = 0x04,
-            All = SessionInfo | Currencies | Symbols
+            CurrencyTypes = 0x08,
+            All = SessionInfo | Currencies | Symbols | CurrencyTypes
         }
 
         internal string name_;

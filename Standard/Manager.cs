@@ -36,14 +36,14 @@
 
             try
             {
-                this.feed = new DataFeed(feedConnectionString, null);
-                this.trade = new DataTrade(tradeConnectionString, null);
-
-                var path = Path.Combine(location, "Quotes");
-//                this.storage = new DataFeedStorage(path, StorageProvider.Ntfs, feed, false);
+                this.feed = new DataFeed(feedConnectionString, (sender, certificate, chain, errors, port) => true);
+                this.trade = new DataTrade(tradeConnectionString, (sender, certificate, chain, errors, port) => true);
+                
                 this.calculator = new StateCalculator(trade, feed);
 
-                this.feed.SymbolInfo += this.OnSymbolInfo;
+                // DataFeed subscribes to quotes updates with depth = 1 for all symbols
+                //this.feed.SymbolInfo += this.OnSymbolInfo;
+
                 this.Snapshot = new Snapshot(this.trade, this.feed, this.calculator, this.synchronizer, this.syncEvent);
             }
             catch
@@ -57,7 +57,7 @@
 
 #region Feed Events
 
-        void OnSymbolInfo(object sender, SymbolInfoEventArgs e)
+        /*void OnSymbolInfo(object sender, SymbolInfoEventArgs e)
         {
             try
             {
@@ -76,7 +76,7 @@
                     eh(this, errEventArgs);
                 }
             }
-        }
+        }*/
 
 #endregion
 
@@ -324,6 +324,12 @@
                 this.trade.Stop();
                 this.trade.Dispose();
                 this.trade = null;
+            }
+
+            if (this.calculator != null)
+            {
+                this.calculator.Dispose();
+                this.calculator = null;
             }
 
             this.syncEvent.Dispose();

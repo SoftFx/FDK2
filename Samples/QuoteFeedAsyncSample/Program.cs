@@ -75,6 +75,8 @@ namespace QuoteFeedAsyncSample
             client_.LogoutResultEvent += new QuoteFeed.LogoutResultDelegate(this.OnLogoutResult);
             client_.LogoutErrorEvent += new QuoteFeed.LogoutErrorDelegate(this.OnLogoutError);
             client_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);
+            client_.CurrencyTypeListResultEvent += new QuoteFeed.CurrencyTypeListResultDelegate(this.OnCurrencyTypeListResult);
+            client_.CurrencyTypeListErrorEvent += new QuoteFeed.CurrencyTypeListErrorDelegate(this.OnCurrencyTypeListError);
             client_.CurrencyListResultEvent += new QuoteFeed.CurrencyListResultDelegate(this.OnCurrencyListResult);
             client_.CurrencyListErrorEvent += new QuoteFeed.CurrencyListErrorDelegate(this.OnCurrencyListError);
             client_.SymbolListResultEvent += new QuoteFeed.SymbolListResultDelegate(this.OnSymbolListResult);
@@ -138,6 +140,10 @@ namespace QuoteFeedAsyncSample
                         if (command == "help" || command == "h")
                         {
                             PrintCommands();
+                        }
+                        else if (command == "get_currency_type_list" || command == "ct")
+                        {
+                            GetCurrencyTypeList();
                         }
                         else if (command == "get_currency_list" || command == "c")
                         {
@@ -394,6 +400,7 @@ namespace QuoteFeedAsyncSample
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
+            Console.WriteLine("get_currency_type_list (ct) - request currency type list");
             Console.WriteLine("get_currency_list (c) - request currency list");
             Console.WriteLine("get_symbol_list (s) - request symbol list");
             Console.WriteLine("get_session_info (i) - request session info");
@@ -403,9 +410,44 @@ namespace QuoteFeedAsyncSample
             Console.WriteLine("exit (e) - exit");
         }
 
+        void GetCurrencyTypeList()
+        {
+            client_.GetCurrencyTypeListAsync(null);
+        }
+
         void GetCurrencyList()
         {
             client_.GetCurrencyListAsync(null);
+        }
+
+        void OnCurrencyTypeListResult(QuoteFeed client, object data, CurrencyTypeInfo[] currencyTypes)
+        {
+            try
+            {
+                int count = currencyTypes.Length;
+                for (int index = 0; index < count; ++index)
+                {
+                    CurrencyTypeInfo currencyType = currencyTypes[index];
+
+                    Console.Error.WriteLine("CurrencyType : {0}, {1}", currencyType.Name, currencyType.Description);
+                }
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
+        }
+
+        void OnCurrencyTypeListError(QuoteFeed client, object data, Exception error)
+        {
+            try
+            {
+                Console.WriteLine("Error : " + error.Message);
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error : " + exception.Message);
+            }
         }
 
         void OnCurrencyListResult(QuoteFeed client, object data, CurrencyInfo[] currencies)
@@ -417,7 +459,7 @@ namespace QuoteFeedAsyncSample
                 {
                     CurrencyInfo currency = currencies[index];
 
-                    Console.Error.WriteLine("Currency : {0}, {1}", currency.Name, currency.Description);
+                    Console.Error.WriteLine($"Currency : {currency.Name}, {currency.Description}, Precision={currency.Precision}, Tax={currency.Tax}, Type={currency.TypeId}");
                 }
             }
             catch (Exception exception)
@@ -452,7 +494,7 @@ namespace QuoteFeedAsyncSample
                 {
                     SymbolInfo symbol = symbols[index];
 
-                    Console.Error.WriteLine("Symbol : {0}, {1}", symbol.Name, symbol.Description);
+                    Console.Error.WriteLine("Symbol : {0}, {1}, {2}", symbol.Name, symbol.ExtendedName, symbol.Description);
                 }
             }
             catch (Exception exception)

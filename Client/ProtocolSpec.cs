@@ -31,6 +31,7 @@ namespace TickTrader.FDK.Client
             SupportsOffTimeDisabledFeatures = version.GreaterThanOrEqualTo(4, 10);
             SupportsSymbolSlippageType = version.GreaterThanOrEqualTo(4, 13);
             SupportsSymbolExtendedName = version.GreaterThanOrEqualTo(4, 14);
+            SupportsCurrencyTypeInfo = version.GreaterThanOrEqualTo(4, 16);
         }
 
         public void InitQuoteStoreVersion(ProtocolVersion version)
@@ -40,6 +41,7 @@ namespace TickTrader.FDK.Client
             SupportsVWAPTickList = version.GreaterThanOrEqualTo(3, 2);
             SupportsStockEventQHModifierList = version.GreaterThanOrEqualTo(3, 3);
             SupportsQuoteStoreTickType = version.GreaterThanOrEqualTo(3, 4);
+            SupportsBarHistoryBySymbolsList = version.GreaterThanOrEqualTo(3, 7);
         }
 
         public bool SupportsVWAPTickList { get; private set; }
@@ -52,6 +54,7 @@ namespace TickTrader.FDK.Client
 
         public bool SupportsStockEventQHModifierList { get; private set; }
         public bool SupportsQuoteStoreTickType { get; private set; }
+        public bool SupportsBarHistoryBySymbolsList { get; private set; }
 
         public void CheckSupportedStockEventQHModifierList()
         {
@@ -70,6 +73,7 @@ namespace TickTrader.FDK.Client
         public bool SupportsOffTimeDisabledFeatures { get; private set; }
         public bool SupportsSymbolSlippageType { get; private set; }
         public bool SupportsSymbolExtendedName { get; private set; }
+        public bool SupportsCurrencyTypeInfo { get; private set; }
 
         public void CheckSupportedOffTimeDisabledFeatures()
         {

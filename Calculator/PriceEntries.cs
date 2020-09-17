@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Calculator
+﻿using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.Calculator
 {
     using System.Collections;
     using System.Collections.Generic;
@@ -16,7 +18,7 @@
         /// </summary>
         public PriceEntries()
         {
-            this.entries = new SortedDictionary<string, PriceEntry>();
+            this.entries = new Dictionary<string, PriceEntry>();
         }
 
         #endregion
@@ -53,9 +55,11 @@
         /// <param name="symbol">an updating symbol</param>
         /// <param name="bid">a bid price</param>
         /// <param name="ask">an ask price</param>
-        public void Update(string symbol, double? bid, double? ask)
+        /// <param name="tickType">tick type info</param>
+        public void Update(string symbol, decimal? bid, decimal? ask, TickTypes tickType)
         {
-            this.entries[symbol] = new PriceEntry(bid, ask);
+            this.entries.AddOrModify(symbol, () => new PriceEntry(bid, ask, tickType),
+                entry => entry.Update(bid, ask, tickType));
         }
 
         /// <summary>
@@ -113,7 +117,7 @@
 
         #region Fields
 
-        readonly SortedDictionary<string, PriceEntry> entries;
+        readonly Dictionary<string, PriceEntry> entries;
 
         #endregion
     }

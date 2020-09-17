@@ -53,7 +53,16 @@
         /// Gets TimeInForce field.
         /// </summary>
         public OrderTimeInForce? OrderTimeInForce { get; set; }
-        
+
+        /// <summary>
+        /// OrderId of parent order
+        /// </summary>
+        public string ParentOrderId { get; set; }
+
+        /// <summary>
+        /// OrderType of parent order
+        /// </summary>
+        public OrderType? ParentOrderType { get; set; }
         /// <summary>
         /// Gets OrdType = 40 field.
         /// </summary>
@@ -228,6 +237,16 @@
         public double? Slippage { get; set; }
 
         /// <summary>
+        /// Rebate
+        /// </summary>
+        public double? Rebate { get; set; }
+
+        /// <summary>
+        /// Rebate currency
+        /// </summary>
+        public string RebateCurrency { get; set; }
+
+        /// <summary>
         /// 
         /// </summary>
         public bool Last { get; set; }
@@ -281,6 +300,8 @@
             executionReport.Last = Last;
             executionReport.ImmediateOrCancelFlag = ImmediateOrCancelFlag;
             executionReport.Slippage = Slippage;
+            executionReport.Rebate = Rebate;
+            executionReport.RebateCurrency = RebateCurrency;
 
             return executionReport;
         }

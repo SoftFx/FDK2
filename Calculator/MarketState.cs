@@ -1,146 +1,93 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using TickTrader.FDK.Calculator.Netting;
-using TickTrader.FDK.Calculator.Conversion;
 
 namespace TickTrader.FDK.Calculator
 {
-
     /// <summary>
     /// Manages state (configuration and rates) within accounts with the same configuration (group).
     /// Can be used as a child object of MarketManager or as stand-alone market state.
     /// </summary>
-    public sealed class MarketState
+    public class MarketState : MarketStateBase
     {
-        readonly IDictionary<string, SymbolRateTracker> rates = new Dictionary<string, SymbolRateTracker>();
-        IEnumerable<ISymbolInfo> sortedSymbols = Enumerable.Empty<ISymbolInfo>();
-        IEnumerable<ICurrencyInfo> sortedCurrencies = Enumerable.Empty<ICurrencyInfo>();
-        IDictionary<string, ISymbolInfo> symbolsByName = new Dictionary<string, ISymbolInfo>();
-        IDictionary<string, ICurrencyInfo> currenciesByName = new Dictionary<string, ICurrencyInfo>();
+        private readonly Dictionary<string, SymbolMarketNode> _smbMap = new Dictionary<string, SymbolMarketNode>();
 
-        internal IEnumerable<ISymbolInfo> Symbols { get { return this.sortedSymbols; } }
-        internal IEnumerable<ICurrencyInfo> Currencies { get { return this.sortedCurrencies; } }
-
-        internal MarketUpdateManager RateUpdater { get; private set; }
-
-        public ConversionManager ConversionMap { get; private set; }
-
-        public MarketState(NettingCalculationTypes calcType)
+        public MarketState(bool usageTracking = true) : base(usageTracking)
         {
-            this.ConversionMap = new ConversionManager(this);
-            this.RateUpdater = new MarketUpdateManager(calcType);
         }
 
-        internal ISymbolRate GetRate(string symbol)
+        public void Update(ISymbolRate rate)
         {
-            SymbolRateTracker tracker;
-            if (rates.TryGetValue(symbol, out tracker))
-                return tracker.Rate;
-            return null;
+            var tracker = GetSymbolNode(rate.Symbol, true);
+            tracker?.UpdateRate(rate);
+            tracker?.FireChanged();
         }
 
-        internal ICurrencyInfo GetCurrency(string name)
+        public void Update(IEnumerable<ISymbolRate> rates)
         {
-            return currenciesByName.GetOrDefault(name);
-        }
-
-        internal ICurrencyInfo GetCurrencyOrThrow(string name)
-        {
-            ICurrencyInfo result = currenciesByName.GetOrDefault(name);
-            if (result == null)
-                throw new MarketConfigurationException("Currency Not Found: " + name);
-            return result;
-        }
-
-        internal SymbolRateTracker GetSymbolTracker(string symbol)
-        {
-            SymbolRateTracker tracker;
-            if (rates.TryGetValue(symbol, out tracker))
-                return tracker;
-            else
+            if (rates != null)
             {
-                tracker = new SymbolRateTracker(symbol);
-                rates.Add(symbol, tracker);
-                return tracker;
+                var affectedNodes = new HashSet<SymbolMarketNode>();
+
+                foreach (ISymbolRate rate in rates)
+                {
+                    var tracker = GetSymbolNode(rate.Symbol, true);
+
+                    if (tracker != null)
+                    {
+                        tracker.UpdateRate(rate);
+                        affectedNodes.Add(tracker);
+                    }
+                }
+
+                foreach (var node in affectedNodes)
+                    node.FireChanged();
             }
-        }
-
-        internal ISymbolInfo GetISymbolInfo(string symbol)
-        {
-            return symbolsByName.GetOrDefault(symbol);
-        }
-
-        internal ISymbolInfo GetSymbolInfoOrThrow(string symbol)
-        {
-            ISymbolInfo info = symbolsByName.GetOrDefault(symbol);
-            if (info == null)
-                throw new SymbolNotFoundException(symbol);
-            return info;
-        }
-
-        /// <summary>
-        /// Updates rate for the symbol.
-        /// </summary>
-        /// <param name="rate">Current symbol rate.</param>
-        /// <returns></returns>
-        public IEnumerable<IMarginAccountInfo> Update(ISymbolRate rate)
-        {
-            SymbolRateTracker tracker = GetSymbolTracker(rate.Symbol);
-            tracker.Rate = rate;
-            RateChanged(rate);
-            return RateUpdater.Update(rate.Symbol);
-        }
-
-        /// <summary>
-        /// Initialize or reinitialize symbols configuration.
-        /// Note: Supplied symbol list should be already sorted according priority rules.
-        /// </summary>
-        /// <param name="symbolList">New symbols configuration to use.</param>
-        public void Set(IEnumerable<ISymbolInfo> symbolList)
-        {
-            this.sortedSymbols = symbolList.ToList();
-            this.symbolsByName = symbolList.ToDictionary(smb => smb.Symbol);
-            this.SymbolsChanged();
-        }
-
-        /// <summary>
-        /// Initialize or reinitialize currencies configuration.
-        /// Note: Supplied currency list should be already sorted according priority rules.
-        /// </summary>
-        /// <param name="currencyList">New currecnies configuration to use.</param>
-        public void Set(IEnumerable<ICurrencyInfo> currencyList)
-        {
-            this.sortedCurrencies = currencyList.ToList();
-            this.currenciesByName = currencyList.ToDictionary(c => c.Name);
-            this.CurrenciesChanged();
-        }
-
-        public OrderCalculator GetCalculator(string symbol, string accountCurrency)
-        {
-            // TO DO: implement cache for calculators
-            return new OrderCalculator(symbol, this, accountCurrency);
         }
 
         public List<ISymbolRate> GetRatesSnapshot()
         {
-            return symbolsByName.Select(s => GetRate(s.Key)).Where(r => r != null).ToList();
+            return _smbMap.Values.Select(s => s.Rate).Where(r => r != null).ToList();
         }
 
-        public event Action SymbolsChanged = delegate { };
-        public event Action CurrenciesChanged = delegate { };
-        public event Action<ISymbolRate> RateChanged = delegate { };
-    }
-
-    sealed class SymbolRateTracker
-    {
-        public SymbolRateTracker(string smbName)
+        internal override SymbolMarketNode GetSymbolNode(string smb, bool addIfMissing)
         {
-            this.Symbol = smbName;
+            var smbNode = _smbMap.GetOrDefault(smb);
+
+            if (smbNode == null && addIfMissing)
+            {
+                smbNode = new SymbolMarketNode(smb, null);
+                _smbMap.Add(smb, smbNode);
+            }
+
+            return smbNode;
         }
 
-        public string Symbol { get; private set; }
+        protected override IEnumerable<ISymbolInfo> ListEnabledNodes()
+            => _smbMap.Values.Where(n => n.IsEnabled).Select(s => s.SymbolInfo);
 
-        public ISymbolRate Rate { get; set; }
+        protected override void UpsertNode(ISymbolInfo smbInfo)
+        {
+            var node = _smbMap.GetOrDefault(smbInfo.Symbol);
+
+            if (node == null)
+            {
+                node = new SymbolMarketNode(smbInfo.Symbol, smbInfo);
+                _smbMap.Add(smbInfo.Symbol, node);
+            }
+            else
+                node.Update(smbInfo);
+        }
+
+        protected override void DisableNode(ISymbolInfo smbInfo)
+        {
+            _smbMap.GetOrDefault(smbInfo.Symbol)?.Update(null);
+        }
+
+        protected override void OnCalculatorAdded(OrderCalculator calculator)
+        {
+            if (!UsageTrackingEnabled)
+                calculator.AddUsage(); // add constant usage token
+        }
     }
 }

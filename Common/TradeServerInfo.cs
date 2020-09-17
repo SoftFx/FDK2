@@ -31,6 +31,8 @@ namespace TickTrader.FDK.Common
         public int? ServerSfxTradeCapturePort { get; set; }
         public int? ServerFixFeedSslPort { get; set; }
         public int? ServerFixTradeSslPort { get; set; }
+        public string MobileHubApiAddress { get; set; }
+        public string SecondaryQuoteHistoryStorageAddress { get; set; }
 
         public string WebTerminalAddress
         {

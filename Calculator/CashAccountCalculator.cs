@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using TickTrader.FDK.Calculator.Netting;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
 {
@@ -8,12 +8,11 @@ namespace TickTrader.FDK.Calculator
     {
         private readonly ICashAccountInfo account;
         private readonly Dictionary<string, IAssetModel> assets = new Dictionary<string, IAssetModel>();
-        private readonly Dictionary<long, OrderLightClone> orders = new Dictionary<long, OrderLightClone>();
-        private MarketState market;
+        private MarketStateBase market;
 
-        public MarketState Market
+        public MarketStateBase Market
         {
-            get { return market;}
+            get { return market; }
             set
             {
                 if (value == null)
@@ -26,7 +25,7 @@ namespace TickTrader.FDK.Calculator
             }
         }
 
-        public CashAccountCalculator(ICashAccountInfo infoProvider, MarketState market)
+        public CashAccountCalculator(ICashAccountInfo infoProvider, MarketStateBase market)
         {
             if (infoProvider == null)
                 throw new ArgumentNullException("infoProvider");
@@ -44,73 +43,130 @@ namespace TickTrader.FDK.Calculator
             this.account.OrderAdded += AddOrder;
             this.account.OrderRemoved += RemoveOrder;
             this.account.OrdersAdded += AddOrdersBunch;
-            this.account.OrderReplaced += UpdateOrder;
+            //this.account.OrderReplaced += UpdateOrder;
         }
 
-        public bool HasSufficientMarginToOpenOrder(ICommonOrder order, decimal? margin)
+        public bool HasSufficientMarginToOpenOrder(IOrderModel order, decimal? marginMovement, out IAssetModel marginAsset)
         {
-            if (order == null)
-                throw new ArgumentNullException("order");
+            var symbol = order.SymbolInfo ?? throw CreateNoSymbolException(order.Symbol);
+            return HasSufficientMarginToOpenOrder(order.Type, order.Side, symbol, marginMovement, out marginAsset);
+        }
 
-            if (order.Type != OrderTypes.Limit && order.Type != OrderTypes.StopLimit)
-                throw new ArgumentException("Invalid Order Type", "order");
+        public bool HasSufficientMarginToOpenOrder(OrderType type, OrderSide side, ISymbolInfo symbol, decimal? marginMovement, out IAssetModel marginAsset)
+        {
+            //if (order == null)
+            //    throw new ArgumentNullException("order");
 
-            if (order.Type == OrderTypes.Stop || order.Type == OrderTypes.StopLimit)
-            {
-                if (order.StopPrice == null || order.StopPrice <= 0)
-                    throw new ArgumentException("Invalid Stop Price", "order");
-            }
+            //if (type != OrderTypes.Limit && type != OrderTypes.StopLimit)
+            //    throw new ArgumentException("Invalid Order Type", "order");
 
-            if (order.Type != OrderTypes.Stop)
-            {
-                if (order.Price == null || order.Price <= 0)
-                    throw new ArgumentException("Invalid Price", "order");
-            }
+            //if (type == OrderTypes.Stop || type == OrderTypes.StopLimit)
+            //{
+            //    if (stopPrice == null || stopPrice <= 0)
+            //        throw new ArgumentException("Invalid Stop Price", "order");
+            //}
 
-            if (order.Amount <= 0)
-                throw new ArgumentException("Invalid Amount", "order");
+            //if (type != OrderTypes.Stop)
+            //{
+            //    if (price == null || price <= 0)
+            //        throw new ArgumentException("Invalid Price", "order");
+            //}
 
-            if (margin == null)
+            //if (order.Amount <= 0)
+            //    throw new ArgumentException("Invalid Amount", "order");
+
+            if (marginMovement == null)
                 throw new MarginNotCalculatedException("Provided order must have calculated Margin.");
 
-            IAssetModel marginAsset = GetMarginAsset(order);
+            marginAsset = GetMarginAsset(symbol, side);
             if (marginAsset == null || marginAsset.Amount == 0)
-                throw new NotEnoughMoneyException($"Asset {GetMarginAssetCurrency(order)} is empty.");
+                throw new NotEnoughMoneyException($"Asset {GetMarginAssetCurrency(symbol, side)} is empty.");
 
-            if (margin.Value > marginAsset.FreeAmount)
-                throw new NotEnoughMoneyException($"{marginAsset}, OrderMargin={margin.Value}.");
+            if (marginMovement.Value > marginAsset.FreeAmount)
+                throw new NotEnoughMoneyException($"{marginAsset}, Margin={marginAsset.Margin}, MarginMovement={marginMovement.Value}.");
 
             return true;
         }
 
-        public static decimal CalculateMargin(ICommonOrder order, ISymbolInfo symbol)
+        public static decimal CalculateMarginFactor(IOrderCalcInfo order, ISymbolInfo symbol)
+        {
+            return CalculateMarginFactor(order.Type, symbol, order.IsHidden);
+        }
+
+        public static decimal CalculateMarginFactor(OrderType type, ISymbolInfo symbol, bool isHidden)
         {
             decimal combinedMarginFactor = 1.0M;
-            if (order.Type == OrderTypes.Stop || order.Type == OrderTypes.StopLimit)
+            if (type == OrderType.Stop || type == OrderType.StopLimit)
                 combinedMarginFactor *= (decimal)symbol.StopOrderMarginReduction;
-            else if (order.Type == OrderTypes.Limit && order.IsHidden)
+            else if (type == OrderType.Limit && isHidden)
                 combinedMarginFactor *= (decimal)symbol.HiddenLimitOrderMarginReduction;
+            return combinedMarginFactor;
+        }
 
-            decimal amount = order.RemainingAmount;
-            decimal price = (order.Type == OrderTypes.Stop) ? order.StopPrice.Value : order.Price.Value;
+        public static decimal CalculateMargin(IOrderCalcInfo order, ISymbolInfo symbol)
+        {
+            return CalculateMargin(order.Type, order.RemainingAmount, order.Price, order.StopPrice, order.Side, symbol, order.IsHidden);
+        }
 
-            if (order.Side == OrderSides.Buy)
+        public static decimal CalculateMargin(OrderType type, decimal amount, decimal? orderPrice, decimal? orderStopPrice, OrderSide side, ISymbolInfo symbol, bool isHidden)
+        {
+            decimal combinedMarginFactor = CalculateMarginFactor(type, symbol, isHidden);
+
+            decimal price = ((type == OrderType.Stop) || (type == OrderType.StopLimit)) ? orderStopPrice.Value : orderPrice.Value;
+
+            if (side == OrderSide.Buy)
                 return combinedMarginFactor * amount * price;
             else
                 return combinedMarginFactor * amount;
         }
 
-        public IAssetModel GetMarginAsset(ICommonOrder order)
+        public decimal CalculateCurrentPrice(IOrderCalcInfo order, out CalcError error)
         {
-            if (order.MarginCurrency == null || order.ProfitCurrency == null)
-                throw new MarketConfigurationException("Order must have both margin & profit currencies specified.");
-
-            return assets.GetOrDefault(GetMarginAssetCurrency(order));
+            return CalculateCurrentPrice(order.Side, order.Symbol, out error);
         }
 
-        public string GetMarginAssetCurrency(ICommonOrder order)
+        public decimal CalculateCurrentPrice(OrderSide side, string symbol, out CalcError error)
         {
-            return (order.Side == OrderSides.Buy) ? order.ProfitCurrency : order.MarginCurrency;
+            var node = market.GetSymbolNode(symbol, false);
+            if (node == null)
+            {
+                error = new MisconfigurationError("Symbol Not Found: " + symbol);
+                return 0;
+            }
+
+            if (side == OrderSide.Sell)
+                return (decimal)node.GetBidOrError(out error);
+            else
+                return (decimal)node.GetAskOrError(out error);
+        }
+
+        public IAssetModel GetMarginAsset(IOrderModel order)
+        {
+            return GetMarginAsset(order, out _);
+        }
+
+        public IAssetModel GetMarginAsset(IOrderModel order, out ISymbolInfo symbol)
+        {
+            //if (order.MarginCurrency == null || order.ProfitCurrency == null)
+            //    throw new MarketConfigurationException("Order must have both margin & profit currencies specified.");
+
+            symbol = order.SymbolInfo ?? throw CreateNoSymbolException(order.Symbol);
+            return assets.GetOrDefault(GetMarginAssetCurrency(symbol, order.Side));
+        }
+
+        public IAssetModel GetMarginAsset(ISymbolInfo symbol, OrderSide side)
+        {
+            //if (order.MarginCurrency == null || order.ProfitCurrency == null)
+            //    throw new MarketConfigurationException("Order must have both margin & profit currencies specified.");
+
+            return assets.GetOrDefault(GetMarginAssetCurrency(symbol, side));
+        }
+
+        public string GetMarginAssetCurrency(ISymbolInfo smb, OrderSide side)
+        {
+            //var symbol = smb ?? throw CreateNoSymbolException(smb.Name);
+
+            return (side == OrderSide.Buy) ? smb.ProfitCurrency : smb.MarginCurrency;
         }
 
         public void AddRemoveAsset(IAssetModel asset, AssetChangeTypes changeType)
@@ -129,38 +185,37 @@ namespace TickTrader.FDK.Calculator
 
         public void AddOrder(IOrderModel order)
         {
-            ISymbolInfo symbol = Market.GetSymbolInfoOrThrow(order.Symbol);
-            decimal margin = CalculateMargin(order, symbol);
-            order.Margin = margin;
-            OrderLightClone clone = new OrderLightClone(order);
-            orders.Add(order.OrderId, clone);
+            var symbol = order.SymbolInfo ?? throw CreateNoSymbolException(order.Symbol);
+            order.CashMargin = CalculateMargin(order, symbol);
+            //order.Margin = margin;
+            //OrderLightClone clone = new OrderLightClone(order);
+            //orders.Add(order.OrderId, clone);
 
             IAssetModel marginAsset = GetMarginAsset(order);
             if (marginAsset != null)
-                marginAsset.Margin += margin;
+                marginAsset.Margin += order.CashMargin;
 
-            order.EssentialParametersChanged += UpdateOrder;
+            order.EssentialsChanged += OnOrderChanged;
         }
 
-        public void UpdateOrder(IOrderModel order)
+        public void OnOrderChanged(OrderEssentialsChangeArgs args)
         {
-            ISymbolInfo symbol = Market.GetSymbolInfoOrThrow(order.Symbol);
-            OrderLightClone clone = GetOrderOrThrow(order.OrderId);
+            var order = args.Order;
+            var symbol = order.SymbolInfo ?? throw CreateNoSymbolException(order.Symbol);
+            //OrderLightClone clone = GetOrderOrThrow(order.OrderId);
             IAssetModel marginAsset = GetMarginAsset(order);
-            marginAsset.Margin -= clone.Margin.GetValueOrDefault();
+            marginAsset.Margin -= order.CashMargin;
+            order.CashMargin = CalculateMargin(order, symbol);
+            marginAsset.Margin += order.CashMargin;
 
-            decimal margin = CalculateMargin(order, symbol);
-            marginAsset.Margin += margin;
-            order.Margin = margin;
+            //OrderLightClone newClone = new OrderLightClone(order);
+            //orders[order.OrderId] = newClone;
 
-            OrderLightClone newClone = new OrderLightClone(order);
-            orders[order.OrderId] = newClone;
-
-            if (clone.OrderModelRef != order) // resubscribe if order model is replaced
-            {
-                clone.OrderModelRef.EssentialParametersChanged -= UpdateOrder;
-                order.EssentialParametersChanged += UpdateOrder;
-            }
+            //if (clone.OrderModelRef != order) // resubscribe if order model is replaced
+            //{
+            //    clone.OrderModelRef.EssentialParametersChanged -= UpdateOrder;
+            //    order.EssentialParametersChanged += UpdateOrder;
+            //}
         }
 
         public void AddOrdersBunch(IEnumerable<IOrderModel> bunch)
@@ -170,23 +225,23 @@ namespace TickTrader.FDK.Calculator
 
         public void RemoveOrder(IOrderModel order)
         {
-            OrderLightClone clone = GetOrderOrThrow(order.OrderId);
-            orders.Remove(order.OrderId);
+            //OrderLightClone clone = GetOrderOrThrow(order.OrderId);
+            //orders.Remove(order.OrderId);
 
             IAssetModel marginAsset = GetMarginAsset(order);
             if (marginAsset != null)
-                marginAsset.Margin -= clone.Margin.GetValueOrDefault();
+                marginAsset.Margin -= order.CashMargin;
 
-            order.EssentialParametersChanged -= UpdateOrder;
+            order.EssentialsChanged -= OnOrderChanged;
         }
 
-        OrderLightClone GetOrderOrThrow(long orderId)
-        {
-            OrderLightClone clone;
-            if (!orders.TryGetValue(orderId, out clone))
-                throw new InvalidOperationException("Order Not Found: " + orderId);
-            return clone;
-        }
+        //OrderLightClone GetOrderOrThrow(long orderId)
+        //{
+        //    OrderLightClone clone;
+        //    if (!orders.TryGetValue(orderId, out clone))
+        //        throw new InvalidOperationException("Order Not Found: " + orderId);
+        //    return clone;
+        //}
 
         public void Dispose()
         {
@@ -194,7 +249,20 @@ namespace TickTrader.FDK.Calculator
             this.account.OrderAdded -= AddOrder;
             this.account.OrderRemoved -= RemoveOrder;
             this.account.OrdersAdded -= AddOrdersBunch;
-            this.account.OrderReplaced -= UpdateOrder;
+            //this.account.OrderReplaced -= UpdateOrder;
+
+            foreach (var order in account.Orders)
+            {
+                //orders.Remove(order.OrderId);
+                order.EssentialsChanged -= OnOrderChanged;
+            }
         }
+
+        private Exception CreateNoSymbolException(string smbName)
+        {
+            return new MarketConfigurationException("Symbol not found: " + smbName);
+        }
+
+        
     }
 }

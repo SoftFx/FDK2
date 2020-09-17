@@ -6,7 +6,7 @@
     public enum NettingCalculationTypes
     {
         /// <summary>
-        // Calculate and update each order separately, then aggragate results.
+        /// Calculate and update each order separately, then aggragate results.
         /// </summary>
         OneByOne,
 

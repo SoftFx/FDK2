@@ -51,6 +51,10 @@
       <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
       <Name>Extended</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\modules\Sfx\DotNet\Core\Core.csproj">
+      <Project>{2a4856e5-8d40-41f7-88d1-57d1888db660}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
     <ProjectReference Include="..\..\Standard\Standard.csproj">
       <Project>{ec1a8251-119a-44be-8a8c-bc7823876763}</Project>
       <Name>Standard</Name>

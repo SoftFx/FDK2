@@ -55,6 +55,10 @@
       <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
       <Name>Extended</Name>
     </ProjectReference>
+    <ProjectReference Include="..\..\modules\Sfx\DotNet\Core\Core.csproj">
+      <Project>{2a4856e5-8d40-41f7-88d1-57d1888db660}</Project>
+      <Name>Core</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

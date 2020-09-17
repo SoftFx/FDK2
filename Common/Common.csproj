@@ -52,6 +52,7 @@
     <Compile Include="ConnectException.cs" />
     <Compile Include="CurrencyInfo.cs" />
     <Compile Include="CurrencyType.cs" />
+    <Compile Include="CurrencyTypeInfo.cs" />
     <Compile Include="DeviceIdGenerator.cs" />
     <Compile Include="DisconnectException.cs" />
     <Compile Include="Dividend.cs" />
@@ -63,6 +64,8 @@
     <Compile Include="LogoutInfo.cs" />
     <Compile Include="LogoutReason.cs" />
     <Compile Include="MarginCalcMode.cs" />
+    <Compile Include="MarginLevelStates.cs" />
+    <Compile Include="MergerAndAcquisition.cs" />
     <Compile Include="NetworkActivity.cs" />
     <Compile Include="Notification.cs" />
     <Compile Include="NotificationSeverity.cs" />

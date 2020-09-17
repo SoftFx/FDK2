@@ -461,6 +461,29 @@ namespace TickTrader.FDK.Client
             GetBarListInternal(context, symbol, priceType, barPeriod, from, count);
         }
 
+        public TickTrader.FDK.Common.Bar[] GetBarList(string[] symbols, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count, int timeout)
+        {
+            BarHistoryAsyncContext context = new BarHistoryAsyncContext(true);
+
+            GetBarListInternal(context, symbols, priceType, barPeriod, from, count);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.bars_;
+        }
+
+        public void GetBarListAsync(object data, string[] symbols, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
+        {
+            BarHistoryAsyncContext context = new BarHistoryAsyncContext(false);
+            context.Data = data;
+
+            GetBarListInternal(context, symbols, priceType, barPeriod, from, count);
+        }
+
         void GetBarListInternal(BarListAsyncContext context, string symbol, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
         {
             context.barPeriod_ = barPeriod;
@@ -474,6 +497,24 @@ namespace TickTrader.FDK.Client
             request.Count = count;
 
             session_.SendBarListRequest(context, request);
+        }
+
+        void GetBarListInternal(BarHistoryAsyncContext context, string[] symbols, TickTrader.FDK.Common.PriceType priceType, BarPeriod barPeriod, DateTime from, int count)
+        {
+            context.barPeriod_ = barPeriod;
+
+            BarHistoryRequest request = new BarHistoryRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            SoftFX.Net.Core.UStringArray requestSymbols = request.Symbols;
+            requestSymbols.Resize(symbols.Length);
+            for (int index = 0; index < symbols.Length; ++index)
+                requestSymbols[index] = symbols[index];
+            request.PriceType = GetPriceType(priceType);
+            request.Periodicity = barPeriod.ToString();
+            request.From = from;
+            request.Count = count;
+
+            session_.SendBarHistoryRequest(context, request);
         }
 
         public Quote[] GetQuoteList(string symbol, QuoteDepth depth, DateTime from, int count, int timeout)
@@ -1134,6 +1175,38 @@ namespace TickTrader.FDK.Client
         class BarListAsyncContext : BarListRequestClientContext, IAsyncContext
         {
             public BarListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteStore.BarListErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteStore.BarListErrorEvent(quoteStore, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public BarPeriod barPeriod_;
+            public Exception exception_;
+            public TickTrader.FDK.Common.Bar[] bars_;
+        }
+
+        class BarHistoryAsyncContext : BarHistoryRequestClientContext, IAsyncContext
+        {
+            public BarHistoryAsyncContext(bool waitable) : base(waitable)
             {
             }
 
@@ -2071,7 +2144,9 @@ namespace TickTrader.FDK.Client
                             {
                                 Id = reportStockEventQHModifier.Id,
                                 StartTime = reportStockEventQHModifier.StartTime,
-                                Ratio = reportStockEventQHModifier.Ratio
+                                Ratio = reportStockEventQHModifier.Ratio,
+                                FromFactor = reportStockEventQHModifier.FromFactor,
+                                ToFactor = reportStockEventQHModifier.ToFactor
                             };
 
                             resultStockEventQHModifiers[index] = resultStockEventQHModifier;
@@ -2223,6 +2298,107 @@ namespace TickTrader.FDK.Client
                 try
                 {
                     BarListAsyncContext context = (BarListAsyncContext)BarListRequestClientContext;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.BarListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnBarListReport(ClientSession session, BarHistoryRequestClientContext BarHistoryRequestClientContext, BarListReport message)
+            {
+                try
+                {
+                    BarHistoryAsyncContext context = (BarHistoryAsyncContext)BarHistoryRequestClientContext;
+
+                    try
+                    {
+                        SoftFX.Net.QuoteStore.BarArray reportBars = message.Bars;
+                        int count = reportBars.Length;
+                        TickTrader.FDK.Common.Bar[] resultBars = new TickTrader.FDK.Common.Bar[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            SoftFX.Net.QuoteStore.Bar reportBar = reportBars[index];
+                            TickTrader.FDK.Common.Bar resultBar = new TickTrader.FDK.Common.Bar();
+
+                            resultBar.From = reportBar.Time;
+                            resultBar.To = reportBar.Time + context.barPeriod_;
+                            resultBar.Open = reportBar.Open;
+                            resultBar.Close = reportBar.Close;
+                            resultBar.High = reportBar.High;
+                            resultBar.Low = reportBar.Low;
+                            resultBar.Volume = reportBar.Volume;
+                            resultBar.Symbol = reportBar.SymbolId;
+
+                            resultBars[index] = resultBar;
+                        }
+
+                        if (client_.BarListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.BarListResultEvent(client_, context.Data, resultBars);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.bars_ = resultBars;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.BarListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.BarListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnBarListReject(ClientSession session, BarHistoryRequestClientContext BarHistoryRequestClientContext, Reject message)
+            {
+                try
+                {
+                    BarHistoryAsyncContext context = (BarHistoryAsyncContext)BarHistoryRequestClientContext;
 
                     Common.RejectReason rejectReason = GetRejectReason(message.Reason);
                     RejectException exception = new RejectException(rejectReason, message.Text);
@@ -4040,6 +4216,9 @@ namespace TickTrader.FDK.Client
 
                     case SoftFX.Net.QuoteStore.LoginRejectReason.MustChangePassword:
                         return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
+
+                    case SoftFX.Net.QuoteStore.LoginRejectReason.TimeoutLogin:
+                        return TickTrader.FDK.Common.LogoutReason.LoginTimeout;
 
                     case SoftFX.Net.QuoteStore.LoginRejectReason.Other:
                     default:

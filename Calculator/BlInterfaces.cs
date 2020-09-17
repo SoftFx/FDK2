@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
 {
@@ -15,7 +16,7 @@ namespace TickTrader.FDK.Calculator
         double StopOrderMarginReduction { get; }
         double HiddenLimitOrderMarginReduction { get; }
         double MarginHedged { get; }
-        MarginCalculationModes MarginMode { get; }
+        MarginCalcMode MarginMode { get; }
         int Precision { get; }
         bool SwapEnabled { get; }
         SwapType SwapType { get; }
@@ -30,13 +31,6 @@ namespace TickTrader.FDK.Calculator
     {
         string Name { get; }
         int Precision { get; }
-        int SortOrder { get; }
-    }
-
-    public interface IGroupSecurity
-    {
-        string Group { get; }
-        string Security { get; }
         int SortOrder { get; }
     }
 }

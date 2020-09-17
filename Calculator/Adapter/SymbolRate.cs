@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Calculator.Adapter
+﻿using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.Calculator.Adapter
 {
     sealed class SymbolRate : ISymbolRate
     {
@@ -23,17 +25,22 @@
 
         public decimal? NullableAsk
         {
-            get { return (decimal?)this.price.Ask; }
+            get { return this.price.Ask; }
         }
 
         public decimal? NullableBid
         {
-            get { return (decimal?)this.price.Bid; }
+            get { return this.price.Bid; }
         }
 
         public string Symbol
         {
             get { return this.symbol; }
+        }
+
+        public TickTypes TickType
+        {
+            get { return this.price.TickType; }
         }
     }
 }

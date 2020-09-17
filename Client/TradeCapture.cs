@@ -2531,6 +2531,9 @@ namespace TickTrader.FDK.Client
                 tradeTransactionReport.ImmediateOrCancel = (trade.OrderFlags & OrderFlags.ImmediateOrCancel) != 0;
                 tradeTransactionReport.Slippage = trade.Slippage;
                 tradeTransactionReport.Tax = trade.Tax.GetValueOrDefault();
+                tradeTransactionReport.TaxValue = trade.TaxValue.GetValueOrDefault();
+                tradeTransactionReport.Rebate = trade.Rebate.GetValueOrDefault();
+                tradeTransactionReport.RebateCurrency = trade.RebateCurrencyId;
 
                 TradeAssetNull asset1 = trade.SrcAsset;
                 if (asset1.HasValue)
@@ -2715,6 +2718,7 @@ namespace TickTrader.FDK.Client
                     accountPosition.AskPrice = position.Ask;
                     accountPosition.PosId = position.PosId;
                     accountPosition.Modified = position.Modified;
+                    accountPosition.Rebate = position.Rebate;
 
                     accountReport.Positions[index] = accountPosition;
                 }
@@ -2818,6 +2822,9 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.LoginRejectReason.MustChangePassword:
                         return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
 
+                    case SoftFX.Net.TradeCapture.LoginRejectReason.TimeoutLogin:
+                        return TickTrader.FDK.Common.LogoutReason.LoginTimeout;
+                    
                     case SoftFX.Net.TradeCapture.LoginRejectReason.Other:
                     default:
                         return TickTrader.FDK.Common.LogoutReason.Unknown;

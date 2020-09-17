@@ -14,13 +14,11 @@ xcopy LICENSE %PACKAGE_DIR% || goto END
 rem Bin
 
 mkdir %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\ICSharpCode.SharpZipLib.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\NDesk.Options.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\SoftFX.Net.Core.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\SoftFX.Net.QuoteFeed.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\SoftFX.Net.OrderEntry.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\SoftFX.Net.QuoteStore.dll %PACKAGE_DIR%\Bin || goto END
-xcopy Bin\SoftFX.Net.TradeCapture.dll %PACKAGE_DIR%\Bin || goto END
+xcopy Lib\ICSharpCode.SharpZipLib.dll %PACKAGE_DIR%\Bin || goto END
+xcopy Lib\NDesk.Options.dll %PACKAGE_DIR%\Bin || goto END
+xcopy Lib\Snappy.NET.dll %PACKAGE_DIR%\Bin || goto END
+xcopy Lib\Snappy.NET.xml %PACKAGE_DIR%\Bin || goto END
+xcopy Lib\Crc32C.NET.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Common.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Client.dll %PACKAGE_DIR%\Bin || goto END
 xcopy Bin\Release\TickTrader.FDK.Extended.dll %PACKAGE_DIR%\Bin || goto END
@@ -134,7 +132,7 @@ xcopy Samples\TradeFeedExamples\Properties\*.cs %PACKAGE_DIR%\Samples\TradeFeedE
 rem Zip
 
 cd Pack || goto END
-del "TickTrader FDK "%1".zip"
+del "TickTrader FDK *.zip"
 7z.exe a -tzip "TickTrader FDK "%1".zip" "TickTrader FDK "%1"" || goto END
 cd ..
 

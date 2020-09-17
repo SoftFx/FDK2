@@ -11,10 +11,12 @@ namespace TickTrader.FDK.Common
         public List<string> Symbols { get; set; }
         public List<string> Currencies { get; set; }
         public List<string> SymbolsNotAffectQH { get; set; }
+        public double FromFactor { get; set; }
+        public double ToFactor { get; set; }
 
         public override string ToString()
         {
-            return $"#{Id}; StartTime = {StartTime:u}; Ratio = {Ratio:F}; Currencies = [{string.Join(",", Currencies)}]; Symbols = [{string.Join(",", Symbols)}]; SymbolsNotAffectQH = [{string.Join(",", SymbolsNotAffectQH)}]";
+            return $"#{Id}; StartTime = {StartTime:u}; Ratio = {Ratio:F}; Currencies = [{string.Join(",", Currencies)}]; Symbols = [{string.Join(",", Symbols)}]; SymbolsNotAffectQH = [{string.Join(",", SymbolsNotAffectQH)}]; FromFactor = {FromFactor}; ToFactor = {ToFactor}";
         }
     }
 }

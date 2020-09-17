@@ -134,7 +134,13 @@ namespace TickTrader.FDK.Client.Splits
             for (int i = 0; i < actualSplitCount; i++)
             {
                 var split = splits[actualSplitCount - 1 - i];
-                accumRatio *= split.Ratio;
+                if(split.FromFactor == 0 || split.ToFactor == 0)
+                    accumRatio *= split.Ratio;
+                else
+                {
+                    var ratio = 1.0 * split.ToFactor / split.FromFactor;
+                    accumRatio *= ratio;
+                }
                 result.Add(new KeyValuePair<DateTime, double>(split.StartTime, accumRatio));
             }
 

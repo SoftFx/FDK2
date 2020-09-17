@@ -1,320 +1,327 @@
-﻿namespace TickTrader.FDK.Calculator
+﻿using System;
+using TickTrader.FDK.Calculator.Conversion;
+using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.Calculator
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using TickTrader.FDK.Calculator.Conversion;
-
-    public sealed class OrderCalculator : IDependOnRates, IDisposable
+    public sealed class OrderCalculator
 	{
-        readonly string symbol;
-        readonly string accountCurrency;
-        readonly MarketState market;
-        readonly ConversionManager conversionMap;
-        readonly Converter<int, int> leverageProvider;
+        private Converter<int, int> _leverageProvider;
+        private readonly string _symbolName;
+        private readonly ConversionManager _conversion;
+        private readonly string _accountCurrency;
 
-        public OrderError InitError { get; private set; }
+        internal OrderCalculator(string symbolName, SymbolMarketNode tracker, ConversionManager conversion, string accountCurrency)
+        {
+            _symbolName = symbolName ?? throw new ArgumentNullException("symbolName");
+            RateTracker = tracker ?? throw new ArgumentNullException("tracker");
+            _conversion = conversion ?? throw new ArgumentNullException("conversion");
+            _accountCurrency = accountCurrency ?? throw new ArgumentNullException("conversion");
+            Init();
+        }
 
-        public OrderCalculator(string symbol, MarketState market, string accountCurrency)
-		{
-            if (string.IsNullOrEmpty(symbol))
-                throw new ArgumentException("Symbol must not be empty.", "symbol");
+        internal void Init()
+        {
+            PositiveProfitConversionRate = _conversion.GetPositiveProfitFormula(RateTracker, _accountCurrency);
+            NegativeProfitConversionRate = _conversion.GetNegativeProfitFormula(RateTracker, _accountCurrency);
+            MarginConversionRate = _conversion.GetMarginFormula(RateTracker, _accountCurrency);
+            SymbolInfo = RateTracker.SymbolInfo;
 
-            if (market == null)
-                throw new ArgumentNullException("market");
-
-            if (string.IsNullOrEmpty(accountCurrency))
-                throw new ArgumentException("Account currency must not be empty.", "accountCurrency");
-
-            this.symbol = symbol;
-            this.accountCurrency = accountCurrency;
-            this.market = market;
-            this.conversionMap = this.market.ConversionMap;
-
-            this.Init();
-
-            if (this.SymbolInfo != null && this.SymbolInfo.MarginMode != MarginCalculationModes.Forex && this.SymbolInfo.MarginMode != MarginCalculationModes.CFD_Leverage)
-                this.leverageProvider = _ => 1;
+            if (SymbolInfo != null && SymbolInfo.MarginMode != MarginCalcMode.Forex && SymbolInfo.MarginMode != MarginCalcMode.CfdLeverage)
+                _leverageProvider = _ => 1;
             else
-                this.leverageProvider = n => n;
-		}
+                _leverageProvider = n => n;
 
-        public ISymbolRate CurrentRate { get { return this.RateTracker.Rate; } }
-		public IConversionFormula PositiveProfitConversionRate { get; private set; }
+            if (SymbolInfo != null)
+                InitMarginFactorCache();
+
+            if (SymbolInfo == null)
+                InitError = new MisconfigurationError("Symbol not found: " + _symbolName);
+            else if (SymbolInfo.ProfitCurrency == null || SymbolInfo.MarginCurrency == null)
+                InitError = new MisconfigurationError("Currency configuration is missing for symbol " + _symbolName + ".");
+            else
+                InitError = null;
+        }
+
+        public ISymbolRate CurrentRate => RateTracker.Rate;
+        public ISymbolInfo SymbolInfo { get; private set; }
+        public CalcError InitError { get; private set; }
+        public IConversionFormula PositiveProfitConversionRate { get; private set; }
         public IConversionFormula NegativeProfitConversionRate { get; private set; }
         public IConversionFormula MarginConversionRate { get; private set; }
-		public ISymbolInfo SymbolInfo { get; private set; }
-		public bool IsValid { get { return this.InitError == null; } }
 
-        internal SymbolRateTracker RateTracker { get; private set; }
+        internal SymbolMarketNode RateTracker { get; }
 
-        IEnumerable<IConversionFormula> Formulas
+        //public void Dispose()
+        //{
+        //}
+
+        #region Margin
+
+        private decimal _baseMarginFactor;
+        private decimal _stopMarginFactor;
+        private decimal _hiddenMarginFactor;
+
+        public decimal CalculateMargin(IPositionModel position, int leverage, out CalcError error)
         {
-            get
-            {
-                if (PositiveProfitConversionRate != null)
-                    yield return PositiveProfitConversionRate;
-                if (NegativeProfitConversionRate != null)
-                    yield return NegativeProfitConversionRate;
-                if (MarginConversionRate != null)
-                    yield return MarginConversionRate;
-            }
+            error = null;
+            var result = 0.0m;
+
+            if (position.Short.Amount > 0)
+                result += CalculateMargin(position.Short.Amount, leverage, OrderType.Position, OrderSide.Sell, false, out error);
+
+            if (error == null && position.Long.Amount > 0)
+                result += CalculateMargin(position.Long.Amount, leverage, OrderType.Position, OrderSide.Buy, false, out error);
+
+            return result;
         }
 
-        IEnumerable<string> IDependOnRates.DependOnSymbols
+        public decimal CalculateMargin(IOrderCalcInfo order, int leverage, out CalcError error)
         {
-            get
-            {
-                return this.Formulas.OfType<IDependOnRates>().SelectMany(o => o.DependOnSymbols);
-            }
+            return CalculateMargin(order.RemainingAmount, leverage, order.Type, order.Side, order.IsHidden, out error);
         }
 
-        void Init()
-		{
-			try
-			{
-				this.InitOrThrow();
-			}
-			catch (BusinessLogicException ex)
-			{
-                this.InitError = new OrderError(ex);
-			}
-		}
-
-        void InitOrThrow()
-		{
-			this.SymbolInfo = this.market.GetISymbolInfo(this.symbol);
-            this.RateTracker = this.market.GetSymbolTracker(this.symbol);
-
-            if (this.SymbolInfo == null)
-                throw new SymbolConfigException("Cannot find configuration for symbol " + this.symbol + ".");
-
-			if (this.SymbolInfo.ProfitCurrency == null && this.SymbolInfo.MarginCurrency == null)
-				throw new SymbolConfigException("Currency configuration is missing for symbol " + this.SymbolInfo.Symbol + ".");
-            
-            this.PositiveProfitConversionRate = this.conversionMap.GetPositiveProfitConversion(symbol, accountCurrency);
-            this.NegativeProfitConversionRate = this.conversionMap.GetNegativeProfitConversion(symbol, accountCurrency);
-            this.MarginConversionRate = this.conversionMap.GetMarginConversion(symbol, accountCurrency);
-		}
-
-        void VerifyInitialized()
+        public decimal CalculateMargin(decimal orderVolume, int leverage, OrderType ordType, OrderSide side, bool isHidden, out CalcError error)
         {
-            if (this.InitError != null)
-                throw this.InitError.Exception;
+            error = InitError;
+
+            if (error != null)
+                return 0;
+
+            error = MarginConversionRate.Error;
+
+            if (error != null)
+                return 0;
+
+            double lFactor = _leverageProvider(leverage);
+            decimal marginFactor = GetMarginFactor(ordType, isHidden);
+            decimal marginRaw = orderVolume * marginFactor / (decimal)lFactor;
+
+            return marginRaw * MarginConversionRate.Value;
         }
 
-        public void UpdateOrder(IOrderModel order, IMarginAccountInfo acc)
-		{
-			order.CalculationError = null;
-			this.UpdateMargin(order, acc);
-			this.UpdateProfit(order);
-		}
-
-		#region Margin
-
-        public void UpdateMargin(IOrderModel order, IMarginAccountInfo acc)
+        private decimal GetMarginFactor(OrderType ordType, bool isHidden)
         {
-            try
-            {
-                if (InitError != null)
-                    order.CalculationError = InitError;
-                else
-                {
-                    order.Margin = CalculateMargin(order.RemainingAmount, acc.Leverage, order.Type, order.Side, order.IsHidden);
-                    order.MarginRateCurrent = MarginConversionRate.Value;
-                }
-            }
-            catch (BusinessLogicException ex)
-            {
-                order.CalculationError = new OrderError(ex);
-            }
+            if (ordType == OrderType.Stop || ordType == OrderType.StopLimit)
+                return _stopMarginFactor;
+            if (ordType == OrderType.Limit && isHidden)
+                return _hiddenMarginFactor;
+            return _baseMarginFactor;
         }
 
-		public decimal CalculateMargin(ICommonOrder order, IMarginAccountInfo acc)
-		{
-			return CalculateMargin(order.RemainingAmount, acc.Leverage, order.Type, order.Side, order.IsHidden);
-		}
-
-        public decimal CalculateMargin(decimal orderVolume, int leverage, OrderTypes ordType, OrderSides side, bool isHidden)
+        private void InitMarginFactorCache()
         {
-            VerifyInitialized();
-
-            double combinedMarginFactor = SymbolInfo.MarginFactorFractional;
-            if (ordType == OrderTypes.Stop || ordType == OrderTypes.StopLimit)
-                combinedMarginFactor *= SymbolInfo.StopOrderMarginReduction;
-            else if (ordType == OrderTypes.Limit && isHidden)
-                combinedMarginFactor *= SymbolInfo.HiddenLimitOrderMarginReduction;
-
-            return (orderVolume * (decimal)combinedMarginFactor / leverageProvider(leverage)) * MarginConversionRate.Value;
+            _baseMarginFactor = (decimal)SymbolInfo.MarginFactorFractional;
+            _stopMarginFactor = _baseMarginFactor * (decimal)SymbolInfo.StopOrderMarginReduction;
+            _hiddenMarginFactor = _baseMarginFactor * (decimal)SymbolInfo.HiddenLimitOrderMarginReduction;
         }
 
-        #endregion Margin
+        #endregion
 
         #region Profit
 
-        public void UpdateProfit(IOrderModel order)
-		{
-            try
-            {
-                if (InitError != null)
-                    order.CalculationError = InitError;
-                else
-                {
-                    if (order.Type == OrderTypes.Position)
-                    {
-                        decimal closePrice;
-                        order.Profit = CalculateProfit(order.Price.Value, order.RemainingAmount, order.Side, out closePrice);
-                        order.CurrentPrice = closePrice;
-                    }
-                    else if (order.Type == OrderTypes.Limit || order.Type == OrderTypes.Stop || order.Type == OrderTypes.StopLimit)
-                    {
-                        order.CurrentPrice = order.Side == OrderSides.Sell ? GetBid() : GetAsk();
-                    }
-                }
-            }
-            catch (BusinessLogicException ex)
-            {
-                order.CalculationError = new OrderError(ex);
-            }
-		}
-
-		public decimal CalculateProfit(IOrder order, decimal amount, out decimal closePrice)
-		{
-			return CalculateProfit(order.Price.Value, amount, order.Side, out closePrice);
-		}
-
-        public decimal? CalculateProfit(IOrder order)
+        public decimal CalculateProfit(IPositionModel position, out CalcError error)
         {
-            try
-            {
-                decimal closePrice;
-                return CalculateProfit(order, out closePrice);
-            }
-            catch (InvalidOperationException)
-            {
-                //Do nothing
-                return null;
-            }
+            error = null;
+            var result = 0.0m;
+
+            if (position.Short.Amount > 0)
+                result += CalculateProfit(position.Short.Price, position.Short.Amount, OrderSide.Sell, out error);
+
+            if (error == null && position.Long.Amount > 0)
+                result += CalculateProfit(position.Long.Price, position.Long.Amount, OrderSide.Buy, out error);
+
+            return result;
         }
 
-        public decimal CalculateProfit(IOrder order, out decimal closePrice)
-		{
-			return CalculateProfit(order.Price.Value, order.RemainingAmount, order.Side, out closePrice);
-		}
-
-		public decimal CalculateProfitFixedPrice(IOrder order, decimal amount, decimal closePrice)
-		{
-            decimal conversionRate;
-			return CalculateProfitInternal(order.Price.Value, closePrice, amount, order.Side, out conversionRate);
-		}
-
-		public decimal CalculateProfit(decimal openPrice, decimal volume, OrderSides side)
-		{
-			decimal closePrice;
-			return CalculateProfit(openPrice, volume, side, out closePrice);
-		}
-
-        public decimal CalculateProfit(decimal openPrice, decimal volume, OrderSides side, out decimal closePrice)
+        public decimal CalculateProfit(IOrderCalcInfo order, decimal amount, out decimal closePrice, out CalcError error)
         {
-            if (side == OrderSides.Buy)
-                closePrice = GetBid();
+            return CalculateProfit(order.Price.Value, amount, order.Side, out closePrice, out error);
+        }
+
+        public decimal CalculateProfit(IOrderCalcInfo order, decimal amount, out decimal closePrice, out decimal conversionRate, out CalcError error)
+        {
+            return CalculateProfit(order.Price.Value, amount, order.Side, out closePrice, out conversionRate, out error);
+        }
+
+        public decimal CalculateProfit(IOrderCalcInfo order, out CalcError error)
+        {
+            return CalculateProfit(order.Price.Value, order.RemainingAmount, order.Side, out error);
+        }
+
+        public decimal CalculateProfit(IOrderCalcInfo order, out decimal closePrice, out CalcError error)
+        {
+            return CalculateProfit(order.Price.Value, order.RemainingAmount, order.Side, out closePrice, out error);
+        }
+
+        public decimal CalculateProfit(decimal openPrice, decimal volume, OrderSide side, out CalcError error)
+        {
+            return CalculateProfit(openPrice, volume, side, out _, out _, out error);
+        }
+
+        public decimal CalculateProfit(decimal openPrice, decimal volume, OrderSide side, out decimal closePrice, out CalcError error)
+        {
+            return CalculateProfit(openPrice, volume, side, out closePrice, out _, out error);
+        }
+
+        public decimal CalculateProfit(decimal openPrice, decimal volume, OrderSide side, out decimal closePrice, out decimal conversionRate, out CalcError error)
+        {
+            error = InitError;
+
+            if (error != null)
+            {
+                conversionRate = 0;
+                closePrice = 0;
+                return 0;
+            }
+
+            conversionRate = 0;
+
+            if (side == OrderSide.Buy)
+            {
+                if (!GetBid(out closePrice, out error))
+                    return 0;
+            }
             else
-                closePrice = GetAsk();
+            {
+                if (!GetAsk(out closePrice, out error))
+                    return 0;
+            }
 
-            decimal conversionRate;
-            return CalculateProfitInternal(openPrice, closePrice, volume, side, out conversionRate);
+            return CalculateProfitInternal(openPrice, closePrice, volume, side, out conversionRate, out error);
         }
 
-		public decimal CalculateProfitFixedPrice(decimal openPrice, decimal volume, decimal closePrice, OrderSides side)
-		{
-            decimal conversionRate;
-            return CalculateProfitFixedPrice(openPrice, closePrice, volume, side, out conversionRate);
-		}
-
-        public decimal CalculateProfitFixedPrice(decimal openPrice, decimal volume, decimal closePrice, OrderSides side, out decimal conversionRate)
+        public decimal CalculateProfitFixedPrice(IOrderCalcInfo order, decimal amount, decimal closePrice, out CalcError error)
         {
-            return CalculateProfitInternal(openPrice, closePrice, volume, side, out conversionRate);
+            return CalculateProfitInternal(order.Price.Value, closePrice, amount, order.Side, out _, out error);
         }
 
-        decimal CalculateProfitInternal(decimal openPrice, decimal closePrice, decimal volume, OrderSides side, out decimal conversionRate)
-		{
-            this.VerifyInitialized();
-
-			decimal nonConvProfit;
-
-			if (side == OrderSides.Buy)
-				nonConvProfit = (closePrice - openPrice) * volume;
-			else
-				nonConvProfit = (openPrice - closePrice) * volume;
-
-			return ConvertProfitToAccountCurrency(nonConvProfit, out conversionRate);
-		}
-
-
-        public decimal ConvertProfitToAccountCurrency(decimal profit)
+        public decimal CalculateProfitFixedPrice(IOrderCalcInfo order, decimal amount, decimal closePrice, out decimal conversionRate, out CalcError error)
         {
-            decimal conversionRate;
-            return ConvertProfitToAccountCurrency(profit, out conversionRate);
+            return CalculateProfitInternal(order.Price.Value, closePrice, amount, order.Side, out conversionRate, out error);
         }
 
-        public decimal ConvertProfitToAccountCurrency(decimal profit, out decimal conversionRate)
+        public decimal CalculateProfitFixedPrice(decimal openPrice, decimal volume, decimal closePrice, OrderSide side, out CalcError error)
         {
-            if (profit >= 0)
-                conversionRate = PositiveProfitConversionRate.Value;
+            return CalculateProfitFixedPrice(openPrice, closePrice, volume, side, out _, out error);
+        }
+
+        public decimal CalculateProfitFixedPrice(decimal openPrice, decimal volume, decimal closePrice, OrderSide side, out decimal conversionRate, out CalcError error)
+        {
+            return CalculateProfitInternal(openPrice, closePrice, volume, side, out conversionRate, out error);
+        }
+
+        private decimal CalculateProfitInternal(decimal openPrice, decimal closePrice, decimal volume, OrderSide side, out decimal conversionRate, out CalcError error)
+        {
+            error = InitError;
+
+            if (error != null)
+            {
+                closePrice = 0;
+                conversionRate = 0;
+                return 0;
+            }
+
+            decimal nonConvProfit;
+
+            if (side == OrderSide.Buy)
+                nonConvProfit = (closePrice - openPrice) * volume;
             else
-                conversionRate = NegativeProfitConversionRate.Value;
-            return profit * conversionRate;
+                nonConvProfit = (openPrice - closePrice) * volume;
+
+            return ConvertProfitToAccountCurrency(nonConvProfit, out conversionRate, out error);
         }
 
-        decimal GetBid()
+        public decimal ConvertMarginToAccountCurrency(decimal margin, out CalcError error)
         {
-            if (CurrentRate == null || CurrentRate.NullableBid == null)
-                throw new OffCrossQuoteException(SymbolInfo.Symbol, FxPriceType.Bid);
-            return CurrentRate.NullableBid.Value;
+            error = InitError;
+
+            if (error != null)
+                return 0;
+
+            error = MarginConversionRate.Error;
+            if (error == null)
+                return margin * MarginConversionRate.Value;
+            return 0;
         }
 
-        decimal GetAsk()
+        public decimal ConvertProfitToAccountCurrency(decimal profit, out CalcError error)
         {
-            if (CurrentRate == null || CurrentRate.NullableAsk == null)
-                throw new OffCrossQuoteException(SymbolInfo.Symbol, FxPriceType.Ask);
-            return CurrentRate.NullableAsk.Value;
+            return ConvertProfitToAccountCurrency(profit, out _, out error);
         }
 
-        #endregion Profit
+        public decimal ConvertProfitToAccountCurrency(decimal profit, out decimal conversionRate, out CalcError error)
+        {
+            error = InitError;
+
+            if (error != null)
+            {
+                conversionRate = 0;
+                return 0;
+            }
+
+            conversionRate = GetProfitConvertionrate(profit >= 0, out error);
+
+            if (error == null)
+                return profit * conversionRate;
+            return 0;
+        }
+
+        private decimal GetProfitConvertionrate(bool profitIsPositive, out CalcError error)
+        {
+            if (profitIsPositive)
+            {
+                error = PositiveProfitConversionRate.Error;
+                return PositiveProfitConversionRate.Value;
+            }
+            else
+            {
+                error = NegativeProfitConversionRate.Error;
+                return NegativeProfitConversionRate.Value;
+            }
+        }
+
+        #endregion
 
         #region Commission
 
-        public decimal CalculateAgentCommission(decimal amount, decimal agentCommissionValue, CommissionValueType agentCommissionValueType, CommissionChargeType agentCommissionChargeType)
+        public decimal CalculateCommission(decimal amount, decimal cValue, CommissionType vType, CommissionChargeType chType, out CalcError error)
         {
-            return CalculateCommission(amount, agentCommissionValue, agentCommissionValueType, agentCommissionChargeType);
-        }
+            error = InitError;
 
-        public decimal CalculateCommission(decimal amount, decimal cValue, CommissionValueType vType, CommissionChargeType chType)
-        {
+            if (error != null)
+                return 0;
+
             if (cValue == 0)
                 return 0;
 
             //UL: all calculation for CommissionChargeType.PerLot
-            if (vType == CommissionValueType.Money)
+            if (vType == CommissionType.Absolute)
             {
                 //if (chType == CommissionChargeType.PerDeal)
                 //    return -cValue;
                 //else if (chType == CommissionChargeType.PerLot)
-                return -(amount / (decimal)SymbolInfo.ContractSizeFractional * cValue);
+                return -(amount / (decimal)SymbolInfo.ContractSizeFractional * (decimal)cValue);
             }
-            else if (vType == CommissionValueType.Percentage)
+            else if (vType == CommissionType.Percent)
             {
                 //if (chType == CommissionChargeType.PerDeal || chType == CommissionChargeType.PerLot)
-                return -(amount * cValue * MarginConversionRate.Value) / 100m;
+                error = MarginConversionRate.Error;
+                if (error != null)
+                    return 0;
+                return -(amount * cValue * (decimal)MarginConversionRate.Value) / 100;
             }
-            else if (vType == CommissionValueType.Points)
+            else if (vType == CommissionType.PerUnit)
             {
                 decimal ptValue = cValue / (decimal)Math.Pow(10, SymbolInfo.Precision);
 
                 //if (chType == CommissionChargeType.PerDeal)
                 //    return - (ptValue * MarginConversionRate.Value);
                 //else if (chType == CommissionChargeType.PerLot)
-                return ConvertProfitToAccountCurrency(-(amount * ptValue));
+                //error = MarginConversionRate.Error;
+                //if (error != null)
+                //    return 0;
+                return ConvertProfitToAccountCurrency(-(amount * ptValue), out _, out error);
             }
 
             throw new Exception("Invalid comission configuration: chType=" + chType + " vType= " + vType);
@@ -324,18 +331,24 @@
 
         #region Swap
 
-        public decimal CalculateSwap(decimal amount, OrderSides side)
+        public decimal CalculateSwap(decimal amount, OrderSide side, DateTime now, out CalcError error)
         {
-            decimal swapAmount = GetSwapModifier(side) * amount;
+            error = InitError;
+
+            if (error != null)
+                return 0;
+
+            decimal swapAmount = (decimal)GetSwapModifier(side) * amount;
             decimal swap = 0;
+
             if (SymbolInfo.SwapType == SwapType.Points)
-                swap = ConvertProfitToAccountCurrency(swapAmount);
+                swap = ConvertProfitToAccountCurrency(swapAmount, out error);
             else if (SymbolInfo.SwapType == SwapType.PercentPerYear)
-                swap = swapAmount * MarginConversionRate.Value;
+                swap = ConvertMarginToAccountCurrency(swapAmount, out error);
 
             if (SymbolInfo.TripleSwapDay > 0)
             {
-                var now = DateTime.UtcNow;
+                //var now = DateTime.UtcNow;
                 DayOfWeek swapDayOfWeek = now.DayOfWeek == DayOfWeek.Sunday ? DayOfWeek.Saturday : (int)now.DayOfWeek - DayOfWeek.Monday;
                 if (SymbolInfo.TripleSwapDay == (int)swapDayOfWeek)
                     swap *= 3;
@@ -346,33 +359,30 @@
             return swap;
         }
 
-        private decimal GetSwapModifier(OrderSides side)
+        private double GetSwapModifier(OrderSide side)
         {
-            if (!IsValid)
-                throw InitError.Exception;
-
             if (SymbolInfo.SwapEnabled)
             {
                 if (SymbolInfo.SwapType == SwapType.Points)
                 {
-                    if (side == OrderSides.Buy)
-                        return (decimal) SymbolInfo.SwapSizeLong/(decimal) Math.Pow(10, SymbolInfo.Precision);
-                    if (side == OrderSides.Sell)
-                        return (decimal) SymbolInfo.SwapSizeShort/(decimal) Math.Pow(10, SymbolInfo.Precision);
+                    if (side == OrderSide.Buy)
+                        return SymbolInfo.SwapSizeLong / Math.Pow(10, SymbolInfo.Precision);
+                    if (side == OrderSide.Sell)
+                        return SymbolInfo.SwapSizeShort / Math.Pow(10, SymbolInfo.Precision);
                 }
                 else if (SymbolInfo.SwapType == SwapType.PercentPerYear)
                 {
-                    const double power = 1.0/365.0;
+                    const double power = 1.0 / 365.0;
                     double factor = 0.0;
-                    if (side == OrderSides.Buy)
+                    if (side == OrderSide.Buy)
                         factor = Math.Sign(SymbolInfo.SwapSizeLong) * (Math.Pow(1 + Math.Abs(SymbolInfo.SwapSizeLong), power) - 1);
-                    if (side == OrderSides.Sell)
+                    if (side == OrderSide.Sell)
                         factor = Math.Sign(SymbolInfo.SwapSizeShort) * (Math.Pow(1 + Math.Abs(SymbolInfo.SwapSizeShort), power) - 1);
 
-                    if (double.IsInfinity(factor) || double.IsNaN(factor))
-                        throw new MarketConfigurationException($"Can not calculate swap: side={side} symbol={SymbolInfo.Symbol} swaptype={SymbolInfo.SwapType} sizelong={SymbolInfo.SwapSizeLong} sizeshort={SymbolInfo.SwapSizeShort}");
+                    //if (double.IsInfinity(factor) || double.IsNaN(factor))
+                    //    throw new MarketConfigurationException($"Can not calculate swap: side={side} symbol={SymbolInfo.Symbol} swaptype={SymbolInfo.SwapType} sizelong={SymbolInfo.SwapSizeLong} sizeshort={SymbolInfo.SwapSizeShort}");
 
-                    return (decimal) factor;
+                    return factor;
                 }
             }
 
@@ -381,18 +391,133 @@
 
         #endregion
 
-        public decimal GetOrderOpenPrice(OrderSides side)
+        public decimal GetOrderOpenPrice(OrderSide side)
         {
-            if (side == OrderSides.Buy)
+            BusinessLogicException.ThrowIfError(InitError);
+
+            if (side == OrderSide.Buy)
+            {
+                if (CurrentRate.TickType == TickTypes.IndicativeAsk || CurrentRate.TickType == TickTypes.IndicativeBidAsk)
+                {
+                    // TO DO: get rid of exceptions!
+                    throw new OffQuoteException("Open price for " + side + " " + CurrentRate.Symbol + " order is indicative!", CurrentRate.Symbol);
+                }
                 return CurrentRate.Ask;
-            else if (side == OrderSides.Sell)
+            }
+            else if (side == OrderSide.Sell)
+            {
+                if (CurrentRate.TickType == TickTypes.IndicativeBid || CurrentRate.TickType == TickTypes.IndicativeBidAsk)
+                {
+                    // TO DO: get rid of exceptions!
+                    throw new OffQuoteException("Open price for " + side + " " + CurrentRate.Symbol + " order is indicative!", CurrentRate.Symbol);
+                }
                 return CurrentRate.Bid;
+            }
 
             throw new Exception("Unknown order side: " + side);
         }
 
-        public void Dispose()
+        public bool CheckOrderOpenPrice(OrderSide side)
         {
+            if (side == OrderSide.Buy)
+            {
+                if (CurrentRate.TickType == TickTypes.IndicativeAsk || CurrentRate.TickType == TickTypes.IndicativeBidAsk)
+                {
+                    return false;
+                }
+            }
+            else if (side == OrderSide.Sell)
+            {
+                if (CurrentRate.TickType == TickTypes.IndicativeBid || CurrentRate.TickType == TickTypes.IndicativeBidAsk)
+                {
+                    return false;
+                }   
+            }
+
+            return true;
         }
+
+        private bool GetBid(out decimal bid, out CalcError error)
+        {
+            if (!RateTracker.HasBid)
+            {
+                error = RateTracker.NoBidError;
+                bid = 0;
+                return false;
+            }
+
+            error = null;
+            bid = RateTracker.Bid;
+            return true;
+        }
+
+        private bool GetAsk(out decimal ask, out CalcError error)
+        {
+            if (!RateTracker.HasAsk)
+            {
+                error = RateTracker.NoAskError;
+                ask = 0;
+                return false;
+            }
+
+            error = null;
+            ask = RateTracker.Ask;
+            return true;
+        }
+
+        #region Usage Management
+
+        internal int UsageCount { get; private set; }
+
+        public UsageToken UsageScope()
+        {
+            return new UsageToken(this);
+        }
+
+        internal void AddUsage()
+        {
+            if (UsageCount == 0)
+                Attach();
+            UsageCount++;
+        }
+
+        internal void RemoveUsage()
+        {
+            UsageCount--;
+            if (UsageCount == 0)
+                Deattach();
+        }
+
+        private void Attach()
+        {
+            PositiveProfitConversionRate?.AddUsage();
+            NegativeProfitConversionRate?.AddUsage();
+            MarginConversionRate?.AddUsage();
+        }
+
+        private void Deattach()
+        {
+            PositiveProfitConversionRate?.RemoveUsage();
+            NegativeProfitConversionRate?.RemoveUsage();
+            MarginConversionRate?.RemoveUsage();
+        }
+
+        public struct UsageToken : IDisposable
+        {
+            public UsageToken(OrderCalculator calc)
+            {
+                Calculator = calc;
+                calc.AddUsage();
+            }
+
+            public OrderCalculator Calculator { get; }
+
+            public void Dispose()
+            {
+                Calculator.RemoveUsage();
+            }
+        }
+
+        #endregion
     }
 }

@@ -147,9 +147,9 @@
     public class SubscribedEventArgs : DataEventArgs
     {
         /// <summary>
-        /// Gets symbol name.
+        /// Gets symbol names.
         /// </summary>
-        public string Symbol { get; set; }
+        public string[] Symbols { get; set; }
 
         /// <summary>
         /// Returns formatted string for class instance.
@@ -157,7 +157,7 @@
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            var result = this.Symbol;
+            var result = string.Join(",", this.Symbols);
             return result;
         }
     }
@@ -496,4 +496,31 @@
     /// <param name="sender">The source of event; can be DataTrade instance.</param>
     /// <param name="e">Contains notification information.</param>
     public delegate void NotifyHandler<T>(object sender, NotificationEventArgs<T> e);
+
+    /// <summary>
+    /// Data for TradeUpdate event. Contains cache changes
+    /// </summary>
+    public class TradeUpdateEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Trade update information
+        /// </summary>
+        public TradeUpdate Update { get; set; }
+
+        /// <summary>
+        /// Returns formatted string for the class instance.
+        /// </summary>
+        /// <returns>can not be null</returns>
+        public override string ToString()
+        {
+            return this.Update.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents the method that will handle trade update.
+    /// </summary>
+    /// <param name="sender">The source of the event.</param>
+    /// <param name="e">Contains update information.</param>
+    public delegate void TradeUpdateHandler(object sender, TradeUpdateEventArgs e);
 }

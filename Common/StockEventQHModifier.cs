@@ -14,5 +14,7 @@ namespace TickTrader.FDK.Common
         public long Id { get; set; }
         public DateTime StartTime { get; set; }
         public double Ratio { get; set; }
+        public double FromFactor { get; set; }
+        public double ToFactor { get; set; }
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Calculator
+﻿using TickTrader.FDK.Calculator.Adapter;
+
+namespace TickTrader.FDK.Calculator
 {
     using System;
     using System.Collections.Generic;
@@ -15,85 +17,37 @@
     {
         #region Construction
 
-        internal StateInfo(AccountEntry account, IDictionary<string, Asset> assets, IDictionary<string, PriceEntry> prices, IDictionary<string, Quote> quotes, SymbolEntries symbols, long generation)
+        internal StateInfo(AccountAdapter account, IDictionary<string, Quote> quotes, long generation, bool isCalculatorInitialized)
         {
-            this.Status = account.MarginLevelStatus;
             this.Generation = generation;
 
-            this.Balance = account.Balance;
-            this.Profit = account.Profit.GetValueOrDefault();
-            this.Margin = account.Margin.GetValueOrDefault();
-            this.Equity = account.Equity.GetValueOrDefault();
-            this.MarginLevel = account.MarginLevel.GetValueOrDefault();
-            this.Commission = account.Commission;
-            this.Swap = account.Swap;
-            this.AgentCommission = account.AgentCommission;
+            this.Balance = (double)account.BalanceRounded;
+            this.Profit = (double)account.ProfitRounded;
+            this.Margin = (double)account.MarginRounded;
+            this.Equity = (double)account.EquityRounded;
+            this.MarginLevel = (double)account.MarginLevelRounded;
+            this.Commission = (double)account.CommissionRounded;
+            this.Swap = (double)account.SwapRounded;
+            this.AgentCommission = (double)account.AgentCommissionRounded;
 
-            this.Prices = new Dictionary<string, PriceEntry>(prices);
-            this.UnknownSymbols = new SortedSet<string>(account.Trades.Where(o => o.SymbolEntry == null).Select(o => o.Symbol), StringComparer.InvariantCultureIgnoreCase).ToArray();
+            this.Quotes = quotes;
+            
+            CalcError assetsError;
+            this.Assets = account.GetAssetsCalculated(out assetsError);
+            this.TradeRecords = account.GetOrdersCalculated();
+            this.Positions = account.GetPositionsCalculated();
+            this.UnknownSymbols = account.GetUnknownSymbols();
 
-            var records = new List<TradeRecord>(account.Trades.Count);
-            var positions = new List<Position>(account.Trades.Count);
-
-            ResetPositionsProfitAndMargin(account.Trades);
-
-            foreach (var element in account.Trades)
-            {
-                if (!TryProcessAsTradeRecord(element, records))
-                    TryProcessAsPosition(element, positions);
-            }
-
-            this.Quotes = new Dictionary<string, Quote>(quotes);
-            this.TradeRecords = records.ToArray();
-            this.Positions = positions.ToArray();
-            this.Assets = new Dictionary<string, Asset>(assets);
-        }
-
-        static void ResetPositionsProfitAndMargin(IEnumerable<TradeEntry> entries)
-        {
-            foreach (var position in entries.Select(o => o.Tag).OfType<Position>())
-            {
-                position.Profit = null;
-                position.Margin = null;
-            }
-        }
-
-        static bool TryProcessAsTradeRecord(TradeEntry entry, ICollection<TradeRecord> records)
-        {
-            var record = entry.Tag as TradeRecord;
-            if (record == null)
-                return false;
-
-            record.Profit = entry.Profit;
-            record.Margin = entry.Margin;
-
-            records.Add(record);
-
-            return true;
-        }
-
-        static bool TryProcessAsPosition(TradeEntry entry, ICollection<Position> positions)
-        {
-            var position = entry.Tag as Position;
-            if (position == null)
-                return false;
-
-            if (entry.Profit.HasValue)
-                position.Profit = position.Profit.GetValueOrDefault() + entry.Profit;
-            if (entry.Margin.HasValue)
-                position.Margin = position.Margin.GetValueOrDefault() + entry.Margin;
-
-            // some magic; see Calculate method of state calcualtor
-            if (entry.Side == OrderSide.Buy)
-                positions.Add(position);
-
-            return true;
+            this.Status = isCalculatorInitialized
+                ? (CalcError.GetWorst(account.CalcWorstError, assetsError)?.Code ?? CalcErrorCode.None)
+                    .ToAccountEntryStatus()
+                : AccountEntryStatus.NotCalculated;
         }
 
         #endregion
 
         /// <summary>
-        /// Gets status of Profit property.
+        /// Gets account calculation status.
         /// </summary>
         public AccountEntryStatus Status { get; private set; }
 
@@ -152,11 +106,6 @@
         /// Gets margin level.
         /// </summary>
         public double MarginLevel { get; private set; }
-
-        /// <summary>
-        /// Quotes snapshot, which has been used for calculation the financial information.
-        /// </summary>
-        public IDictionary<string, PriceEntry> Prices { get; private set; }
 
         /// <summary>
         /// Quotes snapshot, which has been used for calculation the financial information.

@@ -5,6 +5,7 @@
     using System.Threading;
     using System.Runtime.ExceptionServices;
     using Common;
+    using System.Linq;
 
     /// <summary>
     /// The class contains methods, which are executed in server side.
@@ -14,6 +15,25 @@
         internal DataFeedServer(DataFeed dataFeed)
         {
             dataFeed_ = dataFeed;
+        }
+
+        /// <summary>
+        /// The method returns list of currenc types supported by server.
+        /// </summary>
+        /// <returns></returns>
+        public CurrencyTypeInfo[] GetCurrencyTypes()
+        {
+            return GetCurrencyTypesEx(dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method returns list of currency types supported by server.
+        /// </summary>
+        /// <param name="timeoutInMilliseconds">timeout of the operation</param>
+        /// <returns></returns>
+        public CurrencyTypeInfo[] GetCurrencyTypesEx(int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteFeedClient_.GetCurrencyTypeList(timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -188,6 +208,95 @@
         public Bar[] GetBarsEx(string symbol, PriceType priceType, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
         {
             return dataFeed_.quoteStoreClient_.GetBarList(symbol, priceType, period, startTime, count, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bars of array of symbols
+        /// </summary>
+        /// <param name="symbols"></param>
+        /// <param name="priceType"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Bar[] GetBars(string[] symbols, PriceType priceType, BarPeriod period, DateTime startTime, int count)
+        {
+            return GetBarsEx(symbols, priceType, period, startTime, count, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bars of array of symbols
+        /// </summary>
+        /// <param name="symbols"></param>
+        /// <param name="priceType"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public Bar[] GetBarsEx(string[] symbols, PriceType priceType, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
+        {
+            return dataFeed_.quoteStoreClient_.GetBarList(symbols, priceType, period, startTime, count, timeoutInMilliseconds);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bar pairs of array of symbols
+        /// </summary>
+        /// <param name="symbols"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public IDictionary<string, PairBar[]> GetBars(string[] symbols, BarPeriod period, DateTime startTime, int count)
+        {
+            return GetBarsEx(symbols, period, startTime, count, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// This method retrieves a limited list of bar pairs of array of symbols
+        /// </summary>
+        /// <param name="symbols"></param>
+        /// <param name="period"></param>
+        /// <param name="startTime"></param>
+        /// <param name="count"></param>
+        /// <returns></returns>
+        public IDictionary<string, PairBar[]> GetBarsEx(string[] symbols, BarPeriod period, DateTime startTime, int count, int timeoutInMilliseconds)
+        {
+            DataFeed.BarListContext bidBarListContext = new DataFeed.BarListContext();
+            DataFeed.BarListContext askBarListContext = new DataFeed.BarListContext();
+
+            symbols = symbols.Distinct().ToArray();
+
+            dataFeed_.quoteStoreClient_.GetBarListAsync(bidBarListContext, symbols, PriceType.Bid, period, startTime, count);
+            dataFeed_.quoteStoreClient_.GetBarListAsync(askBarListContext, symbols, PriceType.Ask, period, startTime, count);
+
+            if (!bidBarListContext.event_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (!askBarListContext.event_.WaitOne(timeoutInMilliseconds))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (bidBarListContext.exception_ != null)
+                throw bidBarListContext.exception_;
+
+            if (askBarListContext.exception_ != null)
+                throw askBarListContext.exception_;
+
+            var bids = bidBarListContext.bars_
+                .GroupBy(b => b.Symbol)
+                .ToDictionary(g => g.Key, g => g.ToArray());
+            var asks = askBarListContext.bars_
+                .GroupBy(b => b.Symbol)
+                .ToDictionary(g => g.Key, g => g.ToArray());
+
+            var barsBySymbols = new Dictionary<string, PairBar[]>();
+            var emptyArray = new Bar[0];
+            foreach (var symbol in symbols)
+            {
+                barsBySymbols[symbol] = GetPairBarList(bids.ContainsKey(symbol) ? bids[symbol] : emptyArray,
+                    asks.ContainsKey(symbol) ? asks[symbol] : emptyArray, count);
+            }
+
+            return barsBySymbols;
         }
 
         /// <summary>

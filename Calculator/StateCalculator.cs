@@ -1,35 +1,38 @@
-﻿namespace TickTrader.FDK.Calculator
-{
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using TickTrader.FDK.Common;    
-    using TickTrader.FDK.Extended;
-    using TickTrader.FDK.Calculator.Rounding;
+﻿using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using TickTrader.FDK.Common;    
+using TickTrader.FDK.Extended;
+using TickTrader.FDK.Calculator.Adapter;
 
+namespace TickTrader.FDK.Calculator
+{
     /// <summary>
     /// Provides functionality for account financial state calculation.
     /// </summary>
-    public class StateCalculator
+    public class StateCalculator : IDisposable
     {
         readonly UpdateHandler updateHandler;
         readonly Processor processor;
 
-        EventHandler<StateInfoEventArgs> stateInfoChanged;
+        //EventHandler<StateInfoEventArgs> stateInfoChanged;
 
         readonly DataTrade trade;
         readonly DataFeed feed;
 
         readonly FinancialCalculator calculator;
-        readonly AccountEntry account;
         readonly IDictionary<string, Quote> calculatorQuotes;
 
         #region State Fields
-
-        IEnumerable<Common.CurrencyInfo> currencyInfo;
-        IEnumerable<Common.SymbolInfo> symbolInfo;
-        Common.AccountInfo accountInfo;
+        bool isReady;
+        bool isInitRequired = true;
+        InitFlags initFlags;
+        AccountInfo accountInfo;
         IDictionary<string, Quote> quotes;
+        BalanceOperation balanceOperation;
+        Queue<TradeUpdate> tradeUpdatesQueue = new Queue<TradeUpdate>();
+        Queue<NetPositionUpdate> positionUpdatesQueue = new Queue<NetPositionUpdate>();
 
         #endregion
 
@@ -56,11 +59,9 @@
 
 
             this.quotes = new Dictionary<string, Quote>();
-            this.calculatorQuotes = new Dictionary<string, Quote>();
+            this.calculatorQuotes = new ConcurrentDictionary<string, Quote>();
 
             this.calculator = new FinancialCalculator();
-            this.account = new AccountEntry(calculator);
-            this.calculator.Accounts.Add(this.account);
 
             this.trade = trade;
             this.feed = feed;
@@ -71,6 +72,8 @@
             this.processor.Executed += this.OnExecuted;
 
             this.updateHandler = new UpdateHandler(trade, feed, this.OnUpdate, processor);
+
+            processor.Start();
         }
 
         #endregion
@@ -98,24 +101,63 @@
 
         #region Event Handlers
 
-        void OnUpdate(Common.CurrencyInfo[] currencyInfo, Common.SymbolInfo[] symbolInfo, Common.AccountInfo accountInfo, Quote quote)
+        void OnUpdate(bool? tradeConnected, bool? feedConnected, AccountInfo accountInfoUpdate, Quote quote,
+            TradeUpdate tradeUpdate, NetPositionUpdate positionUpdate, bool? configUpdated)
         {
-            if (currencyInfo != null)
-                this.currencyInfo = currencyInfo;
+            if (tradeConnected != null)
+            {
+                if (tradeConnected.Value)
+                {
+                    this.initFlags |= InitFlags.Trade;
+                }
+                else
+                {
+                    this.initFlags &= ~InitFlags.Trade;
+                    this.isInitRequired = true;
+                }
+            }
 
-            if (symbolInfo != null)
-                this.symbolInfo = symbolInfo;
+            if (feedConnected != null)
+            {
+                if (feedConnected.Value)
+                {
+                    this.initFlags |= InitFlags.Feed;
+                }
+                else
+                {
+                    this.initFlags &= ~InitFlags.Feed;
+                    this.isInitRequired = true;
+                }
+            }
 
-            if (accountInfo != null)
-                this.accountInfo = accountInfo;
+            if (accountInfoUpdate != null)
+                this.accountInfo = accountInfoUpdate;
 
             if (quote != null)
                 this.quotes[quote.Symbol] = quote;
+
+            if (tradeUpdate != null)
+                tradeUpdatesQueue.Enqueue(tradeUpdate);
+
+            if (positionUpdate != null)
+                positionUpdatesQueue.Enqueue(positionUpdate);
+
+            if (configUpdated != null && configUpdated.Value)
+            {
+                this.isInitRequired = true;
+            }
         }
 
         void OnExecuted(object sender, EventArgs e)
         {
-            Events.Raise(this.stateInfoChanged, this, () => new StateInfoEventArgs(this.GetState()));
+            StateInfo info;
+            lock (this.calculator)
+            {
+                if (!this.calculator.IsInitialized)
+                    return;
+                info = GetState();
+            }
+            Events.Raise(this.StateInfoChanged, this, () => new StateInfoEventArgs(info));
         }
 
         void OnException(object sender, ExceptionEventArgs e)
@@ -132,147 +174,98 @@
         /// </summary>
         public void Calculate()
         {
-            IEnumerable<Common.CurrencyInfo> currencyUpdate;
-            IEnumerable<Common.SymbolInfo> symbolsUpdate;
-            Common.AccountInfo accountUpdate;
+            AccountInfo accountUpdate;
             IDictionary<string, Quote> quotesUpdate;
-
-            var newQuotes = new Dictionary<string, Quote>();
+            IEnumerable<TradeUpdate> tradeUpdates = null;
+            IEnumerable<NetPositionUpdate> positionUpdates = null;
+            bool initialize = false;
 
             lock (this.updateHandler.SyncRoot)
             {
-                currencyUpdate = this.currencyInfo;
-                this.currencyInfo = null;
+                if (!isReady && initFlags != InitFlags.All)
+                {
+                    this.processor.EndWakeUp();
+                    return;
+                }
+                isReady = true;
 
-                symbolsUpdate = this.symbolInfo;
-                this.symbolInfo = null;
+                if (isInitRequired && initFlags == InitFlags.All)
+                {
+                    initialize = true;
+                    isInitRequired = false;
+                }
 
                 accountUpdate = this.accountInfo;
                 this.accountInfo = null;
 
                 quotesUpdate = this.quotes;
-                this.quotes = newQuotes;
+                this.quotes = new Dictionary<string, Quote>();
+
+                if (this.tradeUpdatesQueue.Count > 0)
+                {
+                    tradeUpdates = this.tradeUpdatesQueue;
+                    tradeUpdatesQueue = new Queue<TradeUpdate>();
+                }
+
+                if (this.positionUpdatesQueue.Count > 0)
+                {
+                    positionUpdates = this.positionUpdatesQueue;
+                    positionUpdatesQueue = new Queue<NetPositionUpdate>();
+                }
 
                 this.processor.EndWakeUp();
             }
 
             lock (this.calculator)
             {
-                this.PrepareCalculator(accountUpdate, currencyUpdate, symbolsUpdate, quotesUpdate);
-
-                this.calculator.Calculate();
+                this.ProcessUpdates(accountUpdate, quotesUpdate, tradeUpdates, positionUpdates, initialize);
             }
         }
 
-        void PrepareCalculator(Common.AccountInfo accountUpdate, IEnumerable<Common.CurrencyInfo> currencyUpdate, IEnumerable<Common.SymbolInfo> symbolsUpdate, IDictionary<string, Quote> quotesUpdate)
+        void ProcessUpdates(AccountInfo accountUpdate, IDictionary<string, Quote> quotesUpdate, IEnumerable<TradeUpdate> tradeUpdates, IEnumerable<NetPositionUpdate> positionUpdates, bool initialize = false)
         {
-            if (accountUpdate != null)
-            {               
-                this.account.Balance = accountUpdate.Balance.GetValueOrDefault();
-                this.account.Currency = accountUpdate.Currency;
-                this.account.Type = accountUpdate.Type;
+            if (initialize)
+            {
+                var cacheQuotes = this.feed.Cache.Quotes;
+                this.calculator.Initialize(this.feed.Cache.Symbols, this.feed.Cache.Currencies, cacheQuotes, this.trade.Cache.AccountInfo, this.trade.Cache.TradeRecords, this.trade.Cache.Positions);
 
-                if (this.account.Type != AccountType.Cash)
+                foreach (var quote in cacheQuotes)
                 {
-                    this.account.Leverage = accountUpdate.Leverage.GetValueOrDefault();
-
-                    if (this.feed.Cache.Currencies.Select(o => o.Name).Contains(account.Currency))
+                    this.calculatorQuotes[quote.Symbol] = quote;
+                }
+            }
+            else
+            {
+                if (quotesUpdate != null)
+                {
+                    foreach (var quote in quotesUpdate.Values)
                     {
-                        var precisionProvider = new CurrencyPrecisionProvider(this.feed.Cache.Currencies);
-                        this.account.RoundingService = new AccountRoundingService(FinancialRounding.Instance, precisionProvider, account.Currency);
+                        this.calculator.UpdateRate(quote.ToSymbolRate());
+                        this.calculatorQuotes[quote.Symbol] = quote;
                     }
                 }
-            }
 
-            if (this.account.Type != AccountType.Cash)
-            {
-                this.account.Balance = this.trade.Cache.AccountInfo.Balance.GetValueOrDefault();
-            }
-
-            if (currencyUpdate != null)
-            {
-                var currencies = currencyUpdate.OrderBy(o => o.SortOrder).Select(c => new CurrencyEntry(this.calculator, c.Name, c.Precision, c.SortOrder));
-
-                this.calculator.Currencies.Clear();
-
-                foreach (var currency in currencies)
+                if (tradeUpdates != null)
                 {
-                    this.calculator.Currencies.Add(currency);
-                }
-            }
-
-            if (symbolsUpdate != null)
-            {
-                this.calculator.Symbols.Clear();
-
-                foreach (var symbol in symbolsUpdate.OrderByDescending(o => o.Name))
-                {
-                    var entry = new SymbolEntry(this.calculator, symbol.Name, symbol.SettlementCurrency, symbol.Currency)
+                    foreach (var update in tradeUpdates)
                     {
-                        MarginFactor = symbol.GetMarginFactor(),
-                        MarginFactorOfPositions = 1,
-                        MarginFactorOfLimitOrders = 1,
-                        MarginFactorOfStopOrders = 1,
-                        Hedging = symbol.MarginHedge,
-                        MarginCalcMode = symbol.MarginCalcMode,
-                        StopOrderMarginReduction = symbol.StopOrderMarginReduction,
-                        HiddenLimitOrderMarginReduction = symbol.HiddenLimitOrderMarginReduction
-                    };
-
-                    entry.GroupSortOrder = symbol.GroupSortOrder;
-                    entry.SortOrder = symbol.SortOrder;
-
-                    this.calculator.Symbols.Add(entry);
+                        this.calculator.ProcessTradeUpdate(update);
+                    }
                 }
 
-                if (this.feed.Cache.Currencies.Select(o => o.Name).Contains(account.Currency))
+                if (positionUpdates != null)
                 {
-                    var precisionProvider = new CurrencyPrecisionProvider(this.feed.Cache.Currencies);
-                    this.account.RoundingService = new AccountRoundingService(FinancialRounding.Instance, precisionProvider, account.Currency);
+                    foreach (var update in positionUpdates)
+                    {
+                        this.calculator.ProcessPositionUpdate(update);
+                    }
                 }
-            }
 
-            foreach (var quote in quotesUpdate.Values)
-            {
-                this.calculator.Prices.Update(quote.Symbol, quote.Bid, quote.Ask);
-                this.calculatorQuotes[quote.Symbol] = quote;
-            }
-
-            this.account.Trades.Clear();
-
-            var records = this.trade.Cache.TradeRecords;
-            foreach (var record in records)
-            {
-                var entry = new TradeEntry(this.account, record.Type, record.Side, record.Symbol, record.Volume, record.MaxVisibleVolume, record.Price, record.StopPrice)
+                // Should be processed after trade updates since we update Assets with the latest ones from cache
+                if (accountUpdate != null)
                 {
-                    Tag = record,
-                    Commission = record.Commission,
-                    AgentCommission = record.AgentCommission,
-                    Swap = record.Swap,
-                };
-
-                this.account.Trades.Add(entry);
-            }
-
-            var positions = this.trade.Cache.Positions;
-            foreach (var position in positions)
-            {
-                var buy = new TradeEntry(this.account, OrderType.Position, OrderSide.Buy, position.Symbol, position.BuyAmount, null, position.BuyPrice.Value, null)
-                {
-                    Tag = position,
-                    Commission = position.Commission,
-                    AgentCommission = position.AgentCommission,
-                    Swap = position.Swap
-
-                };
-                var sell = new TradeEntry(this.account, OrderType.Position, OrderSide.Sell, position.Symbol, position.SellAmount, null, position.SellPrice.Value, null)
-                {
-                    Tag = position
-                };
-
-                // some magic; see TryProcessAsPosition of StateInfo class
-                this.account.Trades.Add(buy);
-                this.account.Trades.Add(sell);
+                    this.calculator.ProcessAccountInfoUpdate(this.trade.Cache.AccountInfo);
+                }
             }
         }
 
@@ -284,14 +277,7 @@
         {
             lock (this.calculator)
             {
-                IDictionary<string, Asset> assets;
-
-                if (this.account.Type != AccountType.Cash)
-                    assets = this.account.Assets;
-                else
-                    assets = new CashAssets(this.trade.Cache.AccountInfo.Assets, this.account, this.Calculator.MarketState).AsDictionary();
-
-                return new StateInfo(this.account, assets, this.calculator.Prices.ToDictionary(), this.calculatorQuotes, this.calculator.Symbols, this.processor.Generation);
+                return new StateInfo(this.calculator.Account, calculatorQuotes, this.processor.Generation, this.calculator.IsInitialized);
             }
         }
 
@@ -302,8 +288,8 @@
         /// <summary>
         /// State calculator raises this event when something has been changed.
         /// </summary>
-        public event EventHandler<StateInfoEventArgs> StateInfoChanged
-        {
+        public event EventHandler<StateInfoEventArgs> StateInfoChanged;
+        /*{
             add
             {
                 if (value == null)
@@ -332,7 +318,7 @@
                         this.processor.Stop();
                 }
             }
-        }
+        }*/
 
         /// <summary>
         /// State calculator raises this event when exception has been encountered.
@@ -340,7 +326,37 @@
         public event EventHandler<ExceptionEventArgs> CalculatorException;
 
         #endregion
+
+        public void Dispose()
+        {
+            try
+            {
+                lock (this.updateHandler.SyncRoot)
+                {
+                    this.processor.Stop();
+                    this.processor.Exception -= this.OnException;
+                    this.processor.Executed -= this.OnExecuted;
+
+                    this.updateHandler.Dispose();
+                }
+
+                lock (this.calculator)
+                {
+                    this.calculator.Clear();
+                }
+            }
+            catch { }
+        }
+
+        [Flags]
+        internal enum InitFlags
+        {
+            None = 0x00,
+            Feed = 0x01,
+            Trade = 0x02,
+            All = Feed | Trade
+        }
     }
 }
 
-// Dec 6, 2017
+// Feb 27, 2020

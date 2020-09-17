@@ -1,210 +1,262 @@
-﻿namespace TickTrader.FDK.Calculator.Conversion
-{
-    using System.Collections.Generic;
+﻿using System;
 
-    interface IConversionBuilder
+namespace TickTrader.FDK.Calculator.Conversion
+{
+    internal class NoConvertion : IConversionFormula
     {
-        IConversionFormula AsFormula();
-        IConversionFormula Then(SymbolRateTracker symbol, FxPriceType side);
-        IConversionFormula ThenDivide(SymbolRateTracker symbol, FxPriceType side);
-        IConversionBuilder ThenConversion(SymbolRateTracker symbol, FxPriceType side);
-        IConversionBuilder ThenDivideConversion(SymbolRateTracker symbol, FxPriceType side);
+        public decimal Value => 1;
+        public CalcError Error => null;
+
+        public event Action ValChanged { add { } remove { } }
+
+        public void AddUsage() { }
+        public void RemoveUsage() { }
     }
 
-    class Formulas
+    internal abstract class UsageAwareFormula : IConversionFormula
     {
-        public static readonly Formulas Instance = new Formulas();
-        static readonly IConversionFormula NoConversionFormula = new NoConversion();
+        private decimal _val;
+        private bool _isPermanentUsage;
 
-        Formulas()
+        public decimal Value
         {
-        }
-
-        #region Methods
-
-        public IConversionFormula Direct
-        {
-            get
+            get { return _val; }
+            set
             {
-                return NoConversionFormula;
-            }
-        }
-
-        public IConversionFormula CreateError(ISymbolInfo symbol, string currency, string accountCurrency)
-        {
-            return new ErrorConversion(symbol, currency, accountCurrency);
-        }
-
-        public IConversionFormula CreateError(string fromCurrency, string accountCurrency)
-        {
-            return new ErrorConversion(fromCurrency, accountCurrency);
-        }
-
-        public IConversionBuilder Conversion(SymbolRateTracker symbol, FxPriceType side)
-        {
-            return new ConversionBuilder(symbol, false, side);
-        }
-
-        public IConversionBuilder InverseConversion(SymbolRateTracker symbol, FxPriceType side)
-        {
-            return new ConversionBuilder(symbol, true, side);
-        }
-
-        #endregion
-
-        #region Formulas & Builder
-
-        class ConversionBuilder : IConversionBuilder
-        {
-            readonly ComplexConversion conversion;
-
-            public ConversionBuilder(SymbolRateTracker symbol, bool reversed, FxPriceType side)
-            {
-                conversion = new ComplexConversion(symbol, reversed, side);
-            }
-
-            public static implicit operator ComplexConversion(ConversionBuilder builder)
-            {
-                return builder.conversion;
-            }
-
-            public IConversionFormula AsFormula()
-            {
-                return (ComplexConversion)this;
-            }
-
-            public IConversionFormula Then(SymbolRateTracker symbol, FxPriceType side)
-            {
-                conversion.Last.SetNext(new ComplexConversion(symbol, false, side));
-                return conversion;
-            }
-
-            public IConversionFormula ThenDivide(SymbolRateTracker symbol, FxPriceType side)
-            {
-                conversion.Last.SetNext(new ComplexConversion(symbol, true, side));
-                return conversion;
-            }
-
-            public IConversionBuilder ThenConversion(SymbolRateTracker symbol, FxPriceType side)
-            {
-                conversion.Last.SetNext(new ComplexConversion(symbol, false, side));
-                return this;
-            }
-
-            public IConversionBuilder ThenDivideConversion(SymbolRateTracker symbol, FxPriceType side)
-            {
-                conversion.Last.SetNext(new ComplexConversion(symbol, true, side));
-                return this;
-            }
-        }
-
-        class ErrorConversion : IConversionFormula
-        {
-            readonly string message;
-
-            public ErrorConversion(ISymbolInfo symbol, string currency, string accountCurrency)
-            {
-                this.message = string.Format("Conversion is not possible: {0} -> {1} ({2})", currency, accountCurrency, symbol.Symbol);
-            }
-
-            public ErrorConversion(string fromCurrency, string accountCurrency)
-            {
-                this.message = string.Format("Conversion is not possible: {0} -> {1}", fromCurrency, accountCurrency);
-            }
-
-            public ErrorConversion(string msg)
-            {
-                this.message = msg;
-            }
-
-            public decimal Value { get { throw new ConversionConfigException(this.message); } }
-        }
-
-        class NoConversion : IConversionFormula
-        {
-            public decimal Value { get { return 1; } }
-        }
-
-        class ComplexConversion : IConversionFormula, IDependOnRates
-        {
-            readonly SymbolRateTracker symbolTracker;
-            readonly bool reversed;
-            readonly FxPriceType side;
-            private ComplexConversion next;
-
-            public ComplexConversion(SymbolRateTracker symbolTracker, bool reversed, FxPriceType side, ComplexConversion next = null)
-            {
-                this.symbolTracker = symbolTracker;
-                this.reversed = reversed;
-                this.side = side;
-                this.next = next;
-            }
-
-            public ComplexConversion Last
-            {
-                get
+                if (_val != value)
                 {
-                    if (next == null)
-                        return this;
-                    return next.Last;
-                }
-            }
-
-            public void SetNext(ComplexConversion next)
-            {
-                this.next = next;
-            }
-
-            public decimal Value
-            {
-                get
-                {
-                    decimal result;
-
-                    if (symbolTracker.Rate == null)
-                        throw new OffQuoteException(symbolTracker.Symbol);
-
-                    if (side == FxPriceType.Ask)
-                    {
-                        decimal? ask = symbolTracker.Rate.NullableAsk;
-
-                        if (ask == null || ask.Value == 0)
-                            throw new OffCrossQuoteException(symbolTracker.Symbol);
-
-                        result = ask.Value;
-                    }
-                    else
-                    {
-                        decimal? bid = symbolTracker.Rate.NullableBid;
-
-                        if (bid == null || bid.Value == 0)
-                            throw new OffCrossQuoteException(symbolTracker.Symbol);
-
-                        result = bid.Value;
-                    }
-
-                    if (reversed)
-                        result = 1 / result;
-
-                    if (next != null)
-                        result *= next.Value;
-
-                    return result;
-                }
-            }
-
-            IEnumerable<string> IDependOnRates.DependOnSymbols
-            {
-                get
-                {
-                    yield return this.symbolTracker.Symbol;
-                    if (this.next != null)
-                        yield return this.next.symbolTracker.Symbol;
+                    _val = value;
+                    ValChanged?.Invoke();
                 }
             }
         }
 
-        #endregion
+        public int UsageCount { get; private set; }
+        public CalcError Error { get; protected set; }
+        public event Action ValChanged;
+
+        protected abstract void Attach();
+        protected abstract void Deattach();
+
+        public void SetPermanentUsage()
+        {
+            _isPermanentUsage = true;
+            Attach();
+        }
+
+        public void AddUsage()
+        {
+            if (!_isPermanentUsage && UsageCount <= 0)
+                Attach();
+
+            UsageCount++;
+        }
+
+        public void RemoveUsage()
+        {
+            UsageCount--;
+
+            if (!_isPermanentUsage && UsageCount <= 0)
+                Deattach();
+        }
+    }
+
+    internal abstract class ComplexConversion : UsageAwareFormula
+    {
+        public IConversionFormula SrcFromula { get; set; }
+        public SymbolMarketNode SrcSymbol { get; set; }
+
+        protected abstract decimal GetValue();
+
+        protected override void Attach()
+        {
+            if (SrcFromula != null)
+            {
+                SrcFromula.AddUsage();
+                SrcFromula.ValChanged += SrcFromula_ValChanged;
+            }
+
+            SrcSymbol.RateChanging += SrcSymbol_Changed;
+
+            Value = GetValue();
+        }
+
+        protected override void Deattach()
+        {
+            if (SrcFromula != null)
+            {
+                SrcFromula.RemoveUsage();
+                SrcFromula.ValChanged -= SrcFromula_ValChanged;
+            }
+
+            SrcSymbol.RateChanging -= SrcSymbol_Changed;
+        }
+
+        private void SrcSymbol_Changed()
+        {
+            Value = GetValue();
+        }
+
+        private void SrcFromula_ValChanged()
+        {
+            Value = GetValue();
+        }
+
+        protected bool CheckBid()
+        {
+            if (!SrcSymbol.HasBid)
+            {
+                Error = SrcSymbol.NoBidCrossError;
+                return false;
+            }
+            return true;
+        }
+
+        protected bool CheckAsk()
+        {
+            if (!SrcSymbol.HasAsk)
+            {
+                Error = SrcSymbol.NoAskCrossError;
+                return false;
+            }
+            return true;
+        }
+
+        protected bool CheckSrcFormula()
+        {
+            var error = SrcFromula.Error;
+
+            if (error != null)
+            {
+                Error = error;
+                return false;
+            }
+
+            return true;
+        }
+    }
+
+    internal class GetAsk : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckAsk())
+            {
+                Error = null;
+                return SrcSymbol.Ask;
+            }
+            return 0;
+        }
+    }
+
+    internal class GetBid : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckBid())
+            {
+                Error = null;
+                return SrcSymbol.Bid;
+            }
+            return 0;
+        }
+    }
+
+    internal class GetInvertedAsk : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckAsk())
+            {
+                Error = null;
+                return 1 / SrcSymbol.Ask;
+            }
+            return 0;
+        }
+    }
+
+    internal class GetInvertedBid : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckBid())
+            {
+                Error = null;
+                return 1 / SrcSymbol.Bid;
+            }
+            return 0;
+        }
+    }
+
+    internal class MultByBid : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckBid() && CheckSrcFormula())
+            {
+                Error = null;
+                return SrcFromula.Value * SrcSymbol.Bid;
+            }
+            return 0;
+        }
+    }
+
+    internal class MultByAsk : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckAsk() && CheckSrcFormula())
+            {
+                Error = null;
+                return SrcFromula.Value * SrcSymbol.Ask;
+            }
+            return 0;
+        }
+    }
+
+    internal class DivByBid : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckBid() && CheckSrcFormula())
+            {
+                Error = null;
+                return SrcFromula.Value / SrcSymbol.Bid;
+            }
+            return 0;
+        }
+    }
+
+    internal class DivByAsk : ComplexConversion
+    {
+        protected override decimal GetValue()
+        {
+            if (CheckAsk() && CheckSrcFormula())
+            {
+                Error = null;
+                return SrcFromula.Value / SrcSymbol.Ask;
+            }
+            return 0;
+        }
+    }
+
+    internal class ConversionError : IConversionFormula
+    {
+        public ConversionError(CalcError error)
+        {
+            Error = error;
+        }
+
+        public decimal Value
+        {
+            get { throw new InvalidOperationException("Conversion error: " + Error.Code + "!"); }
+        }
+
+        public CalcError Error { get; }
+        public event Action ValChanged { add { } remove { } }
+
+        public void AddUsage() { }
+        public void RemoveUsage() { }
     }
 }
 

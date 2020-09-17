@@ -450,6 +450,21 @@
         /// </summary>
         public double Tax { get; set; }
 
+        /// <summary>
+        /// The Tax value at the time of dividend payment.
+        /// </summary>
+        public double TaxValue { get; set; }
+
+        /// <summary>
+        /// Rebate
+        /// </summary>
+        public double Rebate { get; set; }
+
+        /// <summary>
+        /// Rebate currency
+        /// </summary>
+        public string RebateCurrency { get; set; }
+
 
         public TradeTransactionReport Clone()
         {
@@ -548,6 +563,9 @@
             tradeTransactionReport.DividendGrossRate = DividendGrossRate;
             tradeTransactionReport.DividendToBalanceConversionRate = DividendToBalanceConversionRate;
             tradeTransactionReport.Tax = Tax;
+            tradeTransactionReport.TaxValue = TaxValue;
+            tradeTransactionReport.Rebate = Rebate;
+            tradeTransactionReport.RebateCurrency = RebateCurrency;
 
             return tradeTransactionReport;
         }

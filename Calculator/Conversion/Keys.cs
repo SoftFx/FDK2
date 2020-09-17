@@ -1,7 +1,7 @@
-﻿namespace TickTrader.FDK.Calculator.Conversion
-{
-    using System;
+﻿using System;
 
+namespace TickTrader.FDK.Calculator.Conversion
+{
     struct CurrencyToCurrencyKey : IEquatable<CurrencyToCurrencyKey>
     {
         private readonly string from;

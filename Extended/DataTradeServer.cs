@@ -534,7 +534,7 @@
                 symbol,
                 type,
                 side,
-                volumeChange.GetValueOrDefault(),
+                volumeChange,
                 newMaxVisibleVolume,
                 newPrice,
                 newStopPrice,
@@ -668,7 +668,7 @@
         /// <returns>Can not be null.</returns>
         public ClosePositionResult ClosePositionEx(string orderId, string operationId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, null, timeoutInMilliseconds);
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, null, null, timeoutInMilliseconds);
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
 
@@ -730,7 +730,7 @@
         /// <returns></returns>
         public ClosePositionResult ClosePositionPartiallyEx(string orderId, double volume, string operationId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, volume, timeoutInMilliseconds);                       
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, volume, null,timeoutInMilliseconds);                       
 
             ExecutionReport tradeExecutionReport = executionReports[1];
 
@@ -935,6 +935,16 @@
         public Dividend[] GetDividendListEx(int timeoutInMilliseconds)
         {
             return dataTrade_.orderEntryClient_.GetDividendList(timeoutInMilliseconds);
+        }
+
+        public MergerAndAcquisition[] GetMergerAndAcquisitionList()
+        {
+            return GetMergerAndAcquisitionListEx(dataTrade_.synchOperationTimeout_);
+        }
+
+        public MergerAndAcquisition[] GetMergerAndAcquisitionListEx(int timeoutInMilliseconds)
+        {
+            return dataTrade_.orderEntryClient_.GetMergerAndAcquisitionList(timeoutInMilliseconds);
         }
 
         DataTrade dataTrade_;

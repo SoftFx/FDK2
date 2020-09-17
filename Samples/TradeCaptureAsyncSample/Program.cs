@@ -652,7 +652,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}",
+                        "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -662,6 +662,7 @@ namespace TradeCaptureAsyncSample
                         tradeTransactionReport.TransactionAmount,
                         tradeTransactionReport.Commission,
                         tradeTransactionReport.Tax,
+                        tradeTransactionReport.TaxValue,
                         tradeTransactionReport.Comment
                     );
                 }
@@ -799,7 +800,7 @@ namespace TradeCaptureAsyncSample
                 {
                     Console.Error.WriteLine
                     (
-                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}",
+                        "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
                         tradeTransactionReport.TransactionTime,
                         tradeTransactionReport.TradeTransactionReportType,
@@ -809,6 +810,7 @@ namespace TradeCaptureAsyncSample
                         tradeTransactionReport.TransactionAmount,
                         tradeTransactionReport.Commission,
                         tradeTransactionReport.Tax,
+                        tradeTransactionReport.TaxValue,
                         tradeTransactionReport.Comment
                     );
                 }

@@ -164,6 +164,26 @@
         public bool IsTokenCommissionEnabled { get; set; }
 
         /// <summary>
+        /// Currency of MaxOverdraftAmount
+        /// </summary>
+        public string OverdraftCurrency { get; set; }
+
+        /// <summary>
+        /// Max overdraft amount
+        /// </summary>
+        public double? MaxOverdraftAmount { get; set; }
+
+        /// <summary>
+        /// Used overdraft in OverdraftCurrency
+        /// </summary>
+        public double? UsedOverdraftAmount { get; set; }
+
+        /// <summary>
+        /// Margin level state
+        /// </summary>
+        public MarginLevelStates? MarginLevelState { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>can not be null</returns>

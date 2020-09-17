@@ -1,7 +1,11 @@
 ﻿using System;
 using System.Net;
+using SoftFX.Net.Core;
 using SoftFX.Net.QuoteFeed;
 using TickTrader.FDK.Common;
+using ClientSession = SoftFX.Net.QuoteFeed.ClientSession;
+using ClientSessionOptions = SoftFX.Net.QuoteFeed.ClientSessionOptions;
+using CurrencyTypeInfo = TickTrader.FDK.Common.CurrencyTypeInfo;
 
 namespace TickTrader.FDK.Client
 {
@@ -266,6 +270,8 @@ namespace TickTrader.FDK.Client
 
         #region Quote Feed
 
+        public delegate void CurrencyTypeListResultDelegate(QuoteFeed quoteFeed, object data, CurrencyTypeInfo[] currencyTypeInfos);
+        public delegate void CurrencyTypeListErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
         public delegate void CurrencyListResultDelegate(QuoteFeed quoteFeed, object data, CurrencyInfo[] currencyInfos);
         public delegate void CurrencyListErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
         public delegate void SymbolListResultDelegate(QuoteFeed quoteFeed, object data, SymbolInfo[] symbolInfos);
@@ -282,6 +288,8 @@ namespace TickTrader.FDK.Client
         public delegate void QuoteUpdateDelegate(QuoteFeed quoteFeed, Quote quote);
         public delegate void NotificationDelegate(QuoteFeed quoteFeed, Common.Notification notification);
 
+        public event CurrencyTypeListResultDelegate CurrencyTypeListResultEvent;
+        public event CurrencyTypeListErrorDelegate CurrencyTypeListErrorEvent;
         public event CurrencyListResultDelegate CurrencyListResultEvent;
         public event CurrencyListErrorDelegate CurrencyListErrorEvent;
         public event SymbolListResultDelegate SymbolListResultEvent;
@@ -297,6 +305,38 @@ namespace TickTrader.FDK.Client
         public event SessionInfoUpdateDelegate SessionInfoUpdateEvent;
         public event QuoteUpdateDelegate QuoteUpdateEvent;
         public event NotificationDelegate NotificationEvent;
+
+        public CurrencyTypeInfo[] GetCurrencyTypeList(int timeout)
+        {
+            CurrencyTypeListAsyncContext context = new CurrencyTypeListAsyncContext(true);
+
+            GetCurrencyTypeListInternal(context);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.currencyTypeInfos_;
+        }
+
+        public void GetCurrencyTypeListAsync(object data)
+        {
+            CurrencyTypeListAsyncContext context = new CurrencyTypeListAsyncContext(false);
+            context.Data = data;
+
+            GetCurrencyTypeListInternal(context);
+        }
+
+        void GetCurrencyTypeListInternal(CurrencyTypeListAsyncContext context)
+        {
+            CurrencyTypeListRequest request = new CurrencyTypeListRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.Type = CurrencyTypeListRequestType.All;
+
+            session_.SendCurrencyTypeListRequest(context, request);
+        }
 
         public CurrencyInfo[] GetCurrencyList(int timeout)
         {
@@ -607,6 +647,36 @@ namespace TickTrader.FDK.Client
             public LogoutInfo logoutInfo_;
         }
 
+        class CurrencyTypeListAsyncContext : CurrencyTypeListRequestClientContext, IAsyncContext
+        {
+            public CurrencyTypeListAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            {
+                DisconnectException exception = new DisconnectException(text);
+
+                if (quoteFeed.CurrencyTypeListErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteFeed.CurrencyTypeListErrorEvent(quoteFeed, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+            public Exception exception_;
+            public CurrencyTypeInfo[] currencyTypeInfos_;
+        }
+
         class CurrencyListAsyncContext : CurrencyListRequestClientContext, IAsyncContext
         {
             public CurrencyListAsyncContext(bool waitable) : base(waitable)
@@ -902,7 +972,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    compressedStreamHandler_.Stop();
+                    //compressedStreamHandler_.Stop();
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
                     foreach (ClientContext context in contexts)
@@ -942,7 +1012,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    compressedStreamHandler_.Stop();
+                    //compressedStreamHandler_.Stop();
                     foreach (ClientContext context in contexts)
                     {
                         try
@@ -996,7 +1066,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    compressedStreamHandler_.Start(this);
+                    //compressedStreamHandler_.Start(this, false);
                     LoginAsyncContext context = (LoginAsyncContext)LoginRequestClientContext;
 
                     try
@@ -1073,7 +1143,7 @@ namespace TickTrader.FDK.Client
             {
                 try
                 {
-                    compressedStreamHandler_.Stop();
+                    //compressedStreamHandler_.Stop();
 
                     LogoutAsyncContext context = (LogoutAsyncContext)LogoutClientContext;
 
@@ -1124,6 +1194,101 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnCurrencyTypeListReport(ClientSession session, CurrencyTypeListRequestClientContext currencyTypeListRequestClientContext, CurrencyTypeListReport message)
+            {
+                try
+                {
+                    CurrencyTypeListAsyncContext context = (CurrencyTypeListAsyncContext)currencyTypeListRequestClientContext;
+
+                    try
+                    {
+                        CurrencyTypeInfoArray reportCurrencyTypes = message.CurrencyTypes;
+                        int count = reportCurrencyTypes.Length;
+                        TickTrader.FDK.Common.CurrencyTypeInfo[] resultCurrencies = new TickTrader.FDK.Common.CurrencyTypeInfo[count];
+
+                        for (int index = 0; index < count; ++index)
+                        {
+                            SoftFX.Net.QuoteFeed.CurrencyTypeInfo reportCurrencyType = reportCurrencyTypes[index];
+                            TickTrader.FDK.Common.CurrencyTypeInfo resultCurrency = new TickTrader.FDK.Common.CurrencyTypeInfo();
+
+                            resultCurrency.Name = reportCurrencyType.Id;
+                            resultCurrency.Description = reportCurrencyType.Description;
+
+                            resultCurrencies[index] = resultCurrency;
+                        }
+
+                        if (client_.CurrencyListResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.CurrencyTypeListResultEvent(client_, context.Data, resultCurrencies);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.currencyTypeInfos_ = resultCurrencies;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.CurrencyListErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CurrencyTypeListErrorEvent(client_, context.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (context.Waitable)
+                        {
+                            context.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnCurrencyTypeListReject(ClientSession session, CurrencyTypeListRequestClientContext currencyTypeListRequestClientContext, Reject message)
+            {
+                try
+                {
+                    CurrencyTypeListAsyncContext context = (CurrencyTypeListAsyncContext)currencyTypeListRequestClientContext;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.CurrencyTypeListErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.CurrencyTypeListErrorEvent(client_, context.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (context.Waitable)
+                    {
+                        context.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             public override void OnCurrencyListReport(ClientSession session, CurrencyListRequestClientContext CurrencyListRequestClientContext, CurrencyListReport message)
             {
                 try
@@ -1146,6 +1311,7 @@ namespace TickTrader.FDK.Client
                             resultCurrency.Precision = reportCurrency.Precision;
                             resultCurrency.SortOrder = reportCurrency.SortOrder;
                             resultCurrency.Type = GetCurrencyType(reportCurrency.Type);
+                            resultCurrency.TypeId = reportCurrency.TypeId;
                             resultCurrency.Tax = reportCurrency.Tax.GetValueOrDefault();
 
                             resultCurrencies[index] = resultCurrency;
@@ -1293,6 +1459,9 @@ namespace TickTrader.FDK.Client
                                 };
                             resultSymbol.ISIN = reportSymbol.ISIN;
                             resultSymbol.SlippageType = GetSlippageType(reportSymbol.SlippageType);
+                            resultSymbol.VWAPMinDegree = reportSymbol.VWAPMinDegree;
+                            resultSymbol.VWAPMaxDegree = reportSymbol.VWAPMaxDegree;
+                            resultSymbol.Rebate = reportSymbol.Rebate.GetValueOrDefault();
                             resultSymbols[index] = resultSymbol;
                         }
 
@@ -1940,21 +2109,49 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            //public override void OnMarketDataUpdateCompressedBlock(ClientSession session, MarketDataUpdateCompressedBlock message)
+            //{
+            //    try
+            //    {
+            //        //Console.WriteLine("Snappy Block Size: " + message.SnapshotBlock.Block.Length);
+            //        var snap = message.SnapshotBlock;
+            //        byte[] block = new byte[snap.Block.Length];
+            //        for (int i = 0; i < snap.Block.Length; i++)
+            //            block[i] = snap.Block[i];
+            //        if (snap.CompressionType == MarketDataCompressionType.Snappy)
+            //        {
+            //            compressedStreamHandler_.Write(block);
+            //        }
+            //    }
+            //    catch
+            //    {
+            //        // client_.session_.LogError(exception.Message);
+            //    }
+            //}
+
+            /// <summary>
+            /// Alternative way to get compressed MarketDataUpdate (works only for compressed byte arrays, not with SnappyStream)
+            /// </summary>
+            /// <param name="session"></param>
+            /// <param name="message"></param>
             public override void OnMarketDataUpdateCompressedBlock(ClientSession session, MarketDataUpdateCompressedBlock message)
             {
                 try
                 {
-                    //Console.WriteLine("Snappy Block Size: " + message.SnapshotBlock.Block.Length);
-                    var snap = message.SnapshotBlock;
-                    byte[] block = new byte[snap.Block.Length];
-                    for (int i = 0; i < snap.Block.Length; i++)
-                        block[i] = snap.Block[i];
-                    if (snap.CompressionType == MarketDataCompressionType.Snappy)
+                    var snapshot = message.SnapshotBlock;
+                    byte[] block = new byte[snapshot.Block.Length];
+                    for (int i = 0; i < snapshot.Block.Length; i++)
+                        block[i] = snapshot.Block[i];
+                    if (snapshot.CompressionType == MarketDataCompressionType.Snappy)
                     {
-                        compressedStreamHandler_.Write(block);
+                        var data = Snappy.SnappyCodec.Uncompress(block);
+                        MessageData messageData = new MessageData(data);
+                        Message msg = new Message(Info.QuoteFeed.FindMessageInfo(messageData.GetInt(4)), messageData);
+                        if (Is.MarketDataUpdate(msg))
+                            OnMarketDataUpdate(session, new MarketDataUpdate(Info.MarketDataUpdate, messageData));
                     }
                 }
-                catch
+                catch (Exception ex)
                 {
                     // client_.session_.LogError(exception.Message);
                 }
@@ -2021,6 +2218,9 @@ namespace TickTrader.FDK.Client
 
                     case SoftFX.Net.QuoteFeed.LoginRejectReason.MustChangePassword:
                         return TickTrader.FDK.Common.LogoutReason.MustChangePassword;
+
+                    case SoftFX.Net.QuoteFeed.LoginRejectReason.TimeoutLogin:
+                        return TickTrader.FDK.Common.LogoutReason.LoginTimeout;
 
                     case SoftFX.Net.QuoteFeed.LoginRejectReason.Other:
                     default:

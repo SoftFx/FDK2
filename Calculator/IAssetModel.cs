@@ -12,7 +12,6 @@
         string Currency { get; }
         decimal Amount { get; }
         decimal FreeAmount { get; }
-        decimal LockedAmount { get; }
         decimal Margin { get; set; }
     }
 }

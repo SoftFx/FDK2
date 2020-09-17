@@ -1,5 +1,8 @@
-﻿namespace TickTrader.FDK.Common
+﻿using System;
+
+namespace TickTrader.FDK.Common
 {
+    [Obsolete]
     public enum CurrencyType
     {
         /// <summary>

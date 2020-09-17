@@ -24,16 +24,13 @@ namespace TickTrader.FDK.Client
         private bool _writeClosed;
 
 
-        public override bool CanRead => true;
+        public override bool CanRead => _dataQueue != null && _dataQueue.Count > 0;
 
         public override bool CanSeek => false;
 
         public override bool CanWrite => true;
 
-        public override long Length
-        {
-            get { throw new NotImplementedException(); }
-        }
+        public override long Length => (_dataQueue == null || _dataQueue.Count == 0) ? 0 : _dataQueue.Peek().LongLength;
 
         public override long Position
         {

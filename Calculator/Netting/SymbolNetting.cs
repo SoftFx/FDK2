@@ -1,263 +1,209 @@
-﻿namespace TickTrader.FDK.Calculator.Netting
+﻿using System;
+using System.Collections.Generic;
+using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.Calculator.Netting
 {
-    using System;
-    using System.Linq;
-    using System.Collections.Generic;
-    using TickTrader.FDK.Calculator.Conversion;
-
-    public sealed class SymbolNetting : IDisposable
+    public class SymbolNetting : IDisposable
     {
-        private MarketState market;
-        private OrderCalculator orderCalculator;
-        private readonly IDictionary<long, OrderLightClone> clones = new Dictionary<long, OrderLightClone>();
-        private readonly SideNetting sell;
-        private readonly SideNetting buy;
-        private readonly AccountCalculator accountCalculator;
+        private MarketStateBase _market;
+        private readonly AccountCalculator _parent;
+        private readonly bool _isAutoUpdateEnabled;
+        private OrderCalculator _calc;
+        private decimal _hedgeFormulPart;
+        private decimal _netPosSwap;
+        private decimal _netPosComm;
 
-        #region IMarketSummary
+        public SymbolNetting(string symbol, AccountCalculator parent, MarketStateBase market, bool autoUpdate)
+        {
+            Symbol = symbol;
+            _parent = parent;
+            _market = market;
+            _isAutoUpdateEnabled = autoUpdate;
+            AccInfo = parent.Info;
+            CreateCalculator();
+        }
 
+        internal SymbolMarketNode Tracker { get; private set; }
+        internal NettingCalculationTypes NettingType => _parent.NettingType;
+        public IMarginAccountInfo AccInfo { get; }
+        //public int Count { get; private set; }
+        public bool IsEmpty => Sell == null && Buy == null;
+        public string Symbol { get; }
+
+        public SideNetting Buy { get; private set; }
+        public SideNetting Sell { get; private set; }
         public decimal Margin { get; private set; }
-        public decimal Profit { get { return Sell.Profit + Buy.Profit; } }
-        public decimal Commission { get { return Sell.Commission + Buy.Commission; } }
-        public decimal AgentCommission { get { return Sell.AgentCommission + Buy.AgentCommission; } }
-        public decimal Swap { get { return Sell.Swap + Buy.Swap; } }
+        public OrderCalculator Calc => _calc;
 
-        #endregion
-
-        #region IReportErrors, ICalculable
-
-        public int InvalidOrdersCount { get { return Sell.InvalidOrdersCount + Buy.InvalidOrdersCount; } }
-        public bool IsCalculated { get { return InvalidOrdersCount == 0; } }
-        public OrderErrorCode WorstError { get { return OrderError.GetWorst(Sell.WorstError, Buy.WorstError); } }
-
-        #endregion
-
-        public SymbolNetting(string symbol, AccountCalculator calculator, MarketState market)
+        internal void Recalculate()
         {
-            this.Symbol = symbol;
-            this.accountCalculator = calculator;
+            StatsChange change;
 
-            sell = new SideNetting(this, calculator.Info, OrderSides.Sell, market.RateUpdater.CalculationType);
-            buy = new SideNetting(this, calculator.Info, OrderSides.Buy, market.RateUpdater.CalculationType);
+            var bCopy = Buy;
+            var sCopy = Sell;
 
-            ChangeMarket(market);
-        }
-
-        internal event Action<SymbolNetting> Invalidated = delegate { };
-
-        public SideNetting Sell { get { return this.sell; } }
-        public SideNetting Buy { get { return this.buy; } }
-        public string Symbol { get; private set; }
-        public int OrderCount { get; private set; }
-        public bool IsEmpty { get { return sell.IsEmpty && buy.IsEmpty; } }
-
-        public OrderCalculator Calculator
-        {
-            get { return this.orderCalculator; }
-        }
-
-        public IEnumerable<IOrderModel> Orders
-        {
-            get { return Collection.FromValues(this.sell, this.buy).SelectMany(o => o.Orders); }
-        }
-
-        public IMarginAccountInfo AccountInfo
-        {
-            get { return this.accountCalculator.Info; }
-        }
-
-        // YZ: TODO: Set this property once when new calc is created
-        internal IEnumerable<string> DependOnSymbols
-        {
-            get
+            if (bCopy != null)
             {
-                yield return this.Symbol;
-                if (this.orderCalculator == null)
-                    yield break;
-                IDependOnRates calc = this.orderCalculator;
-                foreach (var symbol in calc.DependOnSymbols)
-                    yield return symbol;
+                if (sCopy != null)
+                    change = bCopy.Recalculate() + sCopy.Recalculate();
+                else
+                    change = bCopy.Recalculate();
             }
-        }
-
-        public MarketState Market
-        {
-            get
-            {
-                return market;
-            }
-            set
-            {
-                this.ChangeMarket(value);
-            }
-        }
-
-        public void ChangeMarket(MarketState market)
-        {
-            if (this.market != null)
-            {
-                this.market.RateUpdater.Unregister(this);
-                this.market.SymbolsChanged -= this.OnSymbolsChanged;
-            }
-
-            if (market != null)
-            {
-                this.market = market;
-
-                this.RecreateCalculator();
-
-                market.RateUpdater.Register(this);
-                market.SymbolsChanged += this.OnSymbolsChanged;
-            }
-        }
-
-        public void Update(IPositionModel position)
-        {
-            sell.Update(position);
-            buy.Update(position);
-
-            this.UpdateMargin();
-        }
-
-        public void Remove(IPositionModel position)
-        {
-            sell.Remove(position);
-            buy.Remove(position);
-
-            this.UpdateMargin();
-        }
-
-        public void AddOrder(IOrderModel order)
-        {
-            var clone = AddClone(order);
-
-            order.Calculator = this.orderCalculator;
-            this.orderCalculator.UpdateOrder(order, this.AccountInfo);
-            this.GetRequiredContainer(order.Side).AddOrder(clone);
-
-            order.EssentialParametersChanged += this.ReplaceOrder;
-            this.OrderCount++;
-
-            this.UpdateMargin();
-        }
-
-        public void ReplaceOrder(IOrderModel order)
-        {
-            var oldClone = GetCloneOrThrow(order.OrderId);
-            var oldContainer = this.GetRequiredContainer(oldClone.Side);
-            oldContainer.RemoveOrder(oldClone);
-            oldClone.OrderModelRef.EssentialParametersChanged -= this.ReplaceOrder;
-
-            var newClone = ReplaceClone(order);
-            this.orderCalculator.UpdateOrder(order, this.AccountInfo);
-            var newContainer = GetRequiredContainer(newClone.Side);
-            newContainer.AddOrder(newClone);
-            newClone.OrderModelRef.EssentialParametersChanged += this.ReplaceOrder;
-
-            this.UpdateMargin();
-            this.accountCalculator.UpdateSummary(UpdateKind.OrderChanged);
-        }
-
-        public void RemoveOrder(long orderId)
-        {
-            var clone = GetCloneOrThrow(orderId);
-
-            if (this.GetRequiredContainer(clone.Side).RemoveOrder(clone))
-            {
-                clones.Remove(orderId);
-                clone.OrderModelRef.EssentialParametersChanged -= this.ReplaceOrder;
-                this.OrderCount--;
-                this.UpdateMargin();
-            }
+            else if (sCopy != null)
+                change = sCopy.Recalculate();
             else
-                throw new InvalidOperationException("Cannot remove order #" + orderId + " from container!");
+                return;
+
+            OnStatsChange(change);
         }
 
-        private OrderLightClone AddClone(IOrderModel order)
+        internal void AddOrder(IOrderModel order)
         {
-            var clone = new OrderLightClone(order);
-            clones.Add(clone.OrderId, clone);
-            return clone;
+            order.Calculator = _calc;
+            GetSideNetting(order).AddOrder(order);
         }
 
-        private OrderLightClone ReplaceClone(IOrderModel order)
+        internal void AddOrderWithoutCalculation(IOrderModel order)
         {
-            var clone = new OrderLightClone(order);
-            clones[clone.OrderId] = clone;
-            return clone;
+            order.Calculator = _calc;
+            GetSideNetting(order).AddOrderWithoutCalculation(order);
         }
 
-        private OrderLightClone GetCloneOrThrow(long orderId)
+        internal void RemoveOrder(IOrderModel order)
         {
-            OrderLightClone clone;
-            if (!clones.TryGetValue(orderId, out clone))
-                throw new InvalidOperationException("Cannot find order with id=#" + orderId + " in netting container.");
-            return clone;
-        }
-
-        private SideNetting GetRequiredContainer(OrderSides side)
-        {
-            if (side == OrderSides.Buy)
-                return buy;
-            else if (side == OrderSides.Sell)
-                return sell;
-            else
-                throw new InvalidOperationException("Unknown order side: " + side);
-        }
-
-        public void Recalculate(UpdateKind updateKind)
-        {
-            sell.Recalculate(updateKind);
-            buy.Recalculate(updateKind);
-
-            UpdateMargin();
-            this.accountCalculator.UpdateSummary(updateKind);
-        }
-
-        void UpdateMargin()
-        {
-            decimal sellMargin;
-            decimal buyMargin;
-
-            if (this.AccountInfo.AccountingType == AccountingTypes.Gross)
+            if (order.Side == OrderSide.Buy)
             {
-                buyMargin = this.buy.Margin;
-                sellMargin = this.sell.Margin;
+                var buy = GetOrAddBuy();
+                buy.RemoveOrder(order);
+                RemoveBuyIfEmtpy();
             }
             else
             {
-                buyMargin = this.buy.PendingMargin;
-                sellMargin = this.sell.PendingMargin;
-
-                if (this.buy.PositionMargin > this.sell.PositionMargin)
-                    buyMargin += this.buy.PositionMargin - this.sell.PositionMargin;
-                else if (this.sell.PositionMargin > this.buy.PositionMargin)
-                    sellMargin += this.sell.PositionMargin - this.buy.PositionMargin;
+                var sell = GetOrAddSell();
+                sell.RemoveOrder(order);
+                RemoveSellIfEmtpy();
             }
+        }
 
-            var hedge = orderCalculator.SymbolInfo != null ? (decimal)orderCalculator.SymbolInfo.MarginHedged : 0.5M;
+        internal void UpdatePosition(IPositionModel pos, out decimal swapDelta, out decimal commDelta)
+        {
+            pos.Calculator = Calc;
 
-            Margin = Math.Max(sellMargin, buyMargin) + (2 * hedge - 1) * Math.Min(sellMargin, buyMargin);
+            swapDelta = pos.Swap - _netPosSwap;
+            commDelta = pos.Commission - _netPosComm;
+
+            _netPosSwap = pos.Swap;
+            _netPosComm = pos.Commission;
+
+            GetOrAddBuy().UpdatePosition(pos.Long);
+            GetOrAddSell().UpdatePosition(pos.Short);
+
+            RemoveBuyIfEmtpy();
+            RemoveSellIfEmtpy();
+        }
+
+        internal CalcError GetWorstError()
+        {
+            if (Buy != null)
+            {
+                if (Sell != null)
+                    return CalcError.GetWorst(Buy.GetWorstError(), Sell.GetWorstError());
+                else
+                    return Buy.GetWorstError();
+            }
+            else if (Sell != null)
+                return Sell.GetWorstError();
+
+            return null;
         }
 
         public void Dispose()
         {
-            this.ChangeMarket(null);
+            _calc?.RemoveUsage();
+            _calc = null;
+            if (Tracker != null)
+                Tracker.RateChanged -= Recalculate;
         }
 
-        void OnSymbolsChanged()
+        private SideNetting GetSideNetting(IOrderModel order)
         {
-            this.market.RateUpdater.Unregister(this);
-            this.RecreateCalculator();
-            this.market.RateUpdater.Register(this);
-            this.Recalculate(UpdateKind.SymbolsChanged);
+            if (order.Side == OrderSide.Buy)
+                return GetOrAddBuy();
+            else
+                return GetOrAddSell();
         }
 
-        void RecreateCalculator()
+        private void UpdateMargin()
         {
-            this.orderCalculator = this.market.GetCalculator(Symbol, this.AccountInfo.BalanceCurrency);
-            foreach (var order in this.Orders)
-                order.Calculator = this.orderCalculator;
+            var buyMargin = Buy?.Margin ?? 0;
+            var sellMargin = Sell?.Margin ?? 0;
+            Margin = Math.Max(sellMargin, buyMargin) + _hedgeFormulPart * Math.Min(sellMargin, buyMargin);
+        }
+
+        internal void OnStatsChange(StatsChange args)
+        {
+            var oldMargin = Margin;
+            UpdateMargin();
+            var delta = Margin - oldMargin;
+            _parent.Calc_StatsChanged(new StatsChange(delta, args.ProfitDelta, args.ErrorDelta));
+        }
+
+        internal void CreateCalculator()
+        {
+            if (Tracker != null)
+            {
+                Tracker.RateChanged -= Recalculate;
+                Tracker = null;
+            }
+
+            _calc?.RemoveUsage();
+            _calc = _market.GetCalculator(Symbol, AccInfo.BalanceCurrency);
+            _calc.AddUsage();
+
+            var hedge = _calc.SymbolInfo?.MarginHedged ?? 0.5;
+            _hedgeFormulPart = (decimal)(2 * hedge - 1);
+
+            Buy?.SetCalculator(_calc);
+            Sell?.SetCalculator(_calc);
+
+            if (_isAutoUpdateEnabled)
+            {
+                Tracker = _market.GetSymbolNode(Symbol, true); // ?? throw new Exception("Market state lacks symbol:" + Symbol);
+                Tracker.RateChanged += Recalculate;
+            }
+        }
+
+        private SideNetting GetOrAddBuy()
+        {
+            if (Buy == null)
+            {
+                Buy = new SideNetting(this, OrderSide.Buy);
+                Buy.SetCalculator(Calc);
+            }
+            return Buy;
+        }
+
+        private void RemoveBuyIfEmtpy()
+        {
+            if (Buy.IsEmpty)
+                Buy = null;
+        }
+
+        private SideNetting GetOrAddSell()
+        {
+            if (Sell == null)
+            {
+                Sell = new SideNetting(this, OrderSide.Sell);
+                Sell.SetCalculator(Calc);
+            }
+            return Sell;
+        }
+
+        private void RemoveSellIfEmtpy()
+        {
+            if (Sell.IsEmpty)
+                Sell = null;
         }
     }
 }

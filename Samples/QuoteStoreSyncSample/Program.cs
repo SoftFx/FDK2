@@ -191,6 +191,42 @@ namespace QuoteStoreSyncSample
                                 int.Parse(count)
                             );
                         }
+                        else if (command == "bar_history" || command == "bh")
+                        {
+                            string symbols = GetNextWord(line, ref pos);
+
+                            if (symbols == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string priceType = GetNextWord(line, ref pos);
+
+                            if (priceType == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string periodicity = GetNextWord(line, ref pos);
+
+                            if (periodicity == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string from = GetNextWord(line, ref pos);
+
+                            if (from == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            string count = GetNextWord(line, ref pos);
+
+                            if (count == null)
+                                throw new Exception("Invalid command : " + line);
+
+                            GetBarList
+                            (
+                                symbols.Split(";".ToCharArray(), StringSplitOptions.RemoveEmptyEntries),
+                                (PriceType)Enum.Parse(typeof(PriceType), priceType),
+                                new BarPeriod(periodicity),
+                                DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal),
+                                int.Parse(count)
+                            );
+                        }
                         else if (command == "bar_download" || command == "bd")
                         {
                             string symbol = GetNextWord(line, ref pos);
@@ -462,6 +498,7 @@ namespace QuoteStoreSyncSample
             Console.WriteLine("symbol_list (s) - request symbol list");
             Console.WriteLine("periodicity_list (p) <symbol> - request symbol periodicity list");
             Console.WriteLine("bar_list (bl) <symbol> <side> <periodicity> <from> <count> - request symbol bar list");
+            Console.WriteLine("bar_history (bh) <symbols> <side> <periodicity> <from> <count> - request symbols bar history");
             Console.WriteLine("bar_download (bd) <symbol> <side> <periodicity> <from> <to> - download symbol bars");
             Console.WriteLine("quote_list (ql) <symbol> <depth> <from> <count> - request symbol quote list");
             Console.WriteLine("quote_download (qd) <symbol> <depth> <from> <to> - download symbol quotes");
@@ -508,6 +545,18 @@ namespace QuoteStoreSyncSample
                 Bar bar = bars[index];
 
                 Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume);
+            }
+        }
+
+        void GetBarList(string[] symbols, PriceType priceType, BarPeriod periodicity, DateTime from, int count)
+        {
+            Bar[] bars = client_.GetBarList(symbols, priceType, periodicity, from, count, -1);
+
+            for (int index = 0; index < bars.Length; ++index)
+            {
+                Bar bar = bars[index];
+
+                Console.WriteLine("Bar : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}", bar.From, bar.To, bar.Open, bar.Close, bar.Low, bar.High, bar.Volume, bar.Symbol);
             }
         }
 

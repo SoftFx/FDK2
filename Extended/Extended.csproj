@@ -34,8 +34,7 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="SoftFX.Net.Core, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f93e83ea42ea164d, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
+    <Reference Include="SoftFX.Net.Core">
       <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
@@ -68,6 +67,7 @@
     <Compile Include="RejectReason.cs" />
     <Compile Include="SubscribeTradeTransactionReportsEnumerator.cs" />
     <Compile Include="TradeRecord.cs" />
+    <Compile Include="TradeUpdate.cs" />
     <Compile Include="TradeTransactionReports.cs" />
     <Compile Include="TradeTransactionReportsEnumerator.cs" />
     <Compile Include="TwoFactorAuth.cs" />

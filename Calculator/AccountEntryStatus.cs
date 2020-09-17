@@ -21,8 +21,8 @@
         CalculatedWithErrors,
 
         /// <summary>
-        /// Property of account entry is not calculated due to unknown account currency.
+        /// Configuration is incorrect.
         /// </summary>
-        UnknownAccountCurrency
+        Misconfiguration
     }
 }

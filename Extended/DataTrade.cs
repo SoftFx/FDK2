@@ -70,7 +70,6 @@
         {
             this.Initialize(connectionString, (sender, certificate, chain, errors, port) => true);
         }
-
         /// <summary>
         /// Initializes the data feed instance; it must be stopped.
         /// </summary>
@@ -380,6 +379,11 @@
         /// Occurs when a notification is received.
         /// </summary>
         public event NotifyHandler Notify;
+
+        /// <summary>
+        /// Occurs when trade cache is changed
+        /// </summary>
+        public event TradeUpdateHandler TradeUpdate;
 
         #endregion
 
@@ -1416,7 +1420,7 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
 
                     if (! logout_)
                     {
@@ -1438,14 +1442,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(report);
+                    update = UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1459,15 +1467,18 @@
                 if (exception is ExecutionException)
                 {
                     ExecutionException executionException = (ExecutionException)exception;
+                    TradeUpdate update = null;
 
                     lock (cache_.mutex_)
                     {
-                        UpdateCacheData(executionException.Report);
+                        update = UpdateCacheData(executionException.Report);
                     }
 
                     ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
+
+                    PushTradeUpdateEvent(update);
                 }
                 else if (exception is RejectException)
                 {
@@ -1507,14 +1518,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(report);
+                    update = UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1528,15 +1543,18 @@
                 if (exception is ExecutionException)
                 {
                     ExecutionException executionException = (ExecutionException)exception;
+                    TradeUpdate update = null;
 
                     lock (cache_.mutex_)
                     {
-                        UpdateCacheData(executionException.Report);
+                        update = UpdateCacheData(executionException.Report);
                     }
 
                     ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
+
+                    PushTradeUpdateEvent(update);
                 }
                 else if (exception is RejectException)
                 {
@@ -1576,14 +1594,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(report);
+                    update = UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1597,15 +1619,18 @@
                 if (exception is ExecutionException)
                 {
                     ExecutionException executionException = (ExecutionException)exception;
+                    TradeUpdate update = null;
 
                     lock (cache_.mutex_)
                     {
-                        UpdateCacheData(executionException.Report);
+                        update = UpdateCacheData(executionException.Report);
                     }
 
                     ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
+
+                    PushTradeUpdateEvent(update);
                 }
                 else if (exception is RejectException)
                 {
@@ -1645,14 +1670,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(report);
+                    update = UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1666,15 +1695,18 @@
                 if (exception is ExecutionException)
                 {
                     ExecutionException executionException = (ExecutionException)exception;
+                    TradeUpdate update = null;
 
                     lock (cache_.mutex_)
                     {
-                        UpdateCacheData(executionException.Report);
+                        update = UpdateCacheData(executionException.Report);
                     }
 
                     ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
+
+                    PushTradeUpdateEvent(update);
                 }
                 else if (exception is RejectException)
                 {
@@ -1714,14 +1746,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(report);
+                    update = UpdateCacheData(report);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = report;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1735,15 +1771,18 @@
                 if (exception is ExecutionException)
                 {
                     ExecutionException executionException = (ExecutionException)exception;
+                    TradeUpdate update = null;
 
                     lock (cache_.mutex_)
                     {
-                        UpdateCacheData(executionException.Report);
+                        update = UpdateCacheData(executionException.Report);
                     }
 
                     ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                     args.Report = executionException.Report;
                     eventQueue_.PushEvent(args);
+
+                    PushTradeUpdateEvent(update);
                 }
                 else if (exception is RejectException)
                 {
@@ -1819,14 +1858,18 @@
         {
             try
             {
+                TradeUpdate update = null;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(executionReport);
+                    update = UpdateCacheData(executionReport);
                 }
 
                 ExecutionReportEventArgs args = new ExecutionReportEventArgs();
                 args.Report = executionReport;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -1866,9 +1909,11 @@
         {
             try
             {
+                TradeUpdate update;
+
                 lock (cache_.mutex_)
                 {
-                    UpdateCacheData(balanceOperation);
+                    update = UpdateCacheData(balanceOperation);
                 }
 
                 NotificationEventArgs<BalanceOperation> args = new NotificationEventArgs<Common.BalanceOperation>();
@@ -1876,6 +1921,8 @@
                 args.Severity = NotificationSeverity.Information;
                 args.Data = balanceOperation;
                 eventQueue_.PushEvent(args);
+
+                PushTradeUpdateEvent(update);
             }
             catch
             {
@@ -2330,7 +2377,7 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
 
                     if (! logout_)
                     {
@@ -2377,26 +2424,51 @@
             }
         }
 
-        void UpdateCacheData(ExecutionReport executionReport)
+        TradeUpdate UpdateCacheData(ExecutionReport executionReport)
         {
+            var tradeUpdate = new TradeUpdate();
+            tradeUpdate.TradeRecordUpdateAction = UpdateActions.None;
+
             if (cache_.tradeRecords_ != null)
             {
+                if (cache_.tradeRecords_.ContainsKey(executionReport.OrderId))
+                    tradeUpdate.OldRecord = cache_.tradeRecords_[executionReport.OrderId];
+
                 if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Filled)
                 {
                     if (cache_.tradeRecords_.ContainsKey(executionReport.OrderId))
+                    {
                         cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                        tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
+                    }
+                }
+                else if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.PartiallyFilled && executionReport.OrderType == OrderType.Market)
+                {
+                    if (cache_.tradeRecords_.ContainsKey(executionReport.OrderId))
+                    {
+                        cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                        tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
+                    }
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Trade && executionReport.OrderStatus == OrderStatus.Activated)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                    tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Canceled)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                    tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Expired)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                    tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
                 }
                 else if (executionReport.ExecutionType == ExecutionType.Rejected)
                 {
@@ -2409,10 +2481,18 @@
                 else if (executionReport.LeavesVolume == 0)
                 {
                     cache_.tradeRecords_.Remove(executionReport.OrderId);
+
+                    tradeUpdate.TradeRecordUpdateAction = UpdateActions.Removed;
                 }
                 else
                 {
                     TradeRecord tradeRecord = GetTradeRecord(executionReport);
+
+                    if (cache_.tradeRecords_.ContainsKey(executionReport.OrderId))
+                        tradeUpdate.TradeRecordUpdateAction = UpdateActions.Replaced;
+                    else
+                        tradeUpdate.TradeRecordUpdateAction = UpdateActions.Added;
+                    tradeUpdate.NewRecord = tradeRecord;
 
                     cache_.tradeRecords_[tradeRecord.OrderId] = tradeRecord;
                 }
@@ -2472,16 +2552,23 @@
                         }
                     }
                 }
+                tradeUpdate.UpdatedAssets = reportAssets;
 
                 if (executionReport.Balance.HasValue)
                 {
                     cache_.accountInfo_.Balance = executionReport.Balance.Value;
+                    tradeUpdate.NewBalance = executionReport.Balance.Value;
                 }
             }
+
+            return tradeUpdate;
         }
 
-        void UpdateCacheData(BalanceOperation balanceOperation)
+        TradeUpdate UpdateCacheData(BalanceOperation balanceOperation)
         {
+            var tradeUpdate = new TradeUpdate();
+            tradeUpdate.TradeRecordUpdateAction = UpdateActions.None;
+
             if (cache_.accountInfo_ != null)
             {
                 if (cache_.accountInfo_.Type == AccountType.Cash)
@@ -2497,9 +2584,10 @@
 
                             if (cacheAsset.Currency == balanceOperation.TransactionCurrency)
                             {
-                                cacheAsset.Balance = balanceOperation.Balance;
-                                cacheAsset.TradeAmount = balanceOperation.TransactionAmount;
-
+                                var assetInfoCopy = cacheAsset.Clone();
+                                assetInfoCopy.Balance = balanceOperation.Balance;
+                                assetInfoCopy.TradeAmount = balanceOperation.TransactionAmount;
+                                cacheAssets[cacheIndex] = assetInfoCopy;
                                 break;
                             }
                         }
@@ -2539,12 +2627,21 @@
                             cache_.accountInfo_.Assets = assets;
                         }
                     }
+
+                    AssetInfo assetInfoUpdated = new AssetInfo();
+                    assetInfoUpdated.Currency = balanceOperation.TransactionCurrency;
+                    assetInfoUpdated.Balance = balanceOperation.Balance;
+                    assetInfoUpdated.TradeAmount = balanceOperation.TransactionAmount;
+                    tradeUpdate.UpdatedAssets = new[] {assetInfoUpdated};
                 }
                 else
                 {
                     cache_.accountInfo_.Balance = balanceOperation.Balance;
+                    tradeUpdate.NewBalance = balanceOperation.Balance;
                 }
             }
+
+            return tradeUpdate;
         }
 
         void PushLoginEvents()
@@ -2650,6 +2747,16 @@
                     positionArgs.Report = positions[index];
                     eventQueue_.PushEvent(positionArgs);
                 }
+            }
+        }
+
+        void PushTradeUpdateEvent(TradeUpdate update)
+        {
+            if (update != null)
+            {
+                TradeUpdateEventArgs args = new TradeUpdateEventArgs();
+                args.Update = update;
+                eventQueue_.PushEvent(args);
             }
         }
 
@@ -2868,6 +2975,24 @@
                     try
                     {
                         Notify(this, notificationEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
+            TradeUpdateEventArgs tradeRecordUpdatedEventArgs = eventArgs as TradeUpdateEventArgs;
+
+            if (tradeRecordUpdatedEventArgs != null)
+            {
+                if (TradeUpdate != null)
+                {
+                    try
+                    {
+                        TradeUpdate(this, tradeRecordUpdatedEventArgs);
                     }
                     catch
                     {

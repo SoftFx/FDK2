@@ -3,13 +3,8 @@
     /// <summary>
     /// Represents real asset for cash account or exposure for net / gross account.
     /// </summary>
-    public class Asset : FinancialEntry<AccountEntry>
+    public class Asset
     {
-        internal Asset(AccountEntry owner)
-            : base(owner)
-        {
-        }
-
         /// <summary>
         /// The asset currency.
         /// </summary>

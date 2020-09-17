@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Soft-FX")]
 [assembly: AssemblyProduct("TickTrader FDK")]
-[assembly: AssemblyCopyright("Copyright © Soft-FX 2017")]
+[assembly: AssemblyCopyright("Copyright © Soft-FX 2017-2020")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

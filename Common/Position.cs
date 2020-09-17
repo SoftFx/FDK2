@@ -87,6 +87,11 @@
         public PosReportType PosReportType { get; set; }
 
         /// <summary>
+        /// Gets Rebate. It comes only from TradeCapture.AccountPosition (not from OrderEntry.Position) and only for GROSS
+        /// </summary>
+        public double? Rebate { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>

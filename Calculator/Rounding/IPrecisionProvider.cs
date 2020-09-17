@@ -1,6 +1,6 @@
 ﻿namespace TickTrader.FDK.Calculator.Rounding
 {
-    interface IPrecisionProvider
+    public interface IPrecisionProvider
     {
         int GetCurrencyPrecision(string currency);
     }

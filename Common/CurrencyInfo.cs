@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Common
+﻿using System;
+
+namespace TickTrader.FDK.Common
 {
     /// <summary>
     /// Currency information.
@@ -32,7 +34,13 @@
         /// <summary>
         /// Gets currency type.
         /// </summary>
+        [Obsolete("Use TypeId and CurrencyTypeInfo")]
         public CurrencyType Type { get; set; }
+
+        /// <summary>
+        /// Gets currency type id.
+        /// </summary>
+        public string TypeId { get; set; }
 
         /// <summary>
         /// Gets currency Tax.
