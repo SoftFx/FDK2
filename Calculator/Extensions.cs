@@ -21,6 +21,11 @@ namespace TickTrader.FDK.Calculator
             return maxVisibleAmount.HasValue && maxVisibleAmount.Value == 0;
         }
 
+        public static bool IsHiddenOrder(double? maxVisibleAmount)
+        {
+            return maxVisibleAmount.HasValue && maxVisibleAmount.Value == 0;
+        }
+
         public static OrderSide GetSide(this IPositionModel position)
         {
             return (position.Long.Amount > position.Short.Amount) ? OrderSide.Buy : OrderSide.Sell;
@@ -34,6 +39,16 @@ namespace TickTrader.FDK.Calculator
         public static decimal GetPrice(this IPositionModel position)
         {
             return (position.Long.Amount > position.Short.Amount) ? position.Long.Price : position.Short.Price;
+        }
+
+        public static bool IsEmpty(this IAssetModel assetModel)
+        {
+            return assetModel.Amount == 0 && assetModel.Margin == 0;
+        }
+
+        public static bool IsEmpty(this AssetInfo asset)
+        {
+            return asset.Balance == 0 && asset.LockedAmount == 0;
         }
 
         public static AccountEntryStatus ToAccountEntryStatus(this CalcErrorCode code)

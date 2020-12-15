@@ -68,6 +68,11 @@
         /// <summary>
         ///
         /// </summary>
-        Activated = 11
+        Activated = 11,
+
+        /// <summary>
+        ///
+        /// </summary>
+        Executing = 12
     }
 }

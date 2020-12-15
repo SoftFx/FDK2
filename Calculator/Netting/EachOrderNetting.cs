@@ -82,6 +82,7 @@ namespace TickTrader.FDK.Calculator.Netting
             var oldMargin = order.Margin;
             var oldProfit = order.Profit;
             var oldErrorCount = GetErrorCount(order);
+            var oldError = order.CalculationError;
 
             worstError = null;
 
@@ -107,7 +108,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
             var newErrorCount = GetErrorCount(order);
 
-            return new StatsChange(order.Margin - oldMargin, order.Profit - oldProfit, newErrorCount - oldErrorCount);
+            return new StatsChange(order.Margin - oldMargin, order.Profit - oldProfit, newErrorCount - oldErrorCount, oldError != order.CalculationError);
         }
 
         private StatsChange RecalculateNetPos()
@@ -115,6 +116,7 @@ namespace TickTrader.FDK.Calculator.Netting
             var oldMargin = NetPosMargin;
             var oldProfit = NetPosProfit;
             var oldErrorCount = GetErrorCount(NetPosCallculationError);
+            var oldError = NetPosCallculationError;
 
             NetPosCallculationError = null;
 
@@ -134,7 +136,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
             var newErrorCount = GetErrorCount(NetPosCallculationError);
 
-            return new StatsChange(NetPosMargin - oldMargin, NetPosProfit - oldProfit, newErrorCount - oldErrorCount);
+            return new StatsChange(NetPosMargin - oldMargin, NetPosProfit - oldProfit, newErrorCount - oldErrorCount, oldError != NetPosCallculationError);
         }
 
         private int GetErrorCount(CalcError error)
@@ -170,7 +172,7 @@ namespace TickTrader.FDK.Calculator.Netting
         {
             _ordersById.Remove(order.OrderId);
             ChangeTotalAmountBy(-remAmount);
-            return new StatsChange(-order.Margin, -order.Profit, -GetErrorCount(order));
+            return new StatsChange(-order.Margin, -order.Profit, -GetErrorCount(order), false);
         }
 
         public void AddPositionWithoutCalculation(IPositionSide posSide, decimal posAmount, decimal posPrice)

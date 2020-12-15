@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TickTrader.FDK.Common</RootNamespace>
     <AssemblyName>TickTrader.FDK.Common</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -34,6 +34,21 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="SoftFX.Net.Core">
+      <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.OrderEntry">
+      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteFeed">
+      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteStore">
+      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.TradeCapture">
+      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Management" />

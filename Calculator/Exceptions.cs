@@ -106,12 +106,12 @@ namespace TickTrader.FDK.Calculator
         }
     }
 
-    public class SymbolNotFoundException : BusinessLogicException
+    public class SymbolNotFoundException : MarketConfigurationException
     {
         public string Symbol { get; private set; }
 
         public SymbolNotFoundException(string symbol)
-            : base("Symbol Not Found: " + symbol)
+            : base("Symbol not found: " + symbol)
         {
             this.Symbol = symbol;
         }
@@ -146,6 +146,14 @@ namespace TickTrader.FDK.Calculator
     public class NotEnoughMoneyException : Exception
     {
         public NotEnoughMoneyException(string msg)
+            : base(msg)
+        {
+        }
+    }
+
+    public class NotInitializedException : Exception
+    {
+        public NotInitializedException(string msg)
             : base(msg)
         {
         }

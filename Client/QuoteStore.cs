@@ -13,6 +13,9 @@ using PriceType = TickTrader.FDK.Common.PriceType;
 using TickTrader.FDK.Client.Splits;
 using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
+using SoftFX.Net.Core;
+using ClientSession = SoftFX.Net.QuoteStore.ClientSession;
+using ClientSessionOptions = SoftFX.Net.QuoteStore.ClientSessionOptions;
 
 namespace TickTrader.FDK.Client
 {
@@ -1793,6 +1796,10 @@ namespace TickTrader.FDK.Client
                 {
                     // client_.session_.LogError(exception.Message);
                 }
+            }
+
+            public override void OnReceive(ClientSession clientSession, Message message)
+            {
             }
 
             public override void OnSend(ClientSession clientSession, int size)

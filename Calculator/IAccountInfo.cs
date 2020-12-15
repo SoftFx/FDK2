@@ -90,6 +90,9 @@ namespace TickTrader.FDK.Calculator
         /// Fired when underlying assests list was changed.
         /// </summary>
         event Action<IAssetModel, AssetChangeTypes> AssetsChanged;
+
+        decimal MaxOverdraftAmount { get; }
+        string OverdraftCurrency { get; }
     }
 
     public struct PositionEssentialsChangeArgs

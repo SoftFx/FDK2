@@ -465,6 +465,11 @@
         /// </summary>
         public string RebateCurrency { get; set; }
 
+        /// <summary>
+        /// Related order Id used for 
+        /// </summary>
+        public long? RelatedOrderId { get; set; }
+
 
         public TradeTransactionReport Clone()
         {

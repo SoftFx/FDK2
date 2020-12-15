@@ -1,52 +1,39 @@
-﻿namespace TickTrader.FDK.Calculator.Netting
+﻿using System;
+using TickTrader.FDK.Common;
+
+namespace TickTrader.FDK.Calculator.Netting
 {
-    public sealed class OrderLightClone : ICommonOrder
+    public sealed class OrderLightClone : IOrderCalcInfo
     {
         public OrderLightClone()
         {
         }
 
-        public OrderLightClone(IOrderModel originalOrder)
+        public OrderLightClone(IOrderCalcInfo originalOrder)
         {
-            this.OrderModelRef = originalOrder;
-
-            this.OrderId = originalOrder.OrderId;
-            this.Symbol = originalOrder.Symbol;
-            this.ProfitCurrency = originalOrder.ProfitCurrency;
-            this.MarginCurrency = originalOrder.MarginCurrency;
-            this.Side = originalOrder.Side;
-            this.Type = originalOrder.Type;
-            this.Amount = originalOrder.Amount;
-            this.RemainingAmount = originalOrder.RemainingAmount;
-            this.Price = originalOrder.Price;
-            this.StopPrice = originalOrder.StopPrice;
-            this.Commission = originalOrder.Commission.GetValueOrDefault();
-            this.AgentCommission = originalOrder.AgentCommision.GetValueOrDefault();
-            this.Swap = originalOrder.Swap.GetValueOrDefault();
-            this.Margin = originalOrder.Margin;
-            this.IsHidden = originalOrder.IsHidden;
-            this.IsIceberg = originalOrder.IsIceberg;
+            Symbol = originalOrder.Symbol;
+            Side = originalOrder.Side;
+            Type = originalOrder.Type;
+            RemainingAmount = originalOrder.RemainingAmount;
+            IsHidden = originalOrder.IsHidden;
+            Price = originalOrder.Price;
+            StopPrice = originalOrder.StopPrice;
+            Slippage = originalOrder.Slippage;
+            InitialType = originalOrder.InitialType;
+            ImmediateOrCancel = originalOrder.ImmediateOrCancel;
         }
 
-        public IOrderModel OrderModelRef { get; private set; }
-
-        public long OrderId { get; set; }
         public string Symbol { get; set; }
-        public string ProfitCurrency { get; set; }
-        public string MarginCurrency { get; set; }
-        public OrderSides Side { get; set; }
-        public OrderTypes Type { get; set; }
-        public decimal Amount { get; set; }
+        public OrderSide Side { get; set; }
+        public OrderType Type { get; set; }
         public decimal RemainingAmount { get; set; }
         public bool IsHidden { get; set; }
-        public bool IsIceberg { get; }
         public decimal? Price { get; set; }
         public decimal? StopPrice { get; set; }
-        public decimal Commission { get; set; }
-        public decimal AgentCommission { get; set; }
-        public decimal Swap { get; set; }
-        public decimal? Margin { get; set; }
+        public decimal? Slippage { get; }
+        public OrderType InitialType { get; }
+        public bool ImmediateOrCancel { get; set; }
 
-        public decimal? OrderPrice => StopPrice ?? Price;
+        public decimal? Margin { get; set; }
     }
 }

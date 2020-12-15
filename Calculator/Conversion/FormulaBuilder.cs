@@ -41,15 +41,13 @@
 
         public static IConversionFormula Error(ISymbolInfo symbol, string currency, string accountCurrency)
         {
-            var msg = string.Format("Conversion is not possible: {0} -> {1} ({2})", currency, accountCurrency, symbol.Symbol);
-            var error = new MisconfigurationError(msg);
+            var error = new MisconfigurationError($"Conversion not found: {currency} -> {accountCurrency} ({symbol.Symbol})");
             return new ConversionError(error);
         }
 
         public static IConversionFormula Error(string fromCurrency, string toCurrency)
         {
-            var msg = string.Format("Conversion is not possible: {0} -> {1}", fromCurrency, toCurrency);
-            var error = new MisconfigurationError(msg);
+            var error = new MisconfigurationError($"Conversion not found: {fromCurrency} -> {toCurrency}");
             return new ConversionError(error);
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
@@ -52,29 +53,76 @@ namespace TickTrader.FDK.Calculator
             return HasSufficientMarginToOpenOrder(order.Type, order.Side, symbol, marginMovement, out marginAsset);
         }
 
+        public bool HasSufficientAssetsToOpenOrder(IOrderCalcInfo order, decimal marginMovement, decimal commission, IAssetModel marginAsset, IAssetModel commissAsset)
+        {
+            bool notEnoughMargin = false;
+            bool notEnoughCommiss = false;
+            bool checkOverdaft = account.MaxOverdraftAmount > 0 && (order.Type == OrderType.Market || (order.Type == OrderType.Limit && order.ImmediateOrCancel));
+
+            if (commission == 0)
+            {
+                notEnoughMargin = marginMovement > marginAsset.FreeAmount;
+            }
+            else
+            {
+                if (marginAsset == commissAsset)
+                {
+                    //commissAsset = marginAsset;
+                    if (commission < 0)
+                        marginMovement += Math.Abs(commission);
+                    else
+                        marginMovement -= Math.Abs(commission);
+
+                    notEnoughMargin = marginMovement > marginAsset.FreeAmount;
+                }
+                else
+                {
+                    notEnoughMargin = marginMovement > marginAsset.FreeAmount;
+                    notEnoughCommiss = commission < 0 && Math.Abs(commission) > commissAsset.FreeAmount;
+                }
+            }
+
+            if (!notEnoughMargin && !notEnoughCommiss)
+                return true;
+
+            if (!checkOverdaft)
+            {
+                if (notEnoughMargin)
+                    throw new NotEnoughMoneyException($"{marginAsset.Currency} Movement={marginMovement} FreeAmount={marginAsset.FreeAmount}.");
+
+                throw new NotEnoughMoneyException($"{commissAsset.Currency} Commission Movement={Math.Abs(commission)} FreeAmount={commissAsset.FreeAmount}.");
+            }
+
+            Dictionary<IAssetModel, decimal> overdrafts = new Dictionary<IAssetModel, decimal>();
+            StringBuilder info = new StringBuilder();
+            if (notEnoughMargin)
+            {
+                decimal newMarginOverdraft = marginAsset.FreeAmount > 0
+                    ? (marginMovement - marginAsset.FreeAmount)
+                    : marginMovement;
+                overdrafts.Add(marginAsset, newMarginOverdraft);
+                info.Append($"{marginAsset.Currency} Movement={marginMovement} FreeAmount={marginAsset.FreeAmount}.");
+            }
+
+            if (notEnoughCommiss)
+            {
+                decimal newCommissOverdraft = commissAsset.FreeAmount > 0
+                    ? (Math.Abs(commission) - commissAsset.FreeAmount)
+                    : Math.Abs(commission);
+                overdrafts.Add(commissAsset, newCommissOverdraft);
+                if (info.Length > 0)
+                    info.Append(" ");
+                info.Append($"{commissAsset.Currency} Commission Movement={Math.Abs(commission)} FreeAmount={commissAsset.FreeAmount}.");
+            }
+
+            if (OverdraftsExceedLimit(overdrafts, out var usedOverdraft, out var newOverdraft))
+                throw new NotEnoughMoneyException($"{info} Overdraft {newOverdraft} exceeds limit {account.MaxOverdraftAmount} {account.OverdraftCurrency}.");
+
+            return true;
+        }
+
         public bool HasSufficientMarginToOpenOrder(OrderType type, OrderSide side, ISymbolInfo symbol, decimal? marginMovement, out IAssetModel marginAsset)
         {
-            //if (order == null)
-            //    throw new ArgumentNullException("order");
-
-            //if (type != OrderTypes.Limit && type != OrderTypes.StopLimit)
-            //    throw new ArgumentException("Invalid Order Type", "order");
-
-            //if (type == OrderTypes.Stop || type == OrderTypes.StopLimit)
-            //{
-            //    if (stopPrice == null || stopPrice <= 0)
-            //        throw new ArgumentException("Invalid Stop Price", "order");
-            //}
-
-            //if (type != OrderTypes.Stop)
-            //{
-            //    if (price == null || price <= 0)
-            //        throw new ArgumentException("Invalid Price", "order");
-            //}
-
-            //if (order.Amount <= 0)
-            //    throw new ArgumentException("Invalid Amount", "order");
-
             if (marginMovement == null)
                 throw new MarginNotCalculatedException("Provided order must have calculated Margin.");
 
@@ -83,7 +131,7 @@ namespace TickTrader.FDK.Calculator
                 throw new NotEnoughMoneyException($"Asset {GetMarginAssetCurrency(symbol, side)} is empty.");
 
             if (marginMovement.Value > marginAsset.FreeAmount)
-                throw new NotEnoughMoneyException($"{marginAsset}, Margin={marginAsset.Margin}, MarginMovement={marginMovement.Value}.");
+                throw new NotEnoughMoneyException($"FreeAmount={marginAsset.FreeAmount}, Movement={marginMovement.Value}.");
 
             return true;
         }
@@ -105,19 +153,32 @@ namespace TickTrader.FDK.Calculator
 
         public static decimal CalculateMargin(IOrderCalcInfo order, ISymbolInfo symbol)
         {
-            return CalculateMargin(order.Type, order.RemainingAmount, order.Price, order.StopPrice, order.Side, symbol, order.IsHidden);
+            // Commented due to the decision to calculate margin by the best price (for client-side validation)
+
+            /*if (!order.Slippage.HasValue || (order.InitialType != OrderType.Market && !(order.InitialType == OrderType.Limit && order.ImmediateOrCancel)))
+                return CalculateMargin(order.Type, order.RemainingAmount, order.Price, order.StopPrice, order.Side, symbol, order.IsHidden);
+
+            var price = order.Price * (1m + order.Slippage);
+            price = order.Side == OrderSide.Buy
+                ? FinancialRounding.Instance.RoundProfit(symbol.Precision, price.Value)
+                : FinancialRounding.Instance.RoundMargin(symbol.Precision, price.Value);*/
+            var price = order.Price;
+
+            return CalculateMargin(order.Type, order.RemainingAmount, price, order.StopPrice, order.Side, symbol, order.IsHidden);
         }
+
 
         public static decimal CalculateMargin(OrderType type, decimal amount, decimal? orderPrice, decimal? orderStopPrice, OrderSide side, ISymbolInfo symbol, bool isHidden)
         {
             decimal combinedMarginFactor = CalculateMarginFactor(type, symbol, isHidden);
 
-            decimal price = ((type == OrderType.Stop) || (type == OrderType.StopLimit)) ? orderStopPrice.Value : orderPrice.Value;
+            // UL: TP-3976. For StopLimit orders margin must be calculated using Price instead of StopPrice
+            decimal price = type == OrderType.Stop ? orderStopPrice.Value : orderPrice.Value;
 
-            if (side == OrderSide.Buy)
-                return combinedMarginFactor * amount * price;
-            else
-                return combinedMarginFactor * amount;
+            var margin = side == OrderSide.Buy
+                ? combinedMarginFactor * amount * price
+                : combinedMarginFactor * amount;
+            return margin;
         }
 
         public decimal CalculateCurrentPrice(IOrderCalcInfo order, out CalcError error)
@@ -130,7 +191,7 @@ namespace TickTrader.FDK.Calculator
             var node = market.GetSymbolNode(symbol, false);
             if (node == null)
             {
-                error = new MisconfigurationError("Symbol Not Found: " + symbol);
+                error = new SymbolNotFoundMisconfigError(symbol);
                 return 0;
             }
 
@@ -147,27 +208,68 @@ namespace TickTrader.FDK.Calculator
 
         public IAssetModel GetMarginAsset(IOrderModel order, out ISymbolInfo symbol)
         {
-            //if (order.MarginCurrency == null || order.ProfitCurrency == null)
-            //    throw new MarketConfigurationException("Order must have both margin & profit currencies specified.");
-
             symbol = order.SymbolInfo ?? throw CreateNoSymbolException(order.Symbol);
             return assets.GetOrDefault(GetMarginAssetCurrency(symbol, order.Side));
         }
 
         public IAssetModel GetMarginAsset(ISymbolInfo symbol, OrderSide side)
         {
-            //if (order.MarginCurrency == null || order.ProfitCurrency == null)
-            //    throw new MarketConfigurationException("Order must have both margin & profit currencies specified.");
-
             return assets.GetOrDefault(GetMarginAssetCurrency(symbol, side));
         }
 
         public string GetMarginAssetCurrency(ISymbolInfo smb, OrderSide side)
         {
-            //var symbol = smb ?? throw CreateNoSymbolException(smb.Name);
-
             return (side == OrderSide.Buy) ? smb.ProfitCurrency : smb.MarginCurrency;
         }
+
+        public decimal CalculateOverdraft()
+        {
+            if (account.MaxOverdraftAmount <= 0 || account.OverdraftCurrency == null)
+                return 0;
+
+            decimal overdraftTotal = 0;
+            foreach (IAssetModel asset in assets.Values)
+            {
+                if (asset.FreeAmount < 0)
+                {
+                    decimal assetOverdraft = Math.Abs(asset.FreeAmount);
+                    decimal overdraftInCurrency = assetOverdraft * market.ConversionMap.GetNegativeAssetConversion(asset.Currency, account.OverdraftCurrency).Value;
+                    overdraftTotal += overdraftInCurrency;
+                }
+            }
+
+            return overdraftTotal;
+        }
+
+        public decimal? TryCalculateOverdraft(out string error)
+        {
+            try
+            {
+                error = null;
+                return CalculateOverdraft();
+            }
+            catch (Exception ex)
+            {
+                error = ex.Message;
+                return null;
+            }
+        }
+
+        private bool OverdraftsExceedLimit(Dictionary<IAssetModel, decimal> overdrafts, out decimal usedOverdraft, out decimal newOverdraft)
+        {
+            newOverdraft = CalculateOverdraft();
+            usedOverdraft = newOverdraft;
+
+            foreach (var overdraft in overdrafts)
+            {
+                if (overdraft.Value <= 0)
+                    continue;
+                newOverdraft += overdraft.Value * market.ConversionMap.GetNegativeAssetConversion(overdraft.Key.Currency, account.OverdraftCurrency).Value;
+            }
+
+            return newOverdraft > account.MaxOverdraftAmount;
+        }
+
 
         public void AddRemoveAsset(IAssetModel asset, AssetChangeTypes changeType)
         {
@@ -262,7 +364,5 @@ namespace TickTrader.FDK.Calculator
         {
             return new MarketConfigurationException("Symbol not found: " + smbName);
         }
-
-        
     }
 }

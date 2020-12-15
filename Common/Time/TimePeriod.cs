@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace TickTrader.Common.Time
+namespace TickTrader.FDK.Common.Time
 {
     public struct TimePeriod : ITimePeriod, IEquatable<TimePeriod>
     {

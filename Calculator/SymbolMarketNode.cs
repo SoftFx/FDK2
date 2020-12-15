@@ -17,7 +17,7 @@ namespace TickTrader.FDK.Calculator
             NoAskError = new OffQuoteError(false, smbName, FxPriceType.Ask);
             NoBidCrossError = new OffQuoteError(true, smbName, FxPriceType.Bid);
             NoAskCrossError = new OffQuoteError(true, smbName, FxPriceType.Ask);
-            NoSymbolError = new MisconfigurationError("Symbol '" + smbName + "' is missing or not accessible!");
+            NoSymbolError = new SymbolNotFoundMisconfigError(smbName);
             NoSymbolConversion = new ConversionError(NoSymbolError);
         }
 

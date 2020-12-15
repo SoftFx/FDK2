@@ -10,6 +10,11 @@ namespace TickTrader.FDK.Calculator.Adapter
             Amount = (decimal)assetInfo.Balance;
         }
 
+        public AssetModel(string currency)
+        {
+            Currency = currency;
+        }
+
         public string Currency { get; }
         public decimal Amount { get; private set; }
         public decimal FreeAmount => Amount - Margin;

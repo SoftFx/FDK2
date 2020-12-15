@@ -34,7 +34,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
         internal StatsChange Recalculate()
         {
-            var result = new StatsChange(0, 0, 0);
+            var result = new StatsChange(0, 0, 0, false);
 
             var pos = _positions;
             var limits = _limitOrders;

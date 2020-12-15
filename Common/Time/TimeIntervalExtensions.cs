@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace TickTrader.Common.Time
+namespace TickTrader.FDK.Common.Time
 {
     public static class TimeIntervalExtensions
     {

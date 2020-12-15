@@ -146,7 +146,7 @@ namespace TickTrader.FDK.Calculator.Netting
             var oldMargin = Margin;
             UpdateMargin();
             var delta = Margin - oldMargin;
-            _parent.Calc_StatsChanged(new StatsChange(delta, args.ProfitDelta, args.ErrorDelta));
+            _parent.Calc_StatsChanged(new StatsChange(delta, args.ProfitDelta, args.ErrorDelta, args.IsErrorChanged));
         }
 
         internal void CreateCalculator()

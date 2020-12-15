@@ -1041,6 +1041,10 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnReceive(ClientSession clientSession, Message message)
+            {
+            }
+
             public override void OnSend(ClientSession clientSession, int size)
             {
                 try

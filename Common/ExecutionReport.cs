@@ -251,6 +251,22 @@
         /// </summary>
         public bool Last { get; set; }
 
+        /// <summary>
+        /// OneCancelsTheOther Flag
+        /// </summary>
+        public bool OneCancelsTheOtherFlag { get; set; }
+
+        /// <summary>
+        /// Related order id if OneCancelsTheOtherFlag is true
+        /// </summary>
+        public long? RelatedOrderId { get; set; }
+
+        /// <summary>
+        /// Time when order execution expired
+        /// </summary>
+        public DateTime? ExecutionExpired { get; set; }
+
+
         public ExecutionReport Clone()
         {
             ExecutionReport executionReport = new ExecutionReport();
@@ -302,6 +318,8 @@
             executionReport.Slippage = Slippage;
             executionReport.Rebate = Rebate;
             executionReport.RebateCurrency = RebateCurrency;
+            executionReport.OneCancelsTheOtherFlag = OneCancelsTheOtherFlag;
+            executionReport.RelatedOrderId = RelatedOrderId;
 
             return executionReport;
         }

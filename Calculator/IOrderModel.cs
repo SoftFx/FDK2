@@ -11,9 +11,10 @@ namespace TickTrader.FDK.Calculator
         OrderSide Side { get; }
         OrderType Type { get; }
         decimal RemainingAmount { get; }
-        decimal Commission { get; }
-        decimal Swap { get; }
         bool IsHidden { get; }
+        decimal? Slippage { get; }
+        OrderType InitialType { get; }
+        bool ImmediateOrCancel { get; }
     }
 
     /// <summary>
@@ -28,6 +29,8 @@ namespace TickTrader.FDK.Calculator
         decimal CashMargin { get; set; }
         ISymbolInfo SymbolInfo { get; }
 
+        decimal Commission { get; }
+        decimal Swap { get; }
         decimal Profit { get; set; }
         decimal Margin { get; set; }
         CalcError CalculationError { get; set; }

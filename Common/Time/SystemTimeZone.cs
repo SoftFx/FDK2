@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TickTrader.Common.Time
+namespace TickTrader.FDK.Common.Time
 {
     internal sealed class SystemTimeZone : ITimeZone<TimeZoneInfo>
     {

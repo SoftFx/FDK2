@@ -23,7 +23,10 @@ namespace TickTrader.FDK.Calculator.Adapter
         public decimal RemainingAmount => (decimal) _tradeRecord.Volume;
         public decimal Commission => (decimal) _tradeRecord.Commission;
         public decimal Swap => (decimal) _tradeRecord.Swap;
-        public bool IsHidden => IsHiddenOrder(_tradeRecord.MaxVisibleVolume);
+        public bool IsHidden => Extensions.IsHiddenOrder(_tradeRecord.MaxVisibleVolume);
+        public decimal? Slippage => (decimal?) _tradeRecord.Slippage;
+        public OrderType InitialType => _tradeRecord.InitialType;
+        public bool ImmediateOrCancel => _tradeRecord.ImmediateOrCancel;
         public string OrderId => _tradeRecord.OrderId;
         public ISymbolInfo SymbolInfo => _symbolInfo;
 
@@ -38,11 +41,6 @@ namespace TickTrader.FDK.Calculator.Adapter
         public event Action<OrderEssentialsChangeArgs> EssentialsChanged;
         public event Action<OrderPropArgs<decimal>> SwapChanged;
         public event Action<OrderPropArgs<decimal>> CommissionChanged;
-
-        private static bool IsHiddenOrder(double? maxVisibleVolume)
-        {
-            return maxVisibleVolume != null && maxVisibleVolume == 0;
-        }
 
         public void Update(TradeRecord newRecord)
         {

@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TickTrader.FDK.Calculator</RootNamespace>
     <AssemblyName>TickTrader.FDK.Calculator</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -34,6 +34,21 @@
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="SoftFX.Net.Core">
+      <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.OrderEntry">
+      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteFeed">
+      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteStore">
+      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.TradeCapture">
+      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Runtime.Serialization" />
@@ -78,6 +93,7 @@
     <Compile Include="Netting\IOrderNetting.cs" />
     <Compile Include="Netting\NettingCalculationTypes.cs" />
     <Compile Include="Adapter\OrderAccessor.cs" />
+    <Compile Include="Netting\OrderLightClone.cs" />
     <Compile Include="OrderCalculator.cs" />
     <Compile Include="Extensions.cs" />
     <Compile Include="Adapter\PositionAccessor.cs" />
@@ -86,6 +102,8 @@
     <Compile Include="PriceEntry.cs" />
     <Compile Include="Processor.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Validation\NewOrderRequest.cs" />
+    <Compile Include="Validation\ModifyOrderRequest.cs" />
     <Compile Include="RoundingTools.cs" />
     <Compile Include="Rounding\AccountRoundingService.cs" />
     <Compile Include="Rounding\CurrencyPrecisionProvider.cs" />

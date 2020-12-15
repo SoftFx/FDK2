@@ -8,6 +8,8 @@
 
         ImmediateOrCancel,
 
-        GoodTillDate
+        GoodTillDate,
+
+        OneCancelsTheOther
     }
 }

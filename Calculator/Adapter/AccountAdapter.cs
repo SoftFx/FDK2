@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using TickTrader.FDK.Calculator.Netting;
 using TickTrader.FDK.Calculator.Rounding;
+using TickTrader.FDK.Calculator.Validation;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Extended;
 
@@ -49,6 +50,18 @@ namespace TickTrader.FDK.Calculator.Adapter
 
         public string BalanceCurrency { get; set; }
 
+        public decimal MaxOverdraftAmount { get; set; }
+
+        public string OverdraftCurrency { get; set; }
+
+        public int OverdraftCurrencyPrecision { get; set; }
+
+        public string TokenCommissionCurrency { get; set; }
+
+        public double? TokenCommissionCurrencyDiscount { get; set; }
+
+        public bool IsTokenCommissionEnabled { get; set; }
+
         public IEnumerable<IPositionModel> Positions => _positionsDict.Values;
 
         public AccountType AccountingType { get; set; }
@@ -62,7 +75,7 @@ namespace TickTrader.FDK.Calculator.Adapter
         public event Action<IEnumerable<IOrderModel>> OrdersAdded;
         public event Action<IOrderModel> OrderRemoved;
         public event Action<IAssetModel, AssetChangeTypes> AssetsChanged;
-        
+
         #endregion Interfaces implementation
 
         #region Methods
@@ -156,14 +169,14 @@ namespace TickTrader.FDK.Calculator.Adapter
                     AssetInfo inputAsset = assets[i];
                     if (!_assetsDict.TryGetValue(inputAsset.Currency, out asset))
                     {
-                        if (inputAsset.Balance > 0)
+                        if (!inputAsset.IsEmpty())
                         {
                             asset = new AssetModel(inputAsset);
                             _assetsDict[asset.Currency] = asset;
                             AssetsChanged?.Invoke(asset, AssetChangeTypes.Added);
                         }
                     }
-                    else if (inputAsset.Balance <= 0)
+                    else if (inputAsset.IsEmpty())
                     {
                         if (_assetsDict.Remove(asset.Currency))
                             AssetsChanged?.Invoke(asset, AssetChangeTypes.Removed);
@@ -352,6 +365,234 @@ namespace TickTrader.FDK.Calculator.Adapter
                 _unknownSymbols.Add(symbolName);
             return symbolInfo;
         }
+
+        public decimal? TryCalculateOverdraft(out string error)
+        {
+            error = null;
+            var overdraft = _cashCalculator?.TryCalculateOverdraft(out error);
+            if (overdraft != null)
+            {
+                overdraft = FinancialRounding.Instance.RoundMargin(OverdraftCurrencyPrecision, overdraft.Value);
+            }
+            return overdraft;
+        }
+
+        #region Validate orders
+
+        public void ValidateNewOrderMargin(IOrderCalcInfo newOrder)
+        {
+            var orderInstance = new OrderLightClone(newOrder);
+            if (AccountingType == AccountType.Gross || AccountingType == AccountType.Net)
+            {
+                var calculator = _marginCalculator;
+                if (calculator != null)
+                {
+                    OrderCalculator fCalc = calculator.Market.GetCalculator(orderInstance.Symbol, BalanceCurrency);
+                    orderInstance.Margin = fCalc.CalculateMargin(orderInstance, Leverage, out var error);
+                    BusinessLogicException.ThrowIfError(error);
+                    var sufficient = calculator.HasSufficientMarginToOpenOrder(orderInstance, out var newMargin, out error);
+                    BusinessLogicException.ThrowIfError(error);
+                    if (!sufficient)
+                        throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newMargin}");
+                }
+            }
+            else
+            {
+                var calculator = _cashCalculator;
+                if (calculator != null && !ShouldSkipNewOrderRequestValidation(orderInstance))
+                {
+                    var symbolInfo = _symbolProvider?.Invoke(orderInstance.Symbol);
+                    if (symbolInfo == null)
+                        throw new MarketConfigurationException("Symbol not found: " + orderInstance.Symbol);
+                    var marginMovement = CashAccountCalculator.CalculateMargin(orderInstance, symbolInfo);
+                    var marginAssetCurrency = calculator.GetMarginAssetCurrency(symbolInfo, orderInstance.Side);
+                    var marginAsset = _assetsDict.GetOrDefault(marginAssetCurrency) ?? new AssetModel(marginAssetCurrency);
+                    var marginCurrency = calculator.Market.GetCurrencyOrThrow(marginAsset.Currency);
+
+                    if (orderInstance.Side == OrderSide.Buy)
+                    {
+                        marginMovement = FinancialRounding.Instance.RoundMargin(marginCurrency.Precision, marginMovement);
+                    }
+
+                    decimal commissMovement = CalculateCommissionMovement(orderInstance, symbolInfo, calculator, out var commissAsset);
+                    var sufficient = calculator.HasSufficientAssetsToOpenOrder(orderInstance, marginMovement, commissMovement, marginAsset, commissAsset);
+                    if (!sufficient)
+                        throw new NotEnoughMoneyException($"Not Enough Money");
+                }
+            }
+        }
+
+        public void ValidateModifyOrderMargin(ModifyOrderRequest request)
+        {
+            var orderToModify = _ordersDict.GetOrDefault(request.OrderId);
+            if (orderToModify == null)
+                throw new ArgumentException($"Order with Id = {request.OrderId} wasn't found");
+
+            var remainingAmount = orderToModify.RemainingAmount;
+            var maxVisibleAmount = (decimal?)orderToModify.TradeRecord.MaxVisibleVolume;
+
+            if (request.AmountChange.HasValue && orderToModify.TradeRecord.IsPendingOrder)
+            {
+                remainingAmount = orderToModify.RemainingAmount + request.AmountChange.Value;
+            }
+
+            if (remainingAmount <= 0)
+                return;
+
+            if ((orderToModify.Type == OrderType.Limit || orderToModify.Type == OrderType.StopLimit) && request.MaxVisibleAmount.HasValue)
+            {
+                maxVisibleAmount = request.MaxVisibleAmount.Value < 0 ? default(decimal?) : request.MaxVisibleAmount.Value;
+            }
+
+            if (AccountingType == AccountType.Gross || AccountingType == AccountType.Net)
+            {
+                var calculator = _marginCalculator;
+                if (calculator != null)
+                {
+                    OrderCalculator fCalc = calculator.Market.GetCalculator(orderToModify.Symbol, BalanceCurrency);
+                    decimal oldMargin = orderToModify.Margin;
+                    decimal newMargin = fCalc.CalculateMargin(remainingAmount, Leverage, orderToModify.Type, orderToModify.Side, Extensions.IsHiddenOrder(maxVisibleAmount), out var error);
+                    BusinessLogicException.ThrowIfError(error);
+                    if (!calculator.CanIncreaseMarginBy(newMargin - oldMargin, orderToModify.Symbol, orderToModify.Side, out var newAccMargin))
+                        throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newAccMargin}");
+                }
+            }
+            else
+            {
+                var calculator = _cashCalculator;
+                if (calculator != null)
+                {
+                    var price = request.Price ?? orderToModify.Price;
+                    var stopPrice = request.StopPrice ?? orderToModify.StopPrice;
+
+                    decimal oldMargin = orderToModify.CashMargin;
+                    decimal newMargin = CashAccountCalculator.CalculateMargin(orderToModify.Type, remainingAmount, price, stopPrice, orderToModify.Side, orderToModify.SymbolInfo, Extensions.IsHiddenOrder(maxVisibleAmount));
+                    decimal marginMovement = newMargin - oldMargin;
+                    var sufficient = calculator.HasSufficientMarginToOpenOrder(orderToModify, marginMovement, out _);
+                    if (!sufficient)
+                        throw new NotEnoughMoneyException($"Not Enough Money");
+                }
+            }
+
+        }
+
+        private bool ShouldSkipNewOrderRequestValidation(IOrderCalcInfo order)
+        {
+            return AccountingType == AccountType.Cash &&
+                MaxOverdraftAmount > 0 &&
+                (order.Type == OrderType.Market || (order.Type == OrderType.Limit && order.ImmediateOrCancel));
+        }
+
+        #region Comission
+        // It calculates commission and commission asset if it is not equal to destination currency
+        // otherwise return 0 and null
+        private decimal CalculateCommissionMovement(IOrderCalcInfo order, ISymbolInfo symbolInfo, CashAccountCalculator calculator, out AssetModel commissAsset)
+        {
+            if (order.InitialType != OrderType.Market && (order.InitialType != OrderType.Limit || !order.ImmediateOrCancel))
+            {
+                commissAsset = null;
+                return 0;
+            }
+
+            var currency = calculator.Market.GetCurrencyOrThrow(order.Side == OrderSide.Buy ? symbolInfo.MarginCurrency : symbolInfo.ProfitCurrency);
+            string commissCurrency = currency.Name;
+
+            decimal amount = (order.Side == OrderSide.Buy) ? order.RemainingAmount : order.RemainingAmount * order.Price.Value;
+            decimal commiss = CalculateCashCommission(symbolInfo, calculator, amount, false, ref commissCurrency);
+            commiss = FinancialRounding.Instance.RoundProfit(currency.Precision, commiss);
+
+            // Does not need to check commission movement when
+            // commission and destination currencies are equal and commission is less than amount
+            if (commissCurrency == currency.Name && Math.Abs(commiss) < amount)
+            {
+                commissAsset = null;
+                return 0;
+            }
+
+            commissAsset = _assetsDict.GetOrDefault(commissCurrency) ?? new AssetModel(commissCurrency);
+
+            return commiss;
+        }
+
+        private decimal CalculateCashCommission(ISymbolInfo symbolInfo, CashAccountCalculator calculator, decimal amount, bool isReduced, ref string commissCurrency)
+        {
+            decimal commiss = 0;
+            decimal cmsValue = isReduced
+                ? (decimal)symbolInfo.LimitsCommission
+                : (decimal)symbolInfo.Commission;
+            commiss = CalculateCashCommission(amount, cmsValue, symbolInfo.CommissionType);
+
+            commiss = ApplyTokenCommission(calculator, commiss, ref commissCurrency);
+            commiss = ApplyMinimalCommission(symbolInfo, calculator, commiss, commissCurrency);
+            return commiss;
+        }
+
+        private decimal CalculateCashCommission(decimal amount, decimal cmsValue, CommissionType cmsType)
+        {
+            if (cmsType == CommissionType.Percent ||
+                cmsType == CommissionType.PercentageWaivedCash ||
+                cmsType == CommissionType.PercentageWaivedEnhanced)
+                return -(amount * cmsValue / 100M);
+
+            return 0;
+        }
+
+        private decimal ApplyTokenCommission(CashAccountCalculator calculator, decimal commiss, ref string commissCurrency)
+        {
+            var tokenAsset = _assetsDict.GetOrDefault(TokenCommissionCurrency);
+
+            if (commiss == 0 || !IsTokenCommissionEnabled || string.IsNullOrEmpty(TokenCommissionCurrency) || !TokenCommissionCurrencyDiscount.HasValue || tokenAsset == null)
+                return commiss;
+
+            decimal tokenCommissDiscount = (decimal)TokenCommissionCurrencyDiscount.Value;
+            var conversion = calculator.Market.ConversionMap.GetNegativeAssetConversion(commissCurrency, TokenCommissionCurrency);
+            if (conversion.Error != null)
+            {
+                return commiss;
+            }
+            decimal tokenCommissConvRate = conversion.Value;
+            decimal tokenCommiss = (1M - tokenCommissDiscount) * commiss * tokenCommissConvRate;
+
+            // UL: ???
+            if (Math.Abs(tokenCommiss) > tokenAsset.FreeAmount)
+                return commiss;
+
+            commiss = tokenCommiss;
+            commissCurrency = TokenCommissionCurrency;
+
+            return commiss;
+        }
+
+        private decimal ApplyMinimalCommission(ISymbolInfo symbolInfo, CashAccountCalculator calculator, decimal commiss, string commissCurrency)
+        {
+            if (symbolInfo.MinCommission <= 0)
+            {
+                return commiss;
+            }
+
+            var convertion = calculator.Market.ConversionMap.GetNegativeAssetConversion(symbolInfo.MinCommissionCurrency, commissCurrency);
+            if (convertion.Error != null)
+            {
+                return commiss;
+            }
+            decimal minCommissConvRate = convertion.Value;
+            decimal minCommiss = -(decimal)symbolInfo.MinCommission * minCommissConvRate;
+            if (minCommiss < commiss)
+            {
+                commiss = minCommiss;
+            }
+
+            return commiss;
+        }
+        #endregion Comission
+
+        #endregion Validate orders
+
+        private string ToMarginAccountInfoString()
+        {
+            return $"Balance={BalanceRounded} {BalanceCurrency}, Equity={EquityRounded}, Margin={MarginRounded}, MarginLevel={Math.Round(100*MarginLevelRounded, 2)}%";
+        }
+
         #endregion Methods
     }
 }

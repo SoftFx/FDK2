@@ -406,7 +406,8 @@ namespace TickTrader.FDK.Calculator
         {
             Profit += args.ProfitDelta;
             Margin += args.MarginDelta;
-            if (args.ErrorDelta != 0)
+            if (args.ErrorDelta != 0 || args.IsErrorChanged)
+
             {
                 _errorCount += args.ErrorDelta;
                 var oldErrorCode = WorstErrorCode;

@@ -4,6 +4,8 @@ namespace TickTrader.FDK.Calculator.Adapter
 {
     public class CurrencyModel : ICurrencyInfo
     {
+        public const int DefaultPrecision = 2;
+
         public CurrencyModel(CurrencyInfo currency)
         {
             Name = currency.Name;

@@ -23,6 +23,13 @@ namespace TickTrader.FDK.Calculator.Adapter
             TripleSwapDay = symbol.TripleSwapDay;
             Security = symbol.SecurityName;
             SortOrder = symbol.SortOrder;
+            CommissionType = symbol.CommissionType;
+            //CommissionChargeType = symbol.CommissionChargeType;
+            //CommissionChargeMethod = symbol.CommissionChargeMethod;
+            LimitsCommission = symbol.LimitsCommission;
+            Commission = symbol.Commission;
+            MinCommission = symbol.MinCommission;
+            MinCommissionCurrency = symbol.MinCommissionCurrency;
         }
 
         public string Symbol { get; }
@@ -42,5 +49,12 @@ namespace TickTrader.FDK.Calculator.Adapter
         public int TripleSwapDay { get; }
         public string Security { get; }
         public int SortOrder { get; }
+        public CommissionType CommissionType { get; }
+        //public CommissionChargeType CommissionChargeType { get; }
+        //public CommissionChargeMethod CommissionChargeMethod { get; }
+        public double LimitsCommission { get; }
+        public double Commission { get; }
+        public double MinCommission { get; }
+        public string MinCommissionCurrency { get; }
     }
 }

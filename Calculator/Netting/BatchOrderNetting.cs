@@ -41,6 +41,8 @@ namespace TickTrader.FDK.Calculator.Netting
             var oldMargin = Margin;
             var oldProfit = Profit;
             var oldErros = ErrorCount;
+            var oldMarginError = MarginError;
+            var oldProfitError = ProfitError;
 
             ErrorCount = 0;
 
@@ -64,7 +66,7 @@ namespace TickTrader.FDK.Calculator.Netting
             else
                 Profit = 0;
 
-            return new StatsChange(Margin - oldMargin, Profit - oldProfit, ErrorCount - oldErros);
+            return new StatsChange(Margin - oldMargin, Profit - oldProfit, ErrorCount - oldErros, oldMarginError != MarginError || oldProfitError != ProfitError);
         }
 
         public StatsChange AddOrder(IOrderModel order, decimal remAmount, decimal? price)

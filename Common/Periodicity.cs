@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Runtime.Serialization;
-using TickTrader.Common.Time;
+using TickTrader.FDK.Common.Time;
 
 namespace TickTrader.FDK.Common
 {

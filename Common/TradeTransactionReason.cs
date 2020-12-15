@@ -62,6 +62,10 @@
         /// <summary>
         /// 
         /// </summary>
-        Dividend = 11
+        Dividend = 11,
+        /// <summary>
+        /// 
+        /// </summary>
+        OneCancelsTheOther
     }
 }

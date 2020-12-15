@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TickTrader.FDK.Extended</RootNamespace>
     <AssemblyName>TickTrader.FDK.Extended</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile>
     </TargetFrameworkProfile>
@@ -36,6 +36,18 @@
   <ItemGroup>
     <Reference Include="SoftFX.Net.Core">
       <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.OrderEntry">
+      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteFeed">
+      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.QuoteStore">
+      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
+    </Reference>
+    <Reference Include="SoftFX.Net.TradeCapture">
+      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -81,6 +93,10 @@
     <ProjectReference Include="..\Common\Common.csproj">
       <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
       <Name>Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\modules\sfx\DotNet\Core\Core.csproj">
+      <Project>{2a4856e5-8d40-41f7-88d1-57d1888db660}</Project>
+      <Name>Core</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

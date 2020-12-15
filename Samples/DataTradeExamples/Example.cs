@@ -71,7 +71,7 @@
             this.Trade.SessionInfo += this.OnSessionInfo;
             this.Trade.AccountInfo += this.OnAccountInfo;
             this.Trade.ExecutionReport += this.OnExecutionReport;
-            this.Trade.PositionReport += this.OnPositionReport;            
+            this.Trade.PositionReport += this.OnPositionReport;
             this.Trade.BalanceOperation += this.OnBalanceOperaiton;
             this.Trade.TradeTransactionReport += this.OnTradeTransactionReport;
             this.Trade.Notify += this.OnNofity;
@@ -80,10 +80,14 @@
 
             try
             {
-                if (! this.Trade.WaitForLogon())
+                if (!this.Trade.WaitForLogon())
                     throw new TickTrader.FDK.Common.TimeoutException("Timeout of logon waiting has been reached");
 
                 this.RunExample();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
             finally
             {

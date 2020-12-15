@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Net;
 using System.Runtime.ExceptionServices;
 using System.Threading;
+using SoftFX.Net.Core;
 using SoftFX.Net.TradeCapture;
 using TickTrader.FDK.Common;
+using ClientSession = SoftFX.Net.TradeCapture.ClientSession;
+using ClientSessionOptions = SoftFX.Net.TradeCapture.ClientSessionOptions;
 
 namespace TickTrader.FDK.Client
 {
@@ -1097,6 +1100,10 @@ namespace TickTrader.FDK.Client
                 {
                     // client_.session_.LogError(exception.Message);
                 }
+            }
+
+            public override void OnReceive(ClientSession clientSession, Message message)
+            {
             }
 
             public override void OnSend(ClientSession clientSession, int size)
@@ -2534,6 +2541,7 @@ namespace TickTrader.FDK.Client
                 tradeTransactionReport.TaxValue = trade.TaxValue.GetValueOrDefault();
                 tradeTransactionReport.Rebate = trade.Rebate.GetValueOrDefault();
                 tradeTransactionReport.RebateCurrency = trade.RebateCurrencyId;
+                tradeTransactionReport.RelatedOrderId = trade.RelatedOrderId;
 
                 TradeAssetNull asset1 = trade.SrcAsset;
                 if (asset1.HasValue)
@@ -2717,8 +2725,8 @@ namespace TickTrader.FDK.Client
                     accountPosition.BidPrice = position.Bid;
                     accountPosition.AskPrice = position.Ask;
                     accountPosition.PosId = position.PosId;
-                    accountPosition.Modified = position.Modified;
                     accountPosition.Rebate = position.Rebate;
+                    accountPosition.Created = position.Created;
 
                     accountReport.Positions[index] = accountPosition;
                 }
@@ -2929,6 +2937,9 @@ namespace TickTrader.FDK.Client
                     case SoftFX.Net.TradeCapture.TradeReason.Dividend:
                         return TickTrader.FDK.Common.TradeTransactionReason.Dividend;
 
+                    case SoftFX.Net.TradeCapture.TradeReason.OneCancelsTheOther:
+                        return TickTrader.FDK.Common.TradeTransactionReason.OneCancelsTheOther;
+
                     default:
                         return TickTrader.FDK.Common.TradeTransactionReason.None;
                 }
@@ -2985,6 +2996,9 @@ namespace TickTrader.FDK.Client
 
                     case SoftFX.Net.TradeCapture.OrderTimeInForce.GoodTillDate:
                         return TickTrader.FDK.Common.OrderTimeInForce.GoodTillDate;
+
+                    case SoftFX.Net.TradeCapture.OrderTimeInForce.OneCancelsTheOther:
+                        return TickTrader.FDK.Common.OrderTimeInForce.OneCancelsTheOther;
 
                     default:
                         return TickTrader.FDK.Common.OrderTimeInForce.Other;

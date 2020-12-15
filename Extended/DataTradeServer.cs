@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Extended
+﻿using System.Linq;
+
+namespace TickTrader.FDK.Extended
 {
     using System;
     using System.Collections.Generic;    
@@ -210,7 +212,7 @@
         /// The method opens a new order.
         /// </summary>
         /// <param name="symbol">Trading currency pair symbol; can not be null.</param>
-        /// <param name="command">Market, limit or stop.</param>
+        /// <param name="orderType">Market, limit or stop.</param>
         /// <param name="side">Order side: buy or sell.</param>
         /// <param name="volume">Requsted volume.</param>
         /// <param name="maxVisibleVolume">Max visible volume.</param>
@@ -218,23 +220,27 @@
         /// <param name="stopPrice">Stop price.</param>
         /// <param name="stopLoss">Stop loss price.</param>
         /// <param name="takeProfit">Take profit price.</param>
+        /// <param name="orderTimeInForce">TimeInForce</param>
         /// <param name="expiration">Expiration time, should be specified for pending orders.</param>
         /// <param name="comment">User defined comment for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="tag">User defined tag for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="magic">User defined magic number for a new opening order. Null is not defined.</param>
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
+        /// <param name="oneCancelsTheOtherFlag">Flag OneCancelsTheOther</param>
+        /// <param name="ocoEqualVolume">Take the amount from the other order for a new order</param>
+        /// <param name="relatedOrderId">Related order for OneCancelsTheOther</param>
         /// <returns>A new order; can not be null.</returns>
-        public TradeRecord SendOrder(string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, bool immediateOrCancelFlag, double? slippage)
+        public TradeRecord SendOrder(string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, bool immediateOrCancelFlag, double? slippage, bool oneCancelsTheOtherFlag, bool ocoEqualVolume, long? relatedOrderId)
         {
-            return SendOrderEx(Guid.NewGuid().ToString(), symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage);
+            return SendOrderEx(Guid.NewGuid().ToString(), symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage, oneCancelsTheOtherFlag, ocoEqualVolume, relatedOrderId);
         }
 
         /// <summary>
         /// The method opens a new order.
         /// </summary>
         /// <param name="symbol">Trading currency pair symbol; can not be null.</param>
-        /// <param name="command">Market, limit or stop.</param>
+        /// <param name="orderType">Market, limit or stop.</param>
         /// <param name="side">Trade record side: buy or sell.</param>
         /// <param name="volume">Requsted volume.</param>
         /// <param name="maxVisibleVolume">Max visible volume.</param>
@@ -242,6 +248,7 @@
         /// <param name="stopPrice">Stop price.</param>
         /// <param name="stopLoss">Stop loss price.</param>
         /// <param name="takeProfit">Take profit price.</param>
+        /// <param name="orderTimeInForce">TimeInForce</param>
         /// <param name="expiration">Expiration time, should be specified for pending orders.</param>
         /// <param name="comment">User defined comment for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="tag">User defined tag for a new opening order. Null is interpreded as empty string.</param>
@@ -249,10 +256,13 @@
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
+        /// <param name="oneCancelsTheOtherFlag">Flag OneCancelsTheOther</param>
+        /// <param name="ocoEqualVolume">Take the amount from the other order for a new order</param>
+        /// <param name="relatedOrderId">Related order for OneCancelsTheOther</param>
         /// <returns>A new trade record; can not be null.</returns>
-        public TradeRecord SendOrderEx(string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, int timeoutInMilliseconds, bool immediateOrCancelFlag, double? slippage)
+        public TradeRecord SendOrderEx(string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, int timeoutInMilliseconds, bool immediateOrCancelFlag, double? slippage, bool oneCancelsTheOtherFlag, bool ocoEqualVolume, long? relatedOrderId)
         {
-            return SendOrderEx(Guid.NewGuid().ToString(), symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, timeoutInMilliseconds, immediateOrCancelFlag, slippage);
+            return SendOrderEx(Guid.NewGuid().ToString(), symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, timeoutInMilliseconds, immediateOrCancelFlag, slippage, oneCancelsTheOtherFlag, ocoEqualVolume, relatedOrderId);
         }
 
         /// <summary>
@@ -263,7 +273,7 @@
         /// Otherwise, please use GenerateOperationId method of DataClient object.
         /// </param>
         /// <param name="symbol">Trading currency pair symbol; can not be null.</param>
-        /// <param name="command">Market, limit or stop.</param>
+        /// <param name="orderType">Market, limit or stop.</param>
         /// <param name="side">Trade record side: buy or sell.</param>
         /// <param name="volume">Requsted volume.</param>
         /// <param name="maxVisibleVolume">Max visible volume.</param>
@@ -271,16 +281,20 @@
         /// <param name="stopPrice">Stop price.</param>
         /// <param name="stopLoss">Stop loss price.</param>
         /// <param name="takeProfit">Take profit price.</param>
+        /// <param name="orderTimeInForce">TimeInForce</param>
         /// <param name="expiration">Expiration time, should be specified for pending orders.</param>
         /// <param name="comment">User defined comment for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="tag">User defined tag for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="magic">User defined magic number for a new opening order. Null is not defined.</param>
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
+        /// <param name="oneCancelsTheOtherFlag">Flag OneCancelsTheOther</param>
+        /// <param name="ocoEqualVolume">Take the amount from the other order for a new order</param>
+        /// <param name="relatedOrderId">Related order for OneCancelsTheOther</param>
         /// <returns>A new trade record; can not be null.</returns>
-        public TradeRecord SendOrderEx(string operationId, string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, bool immediateOrCancelFlag, double? slippage)
+        public TradeRecord SendOrderEx(string operationId, string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, bool immediateOrCancelFlag, double? slippage, bool oneCancelsTheOtherFlag, bool ocoEqualVolume, long? relatedOrderId)
         {
-            return SendOrderEx(operationId, symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage);
+            return SendOrderEx(operationId, symbol, orderType, side, volume, maxVisibleVolume, price, stopPrice, stopLoss, takeProfit, orderTimeInForce, expiration, comment, tag, magic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage, oneCancelsTheOtherFlag, ocoEqualVolume, relatedOrderId);
         }
 
         /// <summary>
@@ -291,7 +305,7 @@
         /// Otherwise, please use GenerateOperationId method of DataClient object.
         /// </param>
         /// <param name="symbol">Trading currency pair symbol; can not be null.</param>
-        /// <param name="command">Market, limit or stop.</param>
+        /// <param name="orderType">Market, limit or stop.</param>
         /// <param name="side">Trade record side: buy or sell.</param>
         /// <param name="volume">Requsted volume.</param>
         /// <param name="maxVisibleVolume">Max visible volume.</param>
@@ -299,6 +313,7 @@
         /// <param name="stopPrice">Stop price.</param>
         /// <param name="stopLoss">Stop loss price.</param>
         /// <param name="takeProfit">Take profit price.</param>
+        /// <param name="orderTimeInForce">TimeInForce</param>
         /// <param name="expiration">Expiration time, should be specified for pending orders.</param>
         /// <param name="comment">User defined comment for a new opening order. Null is interpreded as empty string.</param>
         /// <param name="tag">User defined tag for a new opening order. Null is interpreded as empty string.</param>
@@ -306,30 +321,36 @@
         /// <param name="timeoutInMilliseconds">Timeout of the synchronous operation.</param>
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
+        /// <param name="oneCancelsTheOtherFlag">Flag OneCancelsTheOther</param>
+        /// <param name="ocoEqualVolume">Take the amount from the other order for a new order</param>
+        /// <param name="relatedOrderId">Related order for OneCancelsTheOther</param>
         /// <returns>A new trade record; can not be null.</returns>
-        TradeRecord SendOrderEx(string operationId, string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, int timeoutInMilliseconds, bool immediateOrCancelFlag, double? slippage)
+        TradeRecord SendOrderEx(string operationId, string symbol, OrderType orderType, OrderSide side, double volume, double? maxVisibleVolume, double? price, double? stopPrice, double? stopLoss, double? takeProfit, OrderTimeInForce? orderTimeInForce, DateTime? expiration, string comment, string tag, int? magic, int timeoutInMilliseconds, bool immediateOrCancelFlag, double? slippage, bool oneCancelsTheOtherFlag, bool ocoEqualVolume, long? relatedOrderId)
         {
             ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.NewOrder
             (
-                operationId, 
-                symbol, 
-                orderType, 
-                side, 
-                volume, 
-                maxVisibleVolume, 
-                price, 
-                stopPrice, 
-                orderTimeInForce, 
-                expiration, 
-                stopLoss, 
-                takeProfit, 
-                comment, 
-                tag, 
-                magic, 
+                operationId,
+                symbol,
+                orderType,
+                side,
+                volume,
+                maxVisibleVolume,
+                price,
+                stopPrice,
+                orderTimeInForce,
+                expiration,
+                stopLoss,
+                takeProfit,
+                comment,
+                tag,
+                magic,
                 timeoutInMilliseconds,
                 immediateOrCancelFlag,
-                slippage
-            );
+                slippage,
+                oneCancelsTheOtherFlag,
+                ocoEqualVolume
+,
+                relatedOrderId);
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
 
@@ -381,9 +402,10 @@
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecord(string orderId, string symbol, OrderType type, OrderSide side, double? volumeChange, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpiration, string newComment, string newTag, int? newMagic, bool? immediateOrCancelFlag, double? slippage)
+        public TradeRecord ModifyTradeRecord(string orderId, string symbol, OrderType type, OrderSide side, double? volumeChange, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpiration, string newComment, string newTag, int? newMagic, bool? immediateOrCancelFlag, double? slippage,
+            bool? oneCancelsTheOtherFlag, bool? ocoEqualVolume, long? relatedOrderId)
         {
-            return ModifyTradeRecordEx(Guid.NewGuid().ToString(), orderId, null, symbol, type, side, volumeChange, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpiration, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage);
+            return ModifyTradeRecordEx(Guid.NewGuid().ToString(), orderId, null, symbol, type, side, volumeChange, newMaxVisibleVolume, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpiration, newComment, newTag, newMagic, dataTrade_.synchOperationTimeout_, immediateOrCancelFlag, slippage, oneCancelsTheOtherFlag, ocoEqualVolume, relatedOrderId);
         }
 
         /// <summary>
@@ -524,7 +546,8 @@
         /// <param name="immediateOrCancelFlag">Flag that shows if the order is ImmediateOrCancel.</param>
         /// <param name="slippage">Slippage.</param>
         /// <returns>A modified trade record.</returns>
-        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string clientId, string symbol, OrderType type, OrderSide side, double? volumeChange, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpiration, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage)
+        public TradeRecord ModifyTradeRecordEx(string operationId, string orderId, string clientId, string symbol, OrderType type, OrderSide side, double? volumeChange, double? newMaxVisibleVolume, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpiration, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage,
+            bool? oneCancelsTheOtherFlag, bool? ocoEqualVolume, long? relatedOrderId)
         {
             ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ReplaceOrder
             (
@@ -547,7 +570,10 @@
                 newMagic,
                 timeoutInMilliseconds,
                 immediateOrCancelFlag,
-                slippage
+                slippage,
+                oneCancelsTheOtherFlag,
+                ocoEqualVolume,
+                relatedOrderId
             );
 
             ExecutionReport lastExecutionReport = executionReports[executionReports.Length - 1];
@@ -730,9 +756,9 @@
         /// <returns></returns>
         public ClosePositionResult ClosePositionPartiallyEx(string orderId, double volume, string operationId, int timeoutInMilliseconds)
         {
-            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, volume, null,timeoutInMilliseconds);                       
+            ExecutionReport[] executionReports = dataTrade_.orderEntryClient_.ClosePosition(operationId, orderId, volume, null,timeoutInMilliseconds);
 
-            ExecutionReport tradeExecutionReport = executionReports[1];
+            ExecutionReport tradeExecutionReport = executionReports.LastOrDefault();
 
             return GetClosePositionResult(tradeExecutionReport);
         }
@@ -909,7 +935,7 @@
             if (executionReport.ExecutionType != ExecutionType.Trade)
                 throw new Exception("Invalid execution report : " + executionReport.ExecutionType);
 
-            ClosePositionResult closePositionResult = new ClosePositionResult();            
+            ClosePositionResult closePositionResult = new ClosePositionResult();
             closePositionResult.Sucess = true;
             closePositionResult.ExecutedVolume = executionReport.TradeAmount.Value;
             closePositionResult.ExecutedPrice = executionReport.TradePrice.Value;

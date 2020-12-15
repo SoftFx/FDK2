@@ -92,6 +92,11 @@
         public double? Rebate { get; set; }
 
         /// <summary>
+        /// Created time
+        /// </summary>
+        public DateTime? Created { get; set; }
+
+        /// <summary>
         /// Returns formatted string for the class instance.
         /// </summary>
         /// <returns>Can not be null.</returns>

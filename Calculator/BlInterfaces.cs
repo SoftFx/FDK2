@@ -25,6 +25,13 @@ namespace TickTrader.FDK.Calculator
         int TripleSwapDay { get; }
         string Security { get; }
         int SortOrder { get; }
+        CommissionType CommissionType { get; }
+        //CommissionChargeType CommissionChargeType { get; }
+        //CommissionChargeMethod CommissionChargeMethod { get; }
+        double LimitsCommission { get; }
+        double Commission { get; }
+        double MinCommission { get; }
+        string MinCommissionCurrency { get; }
     }
 
     public interface ICurrencyInfo

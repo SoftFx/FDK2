@@ -1,4 +1,4 @@
-﻿namespace TickTrader.Common.Time
+﻿namespace TickTrader.FDK.Common.Time
 {
     public enum TimeInterval
     {

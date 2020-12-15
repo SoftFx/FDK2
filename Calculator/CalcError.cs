@@ -19,7 +19,17 @@
         /// <summary>
         /// Configuration is incorrect.
         /// </summary>
-        Misconfiguration       // red
+        Misconfiguration,       // red
+
+        /// <summary>
+        /// Account has negative asset(s).
+        /// </summary>
+        //NegativeAsset,          // red
+
+        /// <summary>
+        /// Account overdraft exceeds limit
+        /// </summary>
+        //Overdraft               // red
     }
 
     /// <summary>
@@ -70,6 +80,17 @@
         }
     }
 
+    public class SymbolNotFoundMisconfigError : MisconfigurationError
+    {
+        public string Symbol { get; }
+
+        public SymbolNotFoundMisconfigError(string symbol) : base($"Symbol not found {symbol}")
+        {
+            Symbol = symbol;
+        }
+    }
+
+
     public class OffQuoteError : CalcError
     {
         public OffQuoteError(bool cross, string symbol, FxPriceType? side = null)
@@ -102,4 +123,21 @@
                 return " (Bid)";
         }
     }
+
+    /*public class NegativeAssetError : CalcError
+    {
+        public string Asset { get; }
+
+        public NegativeAssetError(string asset) : base(CalcErrorCode.NegativeAsset, $"{asset} < 0")
+        {
+            Asset = asset;
+        }
+    }
+
+    public class OverdraftError : CalcError
+    {
+        public OverdraftError(string info) : base(CalcErrorCode.Overdraft, info)
+        {
+        }
+    }*/
 }

@@ -36,9 +36,9 @@ namespace TickTrader.FDK.Calculator
                 InitMarginFactorCache();
 
             if (SymbolInfo == null)
-                InitError = new MisconfigurationError("Symbol not found: " + _symbolName);
+                InitError = new SymbolNotFoundMisconfigError(_symbolName);
             else if (SymbolInfo.ProfitCurrency == null || SymbolInfo.MarginCurrency == null)
-                InitError = new MisconfigurationError("Currency configuration is missing for symbol " + _symbolName + ".");
+                InitError = new MisconfigurationError($"Currency not found for symbol {_symbolName}.");
             else
                 InitError = null;
         }
@@ -272,12 +272,16 @@ namespace TickTrader.FDK.Calculator
             if (profitIsPositive)
             {
                 error = PositiveProfitConversionRate.Error;
-                return PositiveProfitConversionRate.Value;
+                if (error == null)
+                    return PositiveProfitConversionRate.Value;
+                return 0;
             }
             else
             {
                 error = NegativeProfitConversionRate.Error;
-                return NegativeProfitConversionRate.Value;
+                if (error == null)
+                    return NegativeProfitConversionRate.Value;
+                return 0;
             }
         }
 
@@ -331,14 +335,16 @@ namespace TickTrader.FDK.Calculator
 
         #region Swap
 
-        public decimal CalculateSwap(decimal amount, OrderSide side, DateTime now, out CalcError error)
+        public decimal CalculateSwap(decimal amount, OrderSide side, DateTime now, out CalcError error, out SwapType? type, out double? swapSize)
         {
             error = InitError;
+            type = null;
+            swapSize = null;
 
             if (error != null)
                 return 0;
 
-            decimal swapAmount = (decimal)GetSwapModifier(side) * amount;
+            decimal swapAmount = (decimal)GetSwapModifier(side, ref type, ref swapSize) * amount;
             decimal swap = 0;
 
             if (SymbolInfo.SwapType == SwapType.Points)
@@ -359,10 +365,15 @@ namespace TickTrader.FDK.Calculator
             return swap;
         }
 
-        private double GetSwapModifier(OrderSide side)
+        private double GetSwapModifier(OrderSide side, ref SwapType? type, ref double? swapSize)
         {
             if (SymbolInfo.SwapEnabled)
             {
+                type = SymbolInfo.SwapType;
+                if (side == OrderSide.Buy)
+                    swapSize = SymbolInfo.SwapSizeLong;
+                if (side == OrderSide.Sell)
+                    swapSize = SymbolInfo.SwapSizeShort;
                 if (SymbolInfo.SwapType == SwapType.Points)
                 {
                     if (side == OrderSide.Buy)

@@ -4,6 +4,7 @@ using TickTrader.FDK.Calculator.Adapter;
 using System.Collections.Generic;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Extended;
+using TickTrader.FDK.Calculator.Validation;
 
 namespace TickTrader.FDK.Calculator
 {
@@ -40,6 +41,7 @@ namespace TickTrader.FDK.Calculator
             var currencyAdapters = currencies.OrderBy(c => c.SortOrder).Select(c => new CurrencyModel(c)).ToList();
 
             Symbols = symbolAdapters.ToDictionary(s => s.Symbol);
+            Currencies = currencyAdapters.ToDictionary(c => c.Name);
             MarketState.Init(symbolAdapters, currencyAdapters);
 
             UpdateRates(quotes);
@@ -48,6 +50,12 @@ namespace TickTrader.FDK.Calculator
             Account.Balance = (decimal)accountInfo.Balance.GetValueOrDefault();
             Account.BalanceCurrency = accountInfo.Currency;
             Account.Leverage = accountInfo.Leverage ?? 1;
+            Account.MaxOverdraftAmount = (decimal)(accountInfo.MaxOverdraftAmount ?? 0);
+            Account.OverdraftCurrency = accountInfo.OverdraftCurrency;
+            Account.OverdraftCurrencyPrecision = GetCurrencyPrecision(accountInfo.OverdraftCurrency);
+            Account.TokenCommissionCurrency = accountInfo.TokenCommissionCurrency;
+            Account.TokenCommissionCurrencyDiscount = accountInfo.TokenCommissionCurrencyDiscount;
+            Account.IsTokenCommissionEnabled = accountInfo.IsTokenCommissionEnabled;
 
             var assets = accountInfo.Assets;
             Account.InitAssets(assets);
@@ -81,6 +89,12 @@ namespace TickTrader.FDK.Calculator
             Account.Balance = (decimal)accountInfoUpdate.Balance.GetValueOrDefault();
             Account.BalanceCurrency = accountInfoUpdate.Currency;
             Account.Leverage = accountInfoUpdate.Leverage ?? 1;
+            Account.MaxOverdraftAmount = (decimal)(accountInfoUpdate.MaxOverdraftAmount ?? 0);
+            Account.OverdraftCurrency = accountInfoUpdate.OverdraftCurrency;
+            Account.OverdraftCurrencyPrecision = GetCurrencyPrecision(accountInfoUpdate.OverdraftCurrency);
+            Account.TokenCommissionCurrency = accountInfoUpdate.TokenCommissionCurrency;
+            Account.TokenCommissionCurrencyDiscount = accountInfoUpdate.TokenCommissionCurrencyDiscount;
+            Account.IsTokenCommissionEnabled = accountInfoUpdate.IsTokenCommissionEnabled;
             var assets = accountInfoUpdate.Assets;
             Account.UpdateAssets(assets);
         }
@@ -106,6 +120,24 @@ namespace TickTrader.FDK.Calculator
             catch { }
 
             return null;
+        }
+
+        internal CurrencyModel GetCurrencyOrNull(string currencyName)
+        {
+            CurrencyModel currency;
+            try
+            {
+                if (Currencies != null && Currencies.TryGetValue(currencyName, out currency))
+                    return currency;
+            }
+            catch { }
+
+            return null;
+        }
+
+        internal int GetCurrencyPrecision(string currencyName)
+        {
+            return GetCurrencyOrNull(currencyName)?.Precision ?? CurrencyModel.DefaultPrecision;
         }
 
         internal void Clear()
@@ -214,6 +246,67 @@ namespace TickTrader.FDK.Calculator
             }
         }
 
+        /// <summary>
+        ///  Calculates Used Overdraft
+        /// </summary>
+        /// <returns>Used overdraft or null if it cannot be calculated or overdraft is not allowed for account.</returns>
+        public decimal? TryCalculateUsedOverdraft()
+        {
+            try
+            {
+                if (!IsInitialized)
+                    return null;
+
+                return Account.TryCalculateOverdraft(out _);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Validates margin for New Order request
+        /// </summary>
+        /// <param name="request">New Order request parameters</param>
+        /// <exception cref="MarketConfigurationException">Throws when market configuration is incorrect (e.g., symbol or currency is missing).</exception>
+        /// <exception cref="NotEnoughMoneyException">Throws when not enough money.</exception>
+        /// <exception cref="OffQuoteException">Throws when required quote is missing.</exception>
+        /// <exception cref="OffCrossQuoteException">Throws when required cross quote is missing.</exception>
+        /// <exception cref="ArgumentNullException">Throws when request model is null.</exception>
+        /// <exception cref="NotInitializedException">Throws when calculator is not initialized yet.</exception>
+        public void ValidateNewOrderMargin(NewOrderRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (!IsInitialized)
+                throw new NotInitializedException("Calculator is not initialized yet");
+
+            Account.ValidateNewOrderMargin(request);
+        }
+
+        /// <summary>
+        /// Validates margin for Modify Order request
+        /// </summary>
+        /// <param name="request">Modify Order request parameters</param>
+        /// <exception cref="MarketConfigurationException">Throws when market configuration is incorrect (e.g., symbol or currency is missing).</exception>
+        /// <exception cref="NotEnoughMoneyException">Throws when not enough money.</exception>
+        /// <exception cref="OffQuoteException">Throws when required quote is missing.</exception>
+        /// <exception cref="OffCrossQuoteException">Throws when required cross quote is missing.</exception>
+        /// <exception cref="ArgumentException">Throws when order with Id specified would not be found.</exception>
+        /// <exception cref="ArgumentNullException">Throws when request model is null.</exception>
+        /// <exception cref="NotInitializedException">Throws when calculator is not initialized yet.</exception>
+        public void ValidateModifyOrderMargin(ModifyOrderRequest request)
+        {
+            if (request == null)
+                throw new ArgumentNullException(nameof(request));
+
+            if (!IsInitialized)
+                throw new NotInitializedException("Calculator is not initialized yet");
+
+            Account.ValidateModifyOrderMargin(request);
+        }
         #endregion
 
         #region Internal Properties
@@ -223,6 +316,7 @@ namespace TickTrader.FDK.Calculator
         internal MarketState MarketState { get; }
         internal AccountAdapter Account { get; }
         internal IDictionary<string, SymbolModel> Symbols { get; private set; }
+        internal IDictionary<string, CurrencyModel> Currencies { get; private set; }
 
         #endregion
 
