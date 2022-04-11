@@ -185,9 +185,9 @@ namespace TickTrader.FDK.Common
                     return anyTimeFromPeriod.Date.AddDays(DayOfWeek.Sunday - anyTimeFromPeriod.DayOfWeek);
                 case TimeInterval.Month:
                     var month = anyTimeFromPeriod.Month;
-                    return new DateTime(anyTimeFromPeriod.Year, month - (month - 1) % intervalsCount, 1);
+                    return new DateTime(anyTimeFromPeriod.Year, month - (month - 1) % intervalsCount, 1, 0,0,0, DateTimeKind.Utc);
                 case TimeInterval.Year:
-                    return new DateTime(anyTimeFromPeriod.Year, 1, 1);
+                    return new DateTime(anyTimeFromPeriod.Year, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                 default:
                     throw new ArgumentOutOfRangeException();
             }

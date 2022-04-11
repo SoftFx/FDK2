@@ -1733,16 +1733,16 @@ namespace TickTrader.FDK.Client
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
-                    foreach (ClientContext context in contexts)
-                    {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
+                            try
+                            {
                             ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
                     if (client_.DisconnectResultEvent != null)
                     {
@@ -1769,17 +1769,17 @@ namespace TickTrader.FDK.Client
             public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
             {
                 try
-                {
-                    foreach (ClientContext context in contexts)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
+                            try
+                            {
                             ((IAsyncContext)context).ProcessDisconnect(client_, text);
+                            }
+                            catch
+                            {
+                            }
                         }
-                        catch
-                        {
-                        }
-                    }
 
                     if (client_.DisconnectEvent != null)
                     {
@@ -3271,7 +3271,7 @@ namespace TickTrader.FDK.Client
                     }
                 }
 
-                if (context.calcBar_.From != new DateTime() && !(context.calcBarPeriod_.Prefix == BarPeriodPrefix.W && context.calcBar_.To.Month != context.bar_.From.Month))
+                if (context.calcBar_.From != new DateTime() && !(context.calcBarPeriod_.Prefix == BarPeriodPrefix.W && context.calcBar_.To.AddMilliseconds(-1).Month != context.bar_.From.Month))
                 {
                     if (client_.BarDownloadResultEvent != null)
                     {
@@ -3289,7 +3289,6 @@ namespace TickTrader.FDK.Client
                     {
                         TickTrader.FDK.Common.Bar bar = context.calcBar_.Clone();
                         context.modifier_.ModifyBar(ref bar);
-
                         context.enumerartor_.SetResult(bar);
                     }
 
@@ -3364,7 +3363,7 @@ namespace TickTrader.FDK.Client
                             context.calcBar_.Close = quoteEntry.Price;
                             context.calcBar_.Low = quoteEntry.Price;
                             context.calcBar_.High = quoteEntry.Price;
-                            context.calcBar_.Volume = Math.Abs(quoteEntry.Volume);
+                            context.calcBar_.Volume = 1;
                         }
                     }
                     else if (calcFrom == context.calcBar_.From)
@@ -3381,7 +3380,7 @@ namespace TickTrader.FDK.Client
                             if (quoteEntry.Price > context.calcBar_.High)
                                 context.calcBar_.High = quoteEntry.Price;
 
-                            context.calcBar_.Volume += Math.Abs(quoteEntry.Volume);
+                            context.calcBar_.Volume++;
                         }
                     }
                     else
