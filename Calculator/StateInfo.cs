@@ -12,7 +12,7 @@ namespace TickTrader.FDK.Calculator
     /// <summary>
     /// Represents financial state of account.
     /// </summary>
-    [DebuggerDisplay("#{Generation}: Balance = {Balance}; Profit = {Profit}; Margin = {Margin}")]
+    [DebuggerDisplay("#{Generation}: Balance={Balance}; Profit={Profit}; Margin={Margin}")]
     public sealed class StateInfo
     {
         #region Construction
@@ -28,6 +28,7 @@ namespace TickTrader.FDK.Calculator
             this.MarginLevel = (double)account.MarginLevelRounded;
             this.Commission = (double)account.CommissionRounded;
             this.Swap = (double)account.SwapRounded;
+            this.Rebate = (double)account.RebateRounded;
             this.AgentCommission = (double)account.AgentCommissionRounded;
 
             this.Quotes = quotes;
@@ -92,6 +93,11 @@ namespace TickTrader.FDK.Calculator
         public double Swap { get; private set; }
 
         /// <summary>
+        /// Gets total rebate.
+        /// </summary>
+        public double Rebate { get; private set; }
+
+        /// <summary>
         /// Gets free margin.
         /// </summary>
         public double FreeMargin
@@ -141,7 +147,7 @@ namespace TickTrader.FDK.Calculator
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("#{0}: Balance = {1}; Profit = {2}; Margin = {3}", this.Generation, this.Balance, this.Profit, this.Margin);
+            return string.Format("#{0}: Balance={1}; Profit={2}; Margin={3}", this.Generation, this.Balance, this.Profit, this.Margin);
         }
 
         #endregion

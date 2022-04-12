@@ -7,7 +7,7 @@ using SoftFX.Net.Core;
 using SoftFX.Net.TradeCapture;
 using TickTrader.FDK.Common;
 using ClientSession = SoftFX.Net.TradeCapture.ClientSession;
-using ClientSessionOptions = SoftFX.Net.TradeCapture.ClientSessionOptions;
+//using ClientSessionOptions = SoftFX.Net.TradeCapture.ClientSessionOptions;
 
 namespace TickTrader.FDK.Client
 {
@@ -33,7 +33,8 @@ namespace TickTrader.FDK.Client
             IPAddress proxyAddress = null,
             int proxyPort = 0,
             string proxyUsername = null,
-            string proxyPassword = null
+            string proxyPassword = null,
+            OptimizationType? optimizationType = null
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
@@ -53,6 +54,8 @@ namespace TickTrader.FDK.Client
             options.ProxyPort = proxyPort;
             options.Username = proxyUsername;
             options.Password = proxyPassword;
+            if (optimizationType.HasValue)
+                options.OptimizationType = optimizationType.Value;
 
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
@@ -119,7 +122,7 @@ namespace TickTrader.FDK.Client
 
             if (! context.Wait(timeout))
             {
-                DisconnectInternal(null, "Connect timeout");
+                DisconnectInternal(null, Reason.ClientError("Connect timeout"));
                 Join();
 
                 throw new Common.TimeoutException("Method call timed out");
@@ -142,17 +145,17 @@ namespace TickTrader.FDK.Client
             session_.Connect(context, address);
         }
 
-        public string Disconnect(string text)
+        public string Disconnect(Reason reason)
         {
             string result;
 
             DisconnectAsyncContext context = new DisconnectAsyncContext(true);
 
-            if (DisconnectInternal(context, text))
+            if (DisconnectInternal(context, reason))
             {
                 context.Wait(-1);
 
-                result = context.text_;
+                result = context.Reason.Text;
             }
             else
                 result = null;
@@ -160,17 +163,17 @@ namespace TickTrader.FDK.Client
             return result;
         }
 
-        public bool DisconnectAsync(object data, string text)
+        public bool DisconnectAsync(object data, Reason reason)
         {
             DisconnectAsyncContext context = new DisconnectAsyncContext(false);
             context.Data = data;
 
-            return DisconnectInternal(context, text);
+            return DisconnectInternal(context, reason);
         }
 
-        bool DisconnectInternal(DisconnectAsyncContext context, string text)
+        bool DisconnectInternal(DisconnectAsyncContext context, Reason reason)
         {
-            return session_.Disconnect(context, text);
+            return session_.Disconnect(context, reason);
         }
 
         public void Join()
@@ -358,8 +361,21 @@ namespace TickTrader.FDK.Client
         public delegate void DownloadAccountReportsErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
         public delegate void CancelDownloadAccountReportsResultDelegate(TradeCapture tradeCapture, object data);
         public delegate void CancelDownloadAccountReportsErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
+        public delegate void SubscribeTriggerReportResultBeginDelegate(TradeCapture tradeCapture, object data, int count);
+        public delegate void SubscribeTriggerReportResultDelegate(TradeCapture tradeCapture, object data, TickTrader.FDK.Common.ContingentOrderTriggerReport triggerReport);
+        public delegate void SubscribeTriggerReportResultEndDelegate(TradeCapture tradeCapture, object data);
+        public delegate void SubscribeTriggerReportErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
+        public delegate void UnsubscribeTriggerReportResultDelegate(TradeCapture tradeCapture, object data);
+        public delegate void UnsubscribeTriggerReportErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
+        public delegate void DownloadTriggerReportResultBeginDelegate(TradeCapture tradeCapture, object data, string id, int totalCount);
+        public delegate void DownloadTriggerReportResultDelegate(TradeCapture tradeCapture, object data, TickTrader.FDK.Common.ContingentOrderTriggerReport triggerReport);
+        public delegate void DownloadTriggerReportResultEndDelegate(TradeCapture tradeCapture, object data);
+        public delegate void DownloadTriggerReportErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
+        public delegate void CancelDownloadTriggerReportResultDelegate(TradeCapture tradeCapture, object data);
+        public delegate void CancelDownloadTriggerReportErrorDelegate(TradeCapture tradeCapture, object data, Exception exception);
         public delegate void TradeUpdateDelegate(TradeCapture tradeCapture, TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport);
         public delegate void NotificationDelegate(TradeCapture tradeCapture, TickTrader.FDK.Common.Notification notification);
+        public delegate void TriggerReportUpdateDelegate(TradeCapture tradeCapture, TickTrader.FDK.Common.ContingentOrderTriggerReport triggerReport);
 
         public event SubscribeTradesResultBeginDelegate SubscribeTradesResultBeginEvent;
         public event SubscribeTradesResultDelegate SubscribeTradesResultEvent;
@@ -379,8 +395,21 @@ namespace TickTrader.FDK.Client
         public event DownloadAccountReportsErrorDelegate DownloadAccountReportsErrorEvent;
         public event CancelDownloadAccountReportsResultDelegate CancelDownloadAccountReportsResultEvent;
         public event CancelDownloadAccountReportsErrorDelegate CancelDownloadAccountReportsErrorEvent;
+        public event SubscribeTriggerReportResultBeginDelegate SubscribeTriggerReportResultBeginEvent;
+        public event SubscribeTriggerReportResultDelegate SubscribeTriggerReportResultEvent;
+        public event SubscribeTriggerReportResultEndDelegate SubscribeTriggerReportResultEndEvent;
+        public event SubscribeTriggerReportErrorDelegate SubscribeTriggerReportErrorEvent;
+        public event UnsubscribeTriggerReportResultDelegate UnsubscribeTriggerReportResultEvent;
+        public event UnsubscribeTriggerReportErrorDelegate UnsubscribeTriggerReportErrorEvent;
+        public event DownloadTriggerReportResultBeginDelegate DownloadTriggerReportResultBeginEvent;
+        public event DownloadTriggerReportResultDelegate DownloadTriggerReportResultEvent;
+        public event DownloadTriggerReportResultEndDelegate DownloadTriggerReportResultEndEvent;
+        public event DownloadTriggerReportErrorDelegate DownloadTriggerReportErrorEvent;
+        public event CancelDownloadTriggerReportResultDelegate CancelDownloadTriggerReportResultEvent;
+        public event CancelDownloadTriggerReportErrorDelegate CancelDownloadTriggerReportErrorEvent;
         public event TradeUpdateDelegate TradeUpdateEvent;
         public event NotificationDelegate NotificationEvent;
+        public event TriggerReportUpdateDelegate TriggerReportUpdateEvent;
 
         public SubscribeTradesEnumerator SubscribeTrades(DateTime? from, bool skipCancel, int timeout)
         {
@@ -503,6 +532,127 @@ namespace TickTrader.FDK.Client
             session_.SendTradeDownloadCancelRequest(context, request);
         }
 
+        public SubscribeTriggerReportsEnumerator SubscribeTriggerReports(DateTime? from, bool skipFailed, int timeout)
+        {
+            SubscribeTriggerReportsAsyncContext context = new SubscribeTriggerReportsAsyncContext(true);
+            context.enumerator_ = new SubscribeTriggerReportsEnumerator(this);
+
+            SubscribeTriggerReportsInternal(context, from, skipFailed);
+
+            context.enumerator_.Begin(timeout);
+
+            return context.enumerator_;
+        }
+
+        public void SubscribeTriggerReportsAsync(object data, DateTime? from, bool skipFailed)
+        {
+            SubscribeTriggerReportsAsyncContext context = new SubscribeTriggerReportsAsyncContext(false);
+            context.Data = data;
+
+            SubscribeTriggerReportsInternal(context, from, skipFailed);
+        }
+
+        void SubscribeTriggerReportsInternal(SubscribeTriggerReportsAsyncContext context, DateTime? from, bool skipFailed)
+        {
+            TriggerHistorySubscribeRequest request = new TriggerHistorySubscribeRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.From = from;
+            request.SkipFailed = skipFailed;
+
+            session_.SendTriggerHistorySubscribeRequest(context, request);
+        }
+
+        public void UnsubscribeTriggerReports(int timeout)
+        {
+            UnsubscribeTriggerReportsAsyncContext context = new UnsubscribeTriggerReportsAsyncContext(true);
+
+            UnsubscribeTriggerReportsInternal(context);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void UnsubscribeTriggerReportsAsync(object data)
+        {
+            UnsubscribeTriggerReportsAsyncContext context = new UnsubscribeTriggerReportsAsyncContext(false);
+            context.Data = data;
+
+            UnsubscribeTriggerReportsInternal(context);
+        }
+
+        void UnsubscribeTriggerReportsInternal(UnsubscribeTriggerReportsAsyncContext context)
+        {
+            TriggerHistoryUnsubscribeRequest request = new TriggerHistoryUnsubscribeRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+
+            session_.SendTriggerHistoryUnsubscribeRequest(context, request);
+        }
+
+        public DownloadTriggerReportsEnumerator DownloadTriggerReports(TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipFailed, int timeout)
+        {
+            DownloadTriggerReportsAsyncContext context = new DownloadTriggerReportsAsyncContext(true);
+            context.enumerator_ = new DownloadTriggerReportsEnumerator(this);
+
+            DownloadTriggerReportsInternal(context, timeDirection, from, to, skipFailed);
+
+            context.enumerator_.Begin(timeout);
+
+            return context.enumerator_;
+        }
+
+        public void DownloadTriggerReportsAsync(object data, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipFailed)
+        {
+            DownloadTriggerReportsAsyncContext context = new DownloadTriggerReportsAsyncContext(false);
+            context.Data = data;
+
+            DownloadTriggerReportsInternal(context, timeDirection, from, to, skipFailed);
+        }
+
+        void DownloadTriggerReportsInternal(DownloadTriggerReportsAsyncContext context, TimeDirection timeDirection, DateTime? from, DateTime? to, bool skipFailed)
+        {
+            TriggerHistoryDownloadRequest request = new TriggerHistoryDownloadRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.Direction = GetTradeHistoryDirection(timeDirection);
+            request.From = from;
+            request.To = to;
+            request.SkipFailed = skipFailed;
+
+            session_.SendTriggerHistoryDownloadRequest(context, request);
+        }
+
+        public void CancelDownloadTriggerReports(string id, int timeout)
+        {
+            CancelDownloadTriggerReportsAsyncContext context = new CancelDownloadTriggerReportsAsyncContext(true);
+
+            CancelDownloadTriggerReportsInternal(context, id);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void CancelDownloadTriggerReportsAsync(object data, string id)
+        {
+            CancelDownloadTriggerReportsAsyncContext context = new CancelDownloadTriggerReportsAsyncContext(false);
+            context.Data = data;
+
+            CancelDownloadTriggerReportsInternal(context, id);
+        }
+
+        void CancelDownloadTriggerReportsInternal(CancelDownloadTriggerReportsAsyncContext context, string id)
+        {
+            TriggerHistoryDownloadCancelRequest request = new TriggerHistoryDownloadCancelRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+            request.RequestId = id;
+
+            session_.SendTriggerHistoryDownloadCancelRequest(context, request);
+        }
+
         public DownloadAccountReportsEnumerator DownloadAccountReports(TimeDirection timeDirection, DateTime? from, DateTime? to, int timeout)
         {
             DownloadAccountReportsAsyncContext context = new DownloadAccountReportsAsyncContext(true);
@@ -600,7 +750,7 @@ namespace TickTrader.FDK.Client
 
         interface IAsyncContext
         {
-            void ProcessDisconnect(TradeCapture tradeCapture, string text);
+            void ProcessDisconnect(TradeCapture tradeCapture, Reason reason);
         }
 
         class ConnectAsyncContext : ConnectClientContext
@@ -618,7 +768,7 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public string text_;
+            public Reason Reason;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
@@ -627,9 +777,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.LoginErrorEvent != null)
                 {
@@ -657,9 +807,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.LoginErrorEvent != null)
                 {
@@ -688,9 +838,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.LoginErrorEvent != null)
                 {
@@ -719,9 +869,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.LogoutErrorEvent != null)
                 {
@@ -750,9 +900,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.SubscribeTradesErrorEvent != null)
                 {
@@ -781,9 +931,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.UnsubscribeTradesErrorEvent != null)
                 {
@@ -811,9 +961,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.DownloadTradesErrorEvent != null)
                 {
@@ -842,9 +992,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.CancelDownloadTradesErrorEvent != null)
                 {
@@ -872,9 +1022,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.DownloadAccountReportsErrorEvent != null)
                 {
@@ -903,15 +1053,135 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(TradeCapture tradeCapture, string text)
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (tradeCapture.CancelDownloadAccountReportsErrorEvent != null)
                 {
                     try
                     {
                         tradeCapture.CancelDownloadAccountReportsErrorEvent(tradeCapture, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+        }
+
+        class SubscribeTriggerReportsAsyncContext : TriggerHistorySubscribeRequestClientContext, IAsyncContext
+        {
+            public SubscribeTriggerReportsAsyncContext(bool waitbale) : base(waitbale)
+            {
+            }
+
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (tradeCapture.SubscribeTriggerReportErrorEvent != null)
+                {
+                    try
+                    {
+                        tradeCapture.SubscribeTriggerReportErrorEvent(tradeCapture, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    enumerator_.SetError(exception);
+                }
+            }
+
+            public SubscribeTriggerReportsEnumerator enumerator_;
+        }
+
+        class UnsubscribeTriggerReportsAsyncContext : TriggerHistoryUnsubscribeRequestClientContext, IAsyncContext
+        {
+            public UnsubscribeTriggerReportsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (tradeCapture.UnsubscribeTriggerReportErrorEvent != null)
+                {
+                    try
+                    {
+                        tradeCapture.UnsubscribeTriggerReportErrorEvent(tradeCapture, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+        }
+
+        class DownloadTriggerReportsAsyncContext : TriggerHistoryDownloadRequestClientContext, IAsyncContext
+        {
+            public DownloadTriggerReportsAsyncContext(bool waitbale) : base(waitbale)
+            {
+            }
+
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (tradeCapture.DownloadTriggerReportErrorEvent != null)
+                {
+                    try
+                    {
+                        tradeCapture.DownloadTriggerReportErrorEvent(tradeCapture, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    enumerator_.SetError(exception);
+                }
+            }
+
+            public DownloadTriggerReportsEnumerator enumerator_;
+        }
+
+        class CancelDownloadTriggerReportsAsyncContext : TriggerHistoryDownloadCancelRequestClientContext, IAsyncContext
+        {
+            public CancelDownloadTriggerReportsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(TradeCapture tradeCapture, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (tradeCapture.CancelDownloadTriggerReportErrorEvent != null)
+                {
+                    try
+                    {
+                        tradeCapture.CancelDownloadTriggerReportErrorEvent(tradeCapture, Data, exception);
                     }
                     catch
                     {
@@ -978,13 +1248,13 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
+            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, Reason reason)
             {
                 try
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext) connectContext;
 
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -1008,11 +1278,11 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, string text)
+            public override void OnConnectError(ClientSession clientSession, Reason reason)
             {
                 try
                 {
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -1031,20 +1301,23 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext) disconnectContext;
 
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -1052,7 +1325,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
+                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, reason.Text);
                         }
                         catch
                         {
@@ -1061,7 +1334,7 @@ namespace TickTrader.FDK.Client
 
                     if (disconnectAsyncContext.Waitable)
                     {
-                        disconnectAsyncContext.text_ = text;
+                        disconnectAsyncContext.Reason = reason;
                     }
                 }
                 catch
@@ -1070,18 +1343,21 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -1089,7 +1365,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectEvent(client_, text);
+                            client_.DisconnectEvent(client_, reason.Text);
                         }
                         catch
                         {
@@ -2421,6 +2697,541 @@ namespace TickTrader.FDK.Client
                 }
             }
 
+            public override void OnTriggerHistoryUpdateReport(ClientSession session, TriggerHistoryUpdateReport message)
+            {
+                try
+                {
+                    var result = GetTriggerReport(message.Report);
+
+                    if (client_.TriggerReportUpdateEvent != null)
+                    {
+                        try
+                        {
+                            client_.TriggerReportUpdateEvent(client_, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryUpdateReport(ClientSession session, TriggerHistoryDownloadRequestClientContext context, TriggerHistoryUpdateReport message)
+            {
+                try
+                {
+                    var asyncContext = (DownloadTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        var result = GetTriggerReport(message.Report);
+
+                        if (client_.DownloadTriggerReportResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportResultEvent(client_, asyncContext.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetResult(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryUpdateReport(ClientSession session, TriggerHistorySubscribeRequestClientContext context, TriggerHistoryUpdateReport message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        var result = GetTriggerReport(message.Report);
+
+                        if (client_.SubscribeTriggerReportResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportResultEvent(client_, asyncContext.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetResult(result);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryDownloadBeginReport(ClientSession session, TriggerHistoryDownloadRequestClientContext context, TriggerHistoryDownloadBeginReport message)
+            {
+                try
+                {
+                    var asyncContext = (DownloadTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+
+                        if (client_.DownloadTriggerReportResultBeginEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportResultBeginEvent(client_, asyncContext.Data, message.RequestId, message.TotalCount);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetBegin(message.RequestId, message.TotalCount);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryDownloadCancelReject(ClientSession session, TriggerHistoryDownloadCancelRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (CancelDownloadTriggerReportsAsyncContext)context;
+
+                    Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.CancelDownloadTriggerReportErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.CancelDownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryDownloadCancelReport(ClientSession session, TriggerHistoryDownloadCancelRequestClientContext context, TriggerHistoryDownloadCancelReport message)
+            {
+                try
+                {
+                    var asyncContext = (CancelDownloadTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        if (client_.CancelDownloadTriggerReportResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadTriggerReportResultEvent(client_, asyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.CancelDownloadTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.CancelDownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryDownloadEndReport(ClientSession session, TriggerHistoryDownloadRequestClientContext context, TriggerHistoryDownloadEndReport message)
+            {
+                try
+                {
+                    var asyncContext = (DownloadTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        if (client_.DownloadTriggerReportResultEndEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportResultEndEvent(client_, asyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetEnd();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.DownloadTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.DownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryDownloadReject(ClientSession session, TriggerHistoryDownloadRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (DownloadTriggerReportsAsyncContext)context;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.DownloadTriggerReportErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.DownloadTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.enumerator_.SetError(exception);
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistorySubscribeBeginReport(ClientSession session, TriggerHistorySubscribeRequestClientContext context, TriggerHistorySubscribeBeginReport message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+
+                        if (client_.SubscribeTriggerReportResultBeginEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportResultBeginEvent(client_, asyncContext.Data, message.TotalCount);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetBegin(message.TotalCount);
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistorySubscribeEndReport(ClientSession session, TriggerHistorySubscribeRequestClientContext context, TriggerHistorySubscribeEndReport message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        if (client_.SubscribeTriggerReportResultEndEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportResultEndEvent(client_, asyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetEnd();
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.enumerator_.SetError(exception);
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistorySubscribeReject(ClientSession session, TriggerHistorySubscribeRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeTriggerReportsAsyncContext)context;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.SubscribeTriggerReportErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.SubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.enumerator_.SetError(exception);
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryUnsubscribeReject(ClientSession session, TriggerHistoryUnsubscribeRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (UnsubscribeTriggerReportsAsyncContext)context;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.UnsubscribeTriggerReportErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.UnsubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnTriggerHistoryUnsubscribeReport(ClientSession session, TriggerHistoryUnsubscribeRequestClientContext context, TriggerHistoryUnsubscribeReport message)
+            {
+                try
+                {
+                    var asyncContext = (UnsubscribeTriggerReportsAsyncContext)context;
+
+                    try
+                    {
+                        if (client_.UnsubscribeTriggerReportResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeTriggerReportResultEvent(client_, asyncContext.Data);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.UnsubscribeTriggerReportErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeTriggerReportErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
             void FillTradeTransactionReport(TickTrader.FDK.Common.TradeTransactionReport tradeTransactionReport, SoftFX.Net.TradeCapture.Trade trade)
             {
                 tradeTransactionReport.TradeTransactionId = trade.Id;
@@ -2754,6 +3565,61 @@ namespace TickTrader.FDK.Client
                     accountReport.Assets[index] = assetInfo;
                 }
 
+                AccountOrderArray orders = account.Orders;
+                int orderCount = orders.Length;
+                accountReport.Orders = new Order[orderCount];
+                for (int index = 0; index < orderCount; index++)
+                {
+                    SoftFX.Net.TradeCapture.AccountOrder order = orders[index];
+                    TickTrader.FDK.Common.Order accountOrder = new TickTrader.FDK.Common.Order();
+
+                    accountOrder.OrderId = order.OrderId.ToString();
+                    accountOrder.ClientOrderId = order.OrigClOrdId;
+                    accountOrder.ParentOrderId = order.ParentOrderId.HasValue ? order.ParentOrderId.ToString() : null;
+                    accountOrder.Symbol = order.SymbolId;
+                    accountOrder.Volume = order.LeavesQty;
+                    accountOrder.MaxVisibleVolume = order.MaxVisibleQty;
+                    accountOrder.Type = GetOrderType(order.Type);
+                    accountOrder.Side = GetOrderSide(order.Side);
+                    accountOrder.Price = order.Price;
+                    accountOrder.StopPrice = order.StopPrice;
+                    accountOrder.Slippage = order.Slippage;
+                    accountOrder.TakeProfit = order.TakeProfit;
+                    accountOrder.StopLoss = order.StopLoss;
+                    accountOrder.Margin = order.Margin;
+                    accountOrder.ImmediateOrCancel = order.ImmediateOrCancelFlag;
+
+                    accountOrder.InitialType = GetOrderType(order.ReqType);
+                    accountOrder.InitialPrice = order.ReqPrice;
+                    accountOrder.InitialVolume = order.ReqQty;
+
+                    accountOrder.IsReducedOpenCommission = (order.CommissionFlags & CommissionFlags.OpenReduced) == CommissionFlags.OpenReduced;
+                    accountOrder.IsReducedCloseCommission = (order.CommissionFlags & CommissionFlags.CloseReduced) == CommissionFlags.CloseReduced;
+                    accountOrder.Commission = order.Commission;
+                    accountOrder.AgentCommission = order.AgentCommission;
+                    accountOrder.Swap = order.Swap;
+                    accountOrder.Rebate = order.Rebate;
+
+                    accountOrder.Expiration = order.ExpireTime;
+                    accountOrder.Created = order.Created;
+                    accountOrder.Modified = order.Modified;
+                    accountOrder.ExecutionExpired = order.ExecutionExpired;
+
+                    accountOrder.Comment = order.Comment;
+                    accountOrder.Tag = order.Tag;
+                    accountOrder.Magic = order.Magic;
+
+                    accountOrder.OneCancelsTheOtherFlag = order.OneCancelsTheOtherFlag;
+                    accountOrder.RelatedOrderId = order.RelatedOrderId;
+
+                    accountOrder.ContingentOrderFlag = order.ContingentOrderFlag;
+                    accountOrder.TriggerType = order.TriggerType.HasValue ? GetTriggerType(order.TriggerType.Value) : default(Common.ContingentOrderTriggerType?);
+                    accountOrder.OrderIdTriggeredBy = order.OrderIdTriggeredBy;
+                    accountOrder.TriggerTime = order.TriggerTime;
+
+                    accountReport.Orders[index] = accountOrder;
+                }
+
                 accountReport.BalanceCurrencyToUsdConversionRate = null;
                 accountReport.UsdToBalanceCurrencyConversionRate = null;
                 accountReport.ProfitCurrencyToUsdConversionRate = null;
@@ -2790,6 +3656,7 @@ namespace TickTrader.FDK.Client
                     accountReport.TokenCommissionCurrencyDiscount = account.TokenCommissionCurrencyDiscount.Value;
 
                 accountReport.IsTokenCommissionEnabled = account.TokenCommissionEnabled;
+                accountReport.Rebate = account.Rebate;
             }
 
             TickTrader.FDK.Common.RejectReason GetRejectReason(SoftFX.Net.TradeCapture.RejectReason reason)
@@ -3065,6 +3932,55 @@ namespace TickTrader.FDK.Client
 
                     default:
                         return TickTrader.FDK.Common.AccountType.None;
+                }
+            }
+
+            private ContingentOrderTriggerReport GetTriggerReport(ContingentOrderTriggerHistoryReport report)
+            {
+                var result = new ContingentOrderTriggerReport();
+                result.ContingentOrderId = report.ContingentOrderId;
+                result.Id = report.Id;
+                result.OrderIdTriggeredBy = report.OrderIdTriggeredBy;
+                result.TriggerState = GetResultState(report.TriggerState);
+                result.TransactionTime = report.TransactionTime;
+                result.TriggerTime = report.TriggerTime;
+                result.TriggerType = GetTriggerType(report.TriggerType);
+                result.Symbol = report.Symbol;
+                result.Type = GetOrderType(report.Type);
+                result.Side = GetOrderSide(report.Side);
+                result.Price = report.Price;
+                result.StopPrice = report.StopPrice;
+                result.Amount = report.Amount;
+                result.RelatedOrderId = report.RelatedOrderId;
+
+                return result;
+            }
+
+            private Common.TriggerResultState GetResultState(SoftFX.Net.TradeCapture.TriggerResultState resultState)
+            {
+                switch (resultState)
+                {
+                    case SoftFX.Net.TradeCapture.TriggerResultState.Failed:
+                        return Common.TriggerResultState.Failed;
+                    case SoftFX.Net.TradeCapture.TriggerResultState.Successful:
+                        return Common.TriggerResultState.Successful;
+                    default:
+                        return Common.TriggerResultState.Successful;
+                }
+            }
+
+            Common.ContingentOrderTriggerType GetTriggerType(SoftFX.Net.TradeCapture.ContingentOrderTriggerType type)
+            {
+                switch (type)
+                {
+                    case SoftFX.Net.TradeCapture.ContingentOrderTriggerType.OnPendingOrderExpired:
+                        return Common.ContingentOrderTriggerType.OnPendingOrderExpired;
+                    case SoftFX.Net.TradeCapture.ContingentOrderTriggerType.OnPendingOrderPartiallyFilled:
+                        return Common.ContingentOrderTriggerType.OnPendingOrderPartiallyFilled;
+                    case SoftFX.Net.TradeCapture.ContingentOrderTriggerType.OnTime:
+                        return Common.ContingentOrderTriggerType.OnTime;
+                    default:
+                        return (Common.ContingentOrderTriggerType)type;
                 }
             }
 

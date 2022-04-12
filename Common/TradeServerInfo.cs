@@ -63,7 +63,7 @@ namespace TickTrader.FDK.Common
 
         public override string ToString()
         {
-            return String.Format("CompanyName = {0}; ServerName = {1}", CompanyName, ServerName);
+            return String.Format("CompanyName={0}; ServerName={1}", CompanyName, ServerName);
         }
     }
 }

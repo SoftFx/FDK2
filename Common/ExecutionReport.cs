@@ -266,6 +266,22 @@
         /// </summary>
         public DateTime? ExecutionExpired { get; set; }
 
+        /// <summary>
+        /// Is Contingent order
+        /// </summary>
+        public bool ContingentOrderFlag { get; set; }
+        /// <summary>
+        /// Type of contingent order trigger
+        /// </summary>
+        public ContingentOrderTriggerType? TriggerType { get; set; }
+        /// <summary>
+        /// Id of related order. It is used if TriggerType is OnPendingOrderExpired or OnPendingOrderPartiallyFilled
+        /// </summary>
+        public long? OrderIdTriggeredBy { get; set; }
+        /// <summary>
+        /// Time of triggering. It is used if TriggerType is OnTime
+        /// </summary>
+        public DateTime? TriggerTime { get; set; }
 
         public ExecutionReport Clone()
         {
@@ -321,12 +337,17 @@
             executionReport.OneCancelsTheOtherFlag = OneCancelsTheOtherFlag;
             executionReport.RelatedOrderId = RelatedOrderId;
 
+            executionReport.ContingentOrderFlag = ContingentOrderFlag;
+            executionReport.TriggerType = TriggerType;
+            executionReport.OrderIdTriggeredBy = OrderIdTriggeredBy;
+            executionReport.TriggerTime = TriggerTime;
+
             return executionReport;
         }
 
         public override string ToString()
         {
-            return string.Format("ExecutionType = {0}; ClientOrderId = {1}; OrderId = {2}; OrderType = {3}; Symbol = {4}; OrderSide = {5}; InitialVolume = {6}; Price = {7}; OrderStatus = {8}; LeavesVolume = {9}; TradeAmount = {10}; TradePrice = {11}", ExecutionType, ClientOrderId, OrderId, OrderType, Symbol, OrderSide, InitialVolume, Price, OrderStatus, LeavesVolume, TradeAmount, TradePrice);
+            return string.Format("ExecutionType={0}; ClientOrderId={1}; OrderId={2}; OrderType={3}; Symbol={4}; OrderSide={5}; InitialVolume={6}; Price={7}; OrderStatus={8}; LeavesVolume={9}; TradeAmount={10}; TradePrice={11}", ExecutionType, ClientOrderId, OrderId, OrderType, Symbol, OrderSide, InitialVolume, Price, OrderStatus, LeavesVolume, TradeAmount, TradePrice);
         }
     }
 }

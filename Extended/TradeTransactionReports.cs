@@ -30,7 +30,7 @@
         }
 
         /// <summary>
-        /// The method returns bars enumerator.
+        /// The method returns trade transactions enumerator.
         /// </summary>
         /// <returns>Can not be null.</returns>
         public TradeTransactionReportsEnumerator GetEnumerator()
@@ -48,7 +48,7 @@
         }
 
         /// <summary>
-        /// The method returns bars enumerator.
+        /// The method returns trade transactions enumerator.
         /// </summary>
         /// <returns>Can not be null.</returns>
         IEnumerator<TradeTransactionReport> IEnumerable<TradeTransactionReport>.GetEnumerator()
@@ -57,7 +57,7 @@
         }
 
         /// <summary>
-        /// The method returns bars enumerator.
+        /// The method returns trade transactions enumerator.
         /// </summary>
         /// <returns>Can not be null.</returns>
         IEnumerator IEnumerable.GetEnumerator()

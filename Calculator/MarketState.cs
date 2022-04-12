@@ -56,7 +56,7 @@ namespace TickTrader.FDK.Calculator
 
             if (smbNode == null && addIfMissing)
             {
-                smbNode = new SymbolMarketNode(smb, null);
+                smbNode = new SymbolMarketNode(smb, Symbols?.FirstOrDefault(s => s.Symbol == smb));
                 _smbMap.Add(smb, smbNode);
             }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 
@@ -10,44 +11,52 @@ namespace TradeCaptureSyncSample
 {
     public class Program : IDisposable
     {
-        const int Timeout = 30000;
+        static string SampleName = typeof(Program).Namespace;
 
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5044;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5044;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TradeCaptureSyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TradeCaptureSyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TradeCaptureSyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -58,13 +67,13 @@ namespace TradeCaptureSyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new TradeCapture("TradeCaptureSyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+            client_ = new TradeCapture(SampleName, port : port, reconnectAttempts : 0, logMessages : true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new TradeCapture.LogoutDelegate(this.OnLogout);
@@ -142,11 +151,11 @@ namespace TradeCaptureSyncSample
                         int pos = 0;
                         string command = GetNextWord(line, ref pos);
 
-                        if (command == "help" || command == "h")
+                        if (command == "h" || command == "?")
                         {
                             PrintCommands();
                         }
-                        else if (command == "subscribe_trades" || command == "st")
+                        else if (command == "st")
                         {
                             string from = GetNextWord(line, ref pos);
 
@@ -155,11 +164,11 @@ namespace TradeCaptureSyncSample
 
                             SubscribeTrades(DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal));
                         }
-                        else if (command == "unsubscribe_trades" || command == "ut")
+                        else if (command == "ut")
                         {
                             UnsubscribeTrades();
                         }
-                        else if (command == "download_trade_reports" || command == "dt")
+                        else if (command == "dt")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -183,7 +192,7 @@ namespace TradeCaptureSyncSample
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
-                        else if (command == "download_account_reports" || command == "da")
+                        else if (command == "da")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -207,7 +216,7 @@ namespace TradeCaptureSyncSample
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
-                        else if (command == "exit" || command == "e")
+                        else if (command == "e")
                         {
                             break;
                         }
@@ -232,15 +241,15 @@ namespace TradeCaptureSyncSample
 
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "", Timeout);
 
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
             }
             catch
             {
-                string text = client_.Disconnect("Client disconnect");
+                string text = client_.Disconnect(Reason.ClientError("Client disconnect"));
 
                 if (text != null)
                     Console.WriteLine("Disconnected : {0}", text);
@@ -261,7 +270,7 @@ namespace TradeCaptureSyncSample
             {
             }
 
-            string text = client_.Disconnect("Client disconnect");
+            string text = client_.Disconnect(Reason.ClientRequest("Client disconnect"));
 
             if (text != null)
                 Console.WriteLine("Disconnected : {0}", text);
@@ -269,12 +278,12 @@ namespace TradeCaptureSyncSample
 
         void PrintCommands()
         {
-            Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("subscribe_trades (st) <from> - subscribe to trades updates");
-            Console.WriteLine("unsubscribe_trades (ut) - unsubscribe from trades updates");
-            Console.WriteLine("download_trade_report (dt) <direction> <from> <to> - download trade reports");
-            Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
-            Console.WriteLine("exit (e) - exit");
+            Console.WriteLine("h|? - print commands");
+            Console.WriteLine("st <from> - subscribe to trades updates");
+            Console.WriteLine("ut - unsubscribe from trades updates");
+            Console.WriteLine("dt <direction> <from> <to> - download trade reports");
+            Console.WriteLine("da <direction> <from> <to> - download account reports");
+            Console.WriteLine("e - exit");
         }
 
         void SubscribeTrades(DateTime from)
@@ -362,23 +371,36 @@ namespace TradeCaptureSyncSample
 
                 for
                 (
-                    AccountReport accountReport = downloadAccountReportsEnumerator.Next(-1);
-                    accountReport != null;
-                    accountReport = downloadAccountReportsEnumerator.Next(-1)
+                    AccountReport report = downloadAccountReportsEnumerator.Next(-1);
+                    report != null;
+                    report = downloadAccountReportsEnumerator.Next(-1)
                 )
                 {
-                    Console.Error.WriteLine
-                    (
-                        "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
-                        accountReport.Timestamp,
-                        accountReport.AccountId,
-                        accountReport.Type,
-                        accountReport.BalanceCurrency,
-                        accountReport.Leverage,
-                        accountReport.Balance,
-                        accountReport.Margin,
-                        accountReport.Equity
-                    );
+                    Console.WriteLine($"Account report: {report}");
+                    if (report.Assets.Length > 0)
+                    {
+                        Console.WriteLine($"\tAssets: {report.Assets.Length}");
+                        foreach (var asset in report.Assets)
+                        {
+                            Console.WriteLine($"\t{asset}");
+                        }
+                    }
+                    if (report.Positions.Length > 0)
+                    {
+                        Console.WriteLine($"\tPositions: {report.Positions.Length}");
+                        foreach (var pos in report.Positions)
+                        {
+                            Console.WriteLine($"\t{pos}");
+                        }
+                    }
+                    if (report.Orders.Length > 0)
+                    {
+                        Console.WriteLine($"\tOrders: {report.Orders.Length}");
+                        foreach (var order in report.Orders)
+                        {
+                            Console.WriteLine($"\t{order}");
+                        }
+                    }
                 }
 
                 Console.Error.WriteLine("--------------------------------------------------------------------------------");
@@ -522,6 +544,7 @@ namespace TradeCaptureSyncSample
         string address_;
         string login_;
         string password_;
+        const int Timeout = 30000;
     }
 }
 

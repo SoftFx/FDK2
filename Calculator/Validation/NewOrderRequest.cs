@@ -14,8 +14,10 @@ namespace TickTrader.FDK.Calculator.Validation
         public decimal? MaxVisibleAmount { get; set; }
         public decimal? Slippage { get; set; }
         public bool ImmediateOrCancel { get; set; }
+        public bool IsContingent { get; set; }
 
         decimal IOrderCalcInfo.RemainingAmount => Amount;
         bool IOrderCalcInfo.IsHidden => Extensions.IsHiddenOrder(MaxVisibleAmount);
+        bool IOrderCalcInfo.IsIceberg => Extensions.IsIcebergOrder(MaxVisibleAmount);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace TickTrader.FDK.Common
+namespace TickTrader.FDK.Common
 {
     public class Version
     {

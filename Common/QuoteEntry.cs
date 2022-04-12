@@ -21,7 +21,7 @@
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            return string.Format("Price = {0}; Volume = {1};", this.Price, this.Volume);
+            return string.Format("Price={0}; Volume={1};", this.Price, this.Volume);
         }
     }
 }

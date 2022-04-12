@@ -30,6 +30,7 @@
                         Console.WriteLine("2 - TicksExample");
                         Console.WriteLine("3 - BarsHistoryExample");
                         Console.WriteLine("4 - TicksHistoryExample");
+                        Console.WriteLine("5 - BarsExample");
                         Console.WriteLine("0 - Exit");
                         Console.Write("Please select : ");
 
@@ -52,6 +53,10 @@
                         else if (command == "4")
                         {
                             example = new TicksHistoryExample(address, username, password);
+                        }
+                        else if (command == "5")
+                        {
+                            example = new BarsExample(address, username, password);
                         }
                         else if (command == "0")
                         {

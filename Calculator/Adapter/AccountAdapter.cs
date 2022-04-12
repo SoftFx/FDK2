@@ -33,6 +33,7 @@ namespace TickTrader.FDK.Calculator.Adapter
         public decimal ProfitRounded => FinancialRounding.Instance.RoundProfit(RoundingDigits, _marginCalculator?.Profit ?? 0);
         public decimal CommissionRounded => FinancialRounding.Instance.RoundMargin(RoundingDigits, _marginCalculator?.Commission ?? 0);
         public decimal SwapRounded => FinancialRounding.Instance.RoundMargin(RoundingDigits, _marginCalculator?.Swap ?? 0);
+        public decimal RebateRounded => FinancialRounding.Instance.RoundProfit(RoundingDigits, _marginCalculator?.Rebate ?? 0);
         public decimal AgentCommissionRounded => FinancialRounding.Instance.RoundMargin(RoundingDigits, 0m);
 
         public int RoundingDigits
@@ -381,41 +382,85 @@ namespace TickTrader.FDK.Calculator.Adapter
 
         public void ValidateNewOrderMargin(IOrderCalcInfo newOrder)
         {
-            var orderInstance = new OrderLightClone(newOrder);
-            if (AccountingType == AccountType.Gross || AccountingType == AccountType.Net)
+            ValidateNewOrdersMargin(newOrder.Yield());
+        }
+
+        public void ValidateNewOrdersMargin(IEnumerable<IOrderCalcInfo> newOrders)
+        {
+            if (AccountingType == AccountType.Gross)
             {
                 var calculator = _marginCalculator;
                 if (calculator != null)
                 {
-                    OrderCalculator fCalc = calculator.Market.GetCalculator(orderInstance.Symbol, BalanceCurrency);
-                    orderInstance.Margin = fCalc.CalculateMargin(orderInstance, Leverage, out var error);
-                    BusinessLogicException.ThrowIfError(error);
-                    var sufficient = calculator.HasSufficientMarginToOpenOrder(orderInstance, out var newMargin, out error);
+                    var orderInstances = newOrders.Select(o => new OrderCalcInfo(o)).ToList();
+                    var sufficient = calculator.HasSufficientMarginToOpenOrders(orderInstances, out var newMargin, out var error);
                     BusinessLogicException.ThrowIfError(error);
                     if (!sufficient)
-                        throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newMargin}");
+                    {
+                        if (newMargin.HasValue)
+                            throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newMargin}");
+                        else
+                            throw new NotEnoughMoneyException("Not Enough Money");
+                    }
+                }
+            }
+            else if (AccountingType == AccountType.Net)
+            {
+                var calculator = _marginCalculator;
+                if (calculator != null)
+                {
+                    // Validate only the first request
+                    var newOrder = newOrders.FirstOrDefault();
+                    if (newOrder != null)
+                    {
+                        var sufficient = calculator.HasSufficientMarginToOpenOrder(new OrderCalcInfo(newOrder), out var newMargin, out var error);
+                        BusinessLogicException.ThrowIfError(error);
+                        if (!sufficient)
+                        {
+                            throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newMargin}");
+                        }
+                    }
                 }
             }
             else
             {
                 var calculator = _cashCalculator;
-                if (calculator != null && !ShouldSkipNewOrderRequestValidation(orderInstance))
+                if (calculator != null)
                 {
-                    var symbolInfo = _symbolProvider?.Invoke(orderInstance.Symbol);
-                    if (symbolInfo == null)
-                        throw new MarketConfigurationException("Symbol not found: " + orderInstance.Symbol);
-                    var marginMovement = CashAccountCalculator.CalculateMargin(orderInstance, symbolInfo);
-                    var marginAssetCurrency = calculator.GetMarginAssetCurrency(symbolInfo, orderInstance.Side);
-                    var marginAsset = _assetsDict.GetOrDefault(marginAssetCurrency) ?? new AssetModel(marginAssetCurrency);
-                    var marginCurrency = calculator.Market.GetCurrencyOrThrow(marginAsset.Currency);
-
-                    if (orderInstance.Side == OrderSide.Buy)
+                    var assetMovementsParams = new List<AssetsMovementParameters>();
+                    foreach (var newOrder in newOrders)
                     {
-                        marginMovement = FinancialRounding.Instance.RoundMargin(marginCurrency.Precision, marginMovement);
-                    }
+                        var orderInstance = new OrderCalcInfo(newOrder);
+                        if (!ShouldSkipNewOrderRequestValidation(orderInstance))
+                        {
+                            var symbolInfo = _symbolProvider?.Invoke(orderInstance.Symbol);
+                            if (symbolInfo == null)
+                                throw new MarketConfigurationException("Symbol not found: " + orderInstance.Symbol);
+                            var marginMovement = CashAccountCalculator.CalculateMargin(orderInstance, symbolInfo);
+                            var marginAssetCurrency = calculator.GetMarginAssetCurrency(symbolInfo, orderInstance.Side);
+                            var marginAsset = _assetsDict.GetOrDefault(marginAssetCurrency) ?? new AssetModel(marginAssetCurrency);
+                            var marginCurrency = calculator.Market.GetCurrencyOrThrow(marginAsset.Currency);
+                            if (orderInstance.Side == OrderSide.Buy)
+                            {
+                                marginMovement = FinancialRounding.Instance.RoundMargin(marginCurrency.Precision, marginMovement);
+                            }
 
-                    decimal commissMovement = CalculateCommissionMovement(orderInstance, symbolInfo, calculator, out var commissAsset);
-                    var sufficient = calculator.HasSufficientAssetsToOpenOrder(orderInstance, marginMovement, commissMovement, marginAsset, commissAsset);
+                            //decimal commissMovement = CalculateCommissionMovement(orderInstance, symbolInfo, calculator, out var commissAsset);
+                            // Don't validate commission movement when validating several orders opening
+                            decimal commissMovement = 0;
+                            IAssetModel commissAsset = null;
+
+                            assetMovementsParams.Add(new AssetsMovementParameters
+                            {
+                                Order = orderInstance,
+                                MarginMovement = marginMovement,
+                                CommissionMovement = commissMovement,
+                                MarginAsset = marginAsset,
+                                CommissionAsset = commissAsset
+                            });
+                        }
+                    }
+                    var sufficient = calculator.HasSufficientAssetsToOpenOrders(assetMovementsParams);
                     if (!sufficient)
                         throw new NotEnoughMoneyException($"Not Enough Money");
                 }
@@ -424,37 +469,81 @@ namespace TickTrader.FDK.Calculator.Adapter
 
         public void ValidateModifyOrderMargin(ModifyOrderRequest request)
         {
-            var orderToModify = _ordersDict.GetOrDefault(request.OrderId);
-            if (orderToModify == null)
-                throw new ArgumentException($"Order with Id = {request.OrderId} wasn't found");
+            ValidateModifyOrdersMargin(request.Yield());
+        }
 
-            var remainingAmount = orderToModify.RemainingAmount;
-            var maxVisibleAmount = (decimal?)orderToModify.TradeRecord.MaxVisibleVolume;
+        public void ValidateModifyOrdersMargin(IEnumerable<ModifyOrderRequest> requests)
+        {
+            // Verify that two requests don't relate to the same order
+            if (requests.GroupBy(r => r.OrderId).Count() != requests.Count())
+                throw new NotSupportedException($"Two or more requests have the same {nameof(ModifyOrderRequest.OrderId)}!");
 
-            if (request.AmountChange.HasValue && orderToModify.TradeRecord.IsPendingOrder)
-            {
-                remainingAmount = orderToModify.RemainingAmount + request.AmountChange.Value;
-            }
-
-            if (remainingAmount <= 0)
-                return;
-
-            if ((orderToModify.Type == OrderType.Limit || orderToModify.Type == OrderType.StopLimit) && request.MaxVisibleAmount.HasValue)
-            {
-                maxVisibleAmount = request.MaxVisibleAmount.Value < 0 ? default(decimal?) : request.MaxVisibleAmount.Value;
-            }
-
-            if (AccountingType == AccountType.Gross || AccountingType == AccountType.Net)
+            if (AccountingType == AccountType.Gross)
             {
                 var calculator = _marginCalculator;
                 if (calculator != null)
                 {
-                    OrderCalculator fCalc = calculator.Market.GetCalculator(orderToModify.Symbol, BalanceCurrency);
-                    decimal oldMargin = orderToModify.Margin;
-                    decimal newMargin = fCalc.CalculateMargin(remainingAmount, Leverage, orderToModify.Type, orderToModify.Side, Extensions.IsHiddenOrder(maxVisibleAmount), out var error);
-                    BusinessLogicException.ThrowIfError(error);
-                    if (!calculator.CanIncreaseMarginBy(newMargin - oldMargin, orderToModify.Symbol, orderToModify.Side, out var newAccMargin))
-                        throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newAccMargin}");
+                    var marginDeltaParams = new List<MarginDeltaParameters>();
+                    foreach (var request in requests)
+                    {
+                        GetOrderParameters(request, out var orderToModify, out var remainingAmount, out var maxVisibleAmount);
+                        if (remainingAmount <= 0)
+                            continue;
+
+                        decimal oldMargin = orderToModify.Margin;
+                        decimal newMargin;
+                        var netting = calculator.GetNetting(orderToModify.Symbol);
+                        var fCalc = netting?.Calc ?? calculator.Market.GetCalculator(orderToModify.Symbol, BalanceCurrency);
+                        using (fCalc.UsageScope())
+                        {
+                            newMargin = fCalc.CalculateMargin(remainingAmount, Leverage, orderToModify.Type, orderToModify.Side, Extensions.IsHiddenOrder(maxVisibleAmount), orderToModify.IsContingent, out var error);
+                            BusinessLogicException.ThrowIfError(error);
+                        }
+                        marginDeltaParams.Add(new MarginDeltaParameters
+                        {
+                            MarginDelta = newMargin - oldMargin,
+                            Symbol = orderToModify.Symbol,
+                            OrderSide = orderToModify.Side,
+                            OrderType = orderToModify.Type
+                        });
+                    }
+                    if (!calculator.CanIncreaseMarginBy(marginDeltaParams, out var newAccMargin))
+                    {
+                        if (newAccMargin.HasValue)
+                            throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newAccMargin}");
+                        else
+                            throw new NotEnoughMoneyException("Not Enough Money");
+                    }
+                }
+            }
+            else if (AccountingType == AccountType.Net)
+            {
+                var calculator = _marginCalculator;
+                if (calculator != null)
+                {
+                    // Validate only the first request
+                    var request = requests.FirstOrDefault();
+                    if (request != null)
+                    {
+                        GetOrderParameters(request, out var orderToModify, out var remainingAmount, out var maxVisibleAmount);
+                        if (remainingAmount <= 0)
+                            return;
+
+                        decimal oldMargin = orderToModify.Margin;
+                        decimal newMargin;
+                        var netting = calculator.GetNetting(orderToModify.Symbol);
+                        var fCalc = netting?.Calc ?? calculator.Market.GetCalculator(orderToModify.Symbol, BalanceCurrency);
+                        using (fCalc.UsageScope())
+                        {
+                            newMargin = fCalc.CalculateMargin(remainingAmount, Leverage, orderToModify.Type, orderToModify.Side, Extensions.IsHiddenOrder(maxVisibleAmount), orderToModify.IsContingent, out var error);
+                            BusinessLogicException.ThrowIfError(error);
+                        }
+
+                        if (!calculator.CanIncreaseMarginBy(newMargin - oldMargin, null, orderToModify.Symbol, orderToModify.Side, orderToModify.Type, out var newAccMargin))
+                        {
+                            throw new NotEnoughMoneyException($"Not Enough Money. {ToMarginAccountInfoString()}, NewMargin={newAccMargin}");
+                        }
+                    }
                 }
             }
             else
@@ -462,18 +551,56 @@ namespace TickTrader.FDK.Calculator.Adapter
                 var calculator = _cashCalculator;
                 if (calculator != null)
                 {
-                    var price = request.Price ?? orderToModify.Price;
-                    var stopPrice = request.StopPrice ?? orderToModify.StopPrice;
+                    var orderMarginMovements = new List<OrderMarginMovementParameters>();
+                    foreach (var request in requests)
+                    {
+                        GetOrderParameters(request, out var orderToModify, out var remainingAmount, out var maxVisibleAmount);
+                        if (remainingAmount <= 0)
+                            continue;
 
-                    decimal oldMargin = orderToModify.CashMargin;
-                    decimal newMargin = CashAccountCalculator.CalculateMargin(orderToModify.Type, remainingAmount, price, stopPrice, orderToModify.Side, orderToModify.SymbolInfo, Extensions.IsHiddenOrder(maxVisibleAmount));
-                    decimal marginMovement = newMargin - oldMargin;
-                    var sufficient = calculator.HasSufficientMarginToOpenOrder(orderToModify, marginMovement, out _);
+                        var slippage = request.Slippage ?? orderToModify.Slippage;
+                        var price = request.Price ?? orderToModify.Price;
+                        price = CashAccountCalculator.AdjustPriceForSlippage(price, slippage);
+                        var stopPrice = request.StopPrice ?? orderToModify.StopPrice;
+                        stopPrice = CashAccountCalculator.AdjustPriceForSlippage(stopPrice, slippage);
+
+                        decimal oldMargin = orderToModify.CashMargin;
+                        decimal newMargin = CashAccountCalculator.CalculateMargin(orderToModify.Type, remainingAmount, price, stopPrice, orderToModify.Side, orderToModify.SymbolInfo, Extensions.IsHiddenOrder(maxVisibleAmount), orderToModify.IsContingent);
+                        decimal marginMovement = newMargin - oldMargin;
+
+                        orderMarginMovements.Add(new OrderMarginMovementParameters
+                        {
+                            Type = orderToModify.Type,
+                            Side = orderToModify.Side,
+                            Symbol = orderToModify.SymbolInfo,
+                            MarginMovement = marginMovement
+                        });
+                    }
+                    var sufficient = calculator.HasSufficientMarginToOpenOrders(orderMarginMovements);
                     if (!sufficient)
                         throw new NotEnoughMoneyException($"Not Enough Money");
                 }
             }
+        }
 
+        private void GetOrderParameters(ModifyOrderRequest request, out OrderAccessor orderToModify, out decimal remainingAmount, out decimal? maxVisibleAmount)
+        {
+            orderToModify = _ordersDict.GetOrDefault(request.OrderId);
+            if (orderToModify == null)
+                throw new ArgumentException($"Order with Id={request.OrderId} wasn't found");
+
+            remainingAmount = orderToModify.RemainingAmount;
+            maxVisibleAmount = (decimal?)orderToModify.TradeRecord.MaxVisibleVolume;
+
+            if (request.AmountChange.HasValue && orderToModify.TradeRecord.IsPendingOrder)
+            {
+                remainingAmount = orderToModify.RemainingAmount + request.AmountChange.Value;
+            }
+
+            if ((orderToModify.Type == OrderType.Limit || orderToModify.Type == OrderType.StopLimit) && request.MaxVisibleAmount.HasValue)
+            {
+                maxVisibleAmount = request.MaxVisibleAmount.Value < 0 ? default(decimal?) : request.MaxVisibleAmount.Value;
+            }
         }
 
         private bool ShouldSkipNewOrderRequestValidation(IOrderCalcInfo order)

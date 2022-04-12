@@ -1,147 +1,37 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{D52DA7C0-3DD2-4E26-BBCE-F9A2DC09AA9D}</ProjectGuid>
+    <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TickTrader.FDK.Calculator</RootNamespace>
     <AssemblyName>TickTrader.FDK.Calculator</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
+    <AssemblyTitle>TickTrader FDK Calculator Library</AssemblyTitle>
+    <Version>$(MajorVersion).$(MinorVersion).0</Version>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(BuildNumber).0</FileVersion>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
     <OutputPath>..\Bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
     <OutputPath>..\Bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="SoftFX.Net.Core">
-      <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.OrderEntry">
-      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.QuoteFeed">
-      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.QuoteStore">
-      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.TradeCapture">
-      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.XML" />
-    <Reference Include="System.Xml.Serialization" />
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Extended\Extended.csproj" />
   </ItemGroup>
+
   <ItemGroup>
-    <Compile Include="AccountCalculator.cs" />
-    <Compile Include="AccountEntryStatus.cs" />
-    <Compile Include="Adapter\AssetModel.cs" />
-    <Compile Include="Adapter\CalculatorConvert.cs" />
-    <Compile Include="Adapter\AccountAdapter.cs" />
-    <Compile Include="Adapter\CurrencyModel.cs" />
-    <Compile Include="Adapter\SymbolRate.cs" />
-    <Compile Include="Asset.cs" />
-    <Compile Include="CalcError.cs" />
-    <Compile Include="CashAccountCalculator.cs" />
-    <Compile Include="MarginAsset.cs" />
-    <Compile Include="Conversion\FormulaBuilder.cs" />
-    <Compile Include="IOrderModel.cs" />
-    <Compile Include="MarketStateBase.cs" />
-    <Compile Include="BlInterfaces.cs" />
-    <Compile Include="CollectionExtentions.cs" />
-    <Compile Include="Conversion\ConversionManager.cs" />
-    <Compile Include="Events.cs" />
-    <Compile Include="ExceptionEventArgs.cs" />
-    <Compile Include="Exceptions.cs" />
-    <Compile Include="FinancialCalculator.cs" />
-    <Compile Include="Conversion\Formulas.cs" />
-    <Compile Include="Conversion\FormulaService.cs" />
-    <Compile Include="FxPriceType.cs" />
-    <Compile Include="IAccountInfo.cs" />
-    <Compile Include="IAssetModel.cs" />
-    <Compile Include="Conversion\IConversionFormula.cs" />
-    <Compile Include="Conversion\IFormulaService.cs" />
-    <Compile Include="IPositionModel.cs" />
-    <Compile Include="ISymbolRate.cs" />
-    <Compile Include="Conversion\Keys.cs" />
-    <Compile Include="MarketState.cs" />
-    <Compile Include="Netting\BatchOrderNetting.cs" />
-    <Compile Include="Netting\EachOrderNetting.cs" />
-    <Compile Include="Netting\IOrderNetting.cs" />
-    <Compile Include="Netting\NettingCalculationTypes.cs" />
-    <Compile Include="Adapter\OrderAccessor.cs" />
-    <Compile Include="Netting\OrderLightClone.cs" />
-    <Compile Include="OrderCalculator.cs" />
-    <Compile Include="Extensions.cs" />
-    <Compile Include="Adapter\PositionAccessor.cs" />
-    <Compile Include="NetPositionUpdate.cs" />
-    <Compile Include="PriceEntries.cs" />
-    <Compile Include="PriceEntry.cs" />
-    <Compile Include="Processor.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Validation\NewOrderRequest.cs" />
-    <Compile Include="Validation\ModifyOrderRequest.cs" />
-    <Compile Include="RoundingTools.cs" />
-    <Compile Include="Rounding\AccountRoundingService.cs" />
-    <Compile Include="Rounding\CurrencyPrecisionProvider.cs" />
-    <Compile Include="Rounding\DefaultPrecision.cs" />
-    <Compile Include="Rounding\FinancialRounding.cs" />
-    <Compile Include="Rounding\IAccountRoundingService.cs" />
-    <Compile Include="Rounding\IPrecisionProvider.cs" />
-    <Compile Include="Rounding\IRounding.cs" />
-    <Compile Include="Rounding\IRoundingService.cs" />
-    <Compile Include="Rounding\ObjectCaches.cs" />
-    <Compile Include="Rounding\SimpleObjectCache.cs" />
-    <Compile Include="Netting\SideNetting.cs" />
-    <Compile Include="StateCalculator.cs" />
-    <Compile Include="StateInfo.cs" />
-    <Compile Include="StateInfoEventArgs.cs" />
-    <Compile Include="StatsChange.cs" />
-    <Compile Include="Adapter\SymbolModel.cs" />
-    <Compile Include="Netting\SymbolNetting.cs" />
-    <Compile Include="SymbolMarketNode.cs" />
-    <Compile Include="UpdateHandler.cs" />
+    <Compile Remove="Rounding\RoundingTools.cs" />
+    <Compile Remove="Serialization\AccountData.cs" />
+    <Compile Remove="Serialization\CalculatorData.cs" />
+    <Compile Remove="Serialization\CurrencyData.cs" />
+    <Compile Remove="Serialization\PriceData.cs" />
+    <Compile Remove="Serialization\SymbolData.cs" />
+    <Compile Remove="Serialization\TradeData.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Common\Common.csproj">
-      <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
-      <Name>Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Extended\Extended.csproj">
-      <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
-      <Name>Extended</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <ItemGroup />
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

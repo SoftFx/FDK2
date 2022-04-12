@@ -2,49 +2,61 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
+using System.Linq;
 
 namespace QuoteFeedAsyncSample
 {
     public class Program : IDisposable
     {
+        static string SampleName = typeof(Program).Namespace;
+
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5041;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5041;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("QuoteFeedAsyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `QuoteFeedAsyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("QuoteFeedAsyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -55,13 +67,13 @@ namespace QuoteFeedAsyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteFeed("QuoteFeedAsyncSample", port : port, logMessages : true,
+            client_ = new QuoteFeed(SampleName, port: port, logMessages: true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new QuoteFeed.ConnectResultDelegate(this.OnConnectResult);
@@ -83,7 +95,7 @@ namespace QuoteFeedAsyncSample
             client_.SymbolListErrorEvent += new QuoteFeed.SymbolListErrorDelegate(this.OnSymbolListError);
             client_.SessionInfoResultEvent += new QuoteFeed.SessionInfoResultDelegate(this.OnSessionInfoResult);
             client_.SessionInfoErrorEvent += new QuoteFeed.SessionInfoErrorDelegate(this.OnSessionInfoError);
-            client_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
+            client_.SubscribeQuotesExtendedResultEvent += new QuoteFeed.SubscribeQuotesExtendedResultDelegate(this.OnSubscribeQuotesResult);
             client_.SubscribeQuotesErrorEvent += new QuoteFeed.SubscribeQuotesErrorDelegate(this.OnSubscribeQuotesError);
             client_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             client_.UnsubscribeQuotesErrorEvent += new QuoteFeed.UnsubscribeQuotesErrorDelegate(this.OnUnsubscribeQuotesError);
@@ -91,6 +103,11 @@ namespace QuoteFeedAsyncSample
             client_.QuotesErrorEvent += new QuoteFeed.QuotesErrorDelegate(this.OnQuotesError);
             client_.SessionInfoUpdateEvent += new QuoteFeed.SessionInfoUpdateDelegate(this.OnSessionInfoUpdate);
             client_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
+            client_.BarsUpdateEvent += new QuoteFeed.BarsUpdateDelegate(OnBarUpdate);
+            client_.SubscribeBarsResultEvent += new QuoteFeed.SubscribeBarsResultDelegate(OnBarSubscribed);
+            client_.SubscribeBarsErrorEvent += new QuoteFeed.SubscribeBarsErrorDelegate(OnQuotesError);
+            client_.UnsubscribeBarsResultEvent += new QuoteFeed.UnsubscribeBarsResultDelegate(this.OnUnsubscribeQuotesResult);
+            client_.UnsubscribeBarsErrorEvent += new QuoteFeed.UnsubscribeBarsErrorDelegate(this.OnUnsubscribeQuotesError);
 
             address_ = address;
             login_ = login;
@@ -107,7 +124,7 @@ namespace QuoteFeedAsyncSample
         string GetNextWord(string line, ref int index)
         {
             while (index < line.Length && line[index] == ' ')
-                ++ index;
+                ++index;
 
             if (index == line.Length)
                 return null;
@@ -115,7 +132,7 @@ namespace QuoteFeedAsyncSample
             int startIndex = index;
 
             while (index < line.Length && line[index] != ' ')
-                ++ index;
+                ++index;
 
             return line.Substring(startIndex, index - startIndex);
         }
@@ -141,25 +158,24 @@ namespace QuoteFeedAsyncSample
                         {
                             PrintCommands();
                         }
-                        else if (command == "get_currency_type_list" || command == "ct")
-                        {
-                            GetCurrencyTypeList();
-                        }
-                        else if (command == "get_currency_list" || command == "c")
-                        {
-                            GetCurrencyList();
-                        }
-                        else if (command == "get_symbol_list" || command == "s")
-                        {
-                            GetSymbolList();
-                        }
-                        else if (command == "get_session_info" || command == "i")
+                        else if (command == "i")
                         {
                             GetSessionInfo();
                         }
-                        else if (command == "subscribe_quotes" || command == "sq")
+                        else if (command == "ct")
                         {
-                            List<SymbolEntry> symbolEnries = new List<SymbolEntry>();
+                            GetCurrencyTypeList();
+                        }
+                        else if (command == "c")
+                        {
+                            GetCurrencyList();
+                        }
+                        else if (command == "s")
+                        {
+                            GetSymbolList();
+                        }
+                        else if (command == "sq")
+                        {
 
                             while (true)
                             {
@@ -168,18 +184,74 @@ namespace QuoteFeedAsyncSample
                                 if (symbolId == null)
                                     break;
 
-                                SymbolEntry symbolEntry = new SymbolEntry();
-                                symbolEntry.Id = symbolId;
-                                symbolEntry.MarketDepth = 5;
+                                if (!_subscribedSymbols.ContainsKey(symbolId))
+                                {
+                                    SymbolEntry symbolEntry = new SymbolEntry();
+                                    symbolEntry.Id = symbolId;
+                                    symbolEntry.MarketDepth = 1;
 
-                                symbolEnries.Add(symbolEntry);
+                                    _toSubscribe.Add(symbolId, symbolEntry);
+                                }
                             }
 
-                            SubscribeQuotes(symbolEnries);
+                            SubscribeQuotes(_toSubscribe.Values.ToList(), -1);
                         }
-                        else if (command == "unsubscribe_quotes" || command == "uq")
+                        else if (command == "sqf")
                         {
-                            List<string> symbolIds = new List<string>();
+                            var freqPrior = int.Parse(GetNextWord(line, ref pos));
+                            while (true)
+                            {
+                                string symbolId = GetNextWord(line, ref pos);
+
+                                if (symbolId == null)
+                                    break;
+
+                                if (!_subscribedSymbols.ContainsKey(symbolId))
+                                {
+                                    SymbolEntry symbolEntry = new SymbolEntry();
+                                    symbolEntry.Id = symbolId;
+                                    symbolEntry.MarketDepth = 1;
+
+                                    _toSubscribe.Add(symbolId, symbolEntry);
+                                }
+                            }
+
+                            SubscribeQuotes(_toSubscribe.Values.ToList(), freqPrior);
+                        }
+                        else if (command == "sb")
+                        {
+                            client_.SubscribeBarsAsync(null, ParseBarSubscriptionCommand(line, pos).ToArray());
+                        }
+                        else if (command == "sqa")
+                        {
+                            if (!_symbols.Any())
+                            {
+                                Console.WriteLine("Get symbols first");
+                            }
+                            else
+                            {
+                                List<SymbolEntry> toSubscribe = new List<SymbolEntry>();
+
+                                foreach (var s in _symbols.Values)
+                                {
+                                    if (!_subscribedSymbols.ContainsKey(s.Name))
+                                    {
+                                        SymbolEntry symbolEntry = new SymbolEntry();
+                                        symbolEntry.Id = s.Name;
+                                        symbolEntry.MarketDepth = 1;
+
+                                        toSubscribe.Add(symbolEntry);
+                                    }
+                                }
+                                SubscribeQuotes(toSubscribe, -1);
+
+                                foreach (var s in toSubscribe)
+                                    _subscribedSymbols.Add(s.Id, s);
+                            }
+                        }
+                        else if (command == "uq")
+                        {
+                            List<string> toUnsubscribe = new List<string>();
 
                             while (true)
                             {
@@ -188,12 +260,45 @@ namespace QuoteFeedAsyncSample
                                 if (symbolId == null)
                                     break;
 
-                                symbolIds.Add(symbolId);
+                                toUnsubscribe.Add(symbolId);
                             }
 
-                            UnsubscribeQuotes(symbolIds);
+                            UnsubscribeQuotes(toUnsubscribe);
+
+                            foreach (var s in toUnsubscribe)
+                                _subscribedSymbols.Remove(s);
                         }
-                        else if (command == "get_quotes" || command == "gq")
+                        else if (command == "ub")
+                        {
+                            List<string> toUnsubscribe = new List<string>();
+
+                            while (true)
+                            {
+                                string symbolId = GetNextWord(line, ref pos);
+
+                                if (symbolId == null)
+                                    break;
+
+                                toUnsubscribe.Add(symbolId);
+                            }
+
+                            client_.UnsubscribeBarsAsync(null, toUnsubscribe.ToArray());
+
+                            foreach (var s in toUnsubscribe)
+                                _barSubscribedSymbols.Remove(s);
+                        }
+                        else if (command == "uba")
+                        {
+                            client_.UnsubscribeBarsAsync(null, _barSubscribedSymbols.ToArray());
+                            _barSubscribedSymbols.Clear();
+                        }
+                        else if (command == "uqa")
+                        {
+                            List<string> toUnsubscribe = _subscribedSymbols.Values.Select(s => s.Id).ToList();
+                            UnsubscribeQuotes(toUnsubscribe);
+                            _subscribedSymbols.Clear();
+                        }
+                        else if (command == "gq")
                         {
                             List<SymbolEntry> symbolEnries = new List<SymbolEntry>();
 
@@ -213,16 +318,16 @@ namespace QuoteFeedAsyncSample
 
                             GetQuotes(symbolEnries);
                         }
-                        else if (command == "exit" || command == "e")
+                        else if (command == "e")
                         {
                             break;
                         }
                         else
-                            throw new Exception(string.Format("Invalid command : {0}", command));
+                            throw new Exception(string.Format("Invalid command: {0}", command));
                     }
                     catch (Exception exception)
                     {
-                        Console.WriteLine("Error : " + exception.Message);
+                        Console.WriteLine("Error: " + exception.Message);
                     }
                 }
             }
@@ -245,7 +350,7 @@ namespace QuoteFeedAsyncSample
             }
             catch
             {
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
 
             client_.Join();
@@ -255,15 +360,15 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.LoginAsync(null, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "");
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -271,11 +376,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -283,11 +388,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : " + text);
+                Console.WriteLine("Disconnected: " + text);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -295,11 +400,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Disconnected : " + text);
+                Console.WriteLine("Disconnected: " + text);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -313,9 +418,9 @@ namespace QuoteFeedAsyncSample
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -323,11 +428,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -335,11 +440,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -347,13 +452,13 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError(error.Message));
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -361,13 +466,13 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : " + info.Message);
+                Console.WriteLine("Logout: " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -375,11 +480,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -387,27 +492,33 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Logout : " + info.Message);
+                Console.WriteLine("Logout: " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
         void PrintCommands()
         {
             Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("get_currency_type_list (ct) - request currency type list");
-            Console.WriteLine("get_currency_list (c) - request currency list");
-            Console.WriteLine("get_symbol_list (s) - request symbol list");
-            Console.WriteLine("get_session_info (i) - request session info");
-            Console.WriteLine("get_quotes (gq) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
-            Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
-            Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");
-            Console.WriteLine("exit (e) - exit");
+            Console.WriteLine("i - request session info");
+            Console.WriteLine("ct - request currency type list");
+            Console.WriteLine("c - request currency list");
+            Console.WriteLine("s - request symbol list");
+            Console.WriteLine("gq <symbol_1> ... <symbol_n> - request quote snapshots");
+            Console.WriteLine("sq <symbol_1> ... <symbol_n> - subscribe to quote updates");
+            Console.WriteLine("uq <symbol_1> ... <symbol_n> - unsubscribe from quote updates");
+            Console.WriteLine("sqa <depth> - subscribe to quote updates with depth for all symbols");
+            Console.WriteLine("sqf <freq> <symbol_1> ... <symbol_n> - subscribe to quote updates with selected frequency priority");
+            Console.WriteLine("uqa - unsubscribe from all quote updates");
+            Console.WriteLine("sb <symbol_1> <m1> <periodicity_1> <pricetype_1> ... <periodicity_m1> <pricetype_m1> ... <symbol_n> <mn> <periodicity_1> <pricetype_1> ... <periodicity_mn> <pricetype_mn> - subscribe to bar updates");
+            Console.WriteLine("ub <symbol_1> ... <symbol_n> - unsubscribe from bar updates");
+            Console.WriteLine("uba - unsubscribe from all bar updates");
+            Console.WriteLine("e - exit");
         }
 
         void GetCurrencyTypeList()
@@ -429,12 +540,12 @@ namespace QuoteFeedAsyncSample
                 {
                     CurrencyTypeInfo currencyType = currencyTypes[index];
 
-                    Console.Error.WriteLine("CurrencyType : {0}, {1}", currencyType.Name, currencyType.Description);
+                    Console.Error.WriteLine("CurrencyType: {0}, {1}", currencyType.Name, currencyType.Description);
                 }
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -442,11 +553,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -459,12 +570,12 @@ namespace QuoteFeedAsyncSample
                 {
                     CurrencyInfo currency = currencies[index];
 
-                    Console.Error.WriteLine($"Currency : {currency.Name}, {currency.Description}, Precision={currency.Precision}, Tax={currency.Tax}, Type={currency.TypeId}");
+                    Console.Error.WriteLine($"Currency: {currency.Name}, {currency.Description}, Precision={currency.Precision}, Tax={currency.Tax}, Type={currency.TypeId}");
                 }
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -472,11 +583,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -489,17 +600,19 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
+                _symbols.Clear();
                 int count = symbols.Length;
                 for (int index = 0; index < count; ++index)
                 {
                     SymbolInfo symbol = symbols[index];
+                    _symbols[symbol.Name] = symbol;
 
-                    Console.Error.WriteLine("Symbol : {0}, {1}, {2}", symbol.Name, symbol.ExtendedName, symbol.Description);
+                    Console.Error.WriteLine("Symbol: {0}, {1}, {2}", symbol.Name, symbol.ExtendedName, symbol.Description);
                 }
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -507,11 +620,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -524,7 +637,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Session info : {0}, {1}-{2}, {3}", sessionInfo.Status, sessionInfo.StartTime, sessionInfo.EndTime, sessionInfo.ServerTimeZoneOffset);
+                Console.Error.WriteLine("Session info: {0}, {1}-{2}, {3}", sessionInfo.Status, sessionInfo.StartTime, sessionInfo.EndTime, sessionInfo.ServerTimeZoneOffset);
 
                 StatusGroupInfo[] groups = sessionInfo.StatusGroups;
 
@@ -533,12 +646,12 @@ namespace QuoteFeedAsyncSample
                 {
                     StatusGroupInfo group = groups[index];
 
-                    Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
+                    Console.Error.WriteLine("Session status group: {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
                 }
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -546,54 +659,44 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
-        void SubscribeQuotes(List<SymbolEntry> symbolEntries)
+        void SubscribeQuotes(List<SymbolEntry> symbolEntries, int frequencyPriority)
         {
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
-            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray());
+            client_.SubscribeQuotesAsync(null, symbolEntries.ToArray(), frequencyPriority);
         }
 
-        void OnSubscribeQuotesResult(QuoteFeed client, object data, Quote[] quotes)
+        void OnSubscribeQuotesResult(QuoteFeed client, object data, Quote[] quotes, SubscriptionErrors errors)
         {
             try
             {
-                for (int index = 0; index < quotes.Length; ++ index)
+                Console.Error.WriteLine("Subscribed:");
+                for (int index = 0; index < quotes.Length; ++index)
                 {
                     Quote quote = quotes[index];
-
-                    Console.Error.WriteLine("Subscribed : {0}, {1}", quote.Symbol, quote.CreatingTime);
-                    Console.Error.Write("    Bid :");
-
-                    foreach (QuoteEntry entry in quote.Bids)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                    Console.Error.Write("    Ask :");
-
-                    foreach (QuoteEntry entry in quote.Asks)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                    Console.Error.Write("    Indicative Option: " + quote.TickType);
-
-                    Console.Error.WriteLine();
+                    Console.Error.WriteLine(quote.ToString());
+                    if (_toSubscribe.TryGetValue(quote.Symbol, out var symbolEntry))
+                        _subscribedSymbols.Add(quote.Symbol, symbolEntry);
+                    else
+                        _subscribedSymbols.Add(quote.Symbol, new SymbolEntry { Id = quote.Symbol, MarketDepth = 1 });
                 }
+                if (!errors.IsEmpty)
+                {
+                    Console.WriteLine("Errors:");
+                    Console.WriteLine(string.Join("\n", errors.Errors.Select(it => $"{it.Key}: {string.Join(", ", it.Value)}")));
+                }
+                _toSubscribe.Clear();
+                Console.WriteLine();
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -601,11 +704,12 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
+                _toSubscribe.Clear();
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -628,11 +732,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -645,32 +749,18 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
+                Console.Error.WriteLine("Snapshot:");
                 int count = quotes.Length;
                 for (int index = 0; index < count; ++index)
                 {
                     Quote quote = quotes[index];
-
-                    Console.Error.WriteLine("Snapshot : {0}, {1}", quote.Symbol, quote.CreatingTime);
-                    Console.Error.Write("    Bid :");
-
-                    foreach (QuoteEntry entry in quote.Bids)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                    Console.Error.Write("    Ask :");
-
-                    foreach (QuoteEntry entry in quote.Asks)
-                        Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                    Console.Error.WriteLine();
-                    Console.Error.Write("    Indicative Option: " + quote.TickType);
-
-                    Console.Error.WriteLine();
+                    Console.Error.WriteLine(quote.ToString());
                 }
+                Console.WriteLine();
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -678,11 +768,11 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.WriteLine("Error : " + error.Message);
+                Console.WriteLine("Error: " + error.Message);
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
 
@@ -690,7 +780,7 @@ namespace QuoteFeedAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Session info : {0}, {1}-{2}, {3}", info.Status, info.StartTime, info.EndTime, info.ServerTimeZoneOffset);
+                Console.Error.WriteLine("Session info: {0}, {1}-{2}, {3}", info.Status, info.StartTime, info.EndTime, info.ServerTimeZoneOffset);
 
                 StatusGroupInfo[] groups = info.StatusGroups;
 
@@ -699,40 +789,70 @@ namespace QuoteFeedAsyncSample
                 {
                     StatusGroupInfo group = groups[index];
 
-                    Console.Error.WriteLine("Session status group : {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
+                    Console.Error.WriteLine("Session status group: {0}, {1}, {2}-{3}", group.StatusGroupId, group.Status, group.StartTime, group.EndTime);
                 }
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
             }
         }
-
 
         void OnQuoteUpdate(QuoteFeed client, Quote quote)
         {
             try
             {
-                Console.Error.WriteLine("Update : {0}, {1}", quote.Symbol, quote.CreatingTime);
-                Console.Error.Write("    Bid :");
+                double delta = (DateTime.UtcNow - quote.CreatingTime).TotalSeconds;
 
-                foreach (QuoteEntry entry in quote.Bids)
-                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                Console.Error.WriteLine();
-                Console.Error.Write("    Ask :");
-
-                foreach (QuoteEntry entry in quote.Asks)
-                    Console.Error.Write(" {0}@{1}", entry.Volume, entry.Price);
-
-                Console.Error.WriteLine();
-                Console.Error.Write("    Indicative Option: " + quote.TickType);
-
+                Console.Error.WriteLine($"{quote.Symbol}, {quote.CreatingTime.ToString("u")}, {quote.Bid}, {quote.Ask}, {quote.TickType}, {delta}");
                 Console.Error.WriteLine();
             }
             catch (Exception exception)
             {
-                Console.WriteLine("Error : " + exception.Message);
+                Console.WriteLine("Error: " + exception.Message);
+            }
+        }
+
+        void OnBarUpdate(QuoteFeed quoteFeed, AggregatedBarUpdate updates)
+        {
+            try
+            {
+                Console.Error.WriteLine(updates);
+                Console.Error.WriteLine();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error: " + exception.Message);
+            }
+        }
+
+        void OnBarSubscribed(QuoteFeed quoteFeed, object data, AggregatedBarUpdate[] updates)
+        {
+            Console.WriteLine("Subscribed:");
+            foreach (var update in updates)
+            {
+                Console.WriteLine(update);
+                _barSubscribedSymbols.Add(update.Symbol);
+            }
+        }
+
+        IEnumerable<BarSubscriptionSymbolEntry> ParseBarSubscriptionCommand(string line, int pos)
+        {
+            while (true)
+            {
+                string symbolId = GetNextWord(line, ref pos);
+
+                if (symbolId == null)
+                    yield break;
+                var paramCount = int.Parse(GetNextWord(line, ref pos));
+                var param = new BarParameters[paramCount];
+                for (int i = 0; i < paramCount; i++)
+                {
+                    string periodicity = GetNextWord(line, ref pos);
+                    string priceType = GetNextWord(line, ref pos);
+                    param[i] = new BarParameters(Periodicity.Parse(periodicity), (PriceType)Enum.Parse(typeof(PriceType), priceType));
+                }
+                yield return new BarSubscriptionSymbolEntry { Symbol = symbolId, Params = param };
             }
         }
 
@@ -741,5 +861,9 @@ namespace QuoteFeedAsyncSample
         string address_;
         string login_;
         string password_;
+        private Dictionary<string, SymbolEntry> _toSubscribe = new Dictionary<string, SymbolEntry>();
+        private Dictionary<string, SymbolEntry> _subscribedSymbols = new Dictionary<string, SymbolEntry>();
+        private Dictionary<string, SymbolInfo> _symbols = new Dictionary<string, SymbolInfo>();
+        private HashSet<string> _barSubscribedSymbols = new HashSet<string>();
     }
 }

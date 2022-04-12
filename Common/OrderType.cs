@@ -33,6 +33,14 @@
 
         /// <summary>
         /// </summary>
-        StopLimit = 4
+        StopLimit = 4,
+
+        ///// <summary>
+        ///// </summary>
+        //ContingentStop = 5,
+
+        ///// <summary>
+        ///// </summary>
+        //ContingentLimit = 6
     }
 }

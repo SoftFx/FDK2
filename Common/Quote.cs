@@ -222,7 +222,7 @@
             var ask = HasAsk ? Ask.ToString() : "None";
 
             StringBuilder sb = new StringBuilder();
-            sb.AppendFormat("Symbol = {0}; Bid = {1}; Ask = {2}", this.Symbol, bid, ask);
+            sb.AppendFormat("Symbol={0}, CreatingTime={1}, Bid={2}, Ask={3}", Symbol, CreatingTime.ToString("u"), bid, ask);
             if (IndicativeTick)
                 sb.Append(", IndicativeTick=True");
             sb.AppendFormat(", TickType={0}", TickType);

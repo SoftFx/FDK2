@@ -28,7 +28,7 @@
         /// <summary>
         /// Order exceeds limit.
         /// </summary>
-        OrderExceedsLImit = 3,
+        OrderExceedsLimit = 3,
 
         /// <summary>
         /// Off quotes
@@ -86,8 +86,13 @@
         LongOnly = 19,
 
         /// <summary>
+        /// Account exceeds orders limit
+        /// </summary>
+        OrdersLimitExceeded = 20,
+
+        /// <summary>
         /// Unknown error.
         /// </summary>
-        Other = 99
+        Other = 99,
     }
 }

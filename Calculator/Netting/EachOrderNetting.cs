@@ -128,7 +128,7 @@ namespace TickTrader.FDK.Calculator.Netting
             else
             {
                 CalcError error;
-                NetPosMargin = Calculator.CalculateMargin(NetPosAmount, AccountData.Leverage, OrderType.Position, Side, false, out error);
+                NetPosMargin = Calculator.CalculateMargin(NetPosAmount, AccountData.Leverage, OrderType.Position, Side, false, false, out error);
                 NetPosCallculationError = error;
                 NetPosProfit = Calculator.CalculateProfit(NetPosPrice, NetPosAmount, Side, out error);
                 NetPosCallculationError = CalcError.GetWorst(NetPosCallculationError, error);

@@ -103,7 +103,7 @@
         public override string ToString()
         {
             return
-                $"#{PosId}; Symbol = {Symbol}; Buy Price = {BuyPrice}; Buy Amount = {BuyAmount}; Sell Price = {SellPrice}; Sell Amount = {SellAmount}";
+                $"#{PosId}; Symbol={Symbol}; Buy Price={BuyPrice}; Buy Amount={BuyAmount}; Sell Price={SellPrice}; Sell Amount={SellAmount}";
         }
     }
 }

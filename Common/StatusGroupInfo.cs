@@ -51,7 +51,7 @@
         /// </summary>
         public override string ToString()
         {
-            return string.Format("StatusGroupId = {0}; Status = {1}; Start = {2}; End = {3}; Open = {4}; Close = {5};", StatusGroupId, Status, StartTime, EndTime, OpenTime, CloseTime);
+            return string.Format("StatusGroupId={0}; Status={1}; Start={2}; End={3}; Open={4}; Close={5};", StatusGroupId, Status, StartTime, EndTime, OpenTime, CloseTime);
         }
     }
 }

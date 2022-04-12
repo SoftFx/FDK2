@@ -13,7 +13,6 @@ namespace TickTrader.FDK.Client
 
             mutex_ = new object();
             started_ = false;
-            started_ = false;
             completed_ = false;
             tradeTransactionReports_ = new TradeTransactionReport[GrowSize];
             tradeTransactionReportCount_ = 0;

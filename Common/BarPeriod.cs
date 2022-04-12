@@ -101,7 +101,7 @@
             var match = Regex.Match(text, @"([a-zA-Z]+)(\d+)");
             if (!match.Success)
             {
-                var message = string.Format("Incorrect bar periodicity = {0}", text);
+                var message = string.Format("Incorrect bar periodicity={0}", text);
                 throw new ArgumentException(message, nameof(text));
             }
 

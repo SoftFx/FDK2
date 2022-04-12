@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using TickTrader.FDK.Calculator.Netting;
 using TickTrader.FDK.Calculator.Rounding;
+using TickTrader.FDK.Calculator.Validation;
 using TickTrader.FDK.Common;
 
 namespace TickTrader.FDK.Calculator
@@ -15,6 +17,7 @@ namespace TickTrader.FDK.Calculator
         private bool _autoUpdate;
         private decimal _cms;
         private decimal _swap;
+        private decimal _rebate;
 
         public const int DefaultRounding = 2;
 
@@ -43,7 +46,7 @@ namespace TickTrader.FDK.Calculator
         public CalcErrorCode WorstErrorCode { get; private set; }
         public int RoundingDigits { get; private set; }
         public decimal Profit { get; private set; }
-        public decimal Equity => Info.Balance + Profit + Commission + Swap;
+        public decimal Equity => Info.Balance + Profit + Commission + Swap + Rebate;
         public decimal FreeMargin => Equity - Margin;
         public decimal Margin { get; private set; }
         public decimal MarginLevel => CalculateMarginLevel();
@@ -63,6 +66,15 @@ namespace TickTrader.FDK.Calculator
             set
             {
                 _cms = value;
+            }
+        }
+
+        public decimal Rebate
+        {
+            get { return _rebate; }
+            set
+            {
+                _rebate = value;
             }
         }
 
@@ -101,87 +113,342 @@ namespace TickTrader.FDK.Calculator
             var calc = netting?.Calc ?? _market.GetCalculator(order.Symbol, Info.BalanceCurrency);
             using (calc.UsageScope())
             {
-                var orderMargin = calc.CalculateMargin(order.RemainingAmount, Info.Leverage, order.Type, order.Side, order.IsHidden, out error);
-                return CanIncreaseMarginBy(orderMargin, netting, order.Side, out newAccountMargin);
-            }
-        }
+                var orderMargin = calc.CalculateMargin(order, Info.Leverage, out error);
+                decimal marginDelta = orderMargin;
+                decimal? orderMarginDelta = null;
 
-        public bool HasSufficientMarginToOpenOrder(decimal orderAmount, string symbol, OrderType type, OrderSide side, bool isHidden,
-            out decimal newAccountMargin, out CalcError error)
-        {
-            var netting = GetNetting(symbol);
-            var calc = netting?.Calc ?? _market.GetCalculator(symbol, Info.BalanceCurrency);
-            using (calc.UsageScope())
-            {
-                var orderMargin = calc.CalculateMargin(orderAmount, Info.Leverage, type, side, isHidden, out error);
-                if (error != null)
+                if (Info.AccountingType == AccountType.Net)
                 {
-                    newAccountMargin = 0;
-                    return false;
+                    if (order.Type == OrderType.Market || (order.Type == OrderType.Limit && order.ImmediateOrCancel))
+                    {
+                        var netPosBuyMargin = netting?.Buy?.NetPosMargin ?? 0m;
+                        var netPosSellMargin = netting?.Sell?.NetPosMargin ?? 0m;
+                        if (order.Side == OrderSide.Buy && netPosSellMargin > 0)
+                        {
+                            if (orderMargin < netPosSellMargin)
+                            {
+                                marginDelta = -orderMargin;
+                            }
+                            else
+                            {
+                                marginDelta = -netPosSellMargin;
+                                orderMarginDelta = orderMargin - netPosSellMargin;
+                            }
+                        }
+                        else if (order.Side == OrderSide.Sell && netPosBuyMargin > 0)
+                        {
+                            if (orderMargin < netPosBuyMargin)
+                            {
+                                marginDelta = -orderMargin;
+                            }
+                            else
+                            {
+                                marginDelta = -netPosBuyMargin;
+                                orderMarginDelta = orderMargin - netPosBuyMargin;
+                            }
+                        }
+                    }
                 }
-                return CanIncreaseMarginBy(orderMargin, netting, side, out newAccountMargin);
+
+                return CanIncreaseMarginBy(marginDelta, orderMarginDelta, netting, order.Side, order.Type, out newAccountMargin);
             }
         }
 
-        public bool CanIncreaseMarginBy(decimal orderMargin, string symbol, OrderSide orderSide)
+        public bool HasSufficientMarginToOpenOrders(IEnumerable<IOrderCalcInfo> orders, out decimal? newAccountMargin, out CalcError error)
         {
-            var netting = GetNetting(symbol);
-            return CanIncreaseMarginBy(orderMargin, netting, orderSide, out _);
+            error = null;
+            var marginDeltas = new List<MarginDeltaParameters>(orders.Count());
+            foreach (var order in orders)
+            {
+                var netting = GetNetting(order.Symbol);
+                var calc = netting?.Calc ?? _market.GetCalculator(order.Symbol, Info.BalanceCurrency);
+                using (calc.UsageScope())
+                {
+                    var orderMargin = calc.CalculateMargin(order, Info.Leverage, out error);
+                    if (error != null)
+                    {
+                        newAccountMargin = 0;
+                        return false;
+                    }
+                    marginDeltas.Add(new MarginDeltaParameters
+                    {
+                        MarginDelta = orderMargin,
+                        Symbol = order.Symbol,
+                        OrderSide = order.Side,
+                        OrderType = order.Type
+                    });
+                }
+            }
+            return CanIncreaseMarginBy(marginDeltas, out newAccountMargin);
         }
 
-        public bool CanIncreaseMarginBy(decimal orderMargin, string symbol, OrderSide orderSide, out decimal newAccountMargin)
+        public bool CanIncreaseMarginBy(decimal orderMargin, string symbol, OrderSide orderSide, OrderType orderType)
         {
             var netting = GetNetting(symbol);
-            return CanIncreaseMarginBy(orderMargin, netting, orderSide, out newAccountMargin);
+            return CanIncreaseMarginBy(orderMargin, null, netting, orderSide, orderType, out _);
         }
 
-        public bool CanIncreaseMarginBy(decimal orderMarginDelta, SymbolNetting netting, OrderSide orderSide, out decimal newAccountMargin)
+        public bool CanIncreaseMarginBy(decimal marginDelta, decimal? orderMarginDelta, string symbol, OrderSide orderSide, OrderType orderType, out decimal newAccountMargin)
         {
-            decimal smbMargin;
-            decimal newSmbMargin;
+            var netting = GetNetting(symbol);
+            return CanIncreaseMarginBy(marginDelta, orderMarginDelta, netting, orderSide, orderType, out newAccountMargin);
+        }
+
+        private bool CanIncreaseMarginBy(decimal marginDelta, decimal? orderMarginDelta, SymbolNetting netting, OrderSide orderSide, OrderType orderType, out decimal newAccountMargin)
+        {
+            decimal symbolMargin;
+            decimal newSymbolMargin;
 
             if (netting == null)
             {
-                smbMargin = 0;
-                newSmbMargin = orderMarginDelta;
+                symbolMargin = 0;
+                newSymbolMargin = marginDelta;
             }
             else
             {
+                decimal symbolMarginBuy = netting.Buy?.Margin ?? 0;
+                decimal symbolMarginSell = netting.Sell?.Margin ?? 0;
+                symbolMargin = netting.Margin;
+                newSymbolMargin = symbolMargin;
+
                 if (Info.AccountingType == AccountType.Gross)
                 {
-                    var marginBuy = netting.Buy?.Margin ?? 0;
-                    var marginSell = netting.Sell?.Margin ?? 0;
-                    smbMargin = Math.Max(marginBuy, marginSell);
-
                     if (orderSide == OrderSide.Buy)
-                        newSmbMargin = Math.Max(marginSell, marginBuy + orderMarginDelta);
+                    {
+                        symbolMarginBuy += marginDelta;
+                    }
                     else
-                        newSmbMargin = Math.Max(marginSell + orderMarginDelta, marginBuy);
+                    {
+                        symbolMarginSell += marginDelta;
+                    }
                 }
                 else if (Info.AccountingType == AccountType.Net)
                 {
-                    var marginBuy = netting.Buy?.Margin ?? 0;
-                    var marginSell = netting.Sell?.Margin ?? 0;
-                    smbMargin = Math.Max(marginBuy, marginSell);
-                    newSmbMargin = orderMarginDelta;
+                    var ordMarginDelta = orderMarginDelta ?? 0m;
+                    var posAmountBuy = netting.Buy?.NetPosAmount ?? 0m;
+                    var posAmountSell = netting.Sell?.NetPosAmount ?? 0m;
+                    var posMarginBuy = posAmountBuy > 0m ? (netting.Buy?.NetPosMargin ?? 0m) : 0m;
+                    var posMarginSell = posAmountSell > 0m ? (netting.Sell?.NetPosMargin ?? 0m) : 0m;
 
-                    if ((orderSide == OrderSide.Buy) && (marginBuy > 0))
-                        newSmbMargin = marginBuy + orderMarginDelta;
-                    else if ((orderSide == OrderSide.Buy) && (marginSell > 0))
-                        newSmbMargin = Math.Abs(marginSell - orderMarginDelta);
-                    else if ((orderSide == OrderSide.Sell) && (marginSell > 0))
-                        newSmbMargin = marginSell + orderMarginDelta;
-                    else if ((orderSide == OrderSide.Sell) && (marginBuy > 0))
-                        newSmbMargin = Math.Abs(marginBuy - orderMarginDelta);
+                    if (symbolMargin == 0) //(Math.Abs(symbolMargin) < double.Epsilon)
+                    {
+                        if (orderSide == OrderSide.Buy)
+                            symbolMarginBuy = marginDelta;
+                        else if (orderSide == OrderSide.Sell)
+                            symbolMarginSell = marginDelta;
+                    }
+                    else if (symbolMarginBuy == symbolMarginSell) //(Math.Abs(symbolMarginBuy - symbolMarginSell).IsApproximatelyZero())
+                    {
+                        if (marginDelta > 0)
+                        {
+                            if (orderSide == OrderSide.Buy)
+                            {
+                                symbolMarginBuy += marginDelta;
+                            }
+                            else if (orderSide == OrderSide.Sell)
+                            {
+                                symbolMarginSell += marginDelta;
+                            }
+                        }
+                        else
+                        {
+                            if (posAmountBuy > 0)
+                            {
+                                if (orderSide == OrderSide.Buy)
+                                {
+                                    symbolMarginBuy += (ordMarginDelta - marginDelta);
+                                }
+                                else if (orderSide == OrderSide.Sell)
+                                {
+                                    symbolMarginBuy += marginDelta;
+                                    symbolMarginSell += ordMarginDelta;
+                                }
+                            }
+                            else if (posAmountSell > 0)
+                            {
+                                if (orderSide == OrderSide.Sell)
+                                {
+                                    symbolMarginSell += (ordMarginDelta - marginDelta);
+                                }
+                                else if (orderSide == OrderSide.Buy)
+                                {
+                                    symbolMarginBuy += ordMarginDelta;
+                                    symbolMarginSell += marginDelta;
+                                }
+                            }
+                            else
+                            {
+                                if (orderSide == OrderSide.Buy)
+                                {
+                                    symbolMarginBuy += (ordMarginDelta - marginDelta);
+                                }
+                                else if (orderSide == OrderSide.Sell)
+                                {
+                                    symbolMarginSell += (ordMarginDelta - marginDelta);
+                                }
+                            }
+                        }
+                    }
+                    else if (symbolMarginBuy > symbolMarginSell)
+                    {
+                        if (orderSide == OrderSide.Buy)
+                        {
+                            if (marginDelta > 0)
+                            {
+                                symbolMarginBuy += marginDelta;
+                            }
+                            else if (orderType != OrderType.StopLimit && posAmountSell > 0)
+                            {
+                                var posMarginDelta = posMarginSell + marginDelta;
+                                var sellMarginDelta = posMarginDelta > 0m? marginDelta : -posMarginSell;
+                                var buyMarginDelta = posMarginDelta > 0m ? ordMarginDelta : ordMarginDelta - posMarginDelta;
+                                symbolMarginSell += sellMarginDelta;
+                                symbolMarginBuy += buyMarginDelta;
+                            }
+                            else
+                            {
+                                symbolMarginBuy += (ordMarginDelta - marginDelta);
+                            }
+                        }
+                        else if (orderSide == OrderSide.Sell)
+                        {
+                            if (marginDelta > 0)
+                            {
+                                symbolMarginSell += marginDelta;
+                            }
+                            else if (orderType != OrderType.StopLimit && posAmountBuy > 0)
+                            {
+                                var posMarginDelta = posMarginBuy + marginDelta;
+                                var buyMarginDelta = posMarginDelta > 0m ? marginDelta : -posMarginBuy;
+                                var sellMarginDelta = posMarginDelta > 0m ? ordMarginDelta : ordMarginDelta - posMarginDelta;
+                                symbolMarginBuy += buyMarginDelta;
+                                symbolMarginSell += sellMarginDelta;
+                            }
+                            else
+                            {
+                                symbolMarginSell += (ordMarginDelta - marginDelta);
+                            }
+                        }
+                    }
+                    else if (symbolMarginSell > symbolMarginBuy)
+                    {
+                        if (orderSide == OrderSide.Sell)
+                        {
+                            if (marginDelta > 0)
+                            {
+                                symbolMarginSell += marginDelta;
+                            }
+                            else if (orderType != OrderType.StopLimit && posAmountBuy > 0)
+                            {
+                                var posMarginDelta = posMarginBuy + marginDelta;
+                                var buyMarginDelta = posMarginDelta > 0m ? marginDelta : -posMarginBuy;
+                                var sellMarginDelta = posMarginDelta > 0m ? ordMarginDelta : ordMarginDelta - posMarginDelta;
+                                symbolMarginBuy += buyMarginDelta;
+                                symbolMarginSell += sellMarginDelta;
+                            }
+                            else
+                            {
+                                symbolMarginSell += (ordMarginDelta - marginDelta);
+                            }
+                        }
+                        else if (orderSide == OrderSide.Buy)
+                        {
+                            if (marginDelta > 0)
+                            {
+                                symbolMarginBuy += marginDelta;
+                            }
+                            else if (orderType != OrderType.StopLimit && posAmountSell > 0)
+                            {
+                                var posMarginDelta = posMarginSell + marginDelta;
+                                var sellMarginDelta = posMarginDelta > 0m ? marginDelta : -posMarginSell;
+                                var buyMarginDelta = posMarginDelta > 0m ? ordMarginDelta : ordMarginDelta - posMarginDelta;
+                                symbolMarginSell += sellMarginDelta;
+                                symbolMarginBuy += buyMarginDelta;
+                            }
+                            else
+                            {
+                                symbolMarginBuy += (ordMarginDelta - marginDelta);
+                            }
+                        }
+                    }
+                }
+                else
+                    throw new Exception("Not a margin account!");
+
+                newSymbolMargin = SymbolNetting.CalculateMargin(netting, symbolMarginBuy, symbolMarginSell);
+            }
+
+            var marginIncrement = newSymbolMargin - symbolMargin;
+            newAccountMargin = Margin + marginIncrement;
+
+            return marginIncrement <= 0 || newAccountMargin < Equity; // (newAccountMargin - Equity) < double.Epsilon;
+        }
+
+        public bool CanIncreaseMarginBy(IEnumerable<MarginDeltaParameters> marginDeltas, out decimal? newAccountMargin)
+        {
+            newAccountMargin = null;
+            if (marginDeltas != null)
+            {
+                if (Info.AccountingType == AccountType.Gross)
+                {
+                    var buySellMarginBySymbol = new Dictionary<string, BuySellMargin>();
+                    var newMargin = Margin;
+                    foreach (var deltaParam in marginDeltas)
+                    {
+                        var symbol = deltaParam.Symbol;
+                        var orderSide = deltaParam.OrderSide;
+                        var buyMarginDelta = orderSide == OrderSide.Buy ? deltaParam.MarginDelta : 0;
+                        var sellMarginDelta = orderSide == OrderSide.Sell ? deltaParam.MarginDelta : 0;
+                        var netting = GetNetting(symbol);
+
+                        if (!buySellMarginBySymbol.ContainsKey(symbol))
+                        {
+                            buySellMarginBySymbol[symbol] = new BuySellMargin(netting?.Buy?.Margin ?? 0, netting?.Sell?.Margin ?? 0);
+                        }
+
+                        var buySellMargin = buySellMarginBySymbol[symbol];
+                        var marginBuy = buySellMargin.BuyMargin;
+                        var marginSell = buySellMargin.SellMargin;
+
+                        decimal smbMargin;
+                        decimal newSmbMargin;
+                        if (netting == null)
+                        {
+                            var symbolInfo = Market?.Symbols?.FirstOrDefault(s => s.Symbol == symbol);
+                            smbMargin = SymbolNetting.CalculateMargin(symbolInfo, marginBuy, marginSell);
+                            newSmbMargin = SymbolNetting.CalculateMargin(symbolInfo, marginBuy + buyMarginDelta, marginSell + sellMarginDelta);
+                        }
+                        else
+                        {
+                            smbMargin = SymbolNetting.CalculateMargin(netting, marginBuy, marginSell);
+                            newSmbMargin = SymbolNetting.CalculateMargin(netting, marginBuy + buyMarginDelta, marginSell + sellMarginDelta);
+                        }
+
+                        var marginIncrement = newSmbMargin - smbMargin;
+
+                        newMargin += marginIncrement;
+
+                        if (marginIncrement > 0 && newMargin >= Equity)
+                        {
+                            newAccountMargin = newMargin;
+                            return false;
+                        }
+
+                        buySellMargin.BuyMargin += buyMarginDelta;
+                        buySellMargin.SellMargin += sellMarginDelta;
+                    }
+                    newAccountMargin = newMargin;
+                    return true;
+                }
+                else if (Info.AccountingType == AccountType.Net)
+                {
+                    throw new NotSupportedException("Not supported for Net account!");
                 }
                 else
                     throw new Exception("Not a margin account!");
             }
-
-            var marginIncrement = newSmbMargin - smbMargin;
-            newAccountMargin = Margin + marginIncrement;
-
-            return marginIncrement <= 0 || newAccountMargin < Equity;
+            else
+                return true;
         }
 
         public SymbolNetting GetNetting(string symbol)
@@ -260,22 +527,30 @@ namespace TickTrader.FDK.Calculator
 
         private void AddOrder(IOrderModel order)
         {
-            AddInternal(order);
-            GetOrAddSymbolCalculator(order.Symbol).AddOrder(order);
+            if (!order.IsContingent)
+            {
+                AddInternal(order);
+                GetOrAddSymbolCalculator(order.Symbol).AddOrder(order);
+            }
         }
 
         private void AddOrderWithoutCalculation(IOrderModel order)
         {
-            AddInternal(order);
-            GetOrAddSymbolCalculator(order.Symbol).AddOrderWithoutCalculation(order);
+            if (!order.IsContingent)
+            {
+                AddInternal(order);
+                GetOrAddSymbolCalculator(order.Symbol).AddOrderWithoutCalculation(order);
+            }
         }
 
         private void AddInternal(IOrderModel order)
         {
             Swap += order.Swap;
             Commission += order.Commission;
+            Rebate += order.Rebate;
             order.SwapChanged += Order_SwapChanged;
             order.CommissionChanged += Order_CommissionChanged;
+            order.RebateChanged += Order_RebateChanged;
             order.EssentialsChanged += Order_EssentialsChanged;
 
             if (order.Type == OrderType.Position)
@@ -296,19 +571,24 @@ namespace TickTrader.FDK.Calculator
 
         private void RemoveOrder(IOrderModel order)
         {
-            Swap -= order.Swap;
-            Commission -= order.Commission;
-            order.SwapChanged -= Order_SwapChanged;
-            order.CommissionChanged -= Order_CommissionChanged;
-            order.EssentialsChanged -= Order_EssentialsChanged;
-            var smbCalc = GetOrAddSymbolCalculator(order.Symbol);
-            smbCalc.RemoveOrder(order);
-            RemoveIfEmpty(smbCalc);
-
-            if (order.Type == OrderType.Position)
+            if (!order.IsContingent)
             {
-                ChangeMarginAsset(-order.RemainingAmount, order.SymbolInfo, order.Side);
-                ChangeProfitAsset(-order.RemainingAmount * (order.Price ?? 0), order.SymbolInfo, order.Side);
+                Swap -= order.Swap;
+                Commission -= order.Commission;
+                Rebate -= order.Rebate;
+                order.SwapChanged -= Order_SwapChanged;
+                order.CommissionChanged -= Order_CommissionChanged;
+                order.RebateChanged -= Order_RebateChanged;
+                order.EssentialsChanged -= Order_EssentialsChanged;
+                var smbCalc = GetOrAddSymbolCalculator(order.Symbol);
+                smbCalc.RemoveOrder(order);
+                RemoveIfEmpty(smbCalc);
+
+                if (order.Type == OrderType.Position)
+                {
+                    ChangeMarginAsset(-order.RemainingAmount, order.SymbolInfo, order.Side);
+                    ChangeProfitAsset(-order.RemainingAmount * (order.Price ?? 0), order.SymbolInfo, order.Side);
+                }
             }
         }
 
@@ -443,6 +723,11 @@ namespace TickTrader.FDK.Calculator
             Commission += args.NewVal - args.OldVal;
         }
 
+        private void Order_RebateChanged(OrderPropArgs<decimal> args)
+        {
+            Rebate += args.NewVal - args.OldVal;
+        }
+
         public void Order_EssentialsChanged(OrderEssentialsChangeArgs args)
         {
             var order = args.Order;
@@ -456,10 +741,10 @@ namespace TickTrader.FDK.Calculator
 
         private decimal CalculateMarginLevel()
         {
-            if (Margin > 0)
-                return Equity / Margin;
-            else
+            if (Margin <= 0)
                 return 0;
+            else
+                return Equity / Margin; // !!! Don't multiply by 100
         }
 
         private void InitRounding()

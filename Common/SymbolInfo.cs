@@ -762,12 +762,12 @@
         public double Rebate { get; set; }
 
         /// <summary>
-        /// Converts SymbolInfo to string; format is 'Name = {0}; ContractMultiplier = {1}'
+        /// Converts SymbolInfo to string; format is 'Name={0}; ContractMultiplier={1}'
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("Name = {0}; ContractMultiplier = {1}; StatusGroupId = {2}; Descrtiption = {3}", this.Name, this.ContractMultiplier, this.StatusGroupId, this.Description);
+            return string.Format("Name={0}; ContractMultiplier={1}; StatusGroupId={2}; Descrtiption={3}", this.Name, this.ContractMultiplier, this.StatusGroupId, this.Description);
         }
 
         #region Members

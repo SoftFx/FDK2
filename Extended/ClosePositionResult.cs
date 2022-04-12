@@ -36,7 +36,7 @@
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("Success = {0}; Executed volume = {1}; Executed price = {2}", this.Sucess, this.ExecutedVolume, this.ExecutedPrice);
+            return string.Format("Success={0}; Executed volume={1}; Executed price={2}", this.Sucess, this.ExecutedVolume, this.ExecutedPrice);
         }
 
         #endregion

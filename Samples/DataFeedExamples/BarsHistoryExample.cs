@@ -48,7 +48,7 @@
             if (bidCount != 0)
             {
                 var averageDeviation = bidSumDeviation / bidCount;
-                Console.WriteLine("Average bid deviation = {0}", averageDeviation);
+                Console.WriteLine("Average bid deviation={0}", averageDeviation);
             }
             else
                 Console.WriteLine("Average bid deviation = NA");
@@ -56,7 +56,7 @@
             if (askCount != 0)
             {
                 var averageDeviation = askSumDeviation / askCount;
-                Console.WriteLine("Average ask deviation = {0}", averageDeviation);
+                Console.WriteLine("Average ask deviation={0}", averageDeviation);
             }
             else
                 Console.WriteLine("Average ask deviation = NA");

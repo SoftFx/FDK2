@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 
@@ -10,42 +11,52 @@ namespace QuoteStoreAsyncSample
 {
     public class Program : IDisposable
     {
+        static string SampleName = typeof(Program).Namespace;
+
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5042;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5042;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("QuoteStoreAsyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `QuoteStoreAsyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("QuoteStoreAsyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -56,13 +67,13 @@ namespace QuoteStoreAsyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteStore("QuoteStoreAsyncSample", port : port, logMessages : true,
+            client_ = new QuoteStore(SampleName, port : port, logMessages : true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new QuoteStore.ConnectResultDelegate(this.OnConnectResult);
@@ -438,7 +449,7 @@ namespace QuoteStoreAsyncSample
             }
             catch
             {
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
 
             client_.Join();
@@ -448,15 +459,15 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.LoginAsync(null, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "");
             }
             catch (Exception exception)
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -508,7 +519,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -528,7 +539,7 @@ namespace QuoteStoreAsyncSample
         {
             try
             {
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
             }
             catch (Exception exception)
             {
@@ -542,7 +553,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Error : " + error.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError(error.Message));
             }
             catch (Exception exception)
             {
@@ -556,7 +567,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {
@@ -582,7 +593,7 @@ namespace QuoteStoreAsyncSample
             {
                 Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {

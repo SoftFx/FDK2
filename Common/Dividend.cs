@@ -12,7 +12,7 @@ namespace TickTrader.FDK.Common
 
         public override string ToString()
         {
-            return $"#{Id}; Symbol = {Symbol}; Time = {Time:u}; GrossRate = {GrossRate:F}; Fee = {Fee:P}";
+            return $"#{Id}; Symbol={Symbol}; Time={Time:u}; GrossRate={GrossRate:F}; Fee={Fee:P}";
         }
     }
 }

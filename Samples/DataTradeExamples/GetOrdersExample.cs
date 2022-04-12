@@ -14,7 +14,7 @@
         protected override void RunExample()
         {
             var records = this.Trade.Cache.TradeRecords;
-            Console.WriteLine("Records number = {0}", records.Length);
+            Console.WriteLine("Records number={0}", records.Length);
             foreach (var record in records)
                 Console.WriteLine(record);
         }

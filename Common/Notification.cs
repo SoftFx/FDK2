@@ -16,7 +16,7 @@
 
         public override string ToString()
         {
-            return string.Format("Id = {0}; Type = {1}; Severity = {2}; Messafe = {3}", this.Id, this.Type, this.Severity, this.Message);
+            return string.Format("Id={0}; Type={1}; Severity={2}; Messafe={3}", this.Id, this.Type, this.Severity, this.Message);
         }
     }
 }

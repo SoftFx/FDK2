@@ -89,6 +89,7 @@
             this.Feed.SessionInfo += this.OnSessionInfo;
             this.Feed.Tick += this.OnTick;            
             this.Feed.Notify += this.OnNotify;
+            this.Feed.Bar += OnBar;
 
             this.Feed.Start();
 
@@ -144,9 +145,14 @@
             Console.WriteLine("OnNotify(): {0}", e);
         }
 
-#endregion
+        protected virtual void OnBar(object sender, BarEventArgs e)
+        {
+            Console.WriteLine("OnBar(): {0}", e);
+        }
 
-#region Abstract Methods
+        #endregion
+
+        #region Abstract Methods
 
         protected abstract void RunExample();
 

@@ -287,6 +287,28 @@ namespace TickTrader.FDK.Calculator
         }
 
         /// <summary>
+        /// Validates margin for New Order requests.
+        /// Order of requests should be preserved.
+        /// </summary>
+        /// <param name="requests">New Order requests</param>
+        /// <exception cref="MarketConfigurationException">Throws when market configuration is incorrect (e.g., symbol or currency is missing).</exception>
+        /// <exception cref="NotEnoughMoneyException">Throws when not enough money.</exception>
+        /// <exception cref="OffQuoteException">Throws when required quote is missing.</exception>
+        /// <exception cref="OffCrossQuoteException">Throws when required cross quote is missing.</exception>
+        /// <exception cref="ArgumentNullException">Throws when request model is null.</exception>
+        /// <exception cref="NotInitializedException">Throws when calculator is not initialized yet.</exception>
+        public void ValidateNewOrdersMargin(IEnumerable<NewOrderRequest> requests)
+        {
+            if (requests == null)
+                throw new ArgumentNullException(nameof(requests));
+
+            if (!IsInitialized)
+                throw new NotInitializedException("Calculator is not initialized yet");
+
+            Account.ValidateNewOrdersMargin(requests);
+        }
+
+        /// <summary>
         /// Validates margin for Modify Order request
         /// </summary>
         /// <param name="request">Modify Order request parameters</param>
@@ -306,6 +328,29 @@ namespace TickTrader.FDK.Calculator
                 throw new NotInitializedException("Calculator is not initialized yet");
 
             Account.ValidateModifyOrderMargin(request);
+        }
+
+        /// <summary>
+        /// Validates margin for Modify Order requests.
+        /// Order of requests should be preserved.
+        /// </summary>
+        /// <param name="request">Modify Order requests</param>
+        /// <exception cref="MarketConfigurationException">Throws when market configuration is incorrect (e.g., symbol or currency is missing).</exception>
+        /// <exception cref="NotEnoughMoneyException">Throws when not enough money.</exception>
+        /// <exception cref="OffQuoteException">Throws when required quote is missing.</exception>
+        /// <exception cref="OffCrossQuoteException">Throws when required cross quote is missing.</exception>
+        /// <exception cref="ArgumentException">Throws when order with Id specified would not be found.</exception>
+        /// <exception cref="ArgumentNullException">Throws when request model is null.</exception>
+        /// <exception cref="NotInitializedException">Throws when calculator is not initialized yet.</exception>
+        public void ValidateModifyOrdersMargin(IEnumerable<ModifyOrderRequest> requests)
+        {
+            if (requests == null)
+                throw new ArgumentNullException(nameof(requests));
+
+            if (!IsInitialized)
+                throw new NotInitializedException("Calculator is not initialized yet");
+
+            Account.ValidateModifyOrdersMargin(requests);
         }
         #endregion
 

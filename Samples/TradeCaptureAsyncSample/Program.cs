@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 
@@ -10,42 +11,52 @@ namespace TradeCaptureAsyncSample
 {
     public class Program : IDisposable
     {
+        static string SampleName = typeof(Program).Namespace;
+
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5044;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5044;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("TradeCaptureAsyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `TradeCaptureAsyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("TradeCaptureAsyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -56,13 +67,13 @@ namespace TradeCaptureAsyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new TradeCapture("TradeCaptureAsyncSample", port : port, logMessages : true,
+            client_ = new TradeCapture(SampleName, port : port, logMessages : true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.ConnectResultEvent += new TradeCapture.ConnectResultDelegate(this.OnConnectResult);
@@ -164,21 +175,21 @@ namespace TradeCaptureAsyncSample
                         int pos = 0;
                         string command = GetNextWord(line, ref pos);
 
-                        if (command == "help" || command == "h")
+                        if (command == "h" || command == "?")
                         {
                             PrintCommands();
                         }
-                        else if (command == "send_one_time_password" || command == "sotp")
+                        else if (command == "sotp")
                         {
                             string oneTimePassword = GetNextWord(line, ref pos);
 
                             SendOneTimePassword(oneTimePassword);
                         }
-                        else if (command == "resume_one_time_password" || command == "rotp")
+                        else if (command == "rotp")
                         {
                             ResumeOneTimePassword();
                         }
-                        else if (command == "subscribe_trades" || command == "st")
+                        else if (command == "st")
                         {
                             string from = GetNextWord(line, ref pos);
 
@@ -187,11 +198,11 @@ namespace TradeCaptureAsyncSample
 
                             SubscribeTrades(DateTime.Parse(from + "Z", null, DateTimeStyles.AdjustToUniversal));
                         }
-                        else if (command == "unsubscribe_trades" || command == "ut")
+                        else if (command == "ut")
                         {
                             UnsubscribeTrades();
                         }
-                        else if (command == "download_trade_reports" || command == "dt")
+                        else if (command == "dt")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -215,7 +226,7 @@ namespace TradeCaptureAsyncSample
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
-                        else if (command == "download_account_reports" || command == "da")
+                        else if (command == "da")
                         {
                             string timeDirection = GetNextWord(line, ref pos);
 
@@ -239,7 +250,7 @@ namespace TradeCaptureAsyncSample
                                 DateTime.Parse(to + "Z", null, DateTimeStyles.AdjustToUniversal)
                             );
                         }
-                        else if (command == "exit" || command == "e")
+                        else if (command == "e")
                         {
                             break;
                         }
@@ -271,7 +282,7 @@ namespace TradeCaptureAsyncSample
             }
             catch
             {
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
 
             client_.Join();
@@ -281,9 +292,9 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.LoginAsync(null, login_, password_, "", "", "");
+                client_.LoginAsync(null, login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "");
             }
             catch (Exception exception)
             {
@@ -339,7 +350,7 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Error : " + exception.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -359,7 +370,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
 
                 Console.WriteLine("Download trades for today");
                 DownloadTrades(TimeDirection.Forward, DateTime.UtcNow.Date, DateTime.UtcNow);
@@ -378,7 +389,7 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Error : " + error.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientError(error.Message));
             }
             catch (Exception exception)
             {
@@ -404,7 +415,7 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {
@@ -430,7 +441,7 @@ namespace TradeCaptureAsyncSample
             {
                 Console.WriteLine("Logout : " + info.Message);
 
-                client_.DisconnectAsync(null, "Client disconnect");
+                client_.DisconnectAsync(null, Reason.ClientRequest("Client logout"));
             }
             catch (Exception exception)
             {
@@ -440,14 +451,14 @@ namespace TradeCaptureAsyncSample
 
         void PrintCommands()
         {
-            Console.WriteLine("help (h) - print commands");
-            Console.WriteLine("send_one_time_password (sotp) <one_time_password> - send one time password");
-            Console.WriteLine("resume_one_time_password (rotp) - resume one time password");
-            Console.WriteLine("subscribe_trades (st) <from> - subscribe to trades updates");
-            Console.WriteLine("unsubscribe_trades (ut) - unsubscribe from trades updates");
-            Console.WriteLine("download_trade_reports (dt) <direction> <from> <to> - download trade reports");
-            Console.WriteLine("download_account_reports (da) <direction> <from> <to> - download account reports");
-            Console.WriteLine("exit (e) - exit");
+            Console.WriteLine("h|? - print commands");
+            Console.WriteLine("sotp <one_time_password> - send one time password");
+            Console.WriteLine("rotp - resume one time password");
+            Console.WriteLine("st <from> - subscribe to trades updates");
+            Console.WriteLine("ut - unsubscribe from trades updates");
+            Console.WriteLine("dt <direction> <from> <to> - download trade reports");
+            Console.WriteLine("da <direction> <from> <to> - download account reports");
+            Console.WriteLine("e - exit");
         }
 
         void SendOneTimePassword(string oneTimePassword)
@@ -505,7 +516,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Subscribing");
+                Console.WriteLine("Subscribing");
             }
             catch (Exception exception)
             {
@@ -520,7 +531,7 @@ namespace TradeCaptureAsyncSample
                 if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
                     tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
@@ -538,7 +549,7 @@ namespace TradeCaptureAsyncSample
                 }
                 else
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
@@ -559,7 +570,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Subscribed");
+                Console.WriteLine("Subscribed");
             }
             catch (Exception exception)
             {
@@ -588,7 +599,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Unsubscribed");
+                Console.WriteLine("Unsubscribed");
             }
             catch (Exception exception)
             {
@@ -617,7 +628,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("Trade Reports:------------------------------------------------------------------");
+                Console.WriteLine("Trade Reports:------------------------------------------------------------------");
             }
             catch (Exception exception)
             {
@@ -632,7 +643,7 @@ namespace TradeCaptureAsyncSample
                 if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
                     tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
@@ -650,7 +661,7 @@ namespace TradeCaptureAsyncSample
                 }
                 else if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.BalanceTransaction)
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "{0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
@@ -668,7 +679,7 @@ namespace TradeCaptureAsyncSample
                 }
                 else
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "{0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
@@ -688,7 +699,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+                Console.WriteLine("--------------------------------------------------------------------------------");
             }
             catch (Exception exception)
             {
@@ -717,7 +728,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+                Console.WriteLine($"{totalCount} Account Reports ---------------------------------------------------");
             }
             catch (Exception exception)
             {
@@ -725,22 +736,35 @@ namespace TradeCaptureAsyncSample
             }
         }
 
-        public void OnDownloadAccountReportsResult(TradeCapture client, object data, AccountReport accountReport)
+        public void OnDownloadAccountReportsResult(TradeCapture client, object data, AccountReport report)
         {
             try
             {
-                Console.Error.WriteLine
-                (
-                    "Account report : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}",
-                    accountReport.Timestamp,
-                    accountReport.AccountId,
-                    accountReport.Type,
-                    accountReport.BalanceCurrency,
-                    accountReport.Leverage,
-                    accountReport.Balance,
-                    accountReport.Margin,
-                    accountReport.Equity
-                );
+                Console.WriteLine($"Account report: {report}");
+                if (report.Assets.Length > 0)
+                {
+                    Console.WriteLine($"\tAssets: {report.Assets.Length}");
+                    foreach (var asset in report.Assets)
+                    {
+                        Console.WriteLine($"\t{asset}");
+                    }
+                }
+                if (report.Positions.Length > 0)
+                {
+                    Console.WriteLine($"\tPositions: {report.Positions.Length}");
+                    foreach (var pos in report.Positions)
+                    {
+                        Console.WriteLine($"\t{pos}");
+                    }
+                }
+                if (report.Orders.Length > 0)
+                {
+                    Console.WriteLine($"\tOrders: {report.Orders.Length}");
+                    foreach (var order in report.Orders)
+                    {
+                        Console.WriteLine($"\t{order}");
+                    }
+                }
             }
             catch (Exception exception)
             {
@@ -752,7 +776,7 @@ namespace TradeCaptureAsyncSample
         {
             try
             {
-                Console.Error.WriteLine("--------------------------------------------------------------------------------");
+                Console.WriteLine("--------------------------------------------------------------------------------");
             }
             catch (Exception exception)
             {
@@ -779,7 +803,7 @@ namespace TradeCaptureAsyncSample
                 if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.OrderFilled ||
                     tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.PositionClosed)
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}@{9}, {10}, {11}",
                         tradeTransactionReport.TradeTransactionId,
@@ -798,7 +822,7 @@ namespace TradeCaptureAsyncSample
                 }
                 else if (tradeTransactionReport.TradeTransactionReportType == TradeTransactionReportType.BalanceTransaction)
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}",
                         tradeTransactionReport.TradeTransactionId,
@@ -816,7 +840,7 @@ namespace TradeCaptureAsyncSample
                 }
                 else
                 {
-                    Console.Error.WriteLine
+                    Console.WriteLine
                     (
                         "Trade update : {0}, {1}, {2}, {3}",
                         tradeTransactionReport.TradeTransactionId,
@@ -842,4 +866,4 @@ namespace TradeCaptureAsyncSample
 
 // st "2017.01.01 0:0:0"
 // dt Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
-// da Forward "2017.01.01 0:0:0" "2017.11.01 0:0:0"
+// da Forward "2022.01.27 0:0:0" "2022.01.29 0:0:0"

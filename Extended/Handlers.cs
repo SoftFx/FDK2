@@ -28,9 +28,9 @@
             if (this.SendingTime != null)
             {
                 var sendingTime = (DateTime)this.SendingTime;
-                stSendingTime = string.Format("SendingTime = {0};", sendingTime);
+                stSendingTime = string.Format("SendingTime={0};", sendingTime);
             }
-            var result = string.Format("{0}ReceivingTime = {1}", stSendingTime, this.ReceivingTime);
+            var result = string.Format("{0}ReceivingTime={1}", stSendingTime, this.ReceivingTime);
             return result;
         }
     }
@@ -226,6 +226,33 @@
     public delegate void TickHandler(object sender, TickEventArgs e);
 
     /// <summary>
+    /// Contains data for the bar update event.
+    /// </summary>
+    public class BarEventArgs : DataEventArgs
+    {
+        /// <summary>
+        /// Gets update bars.
+        /// </summary>
+        public AggregatedBarUpdate Update { get; set; }
+
+        /// <summary>
+        /// Returns formatted string for class instance.
+        /// </summary>
+        /// <returns>can not be null</returns>
+        public override string ToString()
+        {
+            return Update.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents the method that will handle new bar update event.
+    /// </summary>
+    /// <param name="sender">The source of the event.</param>
+    /// <param name="e">Bar update information.</param>
+    public delegate void BarHandler(object sender, BarEventArgs e);
+
+    /// <summary>
     /// This message contains current feed/trade session information. It received by the client in following circumstances:
     /// 1. After successful login;
     /// 2. After trading session status is changed on server (opened to closed, closed to opened);
@@ -402,11 +429,38 @@
     }
 
     /// <summary>
-    ///
+    /// Represents the method that will handle: TradeTransactionReport event
     /// </summary>
     /// <param name="sender"></param>
     /// <param name="e"></param>
     public delegate void TradeTransactionReportHandler(object sender, TradeTransactionReportEventArgs e);
+
+    /// <summary>
+    /// Data for ContingentOrderTriggerReport event.
+    /// </summary>
+    public class ContingentOrderTriggerReportEventArgs : EventArgs
+    {
+        /// <summary>
+        /// Trade transaction report
+        /// </summary>
+        public ContingentOrderTriggerReport Report { get; set; }
+
+        /// <summary>
+        /// Returns formatted string for the class instance.
+        /// </summary>
+        /// <returns>can not be null</returns>
+        public override string ToString()
+        {
+            return Report.ToString();
+        }
+    }
+
+    /// <summary>
+    /// Represents the method that will handle: ContingentOrderTriggerReport event
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
+    public delegate void ContingentOrderTriggerReportHandler(object sender, ContingentOrderTriggerReportEventArgs e);
 
     /// <summary>
     /// Contains data for position report event.
@@ -466,7 +520,7 @@
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            var result = string.Format("Severity = {0}; Type = {1}; Text = {2}", this.Severity, this.Type, this.Text);
+            var result = string.Format("Severity={0}; Type={1}; Text={2}", this.Severity, this.Type, this.Text);
             return result;
         }
     }

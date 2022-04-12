@@ -18,7 +18,7 @@ namespace TickTrader.FDK.Common
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("Id = {0}; MarketDepth = {1};", Id, MarketDepth);
+            return string.Format("Id={0}; MarketDepth={1};", Id, MarketDepth);
         }
     }
 }

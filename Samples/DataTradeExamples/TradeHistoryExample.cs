@@ -29,7 +29,7 @@
                     maxQuantity = tradeReport.Quantity;
             }
 
-            Console.WriteLine("MinQuantity = {0}, MaxQuantity = {1}", minQuantity, maxQuantity);
+            Console.WriteLine("MinQuantity={0}, MaxQuantity={1}", minQuantity, maxQuantity);
         }
     }
 }

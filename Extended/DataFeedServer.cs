@@ -93,6 +93,26 @@
             return dataFeed_.quoteFeedClient_.GetSessionInfo(timeoutInMilliseconds);
         }
 
+        public void SubscribeToBars(IEnumerable<BarSubscriptionSymbolEntry> entries)
+        {
+            SubscribeToBarsEx(entries, dataFeed_.synchOperationTimeout_);
+        }
+
+        public void SubscribeToBarsEx(IEnumerable<BarSubscriptionSymbolEntry> entries, int timeout)
+        {
+            dataFeed_.quoteFeedClient_.SubscribeBars(entries.ToArray(), timeout);
+        }
+
+        public void UnsubscribeBars(IEnumerable<string> symbols)
+        {
+            UnsubscribeBars(symbols, dataFeed_.synchOperationTimeout_);
+        }
+
+        public void UnsubscribeBars(IEnumerable<string> symbols, int timeout)
+        {
+            dataFeed_.quoteFeedClient_.UnsubscribeBars(symbols.ToArray(), timeout);
+        }
+
         /// <summary>
         /// The method subscribes to quotes.
         /// </summary>
@@ -131,6 +151,51 @@
         }
 
         /// <summary>
+        /// The method subscribes to quotes.
+        /// </summary>
+        /// <param name="symbols">list of requested symbols; can not be null</param>
+        /// <param name="depth">
+        /// 0 - full book
+        /// (1..5) - restricted book
+        /// </param>
+        /// <param name="frequencyPrioirity">
+        /// -1 - realtime
+        /// (0..5) - frequency equals to 2^frequencyPrioirity * 500 ms;
+        /// </param>
+        public void SubscribeToFreqQuotes(IEnumerable<string> symbols, int depth, int frequencyPrioirity)
+        {
+            SubscribeToFreqQuotesEx(symbols, depth, frequencyPrioirity, dataFeed_.synchOperationTimeout_);
+        }
+
+        /// <summary>
+        /// The method subscribes to quotes.
+        /// </summary>
+        /// <param name="symbols">list of requested symbols; can not be null</param>
+        /// <param name="depth">
+        /// 0 - full book
+        /// (1..5) - restricted book
+        /// </param>
+        /// <param name="frequencyPrioirity">
+        /// -1 - realtime
+        /// (0..5) - frequency equals to 2^frequencyPrioirity * 500 ms;
+        /// </param>
+        /// <param name="timeoutInMilliseconds">Timeout of the operation</param>
+        public void SubscribeToFreqQuotesEx(IEnumerable<string> symbols, int depth, int frequencyPrioirity, int timeoutInMilliseconds)
+        {
+            List<SymbolEntry> symbolEntryList = new List<SymbolEntry>();
+            foreach (string symbol in symbols)
+            {
+                SymbolEntry symbolEntry = new SymbolEntry();
+                symbolEntry.Id = symbol;
+                symbolEntry.MarketDepth = (ushort)depth;
+
+                symbolEntryList.Add(symbolEntry);
+            }
+
+            dataFeed_.quoteFeedClient_.SubscribeQuotes(symbolEntryList.ToArray(), frequencyPrioirity, timeoutInMilliseconds);
+        }
+
+        /// <summary>
         /// The method unsubscribes quotes.
         /// </summary>
         /// <param name="symbols">list of symbols, which server should not send to the client; can not be null</param>
@@ -146,11 +211,7 @@
         /// <param name="timeoutInMilliseconds">timeout of the operation</param>
         public void UnsubscribeQuotesEx(IEnumerable<string> symbols, int timeoutInMilliseconds)
         {
-            List<string> symbolList = new List<string>();
-            foreach (string symbol in symbols)
-                symbolList.Add(symbol);
-
-            dataFeed_.quoteFeedClient_.UnsubscribeQuotes(symbolList.ToArray(), timeoutInMilliseconds);
+            dataFeed_.quoteFeedClient_.UnsubscribeQuotes(symbols.ToArray(), timeoutInMilliseconds);
         }
 
         /// <summary>

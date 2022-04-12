@@ -29,7 +29,7 @@
                     maxMargin = accountReport.Margin;
             }
 
-            Console.WriteLine("MinMargin = {0}, MaxMargin = {1}", minMargin, maxMargin);
+            Console.WriteLine("MinMargin={0}, MaxMargin={1}", minMargin, maxMargin);
         }
     }
 }

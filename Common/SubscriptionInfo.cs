@@ -86,12 +86,12 @@ namespace TickTrader.FDK.Common
         #endregion
 
         /// <summary>
-        /// Converts SubscriptionInfo to string; format is 'Name = {0}; FrequencyFilterMs = {1}; TotalDepthLimit = {2}; Compression = {3}'
+        /// Converts SubscriptionInfo to string; format is 'Name={0}; FrequencyFilterMs={1}; TotalDepthLimit={2}; Compression={3}'
         /// </summary>
         /// <returns></returns>
         public override string ToString()
         {
-            return string.Format("Name = {0}; FrequencyFilterMs = {1}; TotalDepthLimit = {2}; Compression = {3}", this.Name, this.FrequencyFilterMs, this.TotalDepthLimit, this.Compression);
+            return string.Format("Name={0}; FrequencyFilterMs={1}; TotalDepthLimit={2}; Compression={3}", this.Name, this.FrequencyFilterMs, this.TotalDepthLimit, this.Compression);
         }
 
         #region Members

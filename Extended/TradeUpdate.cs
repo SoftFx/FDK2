@@ -63,7 +63,7 @@ namespace TickTrader.FDK.Extended
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            var result = string.Format("TradeRecordUpdateAction = {0}, OldRecord = {1}, NewRecord = {2}, NewBalance = {3}}", TradeRecordUpdateAction, OldRecord, NewRecord, NewBalance);
+            var result = string.Format("TradeRecordUpdateAction={0}, OldRecord={1}, NewRecord={2}, NewBalance={3}}", TradeRecordUpdateAction, OldRecord, NewRecord, NewBalance);
             return result;
         }
     }

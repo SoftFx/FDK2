@@ -1,55 +1,43 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.28010.2026
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.32106.194
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntryAsyncSample", "OrderEntryAsyncSample\OrderEntryAsyncSample.csproj", "{5601A56E-8752-4AEF-B6F1-5285E67DDD40}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderEntryAsyncSample", "OrderEntryAsyncSample\OrderEntryAsyncSample.csproj", "{5601A56E-8752-4AEF-B6F1-5285E67DDD40}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntrySyncSample", "OrderEntrySyncSample\OrderEntrySyncSample.csproj", "{9138F823-7688-4A22-9C10-CA85166F9522}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "OrderEntrySyncSample", "OrderEntrySyncSample\OrderEntrySyncSample.csproj", "{9138F823-7688-4A22-9C10-CA85166F9522}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeedAsyncSample", "QuoteFeedAsyncSample\QuoteFeedAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F436053B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuoteFeedAsyncSample", "QuoteFeedAsyncSample\QuoteFeedAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F436053B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeedSyncSample", "QuoteFeedSyncSample\QuoteFeedSyncSample.csproj", "{CB691BEC-3A3C-4973-BC92-6D82D35BFD27}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuoteFeedSyncSample", "QuoteFeedSyncSample\QuoteFeedSyncSample.csproj", "{CB691BEC-3A3C-4973-BC92-6D82D35BFD27}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataTradeExamples", "DataTradeExamples\DataTradeExamples.csproj", "{AEBCFEF7-81B7-426C-A69F-019F09F5426C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataTradeExamples", "DataTradeExamples\DataTradeExamples.csproj", "{AEBCFEF7-81B7-426C-A69F-019F09F5426C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataFeedExamples", "DataFeedExamples\DataFeedExamples.csproj", "{088ADE6B-CE03-4804-B37A-DDDA86D05048}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DataFeedExamples", "DataFeedExamples\DataFeedExamples.csproj", "{088ADE6B-CE03-4804-B37A-DDDA86D05048}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeFeedExamples", "TradeFeedExamples\TradeFeedExamples.csproj", "{F75BDC52-55A6-4AA5-A06E-19D0C00FF404}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeFeedExamples", "TradeFeedExamples\TradeFeedExamples.csproj", "{F75BDC52-55A6-4AA5-A06E-19D0C00FF404}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StandardExamples", "StandardExamples\StandardExamples.csproj", "{F75BDC52-55A6-4AA5-A06E-197877862734}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StandardExamples", "StandardExamples\StandardExamples.csproj", "{F75BDC52-55A6-4AA5-A06E-197877862734}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreAsyncSample", "QuoteStoreAsyncSample\QuoteStoreAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F434566B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuoteStoreAsyncSample", "QuoteStoreAsyncSample\QuoteStoreAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-1587F434566B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStoreSyncSample", "QuoteStoreSyncSample\QuoteStoreSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15834434566B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QuoteStoreSyncSample", "QuoteStoreSyncSample\QuoteStoreSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15834434566B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCaptureSyncSample", "TradeCaptureSyncSample\TradeCaptureSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334434566B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeCaptureSyncSample", "TradeCaptureSyncSample\TradeCaptureSyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334434566B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCaptureAsyncSample", "TradeCaptureAsyncSample\TradeCaptureAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334578934B}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Sfx", "Sfx", "{36A5706F-CCB9-43F3-8F67-03D179ADEE1A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TradeCaptureAsyncSample", "TradeCaptureAsyncSample\TradeCaptureAsyncSample.csproj", "{B33E4ADA-5980-43EA-80C4-15334578934B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FDK2", "FDK2", "{7EEAB943-216E-479C-8AD8-64FF0A84013D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client", "..\Client\Client.csproj", "{23D9DE1A-92C0-42FC-875B-5881CE8433D4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Client", "..\Client\Client.csproj", "{23D9DE1A-92C0-42FC-875B-5881CE8433D4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common", "..\Common\Common.csproj", "{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Common", "..\Common\Common.csproj", "{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "..\modules\Sfx\DotNet\Core\Core.csproj", "{2A4856E5-8D40-41F7-88D1-57D1888DB660}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Extended", "..\Extended\Extended.csproj", "{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OrderEntry", "..\modules\Sfx\DotNet\OrderEntry\OrderEntry.csproj", "{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Standard", "..\Standard\Standard.csproj", "{EC1A8251-119A-44BE-8A8C-BC7823876763}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteStore", "..\modules\Sfx\DotNet\QuoteStore\QuoteStore.csproj", "{451E16C9-DDEC-4ADD-B5CF-E03498347475}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuoteFeed", "..\modules\Sfx\DotNet\QuoteFeed\QuoteFeed.csproj", "{451E16C9-DDEC-4ADD-B5CF-E04C96095675}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradeCapture", "..\modules\Sfx\DotNet\TradeCapture\TradeCapture.csproj", "{451E16C9-DDEC-4ADD-B5CF-C34546647475}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Extended", "..\Extended\Extended.csproj", "{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Standard", "..\Standard\Standard.csproj", "{EC1A8251-119A-44BE-8A8C-BC7823876763}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Calculator", "..\Calculator\Calculator.csproj", "{D52DA7C0-3DD2-4E26-BBCE-F9A2DC09AA9D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Calculator", "..\Calculator\Calculator.csproj", "{D52DA7C0-3DD2-4E26-BBCE-F9A2DC09AA9D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -113,26 +101,6 @@ Global
 		{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{2A4856E5-8D40-41F7-88D1-57D1888DB660}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{2A4856E5-8D40-41F7-88D1-57D1888DB660}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{2A4856E5-8D40-41F7-88D1-57D1888DB660}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{2A4856E5-8D40-41F7-88D1-57D1888DB660}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E03498347475}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E03498347475}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E03498347475}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E03498347475}.Release|Any CPU.Build.0 = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E04C96095675}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E04C96095675}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E04C96095675}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-E04C96095675}.Release|Any CPU.Build.0 = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-C34546647475}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-C34546647475}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-C34546647475}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{451E16C9-DDEC-4ADD-B5CF-C34546647475}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -152,11 +120,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{23D9DE1A-92C0-42FC-875B-5881CE8433D4} = {7EEAB943-216E-479C-8AD8-64FF0A84013D}
 		{D52DA7C0-3CF2-4E26-BBCE-F9A2DC09589D} = {7EEAB943-216E-479C-8AD8-64FF0A84013D}
-		{2A4856E5-8D40-41F7-88D1-57D1888DB660} = {36A5706F-CCB9-43F3-8F67-03D179ADEE1A}
-		{5BFFF9BD-D17C-4A73-AD7D-0E047FAEC28B} = {36A5706F-CCB9-43F3-8F67-03D179ADEE1A}
-		{451E16C9-DDEC-4ADD-B5CF-E03498347475} = {36A5706F-CCB9-43F3-8F67-03D179ADEE1A}
-		{451E16C9-DDEC-4ADD-B5CF-E04C96095675} = {36A5706F-CCB9-43F3-8F67-03D179ADEE1A}
-		{451E16C9-DDEC-4ADD-B5CF-C34546647475} = {36A5706F-CCB9-43F3-8F67-03D179ADEE1A}
 		{EC1A8251-1B9A-4BBE-8A8C-BC8CD7DA60E0} = {7EEAB943-216E-479C-8AD8-64FF0A84013D}
 		{EC1A8251-119A-44BE-8A8C-BC7823876763} = {7EEAB943-216E-479C-8AD8-64FF0A84013D}
 		{D52DA7C0-3DD2-4E26-BBCE-F9A2DC09AA9D} = {7EEAB943-216E-479C-8AD8-64FF0A84013D}

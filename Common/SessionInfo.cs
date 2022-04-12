@@ -98,7 +98,7 @@
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            string s = string.Format("Status = {0}; Start = {1}; End = {2}; Open = {3}; Close = {4};", this.Status, this.StartTime, this.EndTime, this.OpenTime, this.CloseTime);
+            string s = string.Format("Status={0}; Start={1}; End={2}; Open={3}; Close={4};", this.Status, this.StartTime, this.EndTime, this.OpenTime, this.CloseTime);
             foreach (StatusGroupInfo info in StatusGroups)
                 s += " " + info.ToString();
             return s;

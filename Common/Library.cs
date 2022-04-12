@@ -1,4 +1,4 @@
-﻿namespace TickTrader.FDK.Common
+namespace TickTrader.FDK.Common
 {
     using System;
     using System.Reflection;

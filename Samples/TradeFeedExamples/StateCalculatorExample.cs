@@ -48,7 +48,7 @@
         {
             Console.WriteLine
             (
-                "Generation = {0}; Balance = {1}; Equity = {2}; Margin = {3}; Free Margin = {4}; Margin Level = {5}%; Trades = {6}",
+                "Generation={0}; Balance={1}; Equity={2}; Margin={3}; Free Margin={4}; Margin Level={5}%; Trades={6}",
                 e.Information.Generation,
                 e.Information.Balance,
                 e.Information.Equity,

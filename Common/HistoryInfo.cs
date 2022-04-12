@@ -30,7 +30,7 @@ namespace TickTrader.FDK.Common
 
         public override string ToString()
         {
-            return $"Symbol = {Symbol}; AvailFrom = {AvailFrom}; AvailTo = {AvailTo}; LastTickId = {LastTickId}";
+            return $"Symbol={Symbol}; AvailFrom={AvailFrom}; AvailTo={AvailTo}; LastTickId={LastTickId}";
         }
     }
 }

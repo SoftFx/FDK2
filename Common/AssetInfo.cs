@@ -79,7 +79,7 @@
         /// <returns></returns>
         public override string ToString()
         {
-            var result = string.Format("{0} = {1}/{2}/{3}/{4}/{5}/{6}/{7}", this.Currency, this.TradeAmount.ToString(CultureInfo.InvariantCulture), this.LockedAmount.ToString(CultureInfo.InvariantCulture), 
+            var result = string.Format("{0}={1}/{2}/{3}/{4}/{5}/{6}/{7}", this.Currency, this.TradeAmount.ToString(CultureInfo.InvariantCulture), this.LockedAmount.ToString(CultureInfo.InvariantCulture), 
                 this.Balance.ToString(CultureInfo.InvariantCulture), this.SrcAssetToUsdConversionRate.Value.ToString(CultureInfo.InvariantCulture), this.UsdToSrcAssetConversionRate.Value.ToString(CultureInfo.InvariantCulture),
                 this.SrcAssetToReportConversionRate.Value.ToString(CultureInfo.InvariantCulture), this.ReportToSrcAssetConversionRate.Value.ToString(CultureInfo.InvariantCulture));
             return result;

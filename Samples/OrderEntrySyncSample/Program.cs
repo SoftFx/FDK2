@@ -5,49 +5,58 @@ using NDesk.Options;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 using System.Linq;
+using SoftFX.Net.Core;
 
 namespace OrderEntrySyncSample
 {
     public class Program : IDisposable
     {
-        const int Timeout = 30000;
+        static string SampleName = typeof(Program).Namespace;
 
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5043;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5043;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("OrderEntrySyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `OrderEntrySample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("OrderEntrySyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -58,13 +67,13 @@ namespace OrderEntrySyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new OrderEntry("OrderEntrySyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+            client_ = new OrderEntry(SampleName, port : port, reconnectAttempts : 0, logMessages : true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new OrderEntry.LogoutDelegate(this.OnLogout);
@@ -166,6 +175,64 @@ namespace OrderEntrySyncSample
                                 double.Parse(qty),
                                 comment
                             );
+                        }
+                        else if (command == "new_oco_orders" || command == "oco")
+                        {
+                            string symbolId = GetNextWord(line, ref pos);
+
+                            if (symbolId == null)
+                                throw new Exception("Invalid command : " + line);
+                            string side1 = GetNextWord(line, ref pos);
+
+                            if (side1 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string qty1 = GetNextWord(line, ref pos);
+
+                            if (qty1 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string price1 = GetNextWord(line, ref pos);
+
+                            if (price1 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string stopprice1 = GetNextWord(line, ref pos);
+
+                            if (stopprice1 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string type1 = GetNextWord(line, ref pos);
+
+                            if (type1 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string side2 = GetNextWord(line, ref pos);
+
+                            if (side2 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string qty2 = GetNextWord(line, ref pos);
+
+                            if (qty2 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string price2 = GetNextWord(line, ref pos);
+
+                            if (price2 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string stopprice2 = GetNextWord(line, ref pos);
+
+                            if (stopprice2 == null)
+                                throw new Exception("Invalid command : " + line);
+                            string type2 = GetNextWord(line, ref pos);
+
+                            if (type2 == null)
+                                throw new Exception("Invalid command : " + line);
+                            NewOcoOrders(symbolId, 
+                                (OrderSide)Enum.Parse(typeof(OrderSide), side1), 
+                                double.Parse(qty1), 
+                                double.Parse(price1),
+                                double.Parse(stopprice1),
+                                (OrderType)Enum.Parse(typeof(OrderType), type1), 
+                                (OrderSide)Enum.Parse(typeof(OrderSide), side2), 
+                                double.Parse(qty2), 
+                                double.Parse(price2), 
+                                double.Parse(stopprice2), 
+                                (OrderType)Enum.Parse(typeof(OrderType), type2));
                         }
                         else if (command == "new_order_limit" || command == "nol")
                         {
@@ -494,17 +561,17 @@ namespace OrderEntrySyncSample
 
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "", Timeout);
 
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
 
                 SessionInfo info =  client_.GetSessionInfo(Timeout);
             }
             catch
             {
-                string text = client_.Disconnect("Client disconnect");
+                string text = client_.Disconnect(Reason.ClientError("Client disconnect"));
 
                 if (text != null)
                     Console.WriteLine("Disconnected : " + text);
@@ -525,7 +592,7 @@ namespace OrderEntrySyncSample
             {
             }
 
-            string text = client_.Disconnect("Client disconnect");
+            string text = client_.Disconnect(Reason.ClientRequest("Client disconnect"));
 
             if (text != null)
                 Console.WriteLine("Disconnected : {0}", text);
@@ -687,7 +754,25 @@ namespace OrderEntrySyncSample
 
         void NewOrderMarket(string symbolId, OrderSide side, double qty, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty, null, null, null, null, null, null, null, comment, null, null, Timeout, false, null, false, false, null);
+            var newOrder = OrderEntry.CreateNewOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.Market, side, qty)
+                .WithComment(comment);
+            var executionReports = newOrder.Sync(Timeout).Send(client_);
+
+            foreach (ExecutionReport executionReport in executionReports)
+                Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
+        }
+
+        void NewOcoOrders(string symbolId, OrderSide side1, double qty1, double? price1, double? stopprice1, OrderType type1, OrderSide side2, double qty2, double? price2, double? stopprice2, OrderType type2)
+        {
+            var ocoOrdersRequest = OrderEntry.CreateNewOcoOrdersRequest(Guid.NewGuid().ToString(), symbolId)
+                .WithFirst(Guid.NewGuid().ToString(), type1, side1, qty1)
+                .WithSecond(Guid.NewGuid().ToString(), type2, side2, qty2);
+            if (price1.HasValue) ocoOrdersRequest.FirstWithPrice(price1.Value);
+            if (stopprice1.HasValue) ocoOrdersRequest.FirstWithStopPrice(stopprice1.Value);
+            if (price2.HasValue) ocoOrdersRequest.SecondWithPrice(price2.Value);
+            if (stopprice2.HasValue) ocoOrdersRequest.SecondWithPrice(stopprice2.Value);
+
+            var executionReports = ocoOrdersRequest.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -695,7 +780,9 @@ namespace OrderEntrySyncSample
 
         void NewOrderLimit(string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, comment, null, null, Timeout, false, null, false, false, null);
+            var newOrder = OrderEntry.CreateNewOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side, qty)
+                .WithPrice(price).WithComment(comment);
+            var executionReports = newOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -703,7 +790,9 @@ namespace OrderEntrySyncSample
 
         void NewOrderStop(string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.Stop, side, qty, null, null, stopPrice, null, null, null, null, comment, null, null, Timeout, false, null, false, false, null);
+            var newOrder = OrderEntry.CreateNewOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.Stop, side, qty)
+                .WithStopPrice(stopPrice).WithComment(comment);
+            var executionReports = newOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -711,7 +800,9 @@ namespace OrderEntrySyncSample
 
         void NewOrderStopLimit(string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.NewOrder(Guid.NewGuid().ToString(), symbolId, OrderType.StopLimit, side, qty, null, price, stopPrice, null, null, null, null, comment, null, null, Timeout, false, null, false, false, null);
+            var newOrder = OrderEntry.CreateNewOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.StopLimit, side, qty)
+                .WithPrice(price).WithStopPrice(stopPrice).WithComment(comment);
+            var executionReports = newOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -719,7 +810,10 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderLimit(string orderId, string symbolId, OrderSide side, double qty, double price, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Limit, side, qty, null, price, null, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
+            var replaceOrder = OrderEntry
+                .CreateReplaceOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.Limit, side)
+                .WithQtyChange(qty).WithPrice(price).WithComment(comment);
+            var executionReports = replaceOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -727,7 +821,10 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderStop(string orderId, string symbolId, OrderSide side, double qty, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, null, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
+            var replaceOrder = OrderEntry
+                .CreateReplaceOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.Stop, side)
+                .WithQtyChange(qty).WithStopPrice(stopPrice).WithComment(comment);
+            var executionReports = replaceOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -735,7 +832,10 @@ namespace OrderEntrySyncSample
 
         void ReplaceOrderStopLimit(string orderId, string symbolId, OrderSide side, double qty, double price, double stopPrice, string comment)
         {
-            ExecutionReport[] executionReports = client_.ReplaceOrder(Guid.NewGuid().ToString(), orderId, null, symbolId, OrderType.Stop, side, qty, null, price, stopPrice, OrderTimeInForce.GoodTillCancel, null, null, null, false, null, comment, null, null, Timeout, false, null);
+            var replaceOrder = OrderEntry
+                .CreateReplaceOrderRequest(Guid.NewGuid().ToString(), symbolId, OrderType.StopLimit, side)
+                .WithQtyChange(qty).WithPrice(price).WithStopPrice(stopPrice).WithComment(comment);
+            var executionReports = replaceOrder.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {3}, {4}, {5}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -743,7 +843,8 @@ namespace OrderEntrySyncSample
 
         void CancelOrder(string orderId)
         {
-            ExecutionReport[] executionReports = client_.CancelOrder(Guid.NewGuid().ToString(), orderId, null, Timeout);
+            var cancelOrderRequest = OrderEntry.CreateCancelOrderRequest(Guid.NewGuid().ToString()).WithOrderId(long.Parse(orderId));
+            var executionReports = cancelOrderRequest.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
                 Console.WriteLine("Execution report : {0}, {1}, {2}, {2}, {3}, {4}", executionReport.ExecutionType, executionReport.ClientOrderId, executionReport.OrigClientOrderId, executionReport.OrderId, executionReport.OrderType, executionReport.OrderStatus);
@@ -751,7 +852,9 @@ namespace OrderEntrySyncSample
 
         void ClosePosition(string orderId, double qty)
         {
-            ExecutionReport[] executionReports = client_.ClosePosition(Guid.NewGuid().ToString(), orderId, qty, null, Timeout);
+            var closePositionRequest = OrderEntry.CreateClosePositionRequest(Guid.NewGuid().ToString()).WithPositionId(long.Parse(orderId))
+                .WithQty(qty);
+            var executionReports = closePositionRequest.Sync(Timeout).Send(client_);
 
             foreach (ExecutionReport executionReport in executionReports)
             {
@@ -879,5 +982,6 @@ namespace OrderEntrySyncSample
         string address_;
         string login_;
         string password_;
+        const int Timeout = 30000;
     }
 }

@@ -86,7 +86,7 @@
             else if (side == OrderSide.Sell)
                 return this.Bid;
 
-            var message = string.Format("Unknown side = {0}", side);
+            var message = string.Format("Unknown side={0}", side);
             throw new ArgumentException(message, nameof(side));
         }
 
@@ -105,7 +105,7 @@
                     return this.Ask;
             }
 
-            var message = string.Format("Unknown side = {0}", side);
+            var message = string.Format("Unknown side={0}", side);
             throw new ArgumentException(message, nameof(side));
         }
 

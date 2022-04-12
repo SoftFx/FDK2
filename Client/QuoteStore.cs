@@ -15,7 +15,7 @@ using System.Collections.Concurrent;
 using System.Collections.ObjectModel;
 using SoftFX.Net.Core;
 using ClientSession = SoftFX.Net.QuoteStore.ClientSession;
-using ClientSessionOptions = SoftFX.Net.QuoteStore.ClientSessionOptions;
+//using ClientSessionOptions = SoftFX.Net.QuoteStore.ClientSessionOptions;
 
 namespace TickTrader.FDK.Client
 {
@@ -41,7 +41,8 @@ namespace TickTrader.FDK.Client
             IPAddress proxyAddress = null,
             int proxyPort = 0,
             string proxyUsername = null,
-            string proxyPassword = null
+            string proxyPassword = null,
+            OptimizationType? optimizationType = null
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
@@ -61,6 +62,8 @@ namespace TickTrader.FDK.Client
             options.ProxyPort = proxyPort;
             options.Username = proxyUsername;
             options.Password = proxyPassword;
+            if (optimizationType.HasValue)
+                options.OptimizationType = optimizationType.Value;
 
             session_ = new ClientSession(name, options);
             sessionListener_ = new ClientSessionListener(this);
@@ -138,7 +141,7 @@ namespace TickTrader.FDK.Client
 
             if (!context.Wait(timeout))
             {
-                DisconnectInternal(null, "Connect timeout");
+                DisconnectInternal(null, Reason.ClientError("Connect timeout"));
                 Join();
 
                 throw new Common.TimeoutException("Method call timed out");
@@ -161,17 +164,17 @@ namespace TickTrader.FDK.Client
             session_.Connect(context, address);
         }
 
-        public string Disconnect(string text)
+        public string Disconnect(Reason reason)
         {
             string result;
 
             DisconnectAsyncContext context = new DisconnectAsyncContext(true);
 
-            if (DisconnectInternal(context, text))
+            if (DisconnectInternal(context, reason))
             {
                 context.Wait(-1);
 
-                result = context.text_;
+                result = context.Reason.Text;
             }
             else
                 result = null;
@@ -179,17 +182,17 @@ namespace TickTrader.FDK.Client
             return result;
         }
 
-        public bool DisconnectAsync(object data, string text)
+        public bool DisconnectAsync(object data, Reason reason)
         {
             DisconnectAsyncContext context = new DisconnectAsyncContext(false);
             context.Data = data;
 
-            return DisconnectInternal(context, text);
+            return DisconnectInternal(context, reason);
         }
 
-        bool DisconnectInternal(DisconnectAsyncContext context, string text)
+        bool DisconnectInternal(DisconnectAsyncContext context, Reason reason)
         {
-            return session_.Disconnect(context, text);
+            return session_.Disconnect(context, reason);
         }
 
         public void Join()
@@ -999,7 +1002,7 @@ namespace TickTrader.FDK.Client
 
         interface IAsyncContext
         {
-            void ProcessDisconnect(QuoteStore quoteStore, string text);
+            void ProcessDisconnect(QuoteStore quoteStore, Reason reason);
         }
 
         class ConnectAsyncContext : ConnectClientContext
@@ -1017,7 +1020,7 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public string text_;
+            public Reason Reason;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
@@ -1026,9 +1029,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.LoginErrorEvent != null)
                 {
@@ -1056,9 +1059,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.LogoutErrorEvent != null)
                 {
@@ -1087,9 +1090,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.SymbolListErrorEvent != null)
                 {
@@ -1118,9 +1121,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.PeriodicityListErrorEvent != null)
                 {
@@ -1149,9 +1152,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.SymbolListErrorEvent != null)
                 {
@@ -1181,9 +1184,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.BarListErrorEvent != null)
                 {
@@ -1213,9 +1216,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.BarListErrorEvent != null)
                 {
@@ -1245,9 +1248,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.QuoteListErrorEvent != null)
                 {
@@ -1276,9 +1279,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.QuoteListErrorEvent != null)
                 {
@@ -1317,9 +1320,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.BarDownloadErrorEvent != null)
                 {
@@ -1363,9 +1366,9 @@ namespace TickTrader.FDK.Client
                     event_.Close();
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.BarDownloadErrorEvent != null)
                 {
@@ -1412,9 +1415,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.CancelDownloadBarsErrorEvent != null)
                 {
@@ -1442,9 +1445,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.QuoteDownloadErrorEvent != null)
                 {
@@ -1479,9 +1482,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.QuoteDownloadErrorEvent != null)
                 {
@@ -1516,9 +1519,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.CancelDownloadQuotesErrorEvent != null)
                 {
@@ -1546,9 +1549,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.HistoryInfoErrorEvent != null)
                 {
@@ -1577,9 +1580,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteStore quoteStore, string text)
+            public void ProcessDisconnect(QuoteStore quoteStore, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteStore.HistoryInfoErrorEvent != null)
                 {
@@ -1674,13 +1677,13 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
+            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, Reason reason)
             {
                 try
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -1704,11 +1707,11 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, string text)
+            public override void OnConnectError(ClientSession clientSession, Reason reason)
             {
                 try
                 {
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -1727,20 +1730,23 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -1748,7 +1754,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
+                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, reason.Text);
                         }
                         catch
                         {
@@ -1757,7 +1763,7 @@ namespace TickTrader.FDK.Client
 
                     if (disconnectAsyncContext.Waitable)
                     {
-                        disconnectAsyncContext.text_ = text;
+                        disconnectAsyncContext.Reason = reason;
                     }
                 }
                 catch
@@ -1766,18 +1772,21 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -1785,7 +1794,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectEvent(client_, text);
+                            client_.DisconnectEvent(client_, reason.Text);
                         }
                         catch
                         {

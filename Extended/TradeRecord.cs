@@ -6,7 +6,7 @@
     /// <summary>
     /// Represents market, position or pending order.
     /// </summary>
-    public class TradeRecord
+    public class TradeRecord : Order
     {
         public TradeRecord(DataTrade dataTrade)
         {
@@ -20,173 +20,6 @@
         /// </summary>
         public DataTrade DataTrade { get; set; }
 
-        /// <summary>
-        /// Gets unique identifier of the order. Can not be null.
-        /// </summary>
-        public string OrderId { get; set; }
-
-        /// <summary>
-        /// Gets unique client identifier of the order. Can not be null.
-        /// </summary>
-        public string ClientOrderId { get; set; }
-
-        /// <summary>
-        /// Gets currency pair of the order. Can not be null.
-        /// </summary>
-        public string Symbol { get; set; }
-
-        /// <summary>
-        /// Initially requested order size.
-        /// </summary>
-        public double InitialVolume { get; set; }
-
-        /// <summary>
-        /// Gets volume of the order.
-        /// </summary>
-        public double Volume { get; set; }
-
-        /// <summary>
-        /// Gets max visible volume of the order.
-        /// </summary>
-        public double? MaxVisibleVolume { get; set; }
-
-        /// <summary>
-        /// Gets price of the order.
-        /// </summary>
-        public double? InitialPrice { get; set; }
-
-        /// <summary>
-        /// Gets price of the order.
-        /// </summary>
-        public double? Price { get; set; }
-
-        /// <summary>
-        /// Gets stop price of the order.
-        /// </summary>
-        public double? StopPrice { get; set; }
-
-        /// <summary>
-        /// Gets take profit of the order.
-        /// </summary>
-        public double? TakeProfit { get; set; }
-
-        /// <summary>
-        /// Gets stop loss of the order.
-        /// </summary>
-        public double? StopLoss { get; set; }
-
-        /// <summary>
-        /// Gets commission of the trade record.
-        /// </summary>
-        public double Commission { get; set; }
-
-        /// <summary>
-        /// Gets agents' commission of the trade record.
-        /// </summary>
-        public double AgentCommission { get; set;}
-
-        /// <summary>
-        ///
-        /// </summary>
-        public double Swap { get; set; }
-
-        /// <summary>
-        /// It's used by FinancialCalculator.
-        /// </summary>
-        public double? Profit { get; set; }
-
-        /// <summary>
-        /// It's used by FinancialCalculator.
-        /// </summary>
-        public double? Margin { get; set; }
-
-        /// <summary>
-        /// Gets type of the order.
-        /// </summary>
-        public OrderType InitialType { get; set; }
-
-        /// <summary>
-        /// Gets type of the order.
-        /// </summary>
-        public OrderType Type { get; set; }
-
-        /// <summary>
-        /// Gets side of the order.
-        /// </summary>
-        public OrderSide Side { get; set; }
-
-        /// <summary>
-        /// Gets ReducedOpenCommission flag.
-        /// </summary>
-        public bool IsReducedOpenCommission { get; set; }
-
-        /// <summary>
-        /// Gets ReducedCloseCommission flag.
-        /// </summary>
-        public bool IsReducedCloseCommission { get; set; }
-
-        /// <summary>
-        /// Gets ImmediateOrCancel flag.
-        /// </summary>
-        public bool ImmediateOrCancel { get; set; }
-
-        /// <summary>
-        /// Gets MarketWithSlippage flag.
-        /// </summary>
-        public bool MarketWithSlippage { get; set; }
-
-        /// <summary>
-        /// Gets IsHidden trade.
-        /// </summary>
-        public bool IsHidden
-        { get { return MaxVisibleVolume.HasValue && MaxVisibleVolume.Value == 0; } }
-
-        /// <summary>
-        /// Gets IsIceberg trade.
-        /// </summary>
-        public bool IsIceberg
-        { get { return MaxVisibleVolume.HasValue && MaxVisibleVolume.Value > 0; } }
-
-        /// <summary>
-        /// Gets IsHiddenOrIceberg trade.
-        /// </summary>
-        public bool IsHiddenOrIceberg
-        { get { return IsHidden || IsIceberg; } }
-
-        /// <summary>
-        /// Gets expiration time of the trade record (if specified by user).
-        /// </summary>
-        public DateTime? Expiration { get; set; }
-
-        /// <summary>
-        /// Gets the trade record created time.
-        /// </summary>
-        public DateTime? Created { get; set; }
-
-        /// <summary>
-        /// Gets the trade record modified time.
-        /// </summary>
-        public DateTime? Modified { get; set; }
-
-        /// <summary>
-        /// Gets comment of the order. Can not be null.
-        /// </summary>
-        public string Comment { get; set; }
-
-        /// <summary>
-        /// Gets tag of the order. Can not be null.
-        /// </summary>
-        public string Tag { get; set; }
-
-        /// <summary>
-        /// Gets magic number of the order.
-        /// </summary>
-        public int? Magic { get; set; }
-
-        /// <summary>
-        /// Gets slippage.
-        /// </summary>
-        public double? Slippage { get; set; }
 
         #endregion
 
@@ -283,7 +116,7 @@
         /// <returns>A modified trade record.</returns>
         public TradeRecord ModifyEx(double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(this.OrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, false, null, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage);
+            return DataTrade.Server.ModifyTradeRecordEx(Guid.NewGuid().ToString(), this.OrderId, null, this.Symbol, this.Type, this.Side, null, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage, null, null, null, null, null, null);
         }
 
         /// <summary>
@@ -302,7 +135,7 @@
         /// <returns>A modified trade record.</returns>
         public TradeRecord ModifyEx(string operationId, double? newPrice, double? newStopPrice, double? newStopLoss, double? newTakeProfit, OrderTimeInForce? newOrderTimeInForce, DateTime? newExpirationTime, string newComment, string newTag, int? newMagic, int timeoutInMilliseconds, bool? immediateOrCancelFlag, double? slippage)
         {
-            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, this.ClientOrderId, this.Symbol, this.Type, this.Side, this.Volume, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, false, null, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage);
+            return DataTrade.Server.ModifyTradeRecordEx(operationId, this.OrderId, null, this.Symbol, this.Type, this.Side, null, null, newPrice, newStopPrice, newStopLoss, newTakeProfit, newOrderTimeInForce, newExpirationTime, newComment, newTag, newMagic, timeoutInMilliseconds, immediateOrCancelFlag, slippage, null, null, null, null, null, null);
         }
 
         /// <summary>
@@ -348,7 +181,7 @@
         /// <returns>Can not be null.</returns>
         public ClosePositionResult CloseEx(int timeoutInMilliseconds)
         {
-            return this.DataTrade.Server.ClosePositionEx(this.OrderId, timeoutInMilliseconds);
+            return this.DataTrade.Server.ClosePositionEx(this.OrderId, Guid.NewGuid().ToString(), timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -396,7 +229,7 @@
         /// <returns>Can not be null.</returns>
         public ClosePositionResult ClosePartiallyEx(double volume, int timeoutInMilliseconds)
         {
-            return this.DataTrade.Server.ClosePositionPartiallyEx(this.OrderId, volume, timeoutInMilliseconds);
+            return this.DataTrade.Server.ClosePositionPartiallyEx(this.OrderId, volume, Guid.NewGuid().ToString(), timeoutInMilliseconds);
         }
 
         /// <summary>
@@ -468,7 +301,7 @@
         /// <returns>can not be null</returns>
         public override string ToString()
         {
-            return string.Format("Id = {0}; {1} {2} {3}; Price = {4}; Volume = {5}; SP = {8}; SL = {6}; TP = {7}", this.OrderId, this.Symbol, this.Type, this.Side, this.Price, this.Volume, this.StopLoss, this.TakeProfit, this.StopPrice);
+            return string.Format("Id={0}; {1} {2} {3}; Price={4}; Volume={5}; SP={8}; SL={6}; TP={7}", this.OrderId, this.Symbol, this.Type, this.Side, this.Price, this.Volume, this.StopLoss, this.TakeProfit, this.StopPrice);
         }
 
         #endregion

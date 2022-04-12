@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Extended
+﻿using SoftFX.Net.Core;
+
+namespace TickTrader.FDK.Extended
 {
     using System;
     using System.Collections.Generic;
@@ -206,6 +208,8 @@
             orderEntryClient_.OrdersErrorEvent += new OrderEntry.OrdersErrorDelegate(this.OnOrdersError);
             orderEntryClient_.NewOrderResultEvent += new OrderEntry.NewOrderResultDelegate(this.OnNewOrderResult);
             orderEntryClient_.NewOrderErrorEvent += new OrderEntry.NewOrderErrorDelegate(this.OnNewOrderError);
+            orderEntryClient_.OpenOcoOrdersResultEvent += new OrderEntry.OpenOcoOrdersResultDelegate(this.OnNewOrderResult);
+            orderEntryClient_.OpenOcoOrdersErrorEvent += new OrderEntry.OpenOcoOrdersErrorDelegate(this.OnNewOrderError);
             orderEntryClient_.ReplaceOrderResultEvent += new OrderEntry.ReplaceOrderResultDelegate(this.OnReplaceOrderResult);
             orderEntryClient_.ReplaceOrderErrorEvent += new OrderEntry.ReplaceOrderErrorDelegate(this.OnReplaceOrderError);
             orderEntryClient_.CancelOrderResultEvent += new OrderEntry.CancelOrderResultDelegate(this.OnCancelOrderResult);
@@ -238,6 +242,7 @@
             tradeCaptureClient_.LogoutResultEvent += new TradeCapture.LogoutResultDelegate(this.OnLogoutResult);
             tradeCaptureClient_.LogoutEvent += new TradeCapture.LogoutDelegate(this.OnLogout);
             tradeCaptureClient_.TradeUpdateEvent += new TradeCapture.TradeUpdateDelegate(this.OnTradeUpdate);
+            tradeCaptureClient_.TriggerReportUpdateEvent += new TradeCapture.TriggerReportUpdateDelegate(this.OnTriggerReportUpdate);
             tradeCaptureClient_.NotificationEvent += new TradeCapture.NotificationDelegate(this.OnNotification);
 
             twoFactorLoginEvent_ = new AutoResetEvent(false);
@@ -376,6 +381,11 @@
         public event TradeTransactionReportHandler TradeTransactionReport;
 
         /// <summary>
+        /// Occurs when a contingent order trigger report is received.
+        /// </summary>
+        public event ContingentOrderTriggerReportHandler ContingentOrderTriggerReport;
+
+        /// <summary>
         /// Occurs when a notification is received.
         /// </summary>
         public event NotifyHandler Notify;
@@ -432,7 +442,7 @@
                         }
                         catch
                         {
-                            orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                            orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                             orderEntryClient = orderEntryClient_;
 
                             throw;
@@ -483,7 +493,7 @@
                     }
                     catch
                     {
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
 
                     try
@@ -492,7 +502,7 @@
                     }
                     catch
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                 }
             }
@@ -627,8 +637,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -638,7 +648,7 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (! logout_)
                     {
@@ -721,8 +731,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -730,7 +740,7 @@
         {
             try
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
             catch
             {
@@ -948,8 +958,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -959,7 +969,7 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (! logout_)
                     {
@@ -1043,13 +1053,13 @@
 
                     if (reason == null)
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                     else
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(reason));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError(reason));
                     }
                 }
             }
@@ -1131,13 +1141,13 @@
 
                     if (reason == null)
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                     else
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(reason));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError(reason));
                     }
                 }
             }
@@ -1201,13 +1211,13 @@
 
                     if (reason == null)
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                     else
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(reason));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError(reason));
                     }
                 }
             }
@@ -1274,13 +1284,13 @@
 
                     if (reason == null)
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                     else
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(reason));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError(reason));
                     }
                 }
             }
@@ -1375,13 +1385,13 @@
 
                     if (reason == null)
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                     else
                     {
-                        tradeCaptureClient_.DisconnectAsync(this, "Client disconnect: " + reason);
-                        orderEntryClient_.DisconnectAsync(this, "Client disconnect: " + reason);
+                        tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError(reason));
+                        orderEntryClient_.DisconnectAsync(this, Reason.ClientError(reason));
                     }
                 }
             }
@@ -1396,7 +1406,7 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, Reason.ClientRequest("Client logout"));
 
                     if (!logout_)
                     {
@@ -1420,7 +1430,10 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
+                    string reason = !string.IsNullOrEmpty(logoutInfo.Message)
+                        ? logoutInfo.Message
+                        : "Client logout";
+                    orderEntryClient_.DisconnectAsync(this, Reason.ClientRequest(reason));
 
                     if (! logout_)
                     {
@@ -1950,8 +1963,8 @@
                         }
                         catch
                         {
-                            tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                            orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                            tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                            orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                         }
                     }
 
@@ -1977,8 +1990,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -1988,7 +2001,7 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (! logout_)
                     {
@@ -2071,8 +2084,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -2080,7 +2093,7 @@
         {
             try
             {
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
             }
             catch
             {
@@ -2307,8 +2320,8 @@
             }
             catch
             {
-                tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
-                orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                orderEntryClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -2318,7 +2331,7 @@
             {
                 lock (synchronizer_)
                 {
-                    orderEntryClient_.DisconnectAsync(this, "Client disconnect");
+                    orderEntryClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (! logout_)
                     {
@@ -2353,7 +2366,7 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, "Client disconnect");
+                    tradeCaptureClient_.DisconnectAsync(this, Reason.ClientError("Client logout"));
 
                     if (! logout_)
                     {
@@ -2377,7 +2390,10 @@
             {
                 lock (synchronizer_)
                 {
-                    tradeCaptureClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
+                    string reason = !string.IsNullOrEmpty(logoutInfo.Message)
+                        ? logoutInfo.Message
+                        : "Client logout";
+                    tradeCaptureClient_.DisconnectAsync(this, Reason.ClientRequest(reason));
 
                     if (! logout_)
                     {
@@ -2401,6 +2417,19 @@
             {
                 TradeTransactionReportEventArgs args = new TradeTransactionReportEventArgs();
                 args.Report = tradeTransactionReport;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnTriggerReportUpdate(TradeCapture client, ContingentOrderTriggerReport triggerReport)
+        {
+            try
+            {
+                ContingentOrderTriggerReportEventArgs args = new ContingentOrderTriggerReportEventArgs();
+                args.Report = triggerReport;
                 eventQueue_.PushEvent(args);
             }
             catch
@@ -2966,6 +2995,24 @@
                 return;
             }
 
+            ContingentOrderTriggerReportEventArgs contingentOrderTriggerReportEventArgs = eventArgs as ContingentOrderTriggerReportEventArgs;
+
+            if (contingentOrderTriggerReportEventArgs != null)
+            {
+                if (ContingentOrderTriggerReport != null)
+                {
+                    try
+                    {
+                        ContingentOrderTriggerReport(this, contingentOrderTriggerReportEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
             NotificationEventArgs notificationEventArgs = eventArgs as NotificationEventArgs;
 
             if (notificationEventArgs != null)
@@ -3008,6 +3055,7 @@
             TradeRecord tradeRecord = new TradeRecord(this);
             tradeRecord.OrderId = executionReport.OrderId;
             tradeRecord.ClientOrderId = executionReport.ClientOrderId;
+            tradeRecord.ParentOrderId = executionReport.ParentOrderId;
             tradeRecord.Symbol = executionReport.Symbol;
             tradeRecord.InitialVolume = executionReport.InitialVolume.GetValueOrDefault();
             tradeRecord.Volume = executionReport.LeavesVolume;
@@ -3034,6 +3082,15 @@
             tradeRecord.Magic = executionReport.Magic;
             tradeRecord.ImmediateOrCancel = executionReport.ImmediateOrCancelFlag;
             tradeRecord.Slippage = executionReport.Slippage;
+            tradeRecord.Rebate = executionReport.Rebate;
+            tradeRecord.RebateCurrency = executionReport.RebateCurrency;
+            tradeRecord.OneCancelsTheOtherFlag = executionReport.OneCancelsTheOtherFlag;
+            tradeRecord.RelatedOrderId = executionReport.RelatedOrderId;
+            tradeRecord.ExecutionExpired = executionReport.ExecutionExpired;
+            tradeRecord.ContingentOrderFlag = executionReport.ContingentOrderFlag;
+            tradeRecord.TriggerType = executionReport.TriggerType;
+            tradeRecord.OrderIdTriggeredBy = executionReport.OrderIdTriggeredBy;
+            tradeRecord.TriggerTime = executionReport.TriggerTime;
 
             return tradeRecord;
         }

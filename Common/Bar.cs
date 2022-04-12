@@ -87,7 +87,7 @@
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            return string.Format("From = {0}; To = {1}; Open = {2}; Close = {3}; Low = {4}; High = {5}; Volume = {6}", this.From, this.To, this.Open, this.Close, this.Low, this.High, this.Volume);
+            return string.Format("From={0}; To={1}; Open={2}; Close={3}; Low={4}; High={5}; Volume={6}", this.From, this.To, this.Open, this.Close, this.Low, this.High, this.Volume);
         }
     }
 }

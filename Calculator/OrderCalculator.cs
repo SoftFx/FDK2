@@ -61,6 +61,7 @@ namespace TickTrader.FDK.Calculator
         private decimal _baseMarginFactor;
         private decimal _stopMarginFactor;
         private decimal _hiddenMarginFactor;
+        public decimal HedgedMarginFactor { get; private set; }
 
         public decimal CalculateMargin(IPositionModel position, int leverage, out CalcError error)
         {
@@ -68,22 +69,25 @@ namespace TickTrader.FDK.Calculator
             var result = 0.0m;
 
             if (position.Short.Amount > 0)
-                result += CalculateMargin(position.Short.Amount, leverage, OrderType.Position, OrderSide.Sell, false, out error);
+                result += CalculateMargin(position.Short.Amount, leverage, OrderType.Position, OrderSide.Sell, false, false, out error);
 
             if (error == null && position.Long.Amount > 0)
-                result += CalculateMargin(position.Long.Amount, leverage, OrderType.Position, OrderSide.Buy, false, out error);
+                result += CalculateMargin(position.Long.Amount, leverage, OrderType.Position, OrderSide.Buy, false, false, out error);
 
             return result;
         }
 
         public decimal CalculateMargin(IOrderCalcInfo order, int leverage, out CalcError error)
         {
-            return CalculateMargin(order.RemainingAmount, leverage, order.Type, order.Side, order.IsHidden, out error);
+            return CalculateMargin(order.RemainingAmount, leverage, order.Type, order.Side, order.IsHidden, order.IsContingent, out error);
         }
 
-        public decimal CalculateMargin(decimal orderVolume, int leverage, OrderType ordType, OrderSide side, bool isHidden, out CalcError error)
+        public decimal CalculateMargin(decimal orderVolume, int leverage, OrderType ordType, OrderSide side, bool isHidden, bool isContingent, out CalcError error)
         {
             error = InitError;
+
+            if (isContingent)
+                return 0;
 
             if (error != null)
                 return 0;
@@ -114,6 +118,7 @@ namespace TickTrader.FDK.Calculator
             _baseMarginFactor = (decimal)SymbolInfo.MarginFactorFractional;
             _stopMarginFactor = _baseMarginFactor * (decimal)SymbolInfo.StopOrderMarginReduction;
             _hiddenMarginFactor = _baseMarginFactor * (decimal)SymbolInfo.HiddenLimitOrderMarginReduction;
+            HedgedMarginFactor = 2 * (decimal)SymbolInfo.MarginHedged - 1;
         }
 
         #endregion

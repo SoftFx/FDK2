@@ -1,4 +1,6 @@
-﻿namespace TickTrader.FDK.Extended
+﻿using SoftFX.Net.Core;
+
+namespace TickTrader.FDK.Extended
 {
     using System;
     using System.Threading;
@@ -215,6 +217,9 @@
             quoteFeedClient_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             quoteFeedClient_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
             quoteFeedClient_.NotificationEvent += new QuoteFeed.NotificationDelegate(this.OnNotification);
+            quoteFeedClient_.BarsUpdateEvent += new QuoteFeed.BarsUpdateDelegate(OnBarUpdate);
+            quoteFeedClient_.SubscribeBarsResultEvent += new QuoteFeed.SubscribeBarsResultDelegate(OnSubscribeBarsResult);
+            quoteFeedClient_.SubscribeBarsErrorEvent += new QuoteFeed.SubscribeBarsErrorDelegate(OnSubscribeQuotesError);
 
             quoteStoreClient_ = new QuoteStore(name_ + ".QuoteStore", logEvents, logStates, logQuoteStoreMessages, quoteStorePort, serverCertificateName, 1, -1, 10000, 10000, logDirectory,
                 quoteStoreClientCertificateValidation, (SoftFX.Net.Core.ProxyType)proxyTypeFDK, proxyAddress, proxyPort, proxyUsername, proxyPassword);
@@ -367,6 +372,11 @@
         public event TickHandler Tick;
 
         /// <summary>
+        /// Occurs when a new bar update is received.
+        /// </summary>
+        public event BarHandler Bar;
+
+        /// <summary>
         /// Occurs when a notification is received.
         /// </summary>
         public event NotifyHandler Notify;
@@ -414,7 +424,7 @@
                         }
                         catch
                         {
-                            quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                            quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                             quoteFeedClient = quoteFeedClient_;
 
                             throw;
@@ -465,7 +475,7 @@
                     }
                     catch
                     {
-                        quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                        quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
 
                     try
@@ -474,7 +484,7 @@
                     }
                     catch
                     {
-                        quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                        quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                     }
                 }
             }
@@ -609,8 +619,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -620,7 +630,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (!logout_)
                     {
@@ -703,8 +713,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -712,7 +722,7 @@
         {
             try
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
             }
             catch
             {
@@ -736,8 +746,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -747,7 +757,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (!logout_)
                     {
@@ -823,8 +833,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
                 }
             }
             catch
@@ -879,8 +889,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
                 }
             }
             catch
@@ -964,8 +974,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
                 }
             }
             catch
@@ -1021,8 +1031,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
                 }
             }
             catch
@@ -1088,8 +1098,8 @@
             {
                 if (data == this)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
                 }
             }
             catch
@@ -1119,7 +1129,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientRequest("Client logout"));
 
                     if (!logout_)
                     {
@@ -1143,7 +1153,10 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
+                    string reason = !string.IsNullOrEmpty(logoutInfo.Message)
+                        ? logoutInfo.Message
+                        : "Client disconnect";
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientRequest(reason));
 
                     if (!logout_)
                     {
@@ -1194,6 +1207,35 @@
             }
         }
 
+        void OnBarUpdate(QuoteFeed client, AggregatedBarUpdate update)
+        {
+            try
+            {
+                var args = new BarEventArgs();
+                args.Update = update;
+                eventQueue_.PushEvent(args);
+            }
+            catch
+            {
+            }
+        }
+
+        void OnSubscribeBarsResult(QuoteFeed client, object data, AggregatedBarUpdate[] updates)
+        {
+            try
+            {
+                foreach (var update in updates)
+                {
+                    var args = new BarEventArgs();
+                    args.Update = update;
+                    eventQueue_.PushEvent(args);
+                }
+            }
+            catch
+            {
+            }
+        }
+
         void OnNotification(QuoteFeed client, Notification notification)
         {
             try
@@ -1218,8 +1260,8 @@
                         }
                         catch
                         {
-                            quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                            quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                            quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                            quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
                         }
                     }
 
@@ -1245,8 +1287,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -1256,7 +1298,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (!logout_)
                     {
@@ -1339,8 +1381,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -1348,7 +1390,7 @@
         {
             try
             {
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
             }
             catch
             {
@@ -1377,8 +1419,8 @@
             }
             catch
             {
-                quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
-                quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                quoteStoreClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
+                quoteFeedClient_.DisconnectAsync(this, Reason.ClientError("Client disconnect"));
             }
         }
 
@@ -1388,7 +1430,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteFeedClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteFeedClient_.DisconnectAsync(this, Reason.ClientError(exception.Message));
 
                     if (!logout_)
                     {
@@ -1423,7 +1465,7 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, "Client disconnect");
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientRequest("Client logout"));
 
                     if (!logout_)
                     {
@@ -1591,7 +1633,10 @@
             {
                 lock (synchronizer_)
                 {
-                    quoteStoreClient_.DisconnectAsync(this, !string.IsNullOrEmpty(logoutInfo.Message) ? logoutInfo.Message : "Client disconnect");
+                    string reason = !string.IsNullOrEmpty(logoutInfo.Message)
+                        ? logoutInfo.Message
+                        : "Client logout";
+                    quoteStoreClient_.DisconnectAsync(this, Reason.ClientRequest(reason));
 
                     if (!logout_)
                     {
@@ -1876,6 +1921,24 @@
                     try
                     {
                         Tick(this, tickEventArgs);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                return;
+            }
+
+            BarEventArgs barEventArgs = eventArgs as BarEventArgs;
+
+            if (barEventArgs != null)
+            {
+                if (Bar != null)
+                {
+                    try
+                    {
+                        Bar(this, barEventArgs);
                     }
                     catch
                     {

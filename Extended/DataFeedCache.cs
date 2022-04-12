@@ -86,7 +86,7 @@
             double result;
             if (!this.TryGetBid(symbol, out result))
             {
-                var message = string.Format("Off quotes for symbol = {0}", symbol);
+                var message = string.Format("Off quotes for symbol={0}", symbol);
                 throw new ArgumentException(message);
             }
             return result;
@@ -150,7 +150,7 @@
             double result;
             if (!this.TryGetAsk(symbol, out result))
             {
-                var message = string.Format("Off quotes for symbol = {0}", symbol);
+                var message = string.Format("Off quotes for symbol={0}", symbol);
                 throw new ArgumentException(message);
             }
 
@@ -215,7 +215,7 @@
             Quote result;
             if (!this.TryGetLevel2(symbol, out result))
             {
-                var message = string.Format("Off quotes for symbol = {0}", symbol);
+                var message = string.Format("Off quotes for symbol={0}", symbol);
                 throw new ArgumentException(message);
             }
 

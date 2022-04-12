@@ -579,7 +579,7 @@
         {
             return string.Format
             (
-                "Id = {0}; Type = {1}; Reason = {2}; Time = {3}; ClientId = {4}; OrderType = {5}; Symbol = {6}; OrderSide = {7}; InitialVolume = {8}; Price = {9}; LeavesVolume = {10}; TradeAmount = {11}; TradePrice = {12}", 
+                "Id={0}; Type={1}; Reason={2}; Time={3}; ClientId={4}; OrderType={5}; Symbol={6}; OrderSide={7}; InitialVolume={8}; Price={9}; LeavesVolume={10}; TradeAmount={11}; TradePrice={12}", 
                 Id, 
                 TradeTransactionReportType, 
                 TradeTransactionReason, 

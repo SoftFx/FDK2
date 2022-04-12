@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
 
@@ -10,44 +11,52 @@ namespace QuoteStoreSyncSample
 {
     public class Program : IDisposable
     {
-        const int Timeout = 30000;
+        static string SampleName = typeof(Program).Namespace;
 
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5042;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5042;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("QuoteStoreSyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `QuoteStoreSyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("QuoteStoreSyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -58,13 +67,13 @@ namespace QuoteStoreSyncSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteStore("QuoteStoreSyncSample", port : port, reconnectAttempts : 0, logMessages : true,
+            client_ = new QuoteStore(SampleName, port : port, reconnectAttempts : 0, logMessages : true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new QuoteStore.LogoutDelegate(this.OnLogout);
@@ -457,15 +466,15 @@ namespace QuoteStoreSyncSample
 
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "", Timeout);
 
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
             }
             catch
             {
-                string text = client_.Disconnect("Client disconnect");
+                string text = client_.Disconnect(Reason.ClientError("Client disconnect"));
 
                 if (text != null)
                     Console.WriteLine("Disconnected : {0}", text);
@@ -486,7 +495,7 @@ namespace QuoteStoreSyncSample
             {
             }
 
-            string text = client_.Disconnect("Client disconnect");
+            string text = client_.Disconnect(Reason.ClientRequest("Client disconnect"));
 
             if (text != null)
                 Console.WriteLine("Disconnected : {0}", text);
@@ -759,6 +768,7 @@ namespace QuoteStoreSyncSample
         string address_;
         string login_;
         string password_;
+        const int Timeout = 30000;
     }
 }
 

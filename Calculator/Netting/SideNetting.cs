@@ -29,6 +29,7 @@ namespace TickTrader.FDK.Calculator.Netting
         public decimal NetPosMargin { get; private set; }
         public decimal NetPosProfit { get; private set; }
         public int NetErrorCount { get; private set; }
+        public decimal NetPosAmount => _netPosAmount;
         internal NettingCalculationTypes NettingType { get; }
         public decimal MarketAmount => _positions.Amount + _netPosAmount;
 
@@ -42,7 +43,12 @@ namespace TickTrader.FDK.Calculator.Netting
             var hiddens = _hiddendOrders;
 
             if (pos != null)
+            {
                 result += pos.Recalculate();
+                NetPosMargin += result.MarginDelta;
+            }
+            else
+                NetPosMargin = 0;
 
             if (limits != null)
                 result += limits.Recalculate();
@@ -59,6 +65,10 @@ namespace TickTrader.FDK.Calculator.Netting
 
         internal void AddOrder(IOrderModel order)
         {
+            //Skip Contingent orders
+            if (order.IsContingent)
+                return;
+
             //Count++;
             order.EssentialsChanged += Order_EssentialsChanged;
             //order.PriceChanged += Order_PriceChanged;
@@ -69,6 +79,10 @@ namespace TickTrader.FDK.Calculator.Netting
 
         internal void AddOrderWithoutCalculation(IOrderModel order)
         {
+            //Skip Contingent orders
+            if (order.IsContingent)
+                return;
+
             //Count++;
             order.EssentialsChanged += Order_EssentialsChanged;
             //order.PriceChanged += Order_PriceChanged;
@@ -78,6 +92,10 @@ namespace TickTrader.FDK.Calculator.Netting
 
         internal void RemoveOrder(IOrderModel order)
         {
+            //Skip Contingent orders
+            if (order.IsContingent)
+                return;
+
             //Count--;
             order.EssentialsChanged -= Order_EssentialsChanged;
             //order.PriceChanged -= Order_PriceChanged;
@@ -100,6 +118,7 @@ namespace TickTrader.FDK.Calculator.Netting
             positions.AddPositionWithoutCalculation(pos, _netPosAmount, _netPosPrice);
 
             var change = _positions.Recalculate();
+            NetPosMargin += change.MarginDelta;
             UpdateStats(change);
 
             if (_positions.IsEmpty)

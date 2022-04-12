@@ -39,7 +39,7 @@
             if (count != 0)
             {
                 var averageSpread = sumSpread / count;
-                Console.WriteLine("Average spread = {0}", averageSpread);
+                Console.WriteLine("Average spread={0}", averageSpread);
             }
             else
                 Console.WriteLine("Average spread = NA");

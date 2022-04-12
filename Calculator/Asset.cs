@@ -38,7 +38,7 @@
         /// <returns>Can not be null.</returns>
         public override string ToString()
         {
-            var result = string.Format("{0}; Volume = {1}; Rate = {2}", this.Currency, this.Volume, this.Rate);
+            var result = string.Format("{0}; Volume={1}; Rate={2}", this.Currency, this.Volume, this.Rate);
             return result;
         }
     }

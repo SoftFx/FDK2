@@ -16,7 +16,7 @@ namespace TickTrader.FDK.Common
 
         public override string ToString()
         {
-            return $"#{Id}; StartTime = {StartTime:u}; Ratio = {Ratio:F}; Currencies = [{string.Join(",", Currencies)}]; Symbols = [{string.Join(",", Symbols)}]; SymbolsNotAffectQH = [{string.Join(",", SymbolsNotAffectQH)}]; FromFactor = {FromFactor}; ToFactor = {ToFactor}";
+            return $"#{Id}; StartTime={StartTime:u}; Ratio={Ratio:F}; Currencies = [{string.Join(",", Currencies)}]; Symbols = [{string.Join(",", Symbols)}]; SymbolsNotAffectQH = [{string.Join(",", SymbolsNotAffectQH)}]; FromFactor={FromFactor}; ToFactor={ToFactor}";
         }
     }
 }

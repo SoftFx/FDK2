@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using TickTrader.FDK.Calculator.Conversion;
 using TickTrader.FDK.Common;
 
@@ -24,6 +25,16 @@ namespace TickTrader.FDK.Calculator
         public static bool IsHiddenOrder(double? maxVisibleAmount)
         {
             return maxVisibleAmount.HasValue && maxVisibleAmount.Value == 0;
+        }
+
+        public static bool IsIcebergOrder(decimal? maxVisibleAmount)
+        {
+            return maxVisibleAmount.HasValue && maxVisibleAmount.Value > 0;
+        }
+
+        public static bool IsIcebergOrder(double? maxVisibleAmount)
+        {
+            return maxVisibleAmount.HasValue && maxVisibleAmount.Value > 0;
         }
 
         public static OrderSide GetSide(this IPositionModel position)
@@ -64,6 +75,18 @@ namespace TickTrader.FDK.Calculator
                 default:
                     return AccountEntryStatus.NotCalculated;
             }
+        }
+
+        /// <summary>
+        /// Wraps this object instance into an IEnumerable&lt;T&gt;
+        /// consisting of a single item.
+        /// </summary>
+        /// <typeparam name="T"> Type of the object. </typeparam>
+        /// <param name="item"> The instance that will be wrapped. </param>
+        /// <returns> An IEnumerable&lt;T&gt; consisting of a single item. </returns>
+        public static IEnumerable<T> Yield<T>(this T item)
+        {
+            yield return item;
         }
     }
 }

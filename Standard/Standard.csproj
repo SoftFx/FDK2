@@ -1,84 +1,28 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EC1A8251-119A-44BE-8A8C-BC7823876763}</ProjectGuid>
+    <TargetFrameworks>net46;netstandard2.0</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>TickTrader.FDK.Standard</RootNamespace>
     <AssemblyName>TickTrader.FDK.Standard</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <TargetFrameworkProfile>
-    </TargetFrameworkProfile>
+    <AssemblyTitle>TickTrader FDK Standard Library</AssemblyTitle>
+    <Version>$(MajorVersion).$(MinorVersion).0</Version>
+    <FileVersion>$(MajorVersion).$(MinorVersion).$(BuildNumber).0</FileVersion>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
     <OutputPath>..\Bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>none</DebugType>
-    <Optimize>true</Optimize>
     <OutputPath>..\Bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+
   <ItemGroup>
-    <Reference Include="SoftFX.Net.Core">
-      <HintPath>..\Lib\SoftFX.Net.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.OrderEntry">
-      <HintPath>..\Lib\SoftFX.Net.OrderEntry.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.QuoteFeed">
-      <HintPath>..\Lib\SoftFX.Net.QuoteFeed.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.QuoteStore">
-      <HintPath>..\Lib\SoftFX.Net.QuoteStore.dll</HintPath>
-    </Reference>
-    <Reference Include="SoftFX.Net.TradeCapture">
-      <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
+    <ProjectReference Include="..\Calculator\Calculator.csproj" />
+    <ProjectReference Include="..\Common\Common.csproj" />
+    <ProjectReference Include="..\Extended\Extended.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Compile Include="ErrorEventArgs.cs" />
-    <Compile Include="ErrorMode.cs" />
-    <Compile Include="Manager.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Snapshot.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Calculator\Calculator.csproj">
-      <Project>{d52da7c0-3dd2-4e26-bbce-f9a2dc09aa9d}</Project>
-      <Name>Calculator</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Common\Common.csproj">
-      <Project>{d52da7c0-3cf2-4e26-bbce-f9a2dc09589d}</Project>
-      <Name>Common</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\Extended\Extended.csproj">
-      <Project>{ec1a8251-1b9a-4bbe-8a8c-bc8cd7da60e0}</Project>
-      <Name>Extended</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it.
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
 </Project>

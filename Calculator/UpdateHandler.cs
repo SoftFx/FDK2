@@ -135,7 +135,11 @@ namespace TickTrader.FDK.Calculator
         {
             if (e.Type == NotificationType.ConfigUpdated)
             {
-                this.updateCallback(null, null, null, null, null, null, true);
+                lock (this.SyncRoot)
+                {
+                    this.updateCallback(null, null, null, null, null, null, true);
+                    this.processor.WakeUp();
+                }
             }
         }
 
@@ -143,7 +147,11 @@ namespace TickTrader.FDK.Calculator
         {
             if (e.Type == NotificationType.ConfigUpdated)
             {
-                this.updateCallback(null, null, null, null, null, null, true);
+                lock (this.SyncRoot)
+                {
+                    this.updateCallback(null, null, null, null, null, null, true);
+                    this.processor.WakeUp();
+                }
             }
         }
 

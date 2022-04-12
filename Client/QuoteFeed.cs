@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using SoftFX.Net.Core;
 using SoftFX.Net.QuoteFeed;
 using TickTrader.FDK.Common;
 using ClientSession = SoftFX.Net.QuoteFeed.ClientSession;
-using ClientSessionOptions = SoftFX.Net.QuoteFeed.ClientSessionOptions;
+//using ClientSessionOptions = SoftFX.Net.QuoteFeed.ClientSessionOptions;
 using CurrencyTypeInfo = TickTrader.FDK.Common.CurrencyTypeInfo;
 
 namespace TickTrader.FDK.Client
@@ -31,7 +32,8 @@ namespace TickTrader.FDK.Client
             IPAddress proxyAddress = null,
             int proxyPort = 0,
             string proxyUsername = null,
-            string proxyPassword = null
+            string proxyPassword = null,
+            OptimizationType? optimizationType = null
         )
         {
             ClientSessionOptions options = new ClientSessionOptions(port, validateClientCertificate);
@@ -51,6 +53,8 @@ namespace TickTrader.FDK.Client
             options.ProxyPort = proxyPort;
             options.Username = proxyUsername;
             options.Password = proxyPassword;
+            if (optimizationType.HasValue)
+                options.OptimizationType = optimizationType.Value;
 
             session_ = new ClientSession(name, options);
             CompressedStreamHandler compressedStreamHandler = new CompressedStreamHandler(session_);
@@ -118,7 +122,7 @@ namespace TickTrader.FDK.Client
 
             if (!context.Wait(timeout))
             {
-                DisconnectInternal(null, "Connect timeout");
+                DisconnectInternal(null, Reason.ClientError("Connect timeout"));
                 Join();
 
                 throw new Common.TimeoutException("Method call timed out");
@@ -141,17 +145,17 @@ namespace TickTrader.FDK.Client
             session_.Connect(context, address);
         }
 
-        public string Disconnect(string text)
+        public string Disconnect(Reason reason)
         {
             string result;
 
             DisconnectAsyncContext context = new DisconnectAsyncContext(true);
 
-            if (DisconnectInternal(context, text))
+            if (DisconnectInternal(context, reason))
             {
                 context.Wait(-1);
 
-                result = context.text_;
+                result = context.Reason.Text;
             }
             else
                 result = null;
@@ -159,17 +163,17 @@ namespace TickTrader.FDK.Client
             return result;
         }
 
-        public bool DisconnectAsync(object data, string text)
+        public bool DisconnectAsync(object data, Reason reason)
         {
             DisconnectAsyncContext context = new DisconnectAsyncContext(false);
             context.Data = data;
 
-            return DisconnectInternal(context, text);
+            return DisconnectInternal(context, reason);
         }
 
-        bool DisconnectInternal(DisconnectAsyncContext context, string text)
+        bool DisconnectInternal(DisconnectAsyncContext context, Reason reason)
         {
-            return session_.Disconnect(context, text);
+            return session_.Disconnect(context, reason);
         }
 
         public void Join()
@@ -279,6 +283,7 @@ namespace TickTrader.FDK.Client
         public delegate void SessionInfoResultDelegate(QuoteFeed quoteFeed, object data, SessionInfo sessionInfo);
         public delegate void SessionInfoErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
         public delegate void SubscribeQuotesResultDelegate(QuoteFeed quoteFeed, object data, Quote[] quotes);
+        public delegate void SubscribeQuotesExtendedResultDelegate(QuoteFeed quoteFeed, object data, Quote[] quotes, SubscriptionErrors errors);
         public delegate void SubscribeQuotesErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
         public delegate void UnsubscribeQuotesResultDelegate(QuoteFeed quoteFeed, object data, string[] symbolIds);
         public delegate void UnsubscribeQuotesErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
@@ -287,6 +292,11 @@ namespace TickTrader.FDK.Client
         public delegate void SessionInfoUpdateDelegate(QuoteFeed quoteFeed, SessionInfo sessionInfo);
         public delegate void QuoteUpdateDelegate(QuoteFeed quoteFeed, Quote quote);
         public delegate void NotificationDelegate(QuoteFeed quoteFeed, Common.Notification notification);
+        public delegate void SubscribeBarsResultDelegate(QuoteFeed quoteFeed, object data, AggregatedBarUpdate[] updates);
+        public delegate void SubscribeBarsErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
+        public delegate void UnsubscribeBarsResultDelegate(QuoteFeed quoteFeed, object data, string[] symbolIds);
+        public delegate void UnsubscribeBarsErrorDelegate(QuoteFeed quoteFeed, object data, Exception exception);
+        public delegate void BarsUpdateDelegate(QuoteFeed quoteFeed, AggregatedBarUpdate updates);
 
         public event CurrencyTypeListResultDelegate CurrencyTypeListResultEvent;
         public event CurrencyTypeListErrorDelegate CurrencyTypeListErrorEvent;
@@ -297,6 +307,7 @@ namespace TickTrader.FDK.Client
         public event SessionInfoResultDelegate SessionInfoResultEvent;
         public event SessionInfoErrorDelegate SessionInfoErrorEvent;
         public event SubscribeQuotesResultDelegate SubscribeQuotesResultEvent;
+        public event SubscribeQuotesExtendedResultDelegate SubscribeQuotesExtendedResultEvent;
         public event SubscribeQuotesErrorDelegate SubscribeQuotesErrorEvent;
         public event UnsubscribeQuotesResultDelegate UnsubscribeQuotesResultEvent;
         public event UnsubscribeQuotesErrorDelegate UnsubscribeQuotesErrorEvent;
@@ -305,6 +316,11 @@ namespace TickTrader.FDK.Client
         public event SessionInfoUpdateDelegate SessionInfoUpdateEvent;
         public event QuoteUpdateDelegate QuoteUpdateEvent;
         public event NotificationDelegate NotificationEvent;
+        public event SubscribeBarsResultDelegate SubscribeBarsResultEvent;
+        public event SubscribeBarsErrorDelegate SubscribeBarsErrorEvent;
+        public event UnsubscribeBarsResultDelegate UnsubscribeBarsResultEvent;
+        public event UnsubscribeBarsErrorDelegate UnsubscribeBarsErrorEvent;
+        public event BarsUpdateDelegate BarsUpdateEvent;
 
         public CurrencyTypeInfo[] GetCurrencyTypeList(int timeout)
         {
@@ -437,7 +453,7 @@ namespace TickTrader.FDK.Client
         {
             SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(true);
 
-            SubscribeQuotesInternal(context, symbolEntries);
+            SubscribeQuotesInternal(context, symbolEntries, null);
 
             if (!context.Wait(timeout))
                 throw new Common.TimeoutException("Method call timed out");
@@ -453,10 +469,48 @@ namespace TickTrader.FDK.Client
             SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(false);
             context.Data = data;
 
-            SubscribeQuotesInternal(context, symbolEntries);
+            SubscribeQuotesInternal(context, symbolEntries, null);
         }
 
-        void SubscribeQuotesInternal(SubscribeQuotesAsyncContext context, SymbolEntry[] symbolEntries)
+        public Quote[] SubscribeQuotes(SymbolEntry[] symbolEntries, int frequencyPriority, int timeout)
+        {
+            SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(true);
+
+            SubscribeQuotesInternal(context, symbolEntries, frequencyPriority);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.quotes_;
+        }
+
+        public Quote[] SubscribeQuotes(SymbolEntry[] symbolEntries, int frequencyPriority, int timeout, out SubscriptionErrors errors)
+        {
+            SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(true);
+
+            SubscribeQuotesInternal(context, symbolEntries, frequencyPriority);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+            errors = context.subscriptionErrors_;
+            return context.quotes_;
+        }
+
+        public void SubscribeQuotesAsync(object data, SymbolEntry[] symbolEntries, int frequencyPriority)
+        {
+            SubscribeQuotesAsyncContext context = new SubscribeQuotesAsyncContext(false);
+            context.Data = data;
+
+            SubscribeQuotesInternal(context, symbolEntries, frequencyPriority);
+        }
+
+        void SubscribeQuotesInternal(SubscribeQuotesAsyncContext context, SymbolEntry[] symbolEntries, int? frequencyPriority)
         {
             MarketDataSubscribeRequest request = new MarketDataSubscribeRequest(0);
             request.Id = Guid.NewGuid().ToString();
@@ -473,6 +527,7 @@ namespace TickTrader.FDK.Client
                 marketDataSymbolEntry.Id = symbolEntry.Id;
                 marketDataSymbolEntry.MarketDepth = symbolEntry.MarketDepth;
             }
+            request.FrequencyPriority = frequencyPriority;
 
             session_.SendMarketDataSubscribeRequest(context, request);
         }
@@ -559,13 +614,101 @@ namespace TickTrader.FDK.Client
             session_.SendMarketDataRequest(context, request);
         }
 
+        public AggregatedBarUpdate[] SubscribeBars(Common.BarSubscriptionSymbolEntry[] symbolEntries, int timeout)
+        {
+            var context = new SubscribeBarsAsyncContext(true);
+
+            SubscribeBarsInternal(context, symbolEntries);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+
+            return context.updates_;
+        }
+
+        public void SubscribeBarsAsync(object data, Common.BarSubscriptionSymbolEntry[] symbolEntries)
+        {
+            var context = new SubscribeBarsAsyncContext(false);
+            context.Data = data;
+
+            SubscribeBarsInternal(context, symbolEntries);
+        }
+
+        void SubscribeBarsInternal(SubscribeBarsAsyncContext context, Common.BarSubscriptionSymbolEntry[] symbolEntries)
+        {
+            BarSubscribeRequest request = new BarSubscribeRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+
+            var entries = request.Entries;
+            int count = symbolEntries.Length;
+            entries.Resize(count);
+
+            for (int index = 0; index < count; ++index)
+            {
+                var symbolEntry = symbolEntries[index];
+                var requestEntry = entries[index];
+                requestEntry.SymbolId = symbolEntry.Symbol;
+                var paramCount = symbolEntry.Params.Length;
+                requestEntry.ParamSet.Resize(paramCount);
+                for (int j = 0; j < paramCount; j++)
+                {
+                    var param = requestEntry.ParamSet[j];
+                    param.Periodicity = symbolEntry.Params[j].Periodicity.ToString();
+                    param.PriceType = symbolEntry.Params[j].PriceType == PriceType.Ask ? MarketDataEntryType.Ask : MarketDataEntryType.Bid;
+                }
+            }
+
+            session_.SendBarSubscribeRequest(context, request);
+        }
+
+        public void UnsubscribeBars(string[] symbolIds, int timeout)
+        {
+            UnsubscribeBarsAsyncContext context = new UnsubscribeBarsAsyncContext(true);
+
+            UnsubscribeBarsInteral(context, symbolIds);
+
+            if (!context.Wait(timeout))
+                throw new Common.TimeoutException("Method call timed out");
+
+            if (context.exception_ != null)
+                throw context.exception_;
+        }
+
+        public void UnsubscribeBarsAsync(object data, string[] symbolIds)
+        {
+            UnsubscribeBarsAsyncContext context = new UnsubscribeBarsAsyncContext(false);
+            context.Data = data;
+
+            UnsubscribeBarsInteral(context, symbolIds);
+        }
+
+        void UnsubscribeBarsInteral(UnsubscribeBarsAsyncContext context, string[] symbolIds)
+        {
+            context.SymbolIds = symbolIds;
+
+            BarUnsubscribeRequest request = new BarUnsubscribeRequest(0);
+            request.Id = Guid.NewGuid().ToString();
+
+            SoftFX.Net.Core.StringArray requestSymbolIds = request.SymbolIds;
+            int count = symbolIds.Length;
+            requestSymbolIds.Resize(count);
+
+            for (int index = 0; index < count; ++index)
+                requestSymbolIds[index] = symbolIds[index];
+
+            session_.SendBarUnsubscribeRequest(context, request);
+        }
+
         #endregion
 
         #region Implementation
 
         interface IAsyncContext
         {
-            void ProcessDisconnect(QuoteFeed quoteFeed, string text);
+            void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason);
         }
 
         class ConnectAsyncContext : ConnectClientContext
@@ -583,7 +726,7 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public string text_;
+            public Reason Reason;
         }
 
         class LoginAsyncContext : LoginRequestClientContext, IAsyncContext
@@ -592,9 +735,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.LoginErrorEvent != null)
                 {
@@ -622,9 +765,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.LogoutErrorEvent != null)
                 {
@@ -653,9 +796,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.CurrencyTypeListErrorEvent != null)
                 {
@@ -683,9 +826,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.CurrencyListErrorEvent != null)
                 {
@@ -714,9 +857,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.SymbolListErrorEvent != null)
                 {
@@ -745,9 +888,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.SymbolListErrorEvent != null)
                 {
@@ -776,9 +919,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.SubscribeQuotesErrorEvent != null)
                 {
@@ -799,6 +942,7 @@ namespace TickTrader.FDK.Client
 
             public Exception exception_;
             public Quote[] quotes_;
+            public SubscriptionErrors subscriptionErrors_;
         }
 
         class UnsubscribeQuotesAsyncContext : MarketDataUnsubscribeRequestClientContext, IAsyncContext
@@ -807,9 +951,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.UnsubscribeQuotesErrorEvent != null)
                 {
@@ -838,9 +982,9 @@ namespace TickTrader.FDK.Client
             {
             }
 
-            public void ProcessDisconnect(QuoteFeed quoteFeed, string text)
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
             {
-                DisconnectException exception = new DisconnectException(text);
+                DisconnectException exception = new DisconnectException(reason.ToString());
 
                 if (quoteFeed.QuotesErrorEvent != null)
                 {
@@ -861,6 +1005,68 @@ namespace TickTrader.FDK.Client
 
             public Exception exception_;
             public Quote[] quotes_;
+        }
+
+        class SubscribeBarsAsyncContext : BarSubscribeRequestClientContext, IAsyncContext
+        {
+            public SubscribeBarsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (quoteFeed.SubscribeBarsErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteFeed.SubscribeBarsErrorEvent(quoteFeed, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public Exception exception_;
+            public AggregatedBarUpdate[] updates_;
+        }
+
+        class UnsubscribeBarsAsyncContext : BarUnsubscribeRequestClientContext, IAsyncContext
+        {
+            public UnsubscribeBarsAsyncContext(bool waitable) : base(waitable)
+            {
+            }
+
+            public void ProcessDisconnect(QuoteFeed quoteFeed, Reason reason)
+            {
+                DisconnectException exception = new DisconnectException(reason.ToString());
+
+                if (quoteFeed.UnsubscribeBarsErrorEvent != null)
+                {
+                    try
+                    {
+                        quoteFeed.UnsubscribeBarsErrorEvent(quoteFeed, Data, exception);
+                    }
+                    catch
+                    {
+                    }
+                }
+
+                if (Waitable)
+                {
+                    exception_ = exception;
+                }
+            }
+
+            public string[] SymbolIds;
+            public Exception exception_;
         }
 
         class ClientSessionListener : SoftFX.Net.QuoteFeed.ClientSessionListener
@@ -915,13 +1121,13 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, string text)
+            public override void OnConnectError(ClientSession clientSession, ConnectClientContext connectContext, Reason reason)
             {
                 try
                 {
                     ConnectAsyncContext connectAsyncContext = (ConnectAsyncContext)connectContext;
 
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ConnectErrorEvent != null)
                     {
@@ -945,11 +1151,11 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnConnectError(ClientSession clientSession, string text)
+            public override void OnConnectError(ClientSession clientSession, Reason reason)
             {
                 try
                 {
-                    ConnectException exception = new ConnectException(text);
+                    ConnectException exception = new ConnectException(reason.Text);
 
                     if (client_.ReconnectErrorEvent != null)
                     {
@@ -968,21 +1174,24 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, DisconnectClientContext disconnectContext, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
                     //compressedStreamHandler_.Stop();
                     DisconnectAsyncContext disconnectAsyncContext = (DisconnectAsyncContext)disconnectContext;
 
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -990,7 +1199,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, text);
+                            client_.DisconnectResultEvent(client_, disconnectAsyncContext.Data, reason.Text);
                         }
                         catch
                         {
@@ -999,7 +1208,7 @@ namespace TickTrader.FDK.Client
 
                     if (disconnectAsyncContext.Waitable)
                     {
-                        disconnectAsyncContext.text_ = text;
+                        disconnectAsyncContext.Reason = reason;
                     }
                 }
                 catch
@@ -1008,19 +1217,22 @@ namespace TickTrader.FDK.Client
                 }
             }
 
-            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, string text)
+            public override void OnDisconnect(ClientSession clientSession, ClientContext[] contexts, Reason reason)
             {
                 try
                 {
                     //compressedStreamHandler_.Stop();
-                    foreach (ClientContext context in contexts)
+                    if (contexts != null)
                     {
-                        try
+                        foreach (ClientContext context in contexts)
                         {
-                            ((IAsyncContext)context).ProcessDisconnect(client_, text);
-                        }
-                        catch
-                        {
+                            try
+                            {
+                                ((IAsyncContext)context).ProcessDisconnect(client_, reason);
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
 
@@ -1028,7 +1240,7 @@ namespace TickTrader.FDK.Client
                     {
                         try
                         {
-                            client_.DisconnectEvent(client_, text);
+                            client_.DisconnectEvent(client_, reason.Text);
                         }
                         catch
                         {
@@ -1707,6 +1919,18 @@ namespace TickTrader.FDK.Client
                             resultQuotes[index] = resultQuote;
                         }
 
+                        SubscriptionErrors errors = new SubscriptionErrors(GetErrors(message.Errors));
+
+                        if (client_.SubscribeQuotesExtendedResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeQuotesExtendedResultEvent(client_, context.Data, resultQuotes, errors);
+                            }
+                            catch
+                            {
+                            }
+                        }
                         if (client_.SubscribeQuotesResultEvent != null)
                         {
                             try
@@ -1721,6 +1945,7 @@ namespace TickTrader.FDK.Client
                         if (context.Waitable)
                         {
                             context.quotes_ = resultQuotes;
+                            context.subscriptionErrors_ = errors;
                         }
                     }
                     catch (Exception exception)
@@ -1745,6 +1970,31 @@ namespace TickTrader.FDK.Client
                 catch
                 {
                     // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            private IEnumerable<KeyValuePair<Common.SubscriptionErrorCodes, List<string>>> GetErrors(SubscriptionErrorGroupArray array)
+            {
+                for (int i = 0; i < array.Length; i++)
+                {
+                    var code = GetErrorCode(array[i].ErrorCode);
+                    var items = new List<string>(array[i].InvalidItems.Length);
+                    for (int j = 0; j < array[i].InvalidItems.Length; j++)
+                    {
+                        items.Add(array[i].InvalidItems[j]);
+                    }
+                    yield return new KeyValuePair<Common.SubscriptionErrorCodes, List<string>>(code, items);
+                }
+            }
+
+            private Common.SubscriptionErrorCodes GetErrorCode(SoftFX.Net.QuoteFeed.SubscriptionErrorCodes code)
+            {
+                switch (code)
+                {
+                    case SoftFX.Net.QuoteFeed.SubscriptionErrorCodes.SymbolNotFound:
+                        return Common.SubscriptionErrorCodes.SymbolNotFound;
+                    default:
+                        return Common.SubscriptionErrorCodes.Other;
                 }
             }
 
@@ -2176,6 +2426,219 @@ namespace TickTrader.FDK.Client
                         try
                         {
                             client_.NotificationEvent(client_, result);
+                        }
+                        catch
+                        {
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+
+            public override void OnBarSubscribeReport(ClientSession session, BarSubscribeRequestClientContext context, BarSubscribeReport message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeBarsAsyncContext)context;
+
+                    try
+                    {
+                        var snapshot = message.Snapshot;
+                        int snapshotSize = snapshot.Length;
+                        var result = new AggregatedBarUpdate[snapshotSize];
+                        for (int i = 0; i < snapshotSize; i++)
+                        {
+                            result[i] = ConvertToBarUpdate(snapshot[i]);
+                        }
+
+                        if (client_.SubscribeBarsResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeBarsResultEvent(client_, asyncContext.Data, result);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.updates_ = result;
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.SubscribeBarsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.SubscribeBarsErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            private AggregatedBarUpdate ConvertToBarUpdate(BarSymbolEntry symbolEntry)
+            {
+                string symbol = symbolEntry.SymbolId;
+                double? askClose = symbolEntry.AskClose;
+                double? bidClose = symbolEntry.BidClose;
+                int count = symbolEntry.Updates.Length;
+                var result = new AggregatedBarUpdate();
+                result.Symbol = symbol;
+                result.AskClose = askClose;
+                result.BidClose = bidClose;
+                for (int i = 0; i < count; i++)
+                {
+                    var entry = symbolEntry.Updates[i];
+                    var priceType = entry.Params.PriceType == MarketDataEntryType.Ask ? PriceType.Ask : PriceType.Bid;
+                    var param = new Common.BarParameters(Periodicity.Parse(entry.Params.Periodicity), priceType);
+                    result.Updates[param] = new Common.BarUpdate
+                    {
+                        Open = entry.Open,
+                        High = entry.High,
+                        Low = entry.Low,
+                        From = entry.Time
+                    };
+                }
+                return result;
+            }
+
+            public override void OnBarSubscribeReject(ClientSession session, BarSubscribeRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (SubscribeBarsAsyncContext)context;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.SubscribeBarsErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.SubscribeBarsErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnBarUnsubscribeReport(ClientSession session, BarUnsubscribeRequestClientContext context, BarUnsubscribeReport message)
+            {
+                try
+                {
+                    var asyncContext = (UnsubscribeBarsAsyncContext)context;
+
+                    try
+                    {
+                        if (client_.UnsubscribeBarsResultEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeBarsResultEvent(client_, asyncContext.Data, asyncContext.SymbolIds);
+                            }
+                            catch
+                            {
+                            }
+                        }
+                    }
+                    catch (Exception exception)
+                    {
+                        if (client_.UnsubscribeBarsErrorEvent != null)
+                        {
+                            try
+                            {
+                                client_.UnsubscribeBarsErrorEvent(client_, asyncContext.Data, exception);
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        if (asyncContext.Waitable)
+                        {
+                            asyncContext.exception_ = exception;
+                        }
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnBarUnsubscribeReject(ClientSession session, BarUnsubscribeRequestClientContext context, Reject message)
+            {
+                try
+                {
+                    var asyncContext = (UnsubscribeBarsAsyncContext)context;
+
+                    TickTrader.FDK.Common.RejectReason rejectReason = GetRejectReason(message.Reason);
+                    RejectException exception = new RejectException(rejectReason, message.Text);
+
+                    if (client_.UnsubscribeBarsErrorEvent != null)
+                    {
+                        try
+                        {
+                            client_.UnsubscribeBarsErrorEvent(client_, asyncContext.Data, exception);
+                        }
+                        catch
+                        {
+                        }
+                    }
+
+                    if (asyncContext.Waitable)
+                    {
+                        asyncContext.exception_ = exception;
+                    }
+                }
+                catch
+                {
+                    // client_.session_.LogError(exception.Message);
+                }
+            }
+
+            public override void OnBarUpdate(ClientSession session, SoftFX.Net.QuoteFeed.BarUpdate message)
+            {
+                try
+                {
+                    var result = ConvertToBarUpdate(message.Update);
+
+                    if (client_.BarsUpdateEvent != null)
+                    {
+                        try
+                        {
+                            client_.BarsUpdateEvent(client_, result);
                         }
                         catch
                         {

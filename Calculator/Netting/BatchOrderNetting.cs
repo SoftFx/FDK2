@@ -48,7 +48,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
             if (MarginAmount > 0)
             {
-                Margin = Calculator.CalculateMargin(MarginAmount, AccountData.Leverage, Type, Side, IsHidden, out var error);
+                Margin = Calculator.CalculateMargin(MarginAmount, AccountData.Leverage, Type, Side, IsHidden, false, out var error);
                 MarginError = error;
                 if (error != null)
                     ErrorCount++;

@@ -4,51 +4,61 @@ using System.Diagnostics;
 using System.Threading.Tasks;
 using System.Threading;
 using NDesk.Options;
+using SoftFX.Net.Core;
 using TickTrader.FDK.Common;
 using TickTrader.FDK.Client;
+using System.Linq;
 
-namespace QuoteFeedSample
+namespace QuoteFeedSyncSample
 {
     public class Program : IDisposable
     {
-        const int Timeout = 30000;
+        static string SampleName = typeof(Program).Namespace;
 
         static void Main(string[] args)
         {
             try
             {
+                string address = null;
+                int port = 5041;
+                string login = null;
+                string password = null;
                 bool help = false;
 
-                string address = "localhost";
-                string login = "5";
-                string password = "123qwe!";
-                int port = 5041;
+#if DEBUG
+                address = "localhost";
+                login = "5";
+                password = "123qwe!";
+#endif
 
                 var options = new OptionSet()
                 {
-                    { "a|address=", v => address = v },
-                    { "l|login=", v => login = v },
+                    { "a|address=",  v => address = v },
+                    { "p|port=",     v => port = int.Parse(v) },
+                    { "l|login=",    v => login = v },
                     { "w|password=", v => password = v },
-                    { "p|port=", v => port = int.Parse(v) },
-                    { "h|?|help",   v => help = v != null },
+                    { "h|?|help",    v => help = v != null },
                 };
 
                 try
                 {
                     options.Parse(args);
+                    help = string.IsNullOrEmpty(address) || string.IsNullOrEmpty(login) || string.IsNullOrEmpty(password);
                 }
                 catch (OptionException e)
                 {
-                    Console.Write("QuoteFeedSyncSample: ");
+                    Console.Write($"{SampleName}: ");
                     Console.WriteLine(e.Message);
-                    Console.WriteLine("Try `QuoteFeedSyncSample --help' for more information.");
+                    Console.WriteLine($"Try '{SampleName} --help' for more information.");
                     return;
                 }
 
                 if (help)
                 {
-                    Console.WriteLine("QuoteFeedSyncSample usage:");
+                    Console.WriteLine($"{SampleName} usage:");
                     options.WriteOptionDescriptions(Console.Out);
+                    Console.WriteLine("Press any key to exit...");
+                    Console.ReadKey();
                     return;
                 }
 
@@ -59,13 +69,13 @@ namespace QuoteFeedSample
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Error : " + ex.Message);
+                Console.WriteLine("Error: " + ex.Message);
             }
         }
 
         public Program(string address, int port, string login, string password)
         {
-            client_ = new QuoteFeed("QuoteFeedSyncSample", port: port, reconnectAttempts: 0, logMessages: true,
+            client_ = new QuoteFeed(SampleName, port: port, reconnectAttempts: 0, logMessages: true,
                 validateClientCertificate: (sender, certificate, chain, errors) => true);
 
             client_.LogoutEvent += new QuoteFeed.LogoutDelegate(this.OnLogout);
@@ -74,6 +84,7 @@ namespace QuoteFeedSample
             client_.SubscribeQuotesResultEvent += new QuoteFeed.SubscribeQuotesResultDelegate(this.OnSubscribeQuotesResult);
             client_.UnsubscribeQuotesResultEvent += new QuoteFeed.UnsubscribeQuotesResultDelegate(this.OnUnsubscribeQuotesResult);
             client_.QuoteUpdateEvent += new QuoteFeed.QuoteUpdateDelegate(this.OnQuoteUpdate);
+            client_.BarsUpdateEvent += new QuoteFeed.BarsUpdateDelegate(OnBarUpdate);
 
             address_ = address;
             login_ = login;
@@ -154,7 +165,7 @@ namespace QuoteFeedSample
                                 symbolEnries.Add(symbolEntry);
                             }
 
-                            SubscribeQuotes(symbolEnries);
+                            SubscribeQuotes(symbolEnries, -1);
                         }
                         else if (command == "unsubscribe_quote" || command == "uq")
                         {
@@ -192,6 +203,64 @@ namespace QuoteFeedSample
 
                             GetQuotes(symbolEnries);
                         }
+                        else if (command == "sqf")
+                        {
+                            var freqPrior = int.Parse(GetNextWord(line, ref pos));
+                            List<SymbolEntry> symbolEnries = new List<SymbolEntry>();
+
+                            while (true)
+                            {
+                                string symbolId = GetNextWord(line, ref pos);
+
+                                if (symbolId == null)
+                                    break;
+
+                                SymbolEntry symbolEntry = new SymbolEntry();
+                                symbolEntry.Id = symbolId;
+                                symbolEntry.MarketDepth = 500;
+
+                                symbolEnries.Add(symbolEntry);
+                            }
+
+                            SubscribeQuotes(symbolEnries, freqPrior);
+                        }
+                        else if (command == "sb")
+                        {
+                            try
+                            {
+                                var result = client_.SubscribeBars(ParseBarSubscriptionCommand(line, pos).ToArray(), Timeout);
+                                foreach (var update in result)
+                                {
+                                    Console.WriteLine(update);
+                                }
+                            }
+                            catch (Exception exception)
+                            {
+                                Console.WriteLine("Error : " + exception.Message);
+                            }
+                        }
+                        else if (command == "ub")
+                        {
+                            List<string> toUnsubscribe = new List<string>();
+
+                            while (true)
+                            {
+                                string symbolId = GetNextWord(line, ref pos);
+
+                                if (symbolId == null)
+                                    break;
+
+                                toUnsubscribe.Add(symbolId);
+                            }
+                            try
+                            {
+                                client_.UnsubscribeBars(toUnsubscribe.ToArray(), Timeout);
+                            }
+                            catch (Exception exception)
+                            {
+                                Console.WriteLine("Error : " + exception.Message);
+                            }
+                        }
                         else if (command == "exit" || command == "e")
                         {
                             break;
@@ -224,15 +293,15 @@ namespace QuoteFeedSample
 
             try
             {
-                Console.WriteLine("Connected");
+                Console.WriteLine($"Connected to {address_}");
 
-                client_.Login(login_, password_, "", "", "", Timeout);
+                client_.Login(login_, password_, "31DBAF09-94E1-4B2D-8ACF-5E6167E0D2D2", SampleName, "", Timeout);
 
-                Console.WriteLine("Login succeeded");
+                Console.WriteLine($"{login_}: Login succeeded");
             }
             catch
             {
-                string text = client_.Disconnect("Client disconnect");
+                string text = client_.Disconnect(Reason.ClientError("Client disconnect"));
 
                 if (text != null)
                     Console.WriteLine("Disconnected : {0}", text);
@@ -253,7 +322,7 @@ namespace QuoteFeedSample
             {
             }
 
-            string text = client_.Disconnect("Client disconnect");
+            string text = client_.Disconnect(Reason.ClientRequest("Client disconnect"));
 
             if (text != null)
                 Console.WriteLine("Disconnected : {0}", text);
@@ -264,10 +333,13 @@ namespace QuoteFeedSample
             Console.WriteLine("help (h) - print commands");
             Console.WriteLine("get_currency_list (c) - request currency list");
             Console.WriteLine("get_symbol_list (s) - request symbol list");
-            Console.WriteLine("get+session_info (i) - request session info");
+            Console.WriteLine("get_session_info (i) - request session info");
             Console.WriteLine("get_quotes (gq) <symbol_id_1> ... <symbol_id_n> - request quote snapshots");
             Console.WriteLine("subscribe_quotes (sq) <symbol_id_1> ... <symbol_id_n> - subscribe to quote updates");
             Console.WriteLine("unsubscribe_quotes (uq) <symbol_id_1> ... <symbol_id_n> - unsubscribe from quote updates");
+            Console.WriteLine("sqf <freq> <symbol_1> ... <symbol_n> - subscribe to quote updates with selected frequency priority");
+            Console.WriteLine("sb <symbol_1> <m1> <periodicity_1> <pricetype_1> ... <periodicity_m1> <pricetype_m1> ... <symbol_n> <mn> <periodicity_1> <pricetype_1> ... <periodicity_mn> <pricetype_mn> - subscribe to bar updates");
+            Console.WriteLine("ub <symbol_1> ... <symbol_n> - unsubscribe from bar updates");
             Console.WriteLine("exit (e) - exit");
         }
 
@@ -342,9 +414,14 @@ namespace QuoteFeedSample
             }
         }
 
-        void SubscribeQuotes(List<SymbolEntry> symbolEntries)
+        void SubscribeQuotes(List<SymbolEntry> symbolEntries, int frequencyPrioirity)
         {
-            client_.SubscribeQuotes(symbolEntries.ToArray(), Timeout);
+            client_.SubscribeQuotes(symbolEntries.ToArray(), frequencyPrioirity, Timeout, out var errors);
+            if (!errors.IsEmpty)
+            {
+                Console.WriteLine("Errors:");
+                Console.WriteLine(string.Join("\n", errors.Errors.Select(it => $"{it.Key}: {string.Join(", ", it.Value)}")));
+            }
         }
 
         void UnsubscribeQuotes(List<string> symbolIds)
@@ -474,10 +551,44 @@ namespace QuoteFeedSample
             }
         }
 
+        void OnBarUpdate(QuoteFeed quoteFeed, AggregatedBarUpdate updates)
+        {
+            try
+            {
+                Console.Error.WriteLine(updates);
+                Console.Error.WriteLine();
+            }
+            catch (Exception exception)
+            {
+                Console.WriteLine("Error: " + exception.Message);
+            }
+        }
+
+        IEnumerable<BarSubscriptionSymbolEntry> ParseBarSubscriptionCommand(string line, int pos)
+        {
+            while (true)
+            {
+                string symbolId = GetNextWord(line, ref pos);
+
+                if (symbolId == null)
+                    yield break;
+                var paramCount = int.Parse(GetNextWord(line, ref pos));
+                var param = new BarParameters[paramCount];
+                for (int i = 0; i < paramCount; i++)
+                {
+                    string periodicity = GetNextWord(line, ref pos);
+                    string priceType = GetNextWord(line, ref pos);
+                    param[i] = new BarParameters(Periodicity.Parse(periodicity), (PriceType)Enum.Parse(typeof(PriceType), priceType));
+                }
+                yield return new BarSubscriptionSymbolEntry { Symbol = symbolId, Params = param };
+            }
+        }
+
         QuoteFeed client_;
 
         string address_;
         string login_;
         string password_;
+        const int Timeout = 30000;
     }
 }

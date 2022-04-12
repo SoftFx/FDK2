@@ -10,11 +10,15 @@ namespace TickTrader.FDK.Calculator
         decimal? StopPrice { get; }
         OrderSide Side { get; }
         OrderType Type { get; }
+        decimal Amount { get; }
         decimal RemainingAmount { get; }
+        decimal? MaxVisibleAmount { get; }
         bool IsHidden { get; }
+        bool IsIceberg { get; }
         decimal? Slippage { get; }
         OrderType InitialType { get; }
         bool ImmediateOrCancel { get; }
+        bool IsContingent { get; }
     }
 
     /// <summary>
@@ -30,6 +34,7 @@ namespace TickTrader.FDK.Calculator
         ISymbolInfo SymbolInfo { get; }
 
         decimal Commission { get; }
+        decimal Rebate { get; }
         decimal Swap { get; }
         decimal Profit { get; set; }
         decimal Margin { get; set; }
@@ -38,6 +43,7 @@ namespace TickTrader.FDK.Calculator
         event Action<OrderEssentialsChangeArgs> EssentialsChanged;
         event Action<OrderPropArgs<decimal>> SwapChanged;
         event Action<OrderPropArgs<decimal>> CommissionChanged;
+        event Action<OrderPropArgs<decimal>> RebateChanged;
     }
 
     public struct OrderEssentialsChangeArgs

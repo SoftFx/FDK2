@@ -10,7 +10,6 @@ namespace TickTrader.FDK.Calculator.Netting
         private readonly AccountCalculator _parent;
         private readonly bool _isAutoUpdateEnabled;
         private OrderCalculator _calc;
-        private decimal _hedgeFormulPart;
         private decimal _netPosSwap;
         private decimal _netPosComm;
 
@@ -88,7 +87,7 @@ namespace TickTrader.FDK.Calculator.Netting
 
         internal void UpdatePosition(IPositionModel pos, out decimal swapDelta, out decimal commDelta)
         {
-            pos.Calculator = Calc;
+            pos.Calculator = _calc;
 
             swapDelta = pos.Swap - _netPosSwap;
             commDelta = pos.Commission - _netPosComm;
@@ -138,7 +137,20 @@ namespace TickTrader.FDK.Calculator.Netting
         {
             var buyMargin = Buy?.Margin ?? 0;
             var sellMargin = Sell?.Margin ?? 0;
-            Margin = Math.Max(sellMargin, buyMargin) + _hedgeFormulPart * Math.Min(sellMargin, buyMargin);
+            Margin = CalculateMargin(this, buyMargin, sellMargin);
+        }
+
+        public static decimal CalculateMargin(SymbolNetting netting, decimal buyMargin, decimal sellMargin)
+        {
+            var hedgedMarginFactor = netting?.Calc?.HedgedMarginFactor ?? 0.0m;
+            var margin = Math.Max(sellMargin, buyMargin) + hedgedMarginFactor * Math.Min(sellMargin, buyMargin);
+            return margin;
+        }
+
+        internal static decimal CalculateMargin(ISymbolInfo symbolInfo, decimal buyMargin, decimal sellMargin)
+        {
+            var hedge = symbolInfo?.MarginHedged ?? 0.5;
+            return Math.Max(sellMargin, buyMargin) + (2 * (decimal)hedge - 1) * Math.Min(sellMargin, buyMargin);
         }
 
         internal void OnStatsChange(StatsChange args)
@@ -161,9 +173,6 @@ namespace TickTrader.FDK.Calculator.Netting
             _calc = _market.GetCalculator(Symbol, AccInfo.BalanceCurrency);
             _calc.AddUsage();
 
-            var hedge = _calc.SymbolInfo?.MarginHedged ?? 0.5;
-            _hedgeFormulPart = (decimal)(2 * hedge - 1);
-
             Buy?.SetCalculator(_calc);
             Sell?.SetCalculator(_calc);
 
@@ -179,7 +188,7 @@ namespace TickTrader.FDK.Calculator.Netting
             if (Buy == null)
             {
                 Buy = new SideNetting(this, OrderSide.Buy);
-                Buy.SetCalculator(Calc);
+                Buy.SetCalculator(_calc);
             }
             return Buy;
         }
@@ -195,7 +204,7 @@ namespace TickTrader.FDK.Calculator.Netting
             if (Sell == null)
             {
                 Sell = new SideNetting(this, OrderSide.Sell);
-                Sell.SetCalculator(Calc);
+                Sell.SetCalculator(_calc);
             }
             return Sell;
         }
