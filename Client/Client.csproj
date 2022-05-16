@@ -47,7 +47,7 @@
     <Reference Include="SoftFX.Net.TradeCapture">
       <HintPath>..\Lib\SoftFX.Net.TradeCapture.dll</HintPath>
     </Reference>
-    <PackageReference Include="SharpZipLib" Version="1.3.2" Condition=" '$(TargetFramework)' == 'netstandard2.0' " />
+    <PackageReference Include="SharpZipLib" Version="1.3.3" Condition=" '$(TargetFramework)' == 'netstandard2.0' " />
   </ItemGroup>
 
   <ItemGroup>
